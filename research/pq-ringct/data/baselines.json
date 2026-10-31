@@ -1,0 +1,172 @@
+{
+  "schema": "lattica-pq-ringct-cost-baselines-v1",
+  "worktree_base_commit": "efff6ec2d526ed8701e6de96e2ab255a3a219089",
+  "hash_algorithm": "sha3-256",
+  "records": [
+    {
+      "id": "legacy-quadratic-wallet-cuda",
+      "profile": "Production legacy quadratic wallet STARK",
+      "scope": "Native wallet proving; distinct from the cubic block-v2 wallet profile",
+      "source_path": "docs/evidence/cuda-wallet-benchmark-2026-10-19.json",
+      "source_sha3_256": "b087329e0b0345189e57de83e7daa02c9638ac1a343f7a5831f4a11bfc39084a",
+      "facts": [
+        {
+          "label": "profile",
+          "pointer": "/profile",
+          "value": "Production legacy quadratic wallet STARK, unchanged CPU verifier; block-v2-capacity-128 is a build feature, not an aggregation workload in this screen."
+        },
+        {
+          "label": "joinsplit_cuda_median_seconds",
+          "pointer": "/ranges/1/seconds/median",
+          "value": 0.093769949
+        },
+        {
+          "label": "joinsplit_cuda_min_proof_bytes",
+          "pointer": "/ranges/1/proof_bytes/minimum",
+          "value": 457873
+        },
+        {
+          "label": "joinsplit_cuda_max_proof_bytes",
+          "pointer": "/ranges/1/proof_bytes/maximum",
+          "value": 458493
+        }
+      ],
+      "exclusions": [
+        "No recursive aggregation or complete transaction latency",
+        "Four assigned CPU threads; initialization and verification excluded from proving time"
+      ]
+    },
+    {
+      "id": "cubic-wallet-verifier-cuda",
+      "profile": "Candidate cubic block-v2 verifier inside one outer STARK",
+      "scope": "First recursive verifier experiment, not production wrapper or merge",
+      "source_path": "docs/evidence/cuda-recursion-benchmark-2026-10-19.json",
+      "source_sha3_256": "c402c5926c5c4d5d6b4ad6dbc0ffd2b55068222f53ce63b7cab76c4cdcb0b6d1",
+      "facts": [
+        {
+          "label": "median_outer_proving_seconds",
+          "pointer": "/summary/outer_proving_seconds/median",
+          "value": 4.789850066
+        },
+        {
+          "label": "median_outer_proof_bytes",
+          "pointer": "/summary/outer_proof_bytes/median",
+          "value": 1794419
+        },
+        {
+          "label": "active_rows",
+          "pointer": "/measurement/geometry/active_rows",
+          "value": 171669
+        },
+        {
+          "label": "padded_rows",
+          "pointer": "/measurement/geometry/height",
+          "value": 262144
+        },
+        {
+          "label": "includes",
+          "pointer": "/measurement/outer_proving_includes",
+          "value": "Raw serialized inner-proof witness inputs to native outer BatchProof, with resident GPU witness, lookup, quotient, commitments, openings, FRI and final proof-field readback."
+        },
+        {
+          "label": "excludes",
+          "pointer": "/measurement/outer_proving_excludes",
+          "value": "Context/module startup, public program compilation, inner wallet proof generation, public preprocessing preparation, final Postcard serialization and independent CPU verification."
+        }
+      ],
+      "exclusions": [
+        "Not a full-block, worker-pool, or production wrapper/merge benchmark",
+        "No matched CPU or OpenCL baseline",
+        "Serialization excluded from outer proving timer"
+      ]
+    },
+    {
+      "id": "historical-full128",
+      "profile": "Historical October 17 paired 128-entry block-v2 GPU profile",
+      "scope": "Full aggregation of 96 user and 32 issuance entries; one measured sequential block",
+      "source_path": "docs/evidence/block-v2-parallel-aggregation-128-2026-10-17.json",
+      "source_sha3_256": "c29f36089eebfdbc9e63cecf9e001718e59a31226e2ff3359dc2e6c402819712",
+      "facts": [
+        {
+          "label": "scope",
+          "pointer": "/scope",
+          "value": "One complete 128-transaction block per mode, with 96 user and 32 issuance transactions. Two sibling 64-transaction subtrees feed one final root."
+        },
+        {
+          "label": "entries",
+          "pointer": "/trials/0/count",
+          "value": 128
+        },
+        {
+          "label": "user_entries",
+          "pointer": "/trials/0/user_transactions",
+          "value": 96
+        },
+        {
+          "label": "issuance_entries",
+          "pointer": "/trials/0/issuance_transactions",
+          "value": 32
+        },
+        {
+          "label": "proof_jobs",
+          "pointer": "/trials/0/fresh_proofs",
+          "value": 127
+        },
+        {
+          "label": "aggregation_seconds",
+          "pointer": "/trials/0/primary_proving_seconds",
+          "value": 602.367083837
+        },
+        {
+          "label": "root_bytes",
+          "pointer": "/trials/0/root_bytes",
+          "value": 1683948
+        }
+      ],
+      "exclusions": [
+        "Excludes wallet generation, key preparation, independent audits, and durable host application",
+        "Historical backend; not a measurement of latest CUDA full-block performance",
+        "One block per mode; no sustained-throughput qualification"
+      ]
+    },
+    {
+      "id": "cubic-wallet-artifacts",
+      "profile": "Cubic candidate block-v2 wallet proofs",
+      "scope": "Five observed serialized inner wallet artifacts from CUDA recursion qualification; no transaction or speed claim",
+      "source_path": "docs/evidence/cuda-recursion-2026-10-19.json",
+      "source_sha3_256": "1980f240f1f4a1ba76270952845b3f7bc80ac2b77566425c64089844628e0eb6",
+      "facts": [
+        {
+          "label": "inner_artifact_0_bytes",
+          "pointer": "/receipts/0/artifacts/inner.postcard/bytes",
+          "value": 853929
+        },
+        {
+          "label": "inner_artifact_1_bytes",
+          "pointer": "/receipts/1/artifacts/inner.postcard/bytes",
+          "value": 853450
+        },
+        {
+          "label": "inner_artifact_2_bytes",
+          "pointer": "/receipts/2/artifacts/inner.postcard/bytes",
+          "value": 853316
+        },
+        {
+          "label": "inner_artifact_3_bytes",
+          "pointer": "/receipts/3/artifacts/inner.postcard/bytes",
+          "value": 853349
+        },
+        {
+          "label": "inner_artifact_4_bytes",
+          "pointer": "/receipts/4/artifacts/inner.postcard/bytes",
+          "value": 853570
+        }
+      ],
+      "exclusions": [
+        "Artifact sizes from qualification receipts, not a matched wallet generation benchmark",
+        "Excludes transaction public body, encrypted outputs and framing",
+        "Fresh randomized proofs can vary in size; these observations are not a maximum-proof bound"
+      ]
+    }
+  ]
+}

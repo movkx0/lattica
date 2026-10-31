@@ -1,0 +1,176 @@
+{
+  "schema": "owned-runtime-and-normalized-note-screen-v1",
+  "base_commit": "4c39f5cdf9e874c8bee9f25f174a6056d5b19ce1",
+  "capsules": [
+    "A011c",
+    "A012",
+    "B025",
+    "C014",
+    "C015",
+    "C016",
+    "R002"
+  ],
+  "validation": {
+    "fullgpu-owned-runtime-attempt-core-build-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "b66c19b2c8597381543513e948b1957b5186367f136d16d5e32d39f61f446a7c",
+      "raw_log_sha256": "2c17b046d3cc7f237b4659936797aa7e43aac5bbc12dabccc6b19c7d7967fc4e",
+      "guard_wall_seconds": 248.54631299700122,
+      "guarded_job_peak_bytes": "5538918400",
+      "built_artifact_sha256": {
+        "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/target-opencl/release/deps/lattica_prover_p3-41b055916203f073": "e0c4995e2b0b2ffde001c1e53bd91243f425f8a8109ed0e8f03f7c355d5ae3ce"
+      }
+    },
+    "fullgpu-owned-runtime-attempt-cpu-tests-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "4055e1f0b8cc35ea3db4823570f203a87ae0d16bd4693bf211ad79a1e30b9770",
+      "raw_log_sha256": "ed543dafbf91acfc58449a75f929f5d90b0116811414cc89b87f4246f9911379",
+      "guard_wall_seconds": 0.08591647900175303,
+      "guarded_job_peak_bytes": "2621440",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-existing-wallet-owned-runtime-regression-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "20752acfaa1eca12a5aca249629ff9dd6275e23b2ccbff5a2cbaa74b667f51b0",
+      "raw_log_sha256": "05c080d104faa7ec8e92fefa0c46559c6306cbc62165fe534795cbb6349fb69e",
+      "guard_wall_seconds": 2.091349527006969,
+      "guarded_job_peak_bytes": "224124928",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-note-owned-guard-policy-tests-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "0b855995cc229addbccf3e613514771d164240bc68b44f4c55c7ed99c79006df",
+      "raw_log_sha256": "53ec6bfd32b426a23950e2fbbff5aba6e95df6d3ed7324d3edb40dd8151e63f8",
+      "guard_wall_seconds": 2.072935831005452,
+      "guarded_job_peak_bytes": "19292160",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-fixed-note-owned-core-build-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "00cce416161bc3a6d2e0ca4bb9d05c9b512b0693d3f76300a5e4eae2eb46cddd",
+      "raw_log_sha256": "c9121aaa79e1073da6234727b2c0fdcf9a953fc20f7f05ac3c798965a343803b",
+      "guard_wall_seconds": 246.54115969702252,
+      "guarded_job_peak_bytes": "5539061760",
+      "built_artifact_sha256": {
+        "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/target-opencl/release/deps/lattica_prover_p3-41b055916203f073": "0c007855f3f65b60d5bfc8d129fe6de1eac8f1c51228b61f03fa29071dfa1627"
+      }
+    },
+    "fullgpu-fixed-note-owned-cpu-tests-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "905666cb8c0cb7294914b6e09b54db2e3c6126b15751481515436c7f82dd851b",
+      "raw_log_sha256": "ff3f0363941a8d449b89c2e7f11d186294479ef7b2af53bf0d962b0a578cc294",
+      "guard_wall_seconds": 0.08524093698360957,
+      "guarded_job_peak_bytes": "2621440",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-note-owned-guard-policy-tests-2": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "3ec68de5bd65a2cc28cf0ea6a6457ff4a69aba3c9a711691fe97acf1d5b78ff9",
+      "raw_log_sha256": "a403b031ca53505b1068c5c1262f30475f8ef294ae83636c47835f0a12e632af",
+      "guard_wall_seconds": 2.077938713977346,
+      "guarded_job_peak_bytes": "19304448",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-fixed-note-owned-core-provenance-2": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "6e2e34f34b79f0ef081e9086c7a804c237b8f75a34610ba0642c7a642be666f7",
+      "raw_log_sha256": "bbe830a41c8d596bc43144ac04f14227cdb276af6f8aa599c90f3719287e17bc",
+      "guard_wall_seconds": 2.1088198920188006,
+      "guarded_job_peak_bytes": "23732224",
+      "built_artifact_sha256": {
+        "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/target-opencl/release/deps/lattica_prover_p3-41b055916203f073": "0c007855f3f65b60d5bfc8d129fe6de1eac8f1c51228b61f03fa29071dfa1627"
+      }
+    },
+    "fullgpu-fixed-note-owned-gpu-screen-1": {
+      "status": "refused_before_record",
+      "guard_returncode": 1
+    },
+    "fullgpu-fixed-note-owned-gpu-screen-2": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "d11449fc3da98a18db84d0e82b660ef43905c347c57c520340e60d7e61c6bac0",
+      "raw_log_sha256": "5d31d465adf27f329caa24d2f052481f89f24ff4f31fcb530f0c7ea67f6eb12d",
+      "guard_wall_seconds": 2.092122734989971,
+      "guarded_job_peak_bytes": "223367168",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-raw-adapter-research-tests-1": {
+      "status": "failed_or_incomplete",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "f4d117eed6325c50cb618d42e8c70db8207512ccad4eccc1ad88b6ce925244e7",
+      "raw_log_sha256": "c97b59f715cc70b8567e339a3a7cbee3f5561201785fe349331f5209910a0716",
+      "guard_wall_seconds": 2.0951907729904633,
+      "guarded_job_peak_bytes": "13500416",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-raw-adapter-research-tests-2": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "9a2f977bbae757371a0ad2369536b9036d8ff502276396a1abe09ef1aca55015",
+      "raw_log_sha256": "e84243dc6e25684671808d5384ab7a85df4042643e86831eb20ec17386d7a870",
+      "guard_wall_seconds": 88.26369655897724,
+      "guarded_job_peak_bytes": "1548972032",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-raw-adapter-ignored-tests-1": {
+      "status": "refused_before_record",
+      "guard_returncode": 1
+    },
+    "fullgpu-raw-adapter-ignored-tests-2": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "d8cb2fdf5243cfcbb7bd4ccfe4d324205c561f4fae643f960ebbd91623197f31",
+      "raw_log_sha256": "ed502e47528c4ab315ac768c4acbf2ad0e900255eb086e572b0bc296d37a0651",
+      "guard_wall_seconds": 2.099807067977963,
+      "guarded_job_peak_bytes": "169078784",
+      "built_artifact_sha256": {}
+    }
+  },
+  "correctness": {
+    "runtime_and_attempt_cpu_tests": 15,
+    "fixed_note_cpu_tests": 3,
+    "raw_graph_cpu_tests": 13,
+    "guard_policy_tests": 11,
+    "existing_wallet_fresh_gpu_proofs_independently_verified_after_shutdown": 8,
+    "normalized_note_fresh_gpu_proofs": 2,
+    "normalized_note_encoded_bytes": [
+      458228,
+      458273
+    ],
+    "normalized_note_proof_scope_ns": [
+      107603626,
+      107448579
+    ],
+    "normalized_note_runtimes_retired_with_zero_managed_and_tree_bytes": true,
+    "normalized_note_lease_released": true,
+    "normalized_note_independent_verification": false
+  },
+  "resource_policy": {
+    "managed_device_gib": 8,
+    "context_reserve_gib": 4,
+    "worker_host_gib": 32,
+    "native_host_gib": 24,
+    "full_process_max_gib": 47,
+    "direct_full_process_max_gib": 45,
+    "swap_bytes": 0
+  },
+  "refusals_preserved": {
+    "fullgpu-raw-adapter-research-tests-1": "locked missing direct ocl-core dependency; corrected offline lockfile before retry",
+    "fullgpu-fixed-note-owned-gpu-screen-1": "fresh RAM below full 49 GiB admission; subsequent run used existing stricter direct-full profile",
+    "fullgpu-raw-adapter-ignored-tests-1": "sandbox could not inspect user service manager; no dispatch; existing guard rerun with host service access"
+  },
+  "limitations": [
+    "Normalized-note encoded outputs still need independent CPU verification, artifact roundtrip, and mutation checks.",
+    "Proof-scope timings are diagnostics, not complete workflow measurements.",
+    "Faithful RingCT N3/N4 complete workflows remain unqualified.",
+    "No experiment promoted and no production acceptance changed."
+  ]
+}

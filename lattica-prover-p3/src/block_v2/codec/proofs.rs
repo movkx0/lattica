@@ -125,6 +125,18 @@ impl Storage {
     pub(crate) fn wallet(&self, bytes: &[u8]) -> Result<WalletProof, postcard::Error> {
         self.payload(bytes, Encoding::Legacy)
     }
+
+    pub(crate) fn registered(
+        &self,
+        bytes: &[u8],
+    ) -> Result<p3_batch_stark::BatchProof<profile::Config>, postcard::Error> {
+        if bytes.len() > profile::MAX_PROOF_BYTES
+            || !bytes.starts_with(super::REGISTERED_PROOF_MAGIC)
+        {
+            return Err(self.reject());
+        }
+        self.payload(&bytes[8..], NODE_ENCODING)
+    }
 }
 
 impl Drop for Storage {

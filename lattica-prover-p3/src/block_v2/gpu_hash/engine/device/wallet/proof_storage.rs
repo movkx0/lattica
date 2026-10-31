@@ -7,7 +7,50 @@ use crate::block_v2::gpu_quotient_prover::program::ProgramShape;
 use crate::block_v2::profile;
 
 mod phases;
+#[cfg(all(feature = "gpu", feature = "stream", feature = "note-research-quota"))]
+pub(crate) mod note_runtime;
 pub(crate) use phases::Plan as WalletDevicePlan;
+pub(crate) use phases::planner_storage::PlannerResources as WalletPlannerResources;
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream"
+))]
+pub(crate) use phases::shake_source::ShakeSourceDeviceCensus;
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream"
+))]
+pub(crate) use phases::aes_source::AesSourceDeviceCensus;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use phases::graph_source::GraphSourceDeviceCensus;
+
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream",
+    feature = "ringct-research-quota"
+))]
+pub(crate) use phases::shake_source::ShakeDeviceLease;
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream",
+    feature = "ringct-research-quota"
+))]
+pub(crate) use phases::aes_source::AesDeviceLease;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use phases::graph_source::GraphSourceDeviceLease;
+
 
 /// Immutable geometry contract, derived without evaluating AIR constraints or
 /// allocating a trace. Only quadratic/cubic wallet profiles are supported.
@@ -170,3 +213,46 @@ fn sum(parts: &[usize]) -> Result<usize, String> {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use phases::uniform::UniformDeviceCensus;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use phases::transcript::TranscriptDeviceCensus;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use phases::sparse::SparseDeviceCensus;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use phases::uniform::UniformDeviceLease;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use phases::transcript::TranscriptDeviceLease;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use phases::affine::AffineDeviceCensus;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use phases::affine::AffineDeviceLease;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use phases::sparse::SparseDeviceLease;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use phases::ntt::NttDeviceCensus;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use phases::ntt::NttDeviceLease;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use phases::mul::MulDeviceCensus;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use phases::mul::MulDeviceLease;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use phases::g_bound::GBoundDeviceCensus;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use phases::g_bound::GBoundDeviceLease;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use phases::permutation::PermutationDeviceCensus;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use phases::permutation::PermutationDeviceLease;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use phases::linear_map::LinearMapDeviceCensus;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use phases::linear_map::LinearMapDeviceLease;

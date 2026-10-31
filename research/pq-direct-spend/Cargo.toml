@@ -1,0 +1,56 @@
+[package]
+name = "lattica-pq-direct-spend-research"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Isolated direct-spend relation experiments; no production acceptance"
+
+[workspace]
+
+[features]
+default = []
+ring-circuit = ["lattica-pq-ringct-research/recursive", "lattica-prover-p3/block-v2", "dep:p3-batch-stark"]
+# Explicit research proof path. Compiling this feature does not initialize a GPU.
+gpu-proving = ["ring-circuit", "lattica-pq-ringct-research/opencl"]
+ring-recursion-experiment = ["gpu-proving"]
+ring-recursive-outer-experiment = ["ring-recursion-experiment"]
+# Fixed N3/N4 complete direct-ring aggregation research; never enabled by default.
+ring-direct-aggregate-experiment = ["ring-recursive-outer-experiment"]
+# Explicit identity-kernel experiment; runtime still defaults to the baseline.
+gpu-public-hash-experiment = ["gpu-proving", "lattica-prover-p3/gpu-tuning"]
+# Isolated cross-session public identity receipt experiment; production default unchanged.
+gpu-identity-reuse-experiment = ["gpu-proving"]
+native-reference = ["lattica-pq-ringct-research/native-matrict"]
+# Independent note inspection/verifier research; does not enable GPU dispatch.
+note-gpu = ["lattica-prover-p3/note-research-quota", "dep:p3-uni-stark", "dep:p3-fri", "dep:p3-commit", "dep:p3-symmetric", "dep:p3-air", "dep:p3-matrix", "dep:postcard", "dep:rand", "dep:rand_chacha"]
+note-verification-allocation-audit = ["note-gpu"]
+# Source-bounded public preparation only; no private witness or proof dispatch.
+note-gpu-preparation = ["note-gpu", "lattica-prover-p3/block-v2", "lattica-prover-p3/gpu", "lattica-prover-p3/stream"]
+# Fixed owned GPU note experiment plus original-ledger decoder/CPU verifier.
+note-gpu-proving-experiment = ["note-gpu-preparation", "lattica-prover-p3/note-gpu-proving-experiment"]
+
+[dependencies]
+lattica-prover-p3 = { path = "../../lattica-prover-p3", default-features = false }
+lattica-pq-ringct-research = { path = "../pq-ringct", default-features = false }
+p3-field = "=0.6.1"
+p3-batch-stark = { version = "=0.6.1", optional = true }
+p3-goldilocks = "=0.6.1"
+sha3 = "=0.10.8"
+aes = "=0.8.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+p3-uni-stark = { version = "=0.6.1", optional = true }
+p3-fri = { version = "=0.6.1", optional = true }
+p3-commit = { version = "=0.6.1", optional = true }
+p3-symmetric = { version = "=0.6.1", optional = true }
+p3-air = { version = "=0.6.1", optional = true }
+p3-matrix = { version = "=0.6.1", optional = true }
+postcard = { version = "1", features = ["alloc"], optional = true }
+rand = { version = "0.10", optional = true }
+rand_chacha = { version = "0.10", optional = true }
+
+[patch.crates-io]
+ocl-core = { path = "../../lattica-prover-p3/vendor/ocl-core" }
+p3-lookup = { path = "../../lattica-prover-p3/vendor/p3-lookup" }
+p3-field = { path = "../../lattica-prover-p3/vendor/p3-field" }
+p3-symmetric = { path = "../../lattica-prover-p3/vendor/p3-symmetric" }

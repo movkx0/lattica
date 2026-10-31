@@ -1,0 +1,417 @@
+{
+  "schema": "ringct-preprocessing-components-v3",
+  "components": {
+    "baseline": {
+      "record": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/recursive-preprocessing-20261030/host-preprocessing-v3/.tools/pq-opencl-opt/runs/prep-v3-component-baseline-r1.json",
+      "samples": [
+        {
+          "schema": "recursive-identity-component-screen-v1",
+          "scope": "component-only; child fixture generation excluded; no RingCT throughput claim",
+          "repetition": 0,
+          "schedule": "serial",
+          "programs": 2,
+          "fresh_recursive_proofs": 2,
+          "active_rows": 233850,
+          "padded_rows": 262144,
+          "prefix_analysis_ns": 0,
+          "prefix_hash_ns": 0,
+          "prefix_device_ns": 0,
+          "setup_ns": 45616789379,
+          "proving_ns": 4680658565,
+          "cpu_verification_ns": 81322050,
+          "component_ns": 50608052348,
+          "identities": [
+            [
+              16455454715649763361,
+              129982310700287161,
+              7799039347687339620,
+              15241526531543018969
+            ],
+            [
+              10981216877659028203,
+              7165143018806992090,
+              15491047821558202312,
+              8654945822279336956
+            ]
+          ]
+        },
+        {
+          "schema": "recursive-identity-component-screen-v1",
+          "scope": "component-only; child fixture generation excluded; no RingCT throughput claim",
+          "repetition": 0,
+          "schedule": "batched-v1",
+          "programs": 2,
+          "fresh_recursive_proofs": 2,
+          "active_rows": 233850,
+          "padded_rows": 262144,
+          "prefix_analysis_ns": 101880510,
+          "prefix_hash_ns": 22070464272,
+          "prefix_device_ns": 21784564160,
+          "setup_ns": 1843973665,
+          "proving_ns": 4689399282,
+          "cpu_verification_ns": 81355182,
+          "component_ns": 29130901688,
+          "identities": [
+            [
+              16455454715649763361,
+              129982310700287161,
+              7799039347687339620,
+              15241526531543018969
+            ],
+            [
+              10981216877659028203,
+              7165143018806992090,
+              15491047821558202312,
+              8654945822279336956
+            ]
+          ]
+        },
+        {
+          "schema": "recursive-identity-component-screen-v1",
+          "scope": "component-only; child fixture generation excluded; no RingCT throughput claim",
+          "repetition": 1,
+          "schedule": "batched-v1",
+          "programs": 2,
+          "fresh_recursive_proofs": 2,
+          "active_rows": 233850,
+          "padded_rows": 262144,
+          "prefix_analysis_ns": 101606529,
+          "prefix_hash_ns": 22068491692,
+          "prefix_device_ns": 21782885312,
+          "setup_ns": 1859814874,
+          "proving_ns": 4688963074,
+          "cpu_verification_ns": 81256388,
+          "component_ns": 29146357634,
+          "identities": [
+            [
+              16455454715649763361,
+              129982310700287161,
+              7799039347687339620,
+              15241526531543018969
+            ],
+            [
+              10981216877659028203,
+              7165143018806992090,
+              15491047821558202312,
+              8654945822279336956
+            ]
+          ]
+        },
+        {
+          "schema": "recursive-identity-component-screen-v1",
+          "scope": "component-only; child fixture generation excluded; no RingCT throughput claim",
+          "repetition": 1,
+          "schedule": "serial",
+          "programs": 2,
+          "fresh_recursive_proofs": 2,
+          "active_rows": 233850,
+          "padded_rows": 262144,
+          "prefix_analysis_ns": 0,
+          "prefix_hash_ns": 0,
+          "prefix_device_ns": 0,
+          "setup_ns": 45613384346,
+          "proving_ns": 4683067714,
+          "cpu_verification_ns": 81784689,
+          "component_ns": 50609695095,
+          "identities": [
+            [
+              16455454715649763361,
+              129982310700287161,
+              7799039347687339620,
+              15241526531543018969
+            ],
+            [
+              10981216877659028203,
+              7165143018806992090,
+              15491047821558202312,
+              8654945822279336956
+            ]
+          ]
+        },
+        {
+          "schema": "recursive-identity-component-screen-v1",
+          "scope": "component-only; child fixture generation excluded; no RingCT throughput claim",
+          "repetition": 2,
+          "schedule": "serial",
+          "programs": 2,
+          "fresh_recursive_proofs": 2,
+          "active_rows": 233850,
+          "padded_rows": 262144,
+          "prefix_analysis_ns": 0,
+          "prefix_hash_ns": 0,
+          "prefix_device_ns": 0,
+          "setup_ns": 45609129079,
+          "proving_ns": 4681731209,
+          "cpu_verification_ns": 81978998,
+          "component_ns": 50602592883,
+          "identities": [
+            [
+              16455454715649763361,
+              129982310700287161,
+              7799039347687339620,
+              15241526531543018969
+            ],
+            [
+              10981216877659028203,
+              7165143018806992090,
+              15491047821558202312,
+              8654945822279336956
+            ]
+          ]
+        },
+        {
+          "schema": "recursive-identity-component-screen-v1",
+          "scope": "component-only; child fixture generation excluded; no RingCT throughput claim",
+          "repetition": 2,
+          "schedule": "batched-v1",
+          "programs": 2,
+          "fresh_recursive_proofs": 2,
+          "active_rows": 233850,
+          "padded_rows": 262144,
+          "prefix_analysis_ns": 102868254,
+          "prefix_hash_ns": 22071402079,
+          "prefix_device_ns": 21782689408,
+          "setup_ns": 1860300515,
+          "proving_ns": 4685554358,
+          "cpu_verification_ns": 82052176,
+          "component_ns": 29146519809,
+          "identities": [
+            [
+              16455454715649763361,
+              129982310700287161,
+              7799039347687339620,
+              15241526531543018969
+            ],
+            [
+              10981216877659028203,
+              7165143018806992090,
+              15491047821558202312,
+              8654945822279336956
+            ]
+          ]
+        }
+      ],
+      "summary": {
+        "serial": {
+          "median_component_seconds": 50.608052348,
+          "median_preprocessing_seconds": 45.613384346
+        },
+        "batched-v1": {
+          "median_component_seconds": 29.146357634,
+          "median_preprocessing_seconds": 24.029913095
+        }
+      }
+    },
+    "sbox-pair-v1": {
+      "record": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/recursive-preprocessing-20261030/host-preprocessing-v3/.tools/pq-opencl-opt/runs/prep-v3-component-pair-r1.json",
+      "samples": [
+        {
+          "schema": "recursive-identity-component-screen-v1",
+          "scope": "component-only; child fixture generation excluded; no RingCT throughput claim",
+          "repetition": 0,
+          "schedule": "serial",
+          "programs": 2,
+          "fresh_recursive_proofs": 2,
+          "active_rows": 233850,
+          "padded_rows": 262144,
+          "prefix_analysis_ns": 0,
+          "prefix_hash_ns": 0,
+          "prefix_device_ns": 0,
+          "setup_ns": 41566117432,
+          "proving_ns": 4697227194,
+          "cpu_verification_ns": 82976893,
+          "component_ns": 46581643729,
+          "identities": [
+            [
+              16455454715649763361,
+              129982310700287161,
+              7799039347687339620,
+              15241526531543018969
+            ],
+            [
+              10981216877659028203,
+              7165143018806992090,
+              15491047821558202312,
+              8654945822279336956
+            ]
+          ]
+        },
+        {
+          "schema": "recursive-identity-component-screen-v1",
+          "scope": "component-only; child fixture generation excluded; no RingCT throughput claim",
+          "repetition": 0,
+          "schedule": "batched-v1",
+          "programs": 2,
+          "fresh_recursive_proofs": 2,
+          "active_rows": 233850,
+          "padded_rows": 262144,
+          "prefix_analysis_ns": 103522726,
+          "prefix_hash_ns": 20046074579,
+          "prefix_device_ns": 19765480320,
+          "setup_ns": 1848993332,
+          "proving_ns": 4685432374,
+          "cpu_verification_ns": 81797919,
+          "component_ns": 27112629198,
+          "identities": [
+            [
+              16455454715649763361,
+              129982310700287161,
+              7799039347687339620,
+              15241526531543018969
+            ],
+            [
+              10981216877659028203,
+              7165143018806992090,
+              15491047821558202312,
+              8654945822279336956
+            ]
+          ]
+        },
+        {
+          "schema": "recursive-identity-component-screen-v1",
+          "scope": "component-only; child fixture generation excluded; no RingCT throughput claim",
+          "repetition": 1,
+          "schedule": "batched-v1",
+          "programs": 2,
+          "fresh_recursive_proofs": 2,
+          "active_rows": 233850,
+          "padded_rows": 262144,
+          "prefix_analysis_ns": 101765369,
+          "prefix_hash_ns": 20066204973,
+          "prefix_device_ns": 19782883872,
+          "setup_ns": 1852698966,
+          "proving_ns": 4689419399,
+          "cpu_verification_ns": 83791153,
+          "component_ns": 27147573430,
+          "identities": [
+            [
+              16455454715649763361,
+              129982310700287161,
+              7799039347687339620,
+              15241526531543018969
+            ],
+            [
+              10981216877659028203,
+              7165143018806992090,
+              15491047821558202312,
+              8654945822279336956
+            ]
+          ]
+        },
+        {
+          "schema": "recursive-identity-component-screen-v1",
+          "scope": "component-only; child fixture generation excluded; no RingCT throughput claim",
+          "repetition": 1,
+          "schedule": "serial",
+          "programs": 2,
+          "fresh_recursive_proofs": 2,
+          "active_rows": 233850,
+          "padded_rows": 262144,
+          "prefix_analysis_ns": 0,
+          "prefix_hash_ns": 0,
+          "prefix_device_ns": 0,
+          "setup_ns": 41567497626,
+          "proving_ns": 4698541476,
+          "cpu_verification_ns": 83183012,
+          "component_ns": 46587902602,
+          "identities": [
+            [
+              16455454715649763361,
+              129982310700287161,
+              7799039347687339620,
+              15241526531543018969
+            ],
+            [
+              10981216877659028203,
+              7165143018806992090,
+              15491047821558202312,
+              8654945822279336956
+            ]
+          ]
+        },
+        {
+          "schema": "recursive-identity-component-screen-v1",
+          "scope": "component-only; child fixture generation excluded; no RingCT throughput claim",
+          "repetition": 2,
+          "schedule": "serial",
+          "programs": 2,
+          "fresh_recursive_proofs": 2,
+          "active_rows": 233850,
+          "padded_rows": 262144,
+          "prefix_analysis_ns": 0,
+          "prefix_hash_ns": 0,
+          "prefix_device_ns": 0,
+          "setup_ns": 41544972992,
+          "proving_ns": 4697169785,
+          "cpu_verification_ns": 81403193,
+          "component_ns": 46556228047,
+          "identities": [
+            [
+              16455454715649763361,
+              129982310700287161,
+              7799039347687339620,
+              15241526531543018969
+            ],
+            [
+              10981216877659028203,
+              7165143018806992090,
+              15491047821558202312,
+              8654945822279336956
+            ]
+          ]
+        },
+        {
+          "schema": "recursive-identity-component-screen-v1",
+          "scope": "component-only; child fixture generation excluded; no RingCT throughput claim",
+          "repetition": 2,
+          "schedule": "batched-v1",
+          "programs": 2,
+          "fresh_recursive_proofs": 2,
+          "active_rows": 233850,
+          "padded_rows": 262144,
+          "prefix_analysis_ns": 101804805,
+          "prefix_hash_ns": 20044423859,
+          "prefix_device_ns": 19765807008,
+          "setup_ns": 1841049601,
+          "proving_ns": 4674644314,
+          "cpu_verification_ns": 83103256,
+          "component_ns": 27097137880,
+          "identities": [
+            [
+              16455454715649763361,
+              129982310700287161,
+              7799039347687339620,
+              15241526531543018969
+            ],
+            [
+              10981216877659028203,
+              7165143018806992090,
+              15491047821558202312,
+              8654945822279336956
+            ]
+          ]
+        }
+      ],
+      "summary": {
+        "serial": {
+          "median_component_seconds": 46.581643729,
+          "median_preprocessing_seconds": 41.566117432
+        },
+        "batched-v1": {
+          "median_component_seconds": 27.112629198,
+          "median_preprocessing_seconds": 21.998590637
+        }
+      }
+    }
+  },
+  "comparison": {
+    "batch_component_reduction_percent": 42.40766778855926,
+    "batch_preprocessing_reduction_percent": 47.31828510526369,
+    "pair_serial_component_reduction_percent": 7.956063180050677,
+    "pair_batched_component_reduction_percent": 6.9776418087576175,
+    "pair_advance": false,
+    "component_threshold_percent": 10,
+    "scope": "component only; fresh parent proofs and CPU verification; child fixture generation excluded; no whole-workflow speedup claim",
+    "contention": "Runner admission and sampled in-run checks passed; continuous exclusivity is not established. Kernel comparison is two blocks of alternating schedule tests, not three alternating kernel pairs."
+  }
+}

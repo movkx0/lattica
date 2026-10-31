@@ -35,6 +35,19 @@ const NODE_ENCODING: Encoding = if cfg!(feature = "block-v2-wide-lanes") {
 /// Research-only envelope selected by the locally trusted build/profile.
 /// Never sniff an untrusted header to select another verifier or profile.
 pub const NODE_MAGIC: &[u8; 8] = NODE_ENCODING.magic();
+
+/// Registered-machine proof transport selected by the trusted local layout.
+/// This separate envelope never selects a recursive node or wallet decoder.
+pub const REGISTERED_PROOF_MAGIC: &[u8; 8] = if cfg!(feature = "block-v2-wide-lanes") {
+    b"LBV2RP02"
+} else {
+    b"LBV2RP01"
+};
+
+/// Cumulative requested backing for one registered-proof decode, including
+/// canonical re-encoding. Caller-owned packet storage and fixed headers are
+/// separate. A smaller caller allowance is enforced before every allocation.
+pub const REGISTERED_PROOF_STORAGE_LIMIT_BYTES: usize = proofs::INPUT_STORAGE_LIMIT;
 const MAX_SEQUENCE: usize = 256;
 const MAX_DEPTH: usize = 32;
 const MAX_ITEMS: usize = 1 << 20;
@@ -483,6 +496,35 @@ pub(crate) fn encode_node_into<'a>(
 
 pub fn decode_node(bytes: &[u8]) -> Result<NodeProof, postcard::Error> {
     decode_node_with_encoding(bytes, NODE_ENCODING)
+}
+
+/// Serialize a registered-machine proof into caller-owned bounded storage.
+/// The unchanged proof-byte cap includes the eight-byte layout envelope. This
+/// operation allocates no output buffer and supplies no verification result.
+pub fn encode_registered_proof_into<'a>(
+    proof: &p3_batch_stark::BatchProof<profile::Config>,
+    output: &'a mut [u8],
+) -> Result<&'a mut [u8], postcard::Error> {
+    let limit = output.len().min(profile::MAX_PROOF_BYTES);
+    if limit < REGISTERED_PROOF_MAGIC.len() {
+        return Err(postcard::Error::SerializeBufferFull);
+    }
+    let output = &mut output[..limit];
+    output[..8].copy_from_slice(REGISTERED_PROOF_MAGIC);
+    let len = encode_payload(proof, NODE_ENCODING, &mut output[8..])?.len();
+    Ok(&mut output[..8 + len])
+}
+
+/// Decode the concrete registered-proof schema under a preallocation quota.
+/// The local layout pins the wire encoding; an untrusted header cannot switch
+/// it. Every nested Vec uses the existing fallible schema seeds, and the
+/// canonical re-encoding buffer shares the same cumulative allowance. This
+/// does not authenticate a preprocessing cap or verify the resulting proof.
+pub fn decode_registered_proof_bounded(
+    bytes: &[u8],
+    host_storage_limit: usize,
+) -> Result<p3_batch_stark::BatchProof<profile::Config>, postcard::Error> {
+    proofs::Storage::new(host_storage_limit).registered(bytes)
 }
 
 #[cfg(test)]

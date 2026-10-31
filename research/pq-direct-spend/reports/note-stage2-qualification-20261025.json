@@ -1,0 +1,107 @@
+{
+  "schema": "private-note-stage2-qualification-v1",
+  "research_only": true,
+  "production_acceptance_changed": false,
+  "gpu_dispatch_enabled": false,
+  "passed_tests": 19,
+  "independent_verification_cases": 5,
+  "source_temporary_verifier_bound_bytes": 26209288,
+  "zero_allocation_admission_and_quota_refusal": true,
+  "cli_diagnostic": {
+    "schema": "lattica-private-note-gpu-admission-v1",
+    "profile": "lattica/research/private-note-direct-v1/depth32/in2/out2/bits52",
+    "proof_profile": "legacy_quadratic",
+    "geometry": {
+      "inputs": 2,
+      "outputs": 2,
+      "value_bits": 52,
+      "membership_depth": 32,
+      "active_rows": 2560,
+      "padded_rows": 4096,
+      "trace_columns": 19,
+      "periodic_columns": 33,
+      "public_values": 26,
+      "challenge_degree": 2,
+      "degree_bits": 13,
+      "log_blowup": 4,
+      "queries": 96,
+      "max_log_fri_arity": 4,
+      "cap_height": 6,
+      "random_codewords": 4,
+      "query_pow_bits": 16,
+      "quotient_chunks": 16
+    },
+    "limits": {
+      "worker_host_bytes": 34359738368,
+      "managed_device_bytes": 8589934592,
+      "context_device_bytes": 4294967296,
+      "native_host_bytes": 25769803776,
+      "process_host_bytes": 50465865728,
+      "swap_bytes": 0,
+      "max_rows": 1048576
+    },
+    "caller_statement_backing_bytes": 208,
+    "witness_inline_bytes": 2464,
+    "packed_witness_staging_bytes": 3144,
+    "public_readback_bytes": 208,
+    "raw_trace_device_bytes": 622592,
+    "periodic_input_device_bytes": 1081344,
+    "periodic_transform_device_floor_bytes": 3866832,
+    "decoded_proof_backing_ceiling_bytes": 1306416,
+    "full_prover_host_peak_bytes": null,
+    "full_prover_device_peak_bytes": null,
+    "independent_verifier_candidate_payload_bytes": 26209288,
+    "independent_verifier_peak_bytes": null,
+    "dispatch_enabled": false,
+    "gpu_work_performed": false,
+    "cryptographic_verification_performed": false,
+    "matched_ringct_workflow": false,
+    "missing_bounds": [
+      "complete_prover_host_lifetime",
+      "complete_randomness_stream_lifetime",
+      "independent_cpu_verifier_lifetime",
+      "external_process_and_thread_admission",
+      "current_source_gpu_qualification"
+    ]
+  },
+  "validation": {
+    "fullgpu-note-stage2-tests-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "27e203d9f91a80dc675952b8b65f519eee443092c80153829166f51f1bd5fc76",
+      "raw_log_sha256": "343837a7599b8e347d0c618e8e75d6812cbf953f0c3674a8dd8b84cd9ca93694",
+      "guard_wall_seconds": 20.120108751987573,
+      "guarded_job_peak_bytes": "601456640",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-note-stage2-reference-and-allocation-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "111827eb6102dd7f7dcae24d0c6aa11117a102dd297f052602c2d422bece5279",
+      "raw_log_sha256": "43048d20b86563c6eb36f7a84da232ff3e1193016e29571ec1f75134600e8f85",
+      "guard_wall_seconds": 4.094909645005828,
+      "guarded_job_peak_bytes": "276676608",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-note-stage2-cli-inspection-1": {
+      "status": "failed_or_incomplete",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "67052ff0e957052d6799dd72904e1ad9c5c9f2981d255d6678d94e51c85e8886",
+      "raw_log_sha256": "5ed5a6174c4235d45bbf63d71b0c2ebecd8ae9cacda972a810c5b8ff3d5e583e",
+      "guard_wall_seconds": 4.09215597101138,
+      "guarded_job_peak_bytes": "245760000",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-note-stage2-cli-inspection-2": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "192956628f7fb8e0761f6f6f6aa80f14088edffe07423eb86ba8eb342c3575a3",
+      "raw_log_sha256": "d43221acf40eb9c8a47aa168ee71b21c0d4ae9a334acfbc048f3819f7b3db99a",
+      "guard_wall_seconds": 2.0897137789870612,
+      "guarded_job_peak_bytes": "116072448",
+      "built_artifact_sha256": {}
+    }
+  },
+  "preserved_failure": "Initial coordinator CLI used nonexistent Limits::default; corrected to explicit Limits::campaign.",
+  "qualification_scope": "Pinned LegacyQuadratic note decoder and independent CPU verifier, fresh CPU reference proof and mutations; no GPU proof or RingCT speedup claim."
+}

@@ -12,6 +12,9 @@ use std::{
 };
 
 mod composition;
+pub mod operation_storage;
+#[cfg(all(feature = "block-v2", feature = "gpu", feature = "stream", feature = "note-research-quota"))]
+pub(crate) mod note_storage;
 pub(crate) use composition::CachedScope;
 pub use composition::ComponentObservation;
 
@@ -107,6 +110,8 @@ impl Stage {
 pub enum Profile {
     LegacyQuadratic,
     BlockV2Cubic,
+    /// Native MatRiCT n10 spend construction; no FRI/STARK profile claim.
+    MatrictN10,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -144,6 +149,7 @@ impl Capabilities {
             max_log_fri_arity: match profile {
                 Profile::LegacyQuadratic => 4,
                 Profile::BlockV2Cubic => 1,
+                Profile::MatrictN10 => 0,
             },
             stages: Stage::ARITHMETIC
                 .into_iter()
@@ -167,6 +173,13 @@ impl Capabilities {
     }
     pub fn stages(&self) -> &[StageCapability] {
         &self.stages
+    }
+    pub fn profile(&self) -> Profile {
+        self.profile
+    }
+    /// Exact FRI profile metadata for bounded, owned report snapshots.
+    pub fn max_log_fri_arity(&self) -> u8 {
+        self.max_log_fri_arity
     }
     pub fn scope(&self) -> CoverageScope {
         self.scope
@@ -759,3 +772,6 @@ pub(crate) fn record_cpu_witness_oracle() {
 pub(crate) fn cpu_witness_oracle_calls() -> u64 {
     CPU_WITNESS_ORACLE_CALLS.with(std::cell::Cell::get)
 }
+
+pub mod proof_storage;
+pub use proof_storage::FixedProofReportStorage;

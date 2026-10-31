@@ -1,0 +1,427 @@
+{
+  "schema": "lattica-fused-partial-a003-component-audit-v1",
+  "scope": "standalone public-hash component",
+  "source_sha256": {
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/public_hash/fused_partial_probe.rs": "cbbbeb8aa3f881c159314fa2069d3f3b80ccc434b9e2d9b160334576ebf55342",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/public_hash/fused_partial_probe.cl": "0624c67b398db6557f8e0b56334c043fe06b4c38486b3e844fdfe7f9cd640162"
+  },
+  "workload": {
+    "identity_basis": "frozen probe source plus emitted field count",
+    "fields": 1048577,
+    "source_domain_hex": "0x4c42563210",
+    "source_field_formula": "((i * 0x9e3779b97f4a7c15) mod 2^64) mod 0xffffffff00000001",
+    "runtime_input_digest_reported": false
+  },
+  "alternating_complete_triples": 3,
+  "component_medians_ns": {
+    "device_public_hash_cooperative": {
+      "device_ns": 1906858496,
+      "wall_ns": 1912343680
+    },
+    "device_public_hash_sbox_pair": {
+      "device_ns": 1728988512,
+      "wall_ns": 1734348089
+    },
+    "device_public_hash_fused_partial_probe": {
+      "device_ns": 2000924992,
+      "wall_ns": 2006373849
+    }
+  },
+  "kernel_census": [
+    {
+      "before_global_buffer_allocation": true,
+      "constant_buffer_bytes": 752,
+      "experimental_production_selector_available": false,
+      "global_workspace_bytes": 32800,
+      "gpu_tuning_compiled": true,
+      "kernel": "public_hash_fused_partial_raw_probe",
+      "max_allocation_bytes": 32768,
+      "nvidia_supported": true,
+      "standalone_probe": true,
+      "storage": {
+        "compiled_geometry": [
+          16,
+          1,
+          1
+        ],
+        "lanes": 16,
+        "local_bytes": 1,
+        "private_bytes_per_lane": 0
+      },
+      "total_global_buffer_bytes": 33552
+    },
+    {
+      "before_global_buffer_allocation": true,
+      "constant_buffer_bytes": 752,
+      "experimental_production_selector_available": false,
+      "global_workspace_bytes": 32800,
+      "gpu_tuning_compiled": true,
+      "kernel": "device_public_hash_cooperative",
+      "max_allocation_bytes": 32768,
+      "nvidia_supported": true,
+      "standalone_probe": true,
+      "storage": {
+        "compiled_geometry": [
+          8,
+          1,
+          1
+        ],
+        "lanes": 8,
+        "local_bytes": 1,
+        "private_bytes_per_lane": 0
+      },
+      "total_global_buffer_bytes": 33552
+    },
+    {
+      "before_global_buffer_allocation": true,
+      "constant_buffer_bytes": 752,
+      "experimental_production_selector_available": false,
+      "global_workspace_bytes": 32800,
+      "gpu_tuning_compiled": true,
+      "kernel": "device_public_hash_sbox_pair",
+      "max_allocation_bytes": 32768,
+      "nvidia_supported": true,
+      "standalone_probe": true,
+      "storage": {
+        "compiled_geometry": [
+          16,
+          1,
+          1
+        ],
+        "lanes": 16,
+        "local_bytes": 1,
+        "private_bytes_per_lane": 0
+      },
+      "total_global_buffer_bytes": 33552
+    },
+    {
+      "before_global_buffer_allocation": true,
+      "constant_buffer_bytes": 752,
+      "experimental_production_selector_available": false,
+      "global_workspace_bytes": 32800,
+      "gpu_tuning_compiled": true,
+      "kernel": "device_public_hash_fused_partial_probe",
+      "max_allocation_bytes": 32768,
+      "nvidia_supported": true,
+      "standalone_probe": true,
+      "storage": {
+        "compiled_geometry": [
+          16,
+          1,
+          1
+        ],
+        "lanes": 16,
+        "local_bytes": 1,
+        "private_bytes_per_lane": 0
+      },
+      "total_global_buffer_bytes": 33552
+    }
+  ],
+  "component_timings": [
+    {
+      "all_kernels_reused": true,
+      "complete_workflow_measurement": false,
+      "constant_buffer_bytes": 752,
+      "cpu_oracle_equal": true,
+      "device_ns": 1906767360,
+      "experimental_production_selector_available": false,
+      "fields": 1048577,
+      "global_workspace_bytes": 32800,
+      "gpu_tuning_compiled": true,
+      "kernel": "device_public_hash_cooperative",
+      "max_allocation_bytes": 32768,
+      "nvidia_supported": true,
+      "raw_negative_two_oracle_equal": true,
+      "raw_partial_round_oracle_equal": true,
+      "round": 0,
+      "standalone_probe": true,
+      "storage": {
+        "compiled_geometry": [
+          8,
+          1,
+          1
+        ],
+        "lanes": 8,
+        "local_bytes": 1,
+        "private_bytes_per_lane": 0
+      },
+      "total_global_buffer_bytes": 33552,
+      "wall_ns": 1912160307
+    },
+    {
+      "all_kernels_reused": true,
+      "complete_workflow_measurement": false,
+      "constant_buffer_bytes": 752,
+      "cpu_oracle_equal": true,
+      "device_ns": 1729091744,
+      "experimental_production_selector_available": false,
+      "fields": 1048577,
+      "global_workspace_bytes": 32800,
+      "gpu_tuning_compiled": true,
+      "kernel": "device_public_hash_sbox_pair",
+      "max_allocation_bytes": 32768,
+      "nvidia_supported": true,
+      "raw_negative_two_oracle_equal": true,
+      "raw_partial_round_oracle_equal": true,
+      "round": 0,
+      "standalone_probe": true,
+      "storage": {
+        "compiled_geometry": [
+          16,
+          1,
+          1
+        ],
+        "lanes": 16,
+        "local_bytes": 1,
+        "private_bytes_per_lane": 0
+      },
+      "total_global_buffer_bytes": 33552,
+      "wall_ns": 1734618283
+    },
+    {
+      "all_kernels_reused": true,
+      "complete_workflow_measurement": false,
+      "constant_buffer_bytes": 752,
+      "cpu_oracle_equal": true,
+      "device_ns": 2000959776,
+      "experimental_production_selector_available": false,
+      "fields": 1048577,
+      "global_workspace_bytes": 32800,
+      "gpu_tuning_compiled": true,
+      "kernel": "device_public_hash_fused_partial_probe",
+      "max_allocation_bytes": 32768,
+      "nvidia_supported": true,
+      "raw_negative_two_oracle_equal": true,
+      "raw_partial_round_oracle_equal": true,
+      "round": 0,
+      "standalone_probe": true,
+      "storage": {
+        "compiled_geometry": [
+          16,
+          1,
+          1
+        ],
+        "lanes": 16,
+        "local_bytes": 1,
+        "private_bytes_per_lane": 0
+      },
+      "total_global_buffer_bytes": 33552,
+      "wall_ns": 2006536937
+    },
+    {
+      "all_kernels_reused": true,
+      "complete_workflow_measurement": false,
+      "constant_buffer_bytes": 752,
+      "cpu_oracle_equal": true,
+      "device_ns": 2000924992,
+      "experimental_production_selector_available": false,
+      "fields": 1048577,
+      "global_workspace_bytes": 32800,
+      "gpu_tuning_compiled": true,
+      "kernel": "device_public_hash_fused_partial_probe",
+      "max_allocation_bytes": 32768,
+      "nvidia_supported": true,
+      "raw_negative_two_oracle_equal": true,
+      "raw_partial_round_oracle_equal": true,
+      "round": 1,
+      "standalone_probe": true,
+      "storage": {
+        "compiled_geometry": [
+          16,
+          1,
+          1
+        ],
+        "lanes": 16,
+        "local_bytes": 1,
+        "private_bytes_per_lane": 0
+      },
+      "total_global_buffer_bytes": 33552,
+      "wall_ns": 2006373849
+    },
+    {
+      "all_kernels_reused": true,
+      "complete_workflow_measurement": false,
+      "constant_buffer_bytes": 752,
+      "cpu_oracle_equal": true,
+      "device_ns": 1728988512,
+      "experimental_production_selector_available": false,
+      "fields": 1048577,
+      "global_workspace_bytes": 32800,
+      "gpu_tuning_compiled": true,
+      "kernel": "device_public_hash_sbox_pair",
+      "max_allocation_bytes": 32768,
+      "nvidia_supported": true,
+      "raw_negative_two_oracle_equal": true,
+      "raw_partial_round_oracle_equal": true,
+      "round": 1,
+      "standalone_probe": true,
+      "storage": {
+        "compiled_geometry": [
+          16,
+          1,
+          1
+        ],
+        "lanes": 16,
+        "local_bytes": 1,
+        "private_bytes_per_lane": 0
+      },
+      "total_global_buffer_bytes": 33552,
+      "wall_ns": 1734348089
+    },
+    {
+      "all_kernels_reused": true,
+      "complete_workflow_measurement": false,
+      "constant_buffer_bytes": 752,
+      "cpu_oracle_equal": true,
+      "device_ns": 1906916096,
+      "experimental_production_selector_available": false,
+      "fields": 1048577,
+      "global_workspace_bytes": 32800,
+      "gpu_tuning_compiled": true,
+      "kernel": "device_public_hash_cooperative",
+      "max_allocation_bytes": 32768,
+      "nvidia_supported": true,
+      "raw_negative_two_oracle_equal": true,
+      "raw_partial_round_oracle_equal": true,
+      "round": 1,
+      "standalone_probe": true,
+      "storage": {
+        "compiled_geometry": [
+          8,
+          1,
+          1
+        ],
+        "lanes": 8,
+        "local_bytes": 1,
+        "private_bytes_per_lane": 0
+      },
+      "total_global_buffer_bytes": 33552,
+      "wall_ns": 1912462496
+    },
+    {
+      "all_kernels_reused": true,
+      "complete_workflow_measurement": false,
+      "constant_buffer_bytes": 752,
+      "cpu_oracle_equal": true,
+      "device_ns": 1906858496,
+      "experimental_production_selector_available": false,
+      "fields": 1048577,
+      "global_workspace_bytes": 32800,
+      "gpu_tuning_compiled": true,
+      "kernel": "device_public_hash_cooperative",
+      "max_allocation_bytes": 32768,
+      "nvidia_supported": true,
+      "raw_negative_two_oracle_equal": true,
+      "raw_partial_round_oracle_equal": true,
+      "round": 2,
+      "standalone_probe": true,
+      "storage": {
+        "compiled_geometry": [
+          8,
+          1,
+          1
+        ],
+        "lanes": 8,
+        "local_bytes": 1,
+        "private_bytes_per_lane": 0
+      },
+      "total_global_buffer_bytes": 33552,
+      "wall_ns": 1912343680
+    },
+    {
+      "all_kernels_reused": true,
+      "complete_workflow_measurement": false,
+      "constant_buffer_bytes": 752,
+      "cpu_oracle_equal": true,
+      "device_ns": 1728958240,
+      "experimental_production_selector_available": false,
+      "fields": 1048577,
+      "global_workspace_bytes": 32800,
+      "gpu_tuning_compiled": true,
+      "kernel": "device_public_hash_sbox_pair",
+      "max_allocation_bytes": 32768,
+      "nvidia_supported": true,
+      "raw_negative_two_oracle_equal": true,
+      "raw_partial_round_oracle_equal": true,
+      "round": 2,
+      "standalone_probe": true,
+      "storage": {
+        "compiled_geometry": [
+          16,
+          1,
+          1
+        ],
+        "lanes": 16,
+        "local_bytes": 1,
+        "private_bytes_per_lane": 0
+      },
+      "total_global_buffer_bytes": 33552,
+      "wall_ns": 1734239693
+    },
+    {
+      "all_kernels_reused": true,
+      "complete_workflow_measurement": false,
+      "constant_buffer_bytes": 752,
+      "cpu_oracle_equal": true,
+      "device_ns": 2000860480,
+      "experimental_production_selector_available": false,
+      "fields": 1048577,
+      "global_workspace_bytes": 32800,
+      "gpu_tuning_compiled": true,
+      "kernel": "device_public_hash_fused_partial_probe",
+      "max_allocation_bytes": 32768,
+      "nvidia_supported": true,
+      "raw_negative_two_oracle_equal": true,
+      "raw_partial_round_oracle_equal": true,
+      "round": 2,
+      "standalone_probe": true,
+      "storage": {
+        "compiled_geometry": [
+          16,
+          1,
+          1
+        ],
+        "lanes": 16,
+        "local_bytes": 1,
+        "private_bytes_per_lane": 0
+      },
+      "total_global_buffer_bytes": 33552,
+      "wall_ns": 2006179647
+    }
+  ],
+  "enclosing_recorded_build_and_terminal_audit_required": true,
+  "production_selector_available": false,
+  "fresh_proof_qualification": false,
+  "complete_workflow_measurement": false,
+  "faithful_ringct_performance_qualified": false,
+  "limitations": [
+    "Component wall time excludes harness/kernel setup and compilation.",
+    "Oracle flags require the enclosing exact-test and terminal audit.",
+    "No proof generation, transaction graph or workflow throughput is measured.",
+    "Buffer census covers explicit probe buffers; driver/context and source compilation remain separately guarded."
+  ],
+  "raw_log_sha256": "56910779649c80d63de11ad8ce7fbf65e46efeb45f8009e076e8da4e5cfa1a55",
+  "run_record_sha256": "c4952b6f506d770c166fa9724ede6d1f6f43b7309f2d8fdc821dd3d5aec9d91c",
+  "coordinator_decision": {
+    "production_selector_added": false,
+    "runtime_integration_rejected": true,
+    "reason": "All exact arithmetic checks passed, but fused median component time exceeded both baseline and sbox-pair-v1.",
+    "slower_than_pair_percent": 15.68461151053282,
+    "recorded_build": "fullgpu-fused-partial-core-build-1",
+    "test_record": "fullgpu-fused-partial-gpu-screen-1",
+    "record_sha256": "c4952b6f506d770c166fa9724ede6d1f6f43b7309f2d8fdc821dd3d5aec9d91c",
+    "all_terminal_and_integrity_audits_passed": true,
+    "process_peak_bytes": 185798656,
+    "swap_bytes": 0
+  },
+  "parser_validation": [
+    {
+      "label": "fullgpu-fused-partial-audit-tests-1",
+      "record_sha256": "3e87425e5e5b42a3625b65849e6fb9873b18de3e518b861e5286d7e83e0b1739"
+    },
+    {
+      "label": "fullgpu-fused-partial-audit-tests-optimized-1",
+      "record_sha256": "f9679e6b3379dc5b4e9100116e1b9dbafe87ca3fa50ef5695a9a2e314d5a3ee6"
+    }
+  ]
+}

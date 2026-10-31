@@ -1,0 +1,13 @@
+{
+  "upstream": "https://github.com/worldfnd/provekit",
+  "revision": "3b9b748efc5d73e9a4a6538b3b05247ba3d91e35",
+  "archive_sha256": "3615adf1e7c8dfd3213d075101244a6f421d70f870de911d0109d94b06c75bea",
+  "license": "MIT; see vendor/provekit-privacy-source/LICENSE.md",
+  "scope": "Unchanged reviewed source excerpts for an algebraic privacy screen; not the full implementation",
+  "source_files": {
+    "LICENSE.md": "469ef823477f2e8c848aee7242543e4a6418766953c1dcba5e46638e43c18bda",
+    "provekit/common/src/utils/sumcheck.rs": "0b8e8a3b7221ac5b56d4313d5f299b8fec28d27c6e8b19b56049f94cacfef546",
+    "provekit/common/src/whir_r1cs.rs": "26b3644705e45d47c483c46ac57bc57720269ef8db2ab0e868b32449d187f8f6",
+    "provekit/prover/src/whir_r1cs.rs": "4054b5af4d6cc936a7703764824426812c2562abae2ced7b778b0dbb0d0ef037"
+  }
+}

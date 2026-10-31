@@ -1,0 +1,27 @@
+{
+  "schema": "cycle-mask-source-review-v1",
+  "repository": "https://github.com/GoldSaintEagle/RingCT_Implementation",
+  "revision": "4975ff403b33c1782df3e591403c8fbcf695235e",
+  "paper": "https://www4.comp.polyu.edu.hk/~shanggao/publications/Lattice-based_Zero-knowledge_Proofs_for_Blockchain_Confidential_Transactions.pdf",
+  "doi": "10.1007/978-3-031-91832-2_5",
+  "archive_sha256": "59bb1708225fa32f51b5f36bcaab25a432976cb1bee4fd6d977837a9224e2257",
+  "source_path_base": "campaign directory, three levels above this file",
+  "source_files": {
+    "upstream/pkc2025-ringct/Basic.go": "525a25a7f4a5384c68bda78e8259ab9646fe76e552b07e8ad4784b87988650e7",
+    "upstream/pkc2025-ringct/Basic_test.go": "eaf34f523eeebafea0b68e55b8125e87947a03af7819effe038c3a38e5db87d4",
+    "upstream/pkc2025-ringct/Matric+_plus.go": "f91a9bf93232cc9c1c6a81bd79d21eb2e6026edb7b3439b17fa6a11b879dfcf3",
+    "upstream/pkc2025-ringct/README.md": "08a20baa23aed63935086878b74d9a152d41663dfe4f9eddf325539bca4b0ad0",
+    "upstream/pkc2025-ringct/RingMatrix.go": "30ddfc37c405800aef878a7ac4bb7fd6fbfd74745f9afc235714a91ad76aed12",
+    "downloads/pkc2025/paper.pdf": "8aa1294f4771f1fab62431ddf06810e54b89409823dea2fa74f67ebc344a06a2"
+  },
+  "code_executed": false,
+  "vendored_in_research_source": false,
+  "notes": [
+    "Read-only reference data remains in the campaign; no license file was present in the inspected archive.",
+    "Paper Section 4.2, equations 15-16 and Protocol 2 require integer reconstruction and norm checks.",
+    "Basic.go Hash and BuildZeta use eight bytes of an MD5 digest as a math/rand seed.",
+    "Matric+_plus.go LinearEquationArgument_plusII leaves rejection sampling as a TODO.",
+    "Basic.go CheckPackedf checks a weighted sum modulo q, not the paper's bounded integer reconstruction.",
+    "The algebra screen is independently written and does not execute the Go implementation."
+  ]
+}

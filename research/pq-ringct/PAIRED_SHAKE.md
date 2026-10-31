@@ -1,0 +1,399 @@
+# Paired SHAKE wrapper candidate
+
+`ShakeWrapperLayout::Singleton` is the default and retains the existing proving
+path. `PairedV1` has an exact, allocation-free schedule, but **paired proving is
+not implemented or qualified**. Selecting it through
+`SpendPipeline::with_shake_wrapper_layout` returns a qualification error before
+any proof dispatch. There is no fallback to Singleton and no retry after proof
+execution. This is a rejected admission experiment, not a throughput result.
+
+`Request::shake_wrapper_schedule` borrows the immutable registered serial SHAKE
+request. It checks complete coverage and every segment's original first unit,
+count, height and width. PairedV1 groups two consecutive native segments; only
+the final odd segment is a singleton. Native batching, the padding and squeezing
+AIRs, AES, transcripts and security parameters are unchanged. The reported
+native/recursive counts describe a schedule, not measured work. The historical
+445-to-327 estimate has not been established by this implementation.
+
+The bounded group compiler rejects missing, reordered, overlapping or duplicate
+intervals and all 108 interior state/input/output field mismatches before
+acquiring endpoint preparation or allocating compiler storage. It continues to
+emit all 108 recursive equality constraints. Host endpoint checks cannot replace
+native proof verification or recursive proof acceptance.
+
+## Why full-workflow admission is still refused
+
+The source-complete checkpoint includes useful prerequisites, but composing them
+does not yet establish a complete memory bound:
+
+| Existing component | Qualified scope | Missing enclosing admission |
+| --- | --- | --- |
+| `ConstructionLimits` and bounded SHAKE compiler | Requested builder/program storage, wire count, total witness-value limit; explicit bounded CPU symbolic recording; public-shape auxiliary storage admission before endpoint sessions | Its numeric auxiliary allowance is not yet a planner-issued ownership token. Enclosing retained proofs, GPU endpoint/backend storage, allocator overhead and recursive closure still need admission. |
+| `NativeRetentionShape` and `RetainedNativeChild` | Public-shape output-capacity bound and post-generation nested capacity audit | No ownership token reserves the output and siblings before allocation and follows the child through moves/drop. Numerical native-verifier scratch needs a source-derived enclosing reservation. |
+| Remaining-host native/outer proving APIs | Reduced registered/native GPU host allowances; FreshOnly and GpuRequired checks | A numeric remaining allowance does not retain accounting for sibling proofs, carry-stack nodes, reports, compiler inputs or independent CPU verification. |
+| Registered outer verification | `RegisteredVerifier::host_reservation_bytes` exposes the existing checked release-x86_64 lifecycle plan before cap/setup allocation; its source-derived ceiling is 257 MiB | The caller still needs ownership admission for the matching cap geometry and retained proof/key owners. Unqualified target/build profiles refuse the public reservation. This bound does not apply to native uni-STARK verification. |
+| Component geometry diagnostics | Exact geometry for the particular compiled node; some tests register invalid proof-shaped fixtures | No pre-dispatch closure qualification for every selected component wrapper, component merge, consuming graph leaf, graph merge, and final N3/N4 aggregate. Sampled shape geometry is not complete closure evidence. |
+
+A numeric scratch allowance alone cannot fill the ownership and closure gaps. The
+existing 32 GiB worker, 24 GiB native, 8 GiB managed GPU, 4 GiB context, 47 GiB
+process and zero-swap limits have not been increased to make this candidate fit.
+Source inspection alone does not show that PairedV1 cannot fit; it shows that the
+current code cannot safely admit it. No claim of a measured memory failure is
+made.
+
+## Next implementation gates
+
+1. Qualify the new bounded symbolic/periodic/compiler prerequisite with the
+   guarded reference-parity and refusal tests. Preserve the independent
+   unbounded reference used by default Singleton. These are compiler checks;
+   they do not qualify native numerical verification or the complete workflow.
+2. Introduce planner-issued ownership reservations for native outputs, recursive
+   proof/key outputs, carry-stack nodes and reports. Keep each reservation with
+   the owner, reserve compiler inputs/temporaries and CPU verifier scratch before
+   their phases, and release reservations on every success/error/drop path.
+3. Compile the complete selected public-shape graph and final aggregation under
+   the same row/resource limits before native proof dispatch. Shape fixtures
+   must remain explicitly invalid and cannot become proof acceptance receipts.
+4. Only then connect the immutable pair schedule to the bounded compiler and
+   fresh proving path. Propagate every refusal; do not change grouping or retry
+   after dispatch. Run focused proof/mutation/closure checks and the separately
+   guarded alternating component and full-workflow benchmarks.
+
+The added fast tests cover Singleton default/refusal, exact pair/odd-tail
+schedules, absorb/padding/squeeze transitions, missing/reordered/duplicate and
+registration mutations, AES exclusion, and each interior boundary field. They
+do not qualify paired proofs, cleanup after real asynchronous proving, recursive
+height closure, or a full-workflow speedup.
+
+## Bounded compiler prerequisite
+
+`verifier::uni::verify_bounded` uses the existing bounded recorder and normalizer
+on the CPU. It borrows a caller-owned periodic table, preserving the constrained
+verifier, proof-input order and transcript operations. Both 64 MiB recording and
+normalization quotas remain enforced. AIR callbacks' own vectors are admitted by
+the enclosing SHAKE footprint, separately from those internal quotas.
+
+The exposed symbolic allowance has two independent parts: **192 MiB transient
+workspace** and **64 MiB retained normalized graph**. Recording and normalization
+scratch drops before lowering; the returned normalized expressions stay owned
+until lowering finishes. The auxiliary formula conservatively adds both, even
+though some output storage is also covered during the workspace phase. It never
+uses the transient allowance as permission to retain the graph after its phase.
+ProgramBuilder storage remains a separate reservation throughout both phases.
+
+`ShakeGroupCompileFootprint::for_group` performs checked, allocation-free
+arithmetic for the pinned release-x86_64 lane SHAKE source. It includes one
+42-by-128 periodic table and construction overlap, AIR public/periodic/counter/
+update vectors, descriptor and endpoint containers, verifier helper containers,
+two simultaneous ProofInputs value buffers and cumulative returned-wire backing.
+Overflow and unsupported profiles return small typed errors. The grouped
+compiler checks the footprint before opening an endpoint preparation session or
+allocating AIR/compiler storage. This payload formula excludes allocator/RSS,
+already-owned proofs, recursive reports and device/backend endpoint workspace;
+those require the future enclosing planner. The 512 MiB test auxiliary allowance
+is an explicit test limit, not a replacement for the derived footprint.
+
+The compiler qualification uses deliberately invalid native shape fixtures and
+compares complete program manifests, input order and public/spec metadata with
+the independent reference. Cases cover one segment, absorb/padding and
+padding/squeeze transitions, and native batches of eight permutations. A separate
+core test proves a small counter AIR and checks bounded/reference equality plus
+wrong-public and proof mutations. No grouped proof or GPU speedup is inferred.
+
+## Qualification results, 2026-10-24
+
+The coordinator serialized these CPU-required runs under the unchanged build
+guard: 8 GiB process maximum, 6 GiB high watermark, zero swap, two build jobs,
+two Rayon threads and one test thread. Every report records success, unchanged
+source/executable inputs and terminal/reaped subprocesses. Core tests used
+release `block-v2-wide-lanes,stream`; research tests used release
+`opencl native-matrict recursive-wide`, with no endpoint GPU context or grouped
+proof dispatch. Unsupported-profile rejection is source-gated and has a debug
+test; this run qualifies only the release x86_64 profile.
+
+| Check | Outcome |
+| --- | --- |
+| Bounded uni reference/input-order parity, real counter proof and mutations | 2 passed |
+| Independent registered-verifier lifecycle and allocation-free cap/overflow admission | 7 passed |
+| Ordinary SHAKE boundary, resource classification and auxiliary tests | 5 passed; 2 explicit screens ignored in this invocation |
+| Guarded compiler parity screen | 1 passed, covering all five cases below |
+| Guarded resource/proof-shape classification screen | 1 passed |
+
+| Template case | Padded rows | Wires | Proof input values |
+| --- | ---: | ---: | ---: |
+| Single padding segment | 131072 | 1504008 | 155319 |
+| Absorb then padding | 262144 | 3004416 | 310638 |
+| Padding then squeeze | 262144 | 3002631 | 310638 |
+| N8 native absorb segment plus singleton tail | 262144 | 3208244 | 337268 |
+| N8 native squeeze segment plus singleton tail | 262144 | 3204662 | 337268 |
+
+The paired compiler screen reserved **2147483648 builder bytes** and
+**536870912 auxiliary bytes**, with at most 1048576 proof-input values and the
+unchanged `MAX_WIRES`. The largest builder-accounted requested peak was
+**647219296 bytes**. Separately, the guard recorded **553648128 bytes process
+cgroup peak**, **10.094897 seconds job wall time**, and **8.84 seconds test time**.
+Requested storage and observed process memory are different measurements.
+These figures cover compilation of invalid templates and reference comparisons;
+they are not valid native/recursive proofs, GPU measurements or workflow speedup.
+Pairs fit this compiler screen. Ownership admission and full descendant closure
+remain unresolved, so PairedV1 still refuses before execution.
+
+Raw evidence remains outside Git under
+`/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/agent-b-shake/.tools/pq-opencl-opt/runs/`.
+Each stem below has a `.json` guard record and `.log` raw output. SHA-256 hashes
+pin the inspected artifacts; no benchmark binaries or result directories were
+added to the source commit.
+
+| Stem | Guard JSON SHA-256 | Raw log SHA-256 |
+| --- | --- | --- |
+| `concurrent-b-bounded-uni-tests-1` | `ec4afa478c3cac9110c21eaaf0a2ec89fa0f5276c7c9508e051395d05d13a23e` | `680d278d3de259c0851a807f7b6e6a61e6b0eb0909c8eb07f6d34128137d7b39` |
+| `concurrent-b-verifier-lifetime-tests-1` | `7fa5caa78fd4564beeebf104343cf0afbfb3f37906134aa64df3c9a952dcc239` | `f5e2933fd40d775a59b8165822347a3a7a763d6458380a2ba8536084f71ff6b1` |
+| `concurrent-b-bounded-shake-tests-1` | `6249c70ee943524c53e95eb4093ad24d5a2e5d66f755a92ab0556aa1bf66a04f` | `ef4d37200c9f2a392bd5f1faa58b034427447115dd670676e4510905767b6bb4` |
+| `concurrent-b-paired-compiler-screen-1` | `f7d2792e548c745149694f5d7b4305d65784e7807e52dcf882d88a7150a53589` | `a48181aee77e2d06d53d9c716274801f5763cf83cf270cefa140ecd7c0b00dba` |
+| `concurrent-b-paired-resource-errors-1` | `96b9037563f8fffae416240df492dff80eb09653e0b7a3b7efc488f65da19cb3` | `840a454cbad3aae8fa063ebc2d14119f32a382606b440608779a83ee5202f1e8` |
+
+## Registered-verifier shape prerequisite
+
+`machine::verifier::batch::shape::verifier_core_bound` now accepts one through
+four trusted public child shapes and explicit construction/auxiliary limits.
+It admits every height, public width, cap length, template backing allocation
+and checked storage sum before constructing a template or compiler. It uses
+bounded symbolic registry preparation and substitutes a distinct unknown input
+for every preprocessing-cap word. Only operation-class counts, row/wire/input
+bounds and requested-storage diagnostics leave the API; every invalid template
+and compiled program is dropped internally.
+
+The [restricted source argument](../../lattica-prover-p3/src/block_v2/machine/verifier/batch/shape/OPAQUE_CAPS.md)
+explains why cap specialization cannot increase scalar, cubic or Poseidon
+counts in this particular verifier. It does not assume a general monotone
+constant optimizer. The source-derived template reservation uses
+`3*(4*LANES+publics+1)` as the permutation-width ceiling, rather than the largest
+width observed in sampled compiles. The observed planner construction peak is
+not an actual specialized-compiler memory bound: cap Constants populate
+different interning maps from opaque Inputs. Actual compilers still require
+their independently enforced construction allowance.
+
+Agent A's independent review found no blocker for this prerequisite-only scope.
+The coordinator's serialized release checks used the unchanged two build/Rayon
+threads, one test thread, 8 GiB process guard, 6 GiB high watermark and zero swap:
+
+- Three focused shape/overflow/storage/packing tests passed.
+- Both ignored qualification tests passed with
+  `LATTICA_BOUNDED_BATCH_SHAPE_QUALIFICATION=1`. Zero, colliding and distinct caps
+  were dominated by the opaque core, and each concrete bounded program matched
+  the default reference program and input values. Four children at height
+  262144 also compiled within the original allowance; a deliberate one-input
+  refusal cleaned up before a fresh successful call.
+- All guard services became terminal and reaped; source and executable hashes
+  remained unchanged within each job. No real proof or GPU work ran.
+
+The original reservation was 2147483648 builder bytes, 536870912 auxiliary
+bytes, at most 1048576 input values and unchanged MAX_WIRES. Selected opaque
+core reports (outer public width 32) were:
+
+| Child public widths / heights | Scalar ops | Cubic ops | Poseidon ops | Active rows | Padded rows |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 0 / 8 | 621227 | 9214 | 28684 | 57012 | 65536 |
+| 32 / 262144 | 1216059 | 11549 | 74761 | 129285 | 131072 |
+| 64 / 8, 24 / 256 | 1397127 | 19593 | 69547 | 133092 | 262144 |
+
+The qualification test body took 9.50 seconds; its guarded build/test job took
+144.335959 seconds with a 3114397696-byte cgroup peak. These are compiler/test
+measurements, not proving performance or complete-workflow speedup. The existing
+PairedV1 refusal remains. Exhaustive configured-height envelopes, native wrapper
+starting bounds, consuming Transcript/Sparse/source-binding relations, whole
+graph/final aggregate closure and live ownership admission are still required.
+
+| Stem | Guard JSON SHA-256 | Raw log SHA-256 |
+| --- | --- | --- |
+| `concurrent-b-opaque-shape-tests-1` | `20cc033714c48e56e17afd0c8d1c5731546f0656764c6897bf0df6cf321bdc2c` | `88cf4a41dbbe4e80253d6e7ad53e579d1b1f455943b199b878f5b78d385d078e` |
+| `concurrent-b-opaque-shape-qualification-1` | `bdef1aff63fbb2aa6b70d566ed7f93f952e63e4aace32859e9e7e64541fc168e` | `b4c769ce0ceb2420164cd8d318b8adc8aade76d81869cc13736ea656cdc16fc3` |
+
+## Exhaustive registered-height rejection gate
+
+The [finite-domain envelope](../../lattica-prover-p3/src/block_v2/machine/verifier/batch/shape/REGISTERED_DESCENDANTS.md)
+enumerates every power-of-two child height from 8 through the accepted R4
+worker ceiling of 1048576. Four public widths (25, 28, 38 and 46) each have 18
+heights: all 72 bounded compilations passed. Class maxima are retained
+independently; no compiler monotonicity in height is assumed. Source-derived
+binding overhead is added before packing each binary descendant once.
+
+| Public width | Scalar maximum | Cubic maximum | Poseidon maximum |
+| --- | ---: | ---: | ---: |
+| 25 | 1325631 | 11804 | 83078 |
+| 28 | 1325686 | 11819 | 83079 |
+| 38 | 1325867 | 11869 | 83081 |
+| 46 | 1326013 | 11909 | 83083 |
+
+| Descendant | Active-row upper bound | Padded-row upper bound |
+| --- | ---: | ---: |
+| Component merge | 284939 | 524288 |
+| Graph merge | 284873 | 524288 |
+| Graph + graph aggregate | 284827 | 524288 |
+| Aggregate + graph | 284820 | 524288 |
+| Aggregate + aggregate | 284812 | 524288 |
+
+Agent A's read-only source review found no blocker for this conditional gate.
+The coordinator ran both the focused admission test and exhaustive ignored
+test in release with `block-v2-wide-lanes,stream`, two build/Rayon threads,
+one test thread, an 8 GiB process guard, a 6 GiB high watermark and zero swap.
+The test body took 21.65 seconds; the complete guarded build/test job took
+156.359277 seconds with a 3121336320-byte cgroup peak. All subprocesses were
+terminal and reaped; source and executable hashes remained unchanged.
+
+These bounds close the registered binary descendants only if their children
+already fit. Native SHAKE starting wrappers, native Transcript/Sparse consumers,
+SourceBinding framing and live ownership admission are still pending. No real
+proof, GPU benchmark or complete-workflow speedup is established, and PairedV1
+remains disabled.
+
+| Stem | Guard JSON SHA-256 | Raw log SHA-256 |
+| --- | --- | --- |
+| `concurrent-b-registered-height-envelope-1` | `76bbd1905fd95cbd2aa38b1968a7fbbd7712b04d4af86f76d2888b694a64d4e0` | `c719538e6bd00f97db8e4c0b387b3f800cfd3cfaf17f19fc3836d07622dfe548` |
+
+## Closed native-core and SourceBinding prerequisites
+
+The [closed native planner](src/component_tree/native_shape/BOUNDS.md) admits
+source-derived descriptor, periodic-table, callback, symbolic, template and
+input backing before constructing a SHAKE, Transcript or Sparse verifier core.
+It returns operation counts, input/wire counts and a streaming canonical
+manifest digest. Every invalid proof fixture and compiler program drops inside
+the helper. Generic AIR callers retain a separate explicit admission contract.
+
+Eight bounded cores matched the independent existing test-only compiler in all
+operation classes, input/wire counts and manifest SHA3-256. A deliberately tiny
+input allowance refused and a later fresh compilation succeeded.
+
+| Native core | Scalar | Cubic | Poseidon | Active rows | Padded rows |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| SHAKE absorb8 | 1175484 | 14942 | 63506 | 116749 | 131072 |
+| SHAKE padding | 1049106 | 14500 | 53907 | 101593 | 131072 |
+| SHAKE partial squeeze | 1047631 | 14267 | 53907 | 101496 | 131072 |
+| SHAKE squeeze8 | 1174686 | 14776 | 63506 | 116691 | 131072 |
+| Transcript mixed3 | 807050 | 10248 | 41121 | 77675 | 131072 |
+| Transcript maximum-events256 | 1509727 | 14154 | 76051 | 143714 | 262144 |
+| Sparse Alpha39 | 881824 | 13225 | 42450 | 82681 | 131072 |
+| Sparse X44 | 882110 | 13315 | 42450 | 82706 | 131072 |
+
+The native retained-proof capacity model now includes legitimate producer
+backing after hiding-suffix drains and FRI final-polynomial truncation. Logical
+lengths and cryptographic parameters are unchanged: main openings retain
+width+4, quotient/random openings retain 7, and the final polynomial can retain 16
+elements after truncation to 1. Both the pre-production storage bound and the
+later capacity audit use those source capacities; excessive spare capacity
+still refuses.
+
+Agent A's independent read-only review found no blocker. The coordinator's
+serialized release checks passed three focused native-shape tests, five
+retention tests, and the eight-case ignored parity/cleanup qualification.
+The qualification test body took 9.52 seconds with a 388947968-byte cgroup peak.
+All three guard services became terminal and reaped, with unchanged source and
+executable hashes inside each job. The same 8 GiB process/6 GiB high/zero-swap
+guard, two build/Rayon threads and one test thread were used. These are
+compiler/test measurements; no real proof or GPU workload was produced.
+
+| Qualification stem | Guard JSON SHA-256 | Raw log SHA-256 |
+| --- | --- | --- |
+| `concurrent-b-native-core-qualification-1` | `a83f3c675e7848f48d241bd03060fa8bda596c4b16be5aee8ba2756a8a7246f1` | `c4ffb913f16fc1f7538414d47039cf77a46fe2728850a357fc22aced351ed764` |
+
+Source-derived framing bounds cover the affected SHAKE wrapper, HashAlpha,
+HashX producer/consumer, ParametersPp and common graph SourceBinding paths.
+These helpers do not establish the actual complete request schedule, unchanged
+source/AES/algebra leaf closure, native/recursive output ownership, enclosing
+phase admission or final N3/N4 workflow acceptance. PairedV1 remains refused
+before dispatch. The next gate binds exact immutable Requests from the accepted
+serial SHAKE/AES, Branches, algebra64/NTT32/Mul32/cells2^27 configuration; an old
+persisted fixture can screen that schedule but cannot authorize fresh work.
+
+### Selected serial AES and Uniform compiler qualification
+
+The closed native planner now covers the unchanged serial AES and Uniform
+families. Its private common storage preflight also reserves the larger public
+and periodic-table geometry needed by the remaining source/algebra families;
+this does not admit arbitrary AIR callbacks or change protocol parameters.
+Source-derived framing includes the unchanged AES, source, algebra and
+SampleG/ExpandAlpha consumer adapters. Agent A independently reviewed the code
+and matched the framing arithmetic without a blocker.
+
+The coordinator's serialized release checks passed three focused tests and
+the six-case ignored compiler parity test. Each bounded program matched the
+independent reference compiler in operation classes, input/wire counts and
+canonical manifest digest. No real proof was generated.
+
+| Native core | Scalar | Cubic | Poseidon | Active rows | Padded rows |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| AES SampleG64 | 1112044 | 11760 | 63559 | 113589 | 131072 |
+| AES Alpha middle64 | 1112051 | 11751 | 63559 | 113589 | 131072 |
+| AES Alpha tail33 | 1112052 | 11751 | 63559 | 113589 | 131072 |
+| AES Sparse8 | 980928 | 11324 | 53577 | 97845 | 131072 |
+| Uniform SampleG4 | 934442 | 13098 | 48499 | 90999 | 131072 |
+| Uniform Alpha2 | 894912 | 11460 | 45684 | 86232 | 131072 |
+
+The qualification test body took 6.12 seconds and the process cgroup peak was
+347365376 bytes. Both jobs used two build/Rayon threads, one test thread, an
+8 GiB process guard, 6 GiB high watermark and zero swap. The coordinator
+audited terminal/reaped status, unchanged source/executable identity and log
+hashes before thawing the worktree. These measurements cover compiler tests,
+not GPU proving or complete-workflow throughput. PairedV1 still refuses before
+dispatch; complete native/descendant closure and runtime ownership admission
+remain required.
+
+| Stem | Guard JSON SHA-256 | Raw log SHA-256 |
+| --- | --- | --- |
+| `concurrent-b-aes-uniform-shape-tests-1` | `2b54d4e6bd270882c0939bad65c0d6850c124f84f24f03a4d0fb5aeb14dcf071` | `3353af8e9dd5e72ff60e8de789b35f03b5bc3ae33bd6eee28e1e388a100d3819` |
+| `concurrent-b-aes-uniform-core-qualification-1` | `64d0c1133effe344b12a72622a8215f766a8d9b1d01212564e0731430001a0fa` | `7d75ad7d5313070f67e5d22768c273b9d718d31f3aea5b5aa2491f9b234ae8e8` |
+
+### Complete diagnostic fixture row closure
+
+The selected-R4 screen is now wired only for tests with `native-matrict` and
+`recursive-wide`. Its private input constructor derives every plan from one
+immutable graph. Exact algebra limits, policy, complete request/auxiliary
+consumption and all native-to-final-aggregate row bounds are checked before a
+screen result is returned. [The source bound](src/spend_pipeline/paired_workflow/BOUNDS.md)
+separates compiler-owned metadata from the enclosing fixture/graph setup and
+uses fixed report storage.
+
+The coordinator's serialized release gate passed the tracked historical
+fixture `fixtures/diagnostic-context71-setup29.json`. It independently verifies
+the existing native fixture and creates no fresh native or recursive proof.
+Context `[71;32]` and setup `[29;32]` differ from the accepted fresh N3/N4 driver;
+this result cannot be reused to admit another graph or claim workflow speedup.
+
+| Scheduled invocations | Singleton | PairedV1 |
+| --- | ---: | ---: |
+| Native, per transaction | 222 | 222 |
+| Recursive, per transaction | 445 | 327 |
+| Recursive N3 fixture estimate, including final aggregation | 1337 | 983 |
+| Recursive N4 fixture estimate, including final aggregation | 1783 | 1311 |
+
+| Largest source-derived row bound | Active rows | Padded rows |
+| --- | ---: | ---: |
+| Singleton initial wrapper | 122332 | 131072 |
+| Paired initial wrapper | 244540 | 262144 |
+| Component parent | 284939 | 524288 |
+| Graph leaf, both layouts | 288451 | 524288 |
+| Graph parent, both layouts | 284873 | 524288 |
+
+Both graph roots and every N3/N4 final aggregate close at 524288 padded rows,
+below the unchanged 1048576 ceiling. The combined compiler-screen duration was
+133.887582 seconds, captured once before either report was formatted. The
+planner reserved 141100 bytes of metadata plus a separate fixed 16384-byte
+report buffer. Existing fixture decode/verification, graph lowering and public
+plan/witness-hint setup are excluded from that compiler metadata/time scope.
+
+The focused arithmetic/report-buffer test and complete ignored screen each
+passed. The full gate took 134.44 seconds in its test body and 136.335050804
+seconds under the guard, with 598949888-byte process cgroup peak. Both jobs
+used two build/Rayon threads, one test thread, an 8 GiB process limit, 6 GiB high
+watermark and zero swap. The coordinator audited terminal/reaped status,
+unchanged source/executable identities and raw log hashes before thawing.
+
+| Stem | Guard JSON SHA-256 | Raw log SHA-256 |
+| --- | --- | --- |
+| `resume-b-selected-row-tests-1` | `747e0da818f4bb31cabddc12ea7e7b87a69a589bb792ea211c2f2fc158ac2db3` | `b0fb97d952b24fd34b31de6495860e7fbca913c81809820986b1488dc526c435` |
+| `resume-b-selected-row-closure-1` | `5119de5f534cc6a3a45a91d401aa3dabab8748683e574a92b1f15691832c6120` | `b9af732394a583b9d086d7cc0f5ba13457ac10d853590d3b2a19bad2f1041faf` |
+
+These artifacts remain outside source under the resumed B worktree's
+`.tools/pq-opencl-opt/runs/`. PairedV1 remains refused before dispatch. Complete
+fresh-workflow admission, runtime ownership, independent verifier/report
+lifetimes and matched GPU workflow measurements remain required.

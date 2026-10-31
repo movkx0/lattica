@@ -70,8 +70,8 @@ fn salted_authentication<R: AsRef<[Wire]>>(
 }
 
 fn check_resources(b: &ProgramBuilder) -> Result<(), CompileError> {
-    if b.resource_failure().is_some() {
-        return Err(CompileError::Shape("PCS compiler resource allowance"));
+    if let Some(error) = b.resource_failure() {
+        return Err(CompileError::from_builder_admission(error, "PCS compiler resource allowance"));
     }
     Ok(())
 }

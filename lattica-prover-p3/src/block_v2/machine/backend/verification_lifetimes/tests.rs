@@ -13,6 +13,28 @@ fn cap(height: usize, capacity: usize) -> p3_batch_stark::Commitment<Config> {
 }
 
 #[test]
+fn public_reservation_precedes_cap_allocation_and_rejects_overflow() {
+    for height in [8usize, 64, 1 << 24] {
+        let roots = 1 << (height.ilog2() as usize + 1 + profile::LOG_BLOWUP).min(profile::CAP_HEIGHT);
+        let (reservation, requests) = measure(|| RegisteredVerifier::host_reservation_bytes(46, height, roots, roots));
+        assert_eq!(requests.calls, 0);
+        let reservation = reservation.unwrap();
+        assert!(reservation <= LIMIT_BYTES);
+        assert_eq!(reservation, Plan::new(46, height, &cap(height, roots), Limits::default()).unwrap().peak_bytes);
+        for (publics, height, count, capacity) in [
+            (65, height, roots, roots), (46, 0, roots, roots),
+            (46, height, 0, roots), (46, height, roots, roots - 1),
+            (46, height, roots, usize::MAX),
+        ] {
+            let (reservation, requests) = measure(|| RegisteredVerifier::host_reservation_bytes(publics, height, count, capacity));
+            assert!(reservation.is_err());
+            assert_eq!(requests.calls, 0);
+            assert_eq!(requests.bytes, 0);
+        }
+    }
+}
+
+#[test]
 fn trusted_geometry_has_constant_shape_storage_and_separate_construction_and_call_phases() {
     let mut maximum = 0;
     for publics in [0, 1, 23, 32, 33, 64] {

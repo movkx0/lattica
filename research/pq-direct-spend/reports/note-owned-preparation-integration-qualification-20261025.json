@@ -1,0 +1,103 @@
+{
+  "schema": "private-note-owned-preparation-integration-v1",
+  "snapshots": [
+    "C003",
+    "C004",
+    "C005",
+    "C006",
+    "C007",
+    "C008"
+  ],
+  "coverage": [
+    "shared quota boundary/move/split/retirement",
+    "invalid preparation refusal",
+    "fixed report payload and publication census",
+    "recorded AIR and normalization bounds",
+    "fresh CPU proof artifact round trip",
+    "independent CPU verifier agreement and four mutations"
+  ],
+  "normalized_gpu_proof_qualified": false,
+  "private_note_gpu_proof_performed": false,
+  "complete_external_admission": false,
+  "dispatch_enabled": false,
+  "production_acceptance_changed": false,
+  "validation": {
+    "fullgpu-note-owned-native-core-build-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "a9b5797e86a5662a6660201703577c54361a96bee580d752c1db5cd6f4295adc",
+      "raw_log_sha256": "72804a6f116e3e741cd830c564feb1029a1dc157023c427ec452ec5832cb1244",
+      "guard_wall_seconds": 246.53544796898495,
+      "guarded_job_peak_bytes": "5478506496",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-note-owned-native-core-record-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "059d148acfb2863167927d48daaa80568f094b70a7982d08c5902defd232c9d7",
+      "raw_log_sha256": "8f2ff34be2da0ea914a8aac274a5b8cc814d0891b9c8bda546546f12407cc4c8",
+      "guard_wall_seconds": 2.11380989299505,
+      "guarded_job_peak_bytes": "24072192",
+      "built_artifact_sha256": {
+        "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/target-opencl/release/deps/lattica_prover_p3-df20e879a2f95f02": "45571b43e604056b13f8844d2634f771081c5ac89ba3c2d281b3b41476b04922"
+      }
+    },
+    "fullgpu-note-shared-quota-tests-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "19914e5207cad02682683312f006912fe0adf4904678b88317e58eeda64cf77b",
+      "raw_log_sha256": "a9ac880dc98d918295437fe037d41f159e0c9a5ca6b469774afb0cf00e73f6e8",
+      "guard_wall_seconds": 0.07957689499016851,
+      "guarded_job_peak_bytes": "2621440",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-note-owned-admission-tests-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "1ad096f9a32c44e7595965403ea10cf6f462613810242df6fbaa0defd8323f11",
+      "raw_log_sha256": "fc7f41961eaca8b5bd6905646d4fad3721b11d9c455df37b39b02ac85c44cfa0",
+      "guard_wall_seconds": 0.0838905049895402,
+      "guarded_job_peak_bytes": "2621440",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-note-fixed-report-tests-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "60381fd360845cf49fe4e0d73bf972a353b076cb3bd824f976cf58d297f6318f",
+      "raw_log_sha256": "cb640da50ed8315e3a19f5111bc0aba8a180bdd052ddab6f156f2a7679ec4b95",
+      "guard_wall_seconds": 0.07870310000726022,
+      "guarded_job_peak_bytes": "2621440",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-note-normalization-tests-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "8436837d8a2f3b0fd8c3eb2b789404f025f25d27b5053f36dcc7700b63b459f5",
+      "raw_log_sha256": "764933b97e36e22409afd55d9d858dcefc8952106cf90e7a73c1046015b6c6a9",
+      "guard_wall_seconds": 2.086127871007193,
+      "guarded_job_peak_bytes": "4952064",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-note-owned-research-tests-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "b1f456d8bd4038775d1643406f129c6a0404b3e98439b1db2b6a9af16dbe47c7",
+      "raw_log_sha256": "36d65e512cfefe08d71b5bc9f27962e70a634c5aca0258d6190aa7cafe9f915f",
+      "guard_wall_seconds": 50.18336442799773,
+      "guarded_job_peak_bytes": "1679736832",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-note-owned-reference-tests-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "81e84a2b2e17e6b60b0fa1e13186b504c2a4dd0cff7104dfb3d0085b901bc51f",
+      "raw_log_sha256": "432015661caa881a3b3eaa4b91573ddda1153a57b841c63edc99fe240a8d8585",
+      "guard_wall_seconds": 6.097482326003956,
+      "guarded_job_peak_bytes": "278593536",
+      "built_artifact_sha256": {}
+    }
+  },
+  "focused_core_cpu_tests_passed": 24,
+  "research_tests_passed": 19,
+  "fresh_cpu_reference_proofs": 2
+}

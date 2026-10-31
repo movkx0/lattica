@@ -9,7 +9,7 @@ use super::super::super::{
 use super::super::super::{quotient::PartitionStorage, storage::ProjectionShape};
 use super::*;
 use crate::block_v2::{
-    challenger::resources as transcript,
+    challenger::resources as challenger_transcript,
     gpu_hash::engine::{
         self,
         lde_plan::{InputShape, LdeCommitPlan, LdeRetention},
@@ -22,6 +22,28 @@ mod fri;
 mod inputs;
 mod operations;
 mod randomness;
+pub(crate) mod runtime_geometry;
+pub(crate) mod planner_storage;
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream"
+))]
+pub(crate) mod shake_source;
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream"
+))]
+pub(crate) mod aes_source;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) mod graph_source;
+
+use runtime_geometry::RuntimeGeometry;
 
 #[derive(Debug)]
 struct Phase {
@@ -56,14 +78,16 @@ pub(crate) struct Plan {
 
 impl Plan {
     pub(super) fn new(g: WalletProofMinimum, engine: &Engine, live: usize) -> Result<Self, String> {
-        let initial_hash = engine
-            .workspace
-            .as_ref()
-            .map_or(0, engine::Workspace::bytes);
-        let initial_lde = engine.lde_workspace.as_ref().map_or(0, |w| w.bytes());
-        let baseline = live
-            .checked_sub(sum(&[initial_hash, initial_lde])?)
-            .ok_or("wallet cached workspace exceeds live bytes")?;
+        Self::from_geometry(g, RuntimeGeometry::capture(engine, live)?)
+    }
+
+    /// A phase feasibility model only. This does not initialize an engine,
+    /// reserve a proof lifetime, or grant permission to dispatch a witness.
+    /// The retained report vectors still need an enclosing host reservation.
+    pub(crate) fn from_geometry(
+        g: WalletProofMinimum,
+        runtime: RuntimeGeometry,
+    ) -> Result<Self, String> {
         let mut plan = Self {
             phases: Vec::new(),
             quotient_tiles: Vec::new(),
@@ -72,18 +96,18 @@ impl Plan {
             fri: Vec::new(),
             commitments: Vec::new(),
             inputs: Vec::new(),
-            ceiling: engine.limits.managed_bytes,
-            max_allocation: engine.max_alloc,
-            baseline,
-            initial_hash,
-            initial_lde,
+            ceiling: runtime.limits.managed_bytes,
+            max_allocation: runtime.max_allocation,
+            baseline: runtime.baseline,
+            initial_hash: runtime.initial_hash,
+            initial_lde: runtime.initial_lde,
         };
         plan.build(
             g,
-            engine.limits,
-            engine.mode.slots(),
-            engine.lde_workspace_limit,
-            engine.query.is_none(),
+            runtime.limits,
+            runtime.transfer_slots,
+            runtime.lde_cache_limit,
+            runtime.needs_query_buffer,
         )?;
         Ok(plan)
     }
@@ -208,7 +232,7 @@ impl Plan {
         // Fixed protocol limits cover both supported fields. Public compiler
         // constant folding shares the public-hash allowance. Five RNG keys
         // cover the existing PCS/hiding/MMCS streams; clones share their key.
-        let controls = transcript::reservation();
+        let controls = challenger_transcript::reservation();
         let control = sum(&[
             controls.managed_bytes as usize,
             5 * 32,
@@ -903,3 +927,28 @@ impl Plan {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) mod uniform;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) mod transcript;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) mod affine;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) mod sparse;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) mod ntt;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) mod mul;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) mod g_bound;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) mod permutation;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) mod linear_map;

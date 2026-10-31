@@ -1,0 +1,14 @@
+{
+  "schema": "native-cycle-source-identity-v1",
+  "validation_sha256": "a3d641f8054801b91a5264e31434d641ec4c32bc50d18acdc36c45f8494a6a8f",
+  "measurement_sha256": "1e862172b448aee02a98006f724fd3eb2502024d31bcba883778790683577e7b",
+  "native_files": {
+    "poly_q.c": "918d0518f15fbbf074a05d94db21af21cd4c0d361e065a84f6a1fa59ffd1a3c6",
+    "poly_q.h": "20aa078222daaa1fb5da5578a0222fac242c28e22c400d650f83cd4f19c78353",
+    "poly_red.h": "481741874d699c54726d7544122b9a21dc450435ed033b8be561f7e34a2977f8",
+    "poly_param.h": "c28909ba4a8fbcebe0c28d7af152f5f3b773204490d766e9640c1b8e34c4f3ee",
+    "comp.h": "bd8d51492935436aecdc65d1e9ee4dc31ba9a6e6cf29fc6dd7bd5fac8e1ecb94",
+    "hash.c": "fc697261bb071504a8a56e0584e08031cbc40a1f95132637cab76bf0f9c36c49",
+    "mint.c": "72454d30f84303f38472aaedeb7515251e579614aa732afe361125789fc9bbb3"
+  }
+}

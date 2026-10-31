@@ -68,6 +68,12 @@ pub mod joinsplit_air;
 pub(crate) mod metal_compute;
 pub mod poseidon2_air;
 pub mod proving;
+#[cfg(feature = "note-research-quota")]
+#[doc(hidden)]
+pub mod note_research_quota;
+#[cfg(feature = "ringct-research-quota")]
+#[doc(hidden)]
+pub mod ringct_research_quota;
 #[cfg(feature = "gpu")]
 pub mod quotient_gpu;
 #[cfg(feature = "recursion")]

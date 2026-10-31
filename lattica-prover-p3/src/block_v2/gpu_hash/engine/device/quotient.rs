@@ -256,6 +256,17 @@ impl DeviceSession {
         }
         let specs: Vec<_> = inputs.iter().map(|m| m.spec).collect();
         let storage = self.with_engine(|engine| {
+            // The partition uses transforms and evaluation kernels, never the
+            // commitment hasher. Retire completed scratch before taking the
+            // live snapshot; the next commitment replans and recreates it.
+            engine.fence().finish()?;
+            let hash_bytes = engine.workspace.as_ref().map_or(0, |w| w.bytes());
+            let lde_bytes = engine.lde_workspace.as_ref().map_or(0, |w| w.bytes());
+            engine.workspace = None;
+            engine.lde_workspace = None;
+            if hash_bytes != 0 || lde_bytes != 0 {
+                eprintln!("bounded_quotient_workspace_retirement hash_bytes={hash_bytes} lde_bytes={lde_bytes} completed_fence=true retained_inputs_unchanged=true");
+            }
             let live = engine.accounting.lock().unwrap().live;
             let cache = engine.lde_workspace.as_ref().map_or(0, |w| w.bytes());
             PartitionStorage::new(
@@ -293,9 +304,24 @@ impl DeviceSession {
                         self.lde(input, part_log, part_shift, RowOrder::BitReversed)
                     }
                 };
-                let part_main = expand(main)?;
-                let part_pre = preprocessed.map(expand).transpose()?;
-                let part_perm = permutation.map(expand).transpose()?;
+                let mut expanded: [Option<DeviceMatrix>; 3] = [None, None, None];
+                for index in partition::expansion_order(&specs)?
+                    .into_iter()
+                    .take(inputs.len())
+                {
+                    expanded[index] = Some(expand(inputs[index])?);
+                }
+                let part_main = expanded[0].take().ok_or("missing expanded main input")?;
+                let part_pre = if preprocessed.is_some() {
+                    expanded[1].take()
+                } else {
+                    None
+                };
+                let part_perm = if permutation.is_some() {
+                    expanded[1 + usize::from(preprocessed.is_some())].take()
+                } else {
+                    None
+                };
                 let values = self.quotient_extension(
                     prepared,
                     log_trace,
@@ -355,7 +381,14 @@ impl DeviceSession {
         }
         #[cfg(feature = "gpu")]
         self.with_engine(|engine| {
-            let specialized = super::super::quotient::specialized::prepare(engine, &program)?;
+            // The fixed note owner pins this session before any preparation.
+            // Skip the compiler itself, so no second Program/source storage is
+            // allocated. Ordinary sessions preserve automatic specialization.
+            let specialized = if self.session.quotient_policy.begin_preparation() {
+                super::super::quotient::specialized::prepare(engine, &program)?
+            } else {
+                None
+            };
             let mut code = allocation(
                 &engine.pq,
                 &engine.accounting,

@@ -239,3 +239,33 @@ pub(super) fn run<T>(
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(super) mod ringct;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(super) mod graph_source;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(super) mod uniform;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(super) mod transcript;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(super) mod affine;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(super) mod sparse;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(super) mod ntt;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(super) mod mul;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(super) mod g_bound;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(super) mod permutation;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(super) mod linear_map;

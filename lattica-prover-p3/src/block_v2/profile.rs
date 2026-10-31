@@ -75,6 +75,7 @@ pub type Pcs = super::quotient_pcs::CandidatePcs;
 pub type Config = StarkConfig<Pcs, Challenge, Challenger>;
 
 pub(crate) mod verification;
+pub use verification::CpuVerificationConfigPlan;
 
 /// Inventory the selected path, not the features compiled into this binary.
 /// Existing GPU stages still perform host arithmetic/materialization around
@@ -259,6 +260,21 @@ pub fn make_config() -> Config {
     )
 }
 
+/// Explicit reference-native execution while an unrelated owned GPU session
+/// is live. Proof parameters and fresh entropy match `make_config`; only this
+/// configuration's commitment backend is forced to CPU. No global switches.
+pub fn make_cpu_config() -> Config {
+    config_with_cpu_selection(
+        ChaCha20Rng::from_rng(&mut rand::rng()),
+        ChaCha20Rng::from_rng(&mut rand::rng()),
+        None,
+        false,
+        false,
+        None,
+        true,
+    )
+}
+
 /// Candidate execution proving only. Default verification and wallet proving
 /// never consult these switches. Each proof receives independent full-entropy
 /// seeds; optional quotient fusion draws a third seed, never cloning the inner
@@ -312,6 +328,34 @@ pub(crate) fn make_gpu_proving_config<E: super::pcs_field::PcsField>(
     ))
 }
 
+/// Owned fresh seeds for the isolated native GPU producer. This constructs a
+/// configuration, not a runtime or memory admission. The caller must generate
+/// three fresh independent seeds before each proof and retain its configuration
+/// backing reservation through destruction. No thread-local RNG is accessed.
+#[cfg(all(target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info"))]
+pub(crate) fn make_gpu_proving_config_from_owned_seeds<E: super::pcs_field::PcsField>(
+    assigned_host_bytes: usize,
+    salts: [u8; 32],
+    hiding: [u8; 32],
+    quotient: [u8; 32],
+) -> Result<super::pcs_field::ProvingConfig<E>, crate::proving::Error> {
+    if !resident_research_enabled() || !super::quotient_pcs::research_enabled() {
+        return Err(crate::proving::Error::ComponentRejected);
+    }
+    let budget = host_budget::selected_budget(assigned_host_bytes)?;
+    if budget != assigned_host_bytes {
+        return Err(crate::proving::Error::ComponentRejected);
+    }
+    Ok(config_with_rngs_and_host_budget(
+        ChaCha20Rng::from_seed(salts),
+        ChaCha20Rng::from_seed(hiding),
+        Some(ChaCha20Rng::from_seed(quotient)),
+        true,
+        false,
+        Some(budget),
+    ))
+}
+
 fn resident_research_enabled() -> bool {
     #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
     {
@@ -356,6 +400,27 @@ fn config_with_rngs_and_host_budget<E: super::pcs_field::PcsField>(
     public_preprocessing: bool,
     _host_budget: Option<usize>,
 ) -> super::pcs_field::ProvingConfig<E> {
+    config_with_cpu_selection(
+        salt_rng,
+        hiding_rng,
+        quotient_rng,
+        resident,
+        public_preprocessing,
+        _host_budget,
+        false,
+    )
+}
+
+fn config_with_cpu_selection<E: super::pcs_field::PcsField>(
+    salt_rng: ChaCha20Rng,
+    hiding_rng: ChaCha20Rng,
+    quotient_rng: Option<ChaCha20Rng>,
+    resident: bool,
+    public_preprocessing: bool,
+    _host_budget: Option<usize>,
+    force_cpu: bool,
+) -> super::pcs_field::ProvingConfig<E> {
+    assert!(!force_cpu || (!resident && quotient_rng.is_none() && !public_preprocessing));
     #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
     if resident {
         super::challenger::resources::check_worker(super::quotient_pcs::gpu_transcript_enabled())
@@ -386,6 +451,12 @@ fn config_with_rngs_and_host_budget<E: super::pcs_field::PcsField>(
         CAP_HEIGHT,
         salt_rng,
     );
+    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+    let val_mmcs = if force_cpu {
+        val_mmcs.cpu_only()
+    } else {
+        val_mmcs
+    };
     let challenge_mmcs = ExtensionMmcs::<Val, E, ValMmcs>::new(val_mmcs.clone());
     let mut parameters = fri(challenge_mmcs);
     parameters.max_log_arity = E::MAX_LOG_ARITY;

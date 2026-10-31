@@ -15,6 +15,7 @@ mod evaluate;
 use domain::ProverDomain;
 mod input;
 mod opened_values;
+pub(crate) use opened_values::descriptor_host_bound as opened_value_descriptor_host_bound;
 #[cfg(feature = "gpu")]
 pub(crate) mod uni;
 pub(super) use input::ProvingInstance;
@@ -829,12 +830,22 @@ where
                                 #[cfg(feature = "gpu-metal")]
                                 if metal_evaluation {
                                     return metal::evaluate::<SC, _, _>(
-                                        pcs, airs[i], pub_vals[i], sym_layout,
-                                        trace_domains[i].cpu(), quotient_domain.cpu(),
-                                        &trace_on_quotient_domain, permutation_on_quotient_domain.as_ref(),
-                                        all_lookups[i], &perm_vals, &lookup_gadget,
-                                        &challenges_per_instance[i], preprocessed_on_quotient_domain.as_ref(), alpha,
-                                    ).expect("validated Metal quotient evaluation");
+                                        pcs,
+                                        airs[i],
+                                        pub_vals[i],
+                                        sym_layout,
+                                        trace_domains[i].cpu(),
+                                        quotient_domain.cpu(),
+                                        &trace_on_quotient_domain,
+                                        permutation_on_quotient_domain.as_ref(),
+                                        all_lookups[i],
+                                        &perm_vals,
+                                        &lookup_gadget,
+                                        &challenges_per_instance[i],
+                                        preprocessed_on_quotient_domain.as_ref(),
+                                        alpha,
+                                    )
+                                    .expect("validated Metal quotient evaluation");
                                 }
                                 quotient_values(
                                     pcs,
@@ -923,6 +934,11 @@ where
         )
         .expect("owned quotient commitment failed; no silent fallback")
     };
+    // Owned commitment has fenced all input reads and retains only its new
+    // degree prefixes, salts and digest tree. The complete quotient evaluations
+    // are not used by randomization, openings or FRI. On an error above, the
+    // commitment's queue fences drain before unwinding these input owners.
+    drop(device_quotients);
     transcript.observe_quotient_commitment(&quotient_commit);
 
     // Transcript: Optional ZK randomization polynomial

@@ -196,6 +196,20 @@ __kernel void compress_layer(__global const ulong* in,__global ulong* out,const 
   perm8(s,rci,rcp,rcf,diag);
   for(int k=0;k<4;k++) out[(size_t)j*4+k]=gl_canon(s[k]);
 }
+// Same compression directly between disjoint layers of the final retained tree.
+// Host admission checks both word ranges, total backing, and u32 conversions
+// before enqueue. One work item owns one output digest; all source words are
+// read into private state before any write. No extra leaf/parent buffer exists.
+__kernel void compress_retained_layer(__global ulong* tree,
+                                      const uint src_offset_words,const uint dst_offset_words,const uint n_out,
+                                      __global const ulong* rci,__global const ulong* rcp,__global const ulong* rcf,__global const ulong* diag){
+  size_t j=get_global_id(0); if(j>=n_out) return;
+  size_t src=(size_t)src_offset_words+j*8;
+  size_t dst=(size_t)dst_offset_words+j*4;
+  ulong s[8]; for(int k=0;k<4;k++){ s[k]=tree[src+k]; s[4+k]=tree[src+4+k]; }
+  perm8(s,rci,rcp,rcf,diag);
+  for(int k=0;k<4;k++) tree[dst+k]=gl_canon(s[k]);
+}
 // elementwise dst[i] = canon(dst[i] + src[i]) — the hiding-quotient "add the vanishing randomizer"
 // step, fused with the final canonicalization (both NTT results arrive uncanonicalized).
 __kernel void add_canon(__global ulong* dst,__global const ulong* src,const uint n){

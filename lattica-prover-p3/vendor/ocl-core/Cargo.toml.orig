@@ -1,0 +1,42 @@
+[package]
+name = "ocl-core"
+version = "0.11.5"
+authors = ["Nick Sanders <cogciprocate@gmail.com>"]
+description = "A low-level OpenCL API."
+documentation = "https://docs.rs/ocl-core/"
+homepage = "https://github.com/cogciprocate/ocl/tree/master/ocl-core"
+repository = "https://github.com/cogciprocate/ocl/tree/master/ocl-core"
+readme = "README.md"
+keywords = ["opencl", "gpu", "gpgpu"]
+license = "MIT OR Apache-2.0"
+exclude = ["target/*", "bak/*"]
+categories = ["asynchronous", "concurrency", "science", "api-bindings"]
+edition = "2018"
+
+[features]
+bounded-info = []
+opencl_version_1_1 = ["cl-sys/opencl_version_1_1"]
+opencl_version_1_2 = ["cl-sys/opencl_version_1_2"]
+opencl_version_2_0 = ["cl-sys/opencl_version_2_0"]
+opencl_version_2_1 = ["cl-sys/opencl_version_2_1"]
+opencl_vendor_mesa = ["cl-sys/opencl_vendor_mesa"]
+
+default = ["opencl_version_1_1", "opencl_version_1_2", "ocl-core-vector"]
+
+[dependencies]
+cl-sys = { version = "~0.4.2", path = "../cl-sys" }
+num-traits = "0.2"
+num-complex = "0.4"
+enum_primitive = "0.1"
+bitflags = "1"
+thiserror = "1.0"
+
+# Implements all of the vector types and traits.
+ocl-core-vector = { version = "0.1", path = "ocl-core-vector", optional = true }
+
+[dev-dependencies]
+colorify = "0.2"
+rand = { version = "0.8", features = ["small_rng"] }
+
+[build-dependencies]
+rustc_version = "0.4"

@@ -39,7 +39,9 @@ impl CandidateMmcs {
         let path_bytes = (height.ilog2() as usize).saturating_sub(self.cap_height) * 32;
         // At most one matrix's raw result and gather tile coexist with earlier
         // result rows. Include row/path/salt copies during final proof assembly.
-        Ok(2 * queries * (fields * 8 + path_bytes) + HOST_METADATA)
+        Ok(2 * queries * (fields * 8 + path_bytes)
+            + queries * core::mem::size_of::<Vec<[Val; 4]>>()
+            + HOST_METADATA)
     }
 
     pub(crate) fn open_owned_queries<M>(
@@ -101,12 +103,15 @@ impl CandidateMmcs {
             retained_value_bytes += indices.len() * width * 8;
         }
         let salt_rows = salts.gather(session, indices, host_peak - retained_value_bytes)?;
+        // Host-backed trees upload once for the complete query batch; the
+        // unchanged GPU gather kernel still selects every authentication path.
+        let paths = tree.open_many(indices, self.cap_height)?;
         indices
             .iter()
             .zip(values)
             .zip(salt_rows)
-            .map(|((&index, values), salt_rows)| {
-                let path = tree.open(index, self.cap_height)?;
+            .zip(paths)
+            .map(|(((_index, values), salt_rows), path)| {
                 Ok(BatchOpening::new(values, (salt_rows, path)))
             })
             .collect()

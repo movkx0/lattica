@@ -1,0 +1,77 @@
+{
+  "qualification": "source pins only; no runtime authority",
+  "files": [
+    {
+      "path": "lattica-prover-p3/src/block_v2/codec.rs",
+      "sha256": "e70aa90ccaa5d24d8490f4ae7f670498322e0f14bfc2aa5c02be0434262f55ca"
+    },
+    {
+      "path": "lattica-prover-p3/src/block_v2/codec/proofs.rs",
+      "sha256": "71b709dbdacdbc888409ae378b09110bcd221a44bf1e7f6d54930d5c02799bc7"
+    },
+    {
+      "path": "lattica-prover-p3/src/block_v2/codec/proofs/schema.rs",
+      "sha256": "0c87ec0b97cdabb0b09f495a55b7c19832835362fd3f4462d6dd011cd0b2748b"
+    },
+    {
+      "path": "lattica-prover-p3/src/block_v2/codec/fixed_u64.rs",
+      "sha256": "a052e4f8a0e8753ba2e7c3ff76bb0367e7f90937c633f03fcf5d5871ada7bf83"
+    },
+    {
+      "path": "lattica-prover-p3/src/block_v2/profile.rs",
+      "sha256": "3c303e53f2ca79c7049f799ea710fedfec0656318af5c09150c243d2dd5be6cf"
+    },
+    {
+      "path": "lattica-prover-p3/src/block_v2/machine/air.rs",
+      "sha256": "6789a6bcbeb17e643b52226acf79ff7d70443143f3358762c7037d637d530d91"
+    },
+    {
+      "path": "lattica-prover-p3/src/block_v2/machine/program.rs",
+      "sha256": "7e86bd0802a493866d0651d059dfc2b6a46fb5744c384d9ff6754c138796e8e1"
+    },
+    {
+      "path": "lattica-prover-p3/src/block_v2/machine/analysis.rs",
+      "sha256": "17f28a29a296a661ec4a669a902c6b9e5ff63ed5cbc650adb805f22cee35ff79"
+    },
+    {
+      "path": "lattica-prover-p3/src/block_v2/machine/symbolic/lookup.rs",
+      "sha256": "53f5b805f68817597be0ac22aed32bbbeb73c916cf74c5bc1578e7bcd1e932ad"
+    },
+    {
+      "path": "lattica-prover-p3/src/block_v2/machine/symbolic/mod.rs",
+      "sha256": "35a460194322de2e328fc3b4c3dea282aa38d25de6b5d0263fa1270dd594fc65"
+    },
+    {
+      "path": "lattica-prover-p3/src/block_v2/machine/verifier/template.rs",
+      "sha256": "34841589a3c36dd5e7ed005e57c17cd8a52fef7e63231b2514d69be04227dc98"
+    },
+    {
+      "path": "lattica-prover-p3/src/block_v2/machine/backend/verification_outcome.rs",
+      "sha256": "0bd64539ff797d1250a16e926daf7ea59986ae65029a594b66dbb739370d0f08"
+    },
+    {
+      "path": "lattica-prover-p3/src/block_v2/machine/backend/verification_lifetimes.rs",
+      "sha256": "eaab4492b358b7b243ce8ab468eef8909a9bdd3292c17bbbeccffd05be3c2e39"
+    },
+    {
+      "path": "research/pq-ringct/src/ordered_aggregation/contract.rs",
+      "sha256": "3a83fa5db905284f190850a466163df4b901800734183404424ac538f1f55f90"
+    },
+    {
+      "path": "research/pq-ringct/src/ordered_aggregation/source.rs",
+      "sha256": "27fe0746c60f03960e6ec35214e081ddfa2b041b67ab9cb5bd4d9f5aaf2d6f6d"
+    },
+    {
+      "absolute_path": "/home/access/code/lattica/.tools/rust-1.96.0/lib/rustlib/src/rust/library/std/src/sys/helpers/small_c_string.rs",
+      "sha256": "6f8b59e7841fcd20e24809e2f182b7120e4c2edff2917877e6de2a5cf5436a73"
+    },
+    {
+      "absolute_path": "/home/access/code/lattica/.tools/rust-1.96.0/lib/rustlib/src/rust/library/std/src/sys/fs/unix.rs",
+      "sha256": "a25523228b0ba0dbf53aaa478b52e42021513d6563df033a34896ed31a20c3a5"
+    },
+    {
+      "absolute_path": "/home/access/code/lattica/.tools/rust-1.96.0/lib/rustlib/src/rust/library/std/src/sys/fd/unix.rs",
+      "sha256": "c85969b3ae1d20d5e17068a4aeb6ab0313235dc1ea65ed24dde47d73e505a32e"
+    }
+  ]
+}

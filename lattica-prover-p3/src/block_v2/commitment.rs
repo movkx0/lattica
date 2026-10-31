@@ -402,6 +402,9 @@ pub(crate) fn root_with_hash<E: From<CommitmentError>>(
 }
 
 #[cfg(test)]
+mod cpu_public_hash_probe;
+
+#[cfg(test)]
 mod tests {
     use super::*;
 

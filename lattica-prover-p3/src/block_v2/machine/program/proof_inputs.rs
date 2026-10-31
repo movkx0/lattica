@@ -14,7 +14,12 @@ pub struct ProofInputs {
 fn reject(b: &mut ProgramBuilder<'_>) -> CompileError {
     b.memory.reject();
     b.memory.report("rejected");
-    CompileError::Shape("proof input storage allowance")
+    // memory.reject() sets the same sticky flag whose typed error is TooLarge.
+    // Do not classify an arbitrary proof Shape or Backend string as admission.
+    match b.resource_failure() {
+        Some(error) => CompileError::from_builder_admission(error, "proof input storage allowance"),
+        None => CompileError::Shape("proof input storage allowance"),
+    }
 }
 
 impl ProofInputs {

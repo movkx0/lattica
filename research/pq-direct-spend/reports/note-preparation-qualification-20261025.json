@@ -1,0 +1,70 @@
+{
+  "schema": "private-note-preparation-qualification-v1",
+  "research_only": true,
+  "snapshot": "preparation002",
+  "tests_passed": 6,
+  "scope": [
+    "same-decoder-quota ownership across moves and session retirement",
+    "invalid-input cleanup",
+    "fresh RNG requests include per-request rejection ceilings",
+    "no allocation or entropy during stream planning",
+    "planner refuses insufficient preclaim before program planning",
+    "fixed planner capacities preserve existing report values"
+  ],
+  "gpu_work_performed": false,
+  "private_trace_or_proof_dispatch_enabled": false,
+  "configuration_creation_fully_admitted": false,
+  "production_acceptance_changed": false,
+  "resource_limits_changed": false,
+  "lockfile_change": "Added existing p3-maybe-rayon dependency to core package due stream activation; no package versions or checksums changed.",
+  "preserved_failure": "Initial locked build refused missing optional stream dependency; corrected root lockfile only.",
+  "validation": {
+    "fullgpu-note-preparation-tests-1": {
+      "status": "failed_or_incomplete",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "db08dac28654c73b5dc905f0c25cd0e225f7e72aef4bc7e5d0c32dbe1078350d",
+      "raw_log_sha256": "69ce9fbf118bacf368f58e7b140a3da16fafeccbdf4850cf2bc9bf9607303011",
+      "guard_wall_seconds": 2.097901783999987,
+      "guarded_job_peak_bytes": "15134720",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-note-preparation-tests-2": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "64ae9d193ddf89bee6470680de188ea662b2109e12e67c74fc6133e51efdf065",
+      "raw_log_sha256": "8f5712d5374a210e4c479f7854dd538cd2661fb4e829934389dd96ce8fae35d1",
+      "guard_wall_seconds": 50.170658238988835,
+      "guarded_job_peak_bytes": "1695293440",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-redux-preparation-core-build-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "b07925283eddf4f959eb390cf31603f8eb351d3d60711c756336d0eacb6617e0",
+      "raw_log_sha256": "32fd56ac08d1f5c8433f3f8cc7b015a2a6fc9a19b5ffef290f3b7b854b0c4bdc",
+      "guard_wall_seconds": 244.53153090001433,
+      "guarded_job_peak_bytes": "5408468992",
+      "built_artifact_sha256": {
+        "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/target-opencl/release/deps/lattica_prover_p3-6c59e7fc97392413": "c79753707d1dbeaee1151891a83105a04ebe2763cdcc7cb8545aa0c4c01795aa"
+      }
+    },
+    "fullgpu-note-randomness-tests-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "7e7d4b9972bb657e52e0d25f836cc2be755c12dccb7dd165d58ec518e56c3cba",
+      "raw_log_sha256": "dbc3d01ea06e6d731b292590f79e9857234e8ac9ccef12cfc060940a389b6e62",
+      "guard_wall_seconds": 0.07944829401094466,
+      "guarded_job_peak_bytes": "2621440",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-note-planner-tests-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "a6135bcc30a94fd7104f2629a56b3934d56c6bbc9bd1947eebe60e8a7a4f37bc",
+      "raw_log_sha256": "48c8203434dc7a73797a5d12965a533067677261a701270c3806d104d31ea2fc",
+      "guard_wall_seconds": 2.082330014993204,
+      "guarded_job_peak_bytes": "2768896",
+      "built_artifact_sha256": {}
+    }
+  }
+}

@@ -1,0 +1,216 @@
+{
+  "schema": "lattica-opencl-recursive-benchmark-v1",
+  "recorded_at_utc": "2026-10-29T01:16:16.984379+00:00",
+  "local_date": "2026-10-28",
+  "source_commit": "e860ab348cebe743f754446841120409c090ced1",
+  "git_pull": "git pull --ff-only origin main succeeded; already up to date",
+  "backend": "OpenCL",
+  "gpu": "NVIDIA GeForce RTX 5080",
+  "gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+  "driver": "615.78.08",
+  "block_capacity": 128,
+  "construction": "paired with root promotion",
+  "source_files_verified": 1077,
+  "builds": [
+    {
+      "backend": "opencl",
+      "command": [
+        "cargo",
+        "build",
+        "--offline",
+        "--locked",
+        "--release",
+        "--no-default-features",
+        "--features",
+        "block-v2-wide-lanes,stream,block-v2-capacity-128,gpu",
+        "-j",
+        "1",
+        "--bin",
+        "block-v2-paired-probe"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 146.7049768869765,
+      "rustflags": "-C target-cpu=x86-64-v3",
+      "binary": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/opencl-recursive-20261029T005547Z/run-02/opencl-cli",
+      "sha256": "bbbc0b975f4a3a3cc0e5ccd0bf95214a3c95da2fc8dbe7ceecc6e59a394e6dee",
+      "capacity": "{\"candidate_profile_id\":[76,65,84,84,73,67,65,45,66,76,79,67,75,45,86,50,45,67,65,78,68,73,68,65,84,69,45,48,48,49,50,56],\"max_transactions\":128,\"planned_capacities\":[256,512],\"schema\":\"lattica-block-capacity-v1\",\"tree_depth\":7}\n",
+      "original_binary": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/opencl-recursive-20261029T005547Z/opencl-cli"
+    },
+    {
+      "backend": "cpu",
+      "command": [
+        "cargo",
+        "build",
+        "--offline",
+        "--locked",
+        "--release",
+        "--no-default-features",
+        "--features",
+        "block-v2-wide-lanes,stream,block-v2-capacity-128",
+        "-j",
+        "1",
+        "--bin",
+        "block-v2-paired-probe"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 83.36565143699409,
+      "rustflags": "-C target-cpu=x86-64-v3",
+      "binary": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/opencl-recursive-20261029T005547Z/run-02/cpu-cli",
+      "sha256": "19d887d9a4d6c12d445d8b6543066324f23f575240322a8c4a61cc256675c8b5",
+      "capacity": "{\"candidate_profile_id\":[76,65,84,84,73,67,65,45,66,76,79,67,75,45,86,50,45,67,65,78,68,73,68,65,84,69,45,48,48,49,50,56],\"max_transactions\":128,\"planned_capacities\":[256,512],\"schema\":\"lattica-block-capacity-v1\",\"tree_depth\":7}\n",
+      "original_binary": "/home/access/code/lattica/lattica-prover-p3/benchmark-results/opencl-recursive-20261029T005547Z/cpu-cli"
+    }
+  ],
+  "workloads": [
+    {
+      "inputs": 4,
+      "user_transactions": 3,
+      "issuance_entries": 1,
+      "whole_launcher_seconds": {
+        "samples": [
+          37.71013414399931,
+          39.31062224099878,
+          38.810853834991576
+        ],
+        "median": 38.810853834991576,
+        "min": 37.71013414399931,
+        "max": 39.31062224099878
+      },
+      "proof_observations_seconds": {
+        "samples": [
+          32.459,
+          33.442,
+          33.374
+        ],
+        "median": 33.374,
+        "min": 32.459,
+        "max": 33.442
+      },
+      "aggregation_equivalent_user_transactions_per_hour": 278.2726720189495,
+      "worker_host_peak_bytes": 1243066368,
+      "managed_gpu_peak_bytes": 7467255616
+    },
+    {
+      "inputs": 8,
+      "user_transactions": 6,
+      "issuance_entries": 2,
+      "whole_launcher_seconds": {
+        "samples": [
+          66.7978510390094,
+          66.89618318300927,
+          66.29720216599526
+        ],
+        "median": 66.7978510390094,
+        "min": 66.29720216599526,
+        "max": 66.89618318300927
+      },
+      "proof_observations_seconds": {
+        "samples": [
+          60.489,
+          60.303,
+          60.184
+        ],
+        "median": 60.303,
+        "min": 60.184,
+        "max": 60.489
+      },
+      "aggregation_equivalent_user_transactions_per_hour": 323.36369604743385,
+      "worker_host_peak_bytes": 1243213824,
+      "managed_gpu_peak_bytes": 7467255616
+    }
+  ],
+  "acceptance": {
+    "status": "passed",
+    "accepted_trials": 8,
+    "measured_trials": 6,
+    "warmup_trials": 2,
+    "independently_cpu_verified_proofs": 48,
+    "independently_cpu_verified_roots": 8,
+    "source_files_checked": 1077,
+    "all_owner_and_worker_services_quiescent": true,
+    "controller_retired": true,
+    "memory_limit_events": 0,
+    "initial_excluded_warmup_also_cpu_verified": true
+  },
+  "historical_cuda_comparison": [
+    {
+      "inputs": 4,
+      "opencl_launcher_median_seconds": 38.810853834991576,
+      "historical_cuda_launcher_median_seconds": 57.88651838700025,
+      "launcher_time_reduction_percent": 32.95355306131618,
+      "opencl_proof_interval_median_seconds": 33.374,
+      "historical_cuda_proof_interval_median_seconds": 50.988,
+      "historical_comparison_only": true,
+      "matched_interleaved_backend_comparison": false
+    },
+    {
+      "inputs": 8,
+      "opencl_launcher_median_seconds": 66.7978510390094,
+      "historical_cuda_launcher_median_seconds": 106.25394286699998,
+      "launcher_time_reduction_percent": 37.13376724041054,
+      "opencl_proof_interval_median_seconds": 60.303,
+      "historical_cuda_proof_interval_median_seconds": 98.11,
+      "historical_comparison_only": true,
+      "matched_interleaved_backend_comparison": false
+    }
+  ],
+  "scope": "Fresh-worker recursive aggregation using fixed public wallet proofs; whole-launcher and summed proof intervals reported separately. Independent CPU audits follow timing.",
+  "limits": {
+    "worker_host_bytes": 3221225472,
+    "coordinator_host_bytes": 1073741824,
+    "fleet_host_bytes": 4294967296,
+    "managed_gpu_bytes": 7516192768,
+    "gpu_context_allowance_bytes": 4294967296,
+    "gpu_max_allocation_bytes": 1073741824,
+    "gpu_headroom_bytes": 1073741824,
+    "worker_threads": 4,
+    "swap_bytes": 0
+  },
+  "telemetry_errors": [],
+  "limitations": [
+    "Aggregation-equivalent rates are not delivered transaction throughput.",
+    "Wallet generation, native/durable application and separate CPU audits are excluded.",
+    "Desktop/SteamVR/browser processes remained present.",
+    "Historical CUDA results are not a simultaneous matched-backend comparison.",
+    "One initial warmup completed its GPU proofs but hit a harness result-collection error. It was independently CPU-audited and excluded; the corrected campaign contains one accepted warmup and three measurements per count.",
+    "Managed GPU allocation peaks exclude display/driver/context allocations."
+  ],
+  "evidence": {
+    "result.json": {
+      "path": "lattica-prover-p3/benchmark-results/opencl-recursive-20261029T005547Z/run-02/result.json",
+      "sha256": "b6abca831f79435e403942c022b8bbaf961816bd5fca15bd555ac917ae8c5abf"
+    },
+    "final-acceptance.json": {
+      "path": "lattica-prover-p3/benchmark-results/opencl-recursive-20261029T005547Z/run-02/final-acceptance.json",
+      "sha256": "fe0709d2da3552be0940b509e9b6c7cddd8ddb032f457914a8ffe04e934b05d6"
+    },
+    "identity.json": {
+      "path": "lattica-prover-p3/benchmark-results/opencl-recursive-20261029T005547Z/run-02/identity.json",
+      "sha256": "a40ceefa846bd4696398fa8c345dbeaea3a43caf2b7b0f4347eaec191b84bf7c"
+    },
+    "source-pins.json": {
+      "path": "lattica-prover-p3/benchmark-results/opencl-recursive-20261029T005547Z/run-02/source-pins.json",
+      "sha256": "3e8591bc5f532329cb03465a5958bcf99473dab2f0c0d03e55b3986e52f0ef1f"
+    },
+    "build-result.json": {
+      "path": "lattica-prover-p3/benchmark-results/opencl-recursive-20261029T005547Z/run-02/build-result.json",
+      "sha256": "10d259ebeb8520acf7ef3a06521d271de8204b2c21fb6b6429b812d6821a6248"
+    },
+    "benchmark.py": {
+      "path": "lattica-prover-p3/benchmark-results/opencl-recursive-20261029T005547Z/run-02/benchmark.py",
+      "sha256": "f7434d9f6687944a5dc6b13eca0140354d1fa4bfa30470ce2935c83676e74bec"
+    },
+    "controller-terminal.json": {
+      "path": "lattica-prover-p3/benchmark-results/opencl-recursive-20261029T005547Z/run-02/controller-terminal.json",
+      "sha256": "1b84f984d8b07fa47c941e9855f27ad101ffa419f09cae39bde5177940668a8c"
+    },
+    "controller-retired.json": {
+      "path": "lattica-prover-p3/benchmark-results/opencl-recursive-20261029T005547Z/run-02/controller-retired.json",
+      "sha256": "a0608808ec77eaf00ea0d0d6bf7bf9ad944b66ba90821f3d40fbf27d19a73692"
+    }
+  },
+  "historical_cuda_evidence": {
+    "path": "docs/evidence/cuda-event-pool-comparison-2026-10-20.json",
+    "sha256": "aa1c86d31e9ae4fcb38d8c8128a396552fc066109cf1fa0ff608835258d97b31"
+  }
+}

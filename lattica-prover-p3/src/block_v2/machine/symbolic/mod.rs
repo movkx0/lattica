@@ -34,6 +34,10 @@ const MAX_NODES: usize = 1 << 17;
 /// Additional transient compiler graph/memo space, beyond the existing program
 /// and public-hash buffers. Workers reserve it before starting GPU compilation.
 pub(crate) const HOST_BYTES: u64 = 192 << 20;
+/// A normalized single-AIR graph is owned by its caller until lowering ends.
+/// It can overlap that caller's program and later symbolic workspaces; do not
+/// treat the transient `HOST_BYTES` reservation as a lifetime reservation.
+pub(crate) const UNI_RETAINED_HOST_BYTES: usize = normalize::HOST_BYTES;
 /// Packed lookup backing arrays, names and shared expression Arcs retained by
 /// each GPU-prepared AIR. Enforced by the packer's capacity/ownership census.
 /// A cached output can overlap another symbolic workspace, so enclosing cache
@@ -379,19 +383,29 @@ where
     match constants {
         Constants::Cpu(run) => Constants::cpu_work(run, || native_uni(air)),
         #[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
-        _ => {
-            let constraints = uni(air, constants)?;
-            if !constraints.extension.is_empty() {
-                return Err(CompileError::Unsupported("uni extension constraints"));
-            }
-            let actual = constraints.max_degree();
-            let degree = air.max_constraint_degree().unwrap_or(actual);
-            if degree < actual {
-                return Err(CompileError::Shape("symbolic degree hint"));
-            }
-            Ok((constraints.base, log_chunks(degree)))
-        }
+        _ => prepare_uni_bounded(air, constants),
     }
+}
+
+/// Explicitly bounded recording and normalization, including on the CPU. AIR
+/// callbacks' own allocations are outside these two enforced 64 MiB quotas.
+pub(crate) fn prepare_uni_bounded<A>(
+    air: &A,
+    constants: Constants<'_>,
+) -> Result<(Vec<BaseExpr>, usize), CompileError>
+where
+    A: BaseAir<Val> + Air<Builder>,
+{
+    let constraints = uni(air, constants)?;
+    if !constraints.extension.is_empty() || !constraints.order.ext_indices.is_empty() {
+        return Err(CompileError::Unsupported("uni extension constraints"));
+    }
+    let actual = constraints.max_degree();
+    let degree = air.max_constraint_degree().unwrap_or(actual);
+    if degree < actual {
+        return Err(CompileError::Shape("symbolic degree hint"));
+    }
+    Ok((constraints.base, log_chunks(degree)))
 }
 pub(crate) fn native_uni<A>(air: &A) -> (Vec<BaseExpr>, usize)
 where
@@ -403,3 +417,38 @@ where
         p3_uni_stark::get_log_num_quotient_chunks::<Val, A>(air, layout, 1),
     )
 }
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+#[doc(hidden)]
+pub mod ringct_shake;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+#[doc(hidden)]
+pub mod ringct_aes;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+#[doc(hidden)]
+pub mod ringct_graph_source;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub mod ringct_uniform;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub mod ringct_transcript;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub mod ringct_affine;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub mod ringct_sparse;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub mod ringct_ntt;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub mod ringct_mul;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub mod ringct_g_bound;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub mod ringct_permutation;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub mod ringct_linear_map;

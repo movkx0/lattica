@@ -1,0 +1,91 @@
+{
+  "schema": "closed-outer-backend-qualification-v1",
+  "snapshots": [
+    "B011",
+    "B012"
+  ],
+  "source_scope": "Backend-specific outer planning and closed pre-session ledger reservation; direct consuming body shared without changing direct formulas.",
+  "pure_tests_passed": 9,
+  "fresh_gpu_consuming_equivalence_test_passed": true,
+  "independent_cpu_verification_after_shutdown": true,
+  "complete_direct_memory_diagnostic_unchanged": true,
+  "complete_diagnostic_sha256": "c91d12b47975f367e82c2b75eac2425c17485e7deaff70beff4610ebd6510897",
+  "paired_dispatch_enabled": false,
+  "workflow_authority_granted": false,
+  "remaining_boundaries": [
+    "whole source-graph ownership",
+    "runtime report/error allocation closure",
+    "cleanup lifetime for enclosing producer"
+  ],
+  "resource_limits_changed": false,
+  "production_acceptance_changed": false,
+  "validation": {
+    "fullgpu-closed-outer-research-build-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "b045249f03c28d5adefe53d0db6eaa8359c97fcf8f3cf1c62578172435eeafdf",
+      "raw_log_sha256": "29891a7279d70db669b30ddbcae991de42c50361cd1ba3a930bcc9649ea36a04",
+      "guard_wall_seconds": 76.23651611901005,
+      "guarded_job_peak_bytes": "1499410432",
+      "built_artifact_sha256": {
+        "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/target-opencl/release/deps/lattica_pq_ringct_research-3dd0ddffaf022116": "b2e0f5c8a084611c2e4714b5f71d63cd29ce34b19bd1730cb919f6042683f951"
+      }
+    },
+    "fullgpu-closed-outer-reservation-tests-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "c343e29bbf685c72a53c8ed201c011df16aff23d20a0eaafd6e7fba96b75a9f5",
+      "raw_log_sha256": "cf01f58e8eb29a579bd69444fbf5b92ce0b7f73c2c8a17c4eddbc0a5e931f493",
+      "guard_wall_seconds": 0.08262981101870537,
+      "guarded_job_peak_bytes": "2883584",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-closed-outer-memory-diagnostic-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "74ef9f54bb5c6ffa9c3565f79eb1674495b7128f2e87f303f6256119874ec46e",
+      "raw_log_sha256": "bea3ffd66c1afe3fa652246fe7238c000c17dec367b6a304292bf96ddc049cbb",
+      "guard_wall_seconds": 76.24314829800278,
+      "guarded_job_peak_bytes": "1531842560",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-closed-outer-core-build-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "af44d16a10d261b101273d6f321116c26cd1bc6849ef9a24cef50998820b5807",
+      "raw_log_sha256": "913f931c6749c3a39097f77cbefe0764fcdd1eccf890fa5bc17cc1aa9c7a4cfb",
+      "guard_wall_seconds": 242.53564519801876,
+      "guarded_job_peak_bytes": "5431357440",
+      "built_artifact_sha256": {
+        "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/target-opencl/release/deps/lattica_prover_p3-6c59e7fc97392413": "f0f0d2b05ef34027ae3050dd2b2d50ad5d2d8548f85e47ec8f21051a5a33a22a"
+      }
+    },
+    "fullgpu-closed-outer-partition-tests-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "4e980003024be78018b40d4fd8feecf120c8c1f400e85621447027e853afbd0b",
+      "raw_log_sha256": "2562777e5e9132bd30a074a589ce92d844d7e5d65b5686000005c68e48a1191d",
+      "guard_wall_seconds": 0.08599464199505746,
+      "guarded_job_peak_bytes": "2592768",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-closed-outer-consuming-tests-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "5184479b45ce2fff1e61454142883c7f46080237034f1baa528ffbbaaad391eb",
+      "raw_log_sha256": "82cd197e492e1216c31acca1dd783e28daf254103059baff2506564597161a52",
+      "guard_wall_seconds": 0.08016813598806038,
+      "guarded_job_peak_bytes": "2600960",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-closed-outer-small-consuming-gpu-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "30c1edfd6d9b3578fac72ace741f513248e2da2264c764380dc1766d15fa27f4",
+      "raw_log_sha256": "c785aaafe15bdfa0f1afaf4ca35decb91f117906b515de223a87e14233840c08",
+      "guard_wall_seconds": 2.0841547529853415,
+      "guarded_job_peak_bytes": "262086656",
+      "built_artifact_sha256": {}
+    }
+  }
+}

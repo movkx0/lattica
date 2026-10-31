@@ -2,7 +2,7 @@
 //! No kernels or reservations: execution must replan under the engine mutex.
 //! Column tiles preserve whole transforms; arbitrary row chunks do not.
 //! Host output is explicit; device-only plans retain prefixes without readback.
-use super::{plan_slots, retained_layout, Limits, CONSTANT_BYTES, QUERY_ELEMENTS};
+use super::{direct_tree::OwnedHashPlan, retained_layout, Limits, CONSTANT_BYTES, QUERY_ELEMENTS};
 
 const MAX_MATRICES: usize = 256;
 const SALT_COLUMNS: usize = 4;
@@ -30,6 +30,114 @@ pub struct InputShape {
     pub width: usize,
     pub added_bits: usize,
 }
+
+/// Allocation-free feasibility for the runtime's smallest complete transform
+/// tile. The runtime may choose a larger tile under the same managed ceiling.
+/// `live` includes all source/prefix/salt owners, with replaceable scratch
+/// already retired. No claim about observed peak or proving time is made.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct DeviceMinimum {
+    pub minimum_peak_bytes: usize,
+    pub largest_allocation_bytes: usize,
+    pub hash_workspace_bytes: usize,
+    pub full_tree_bytes: usize,
+    pub sponge_bytes: usize,
+    pub transform_buffer_bytes: usize,
+}
+
+pub(crate) fn device_minimum(
+    inputs: &[InputShape],
+    cap_height: usize,
+    limits: Limits,
+    max_allocation: usize,
+    slots: usize,
+    live: usize,
+    transform_allowance: usize,
+    tree_mode: super::RetainedTreeStorageMode,
+) -> Result<DeviceMinimum, String> {
+    if inputs.is_empty() || inputs.len() > MAX_MATRICES {
+        return Err("LDE feasibility matrix count".into());
+    }
+    let mut output_height = 0usize;
+    let mut width = 0usize;
+    for input in inputs {
+        if input.height < 2
+            || !input.height.is_power_of_two()
+            || input.height > u32::MAX as usize
+            || input.width == 0
+            || input.width > u32::MAX as usize
+            || input.added_bits >= 32
+        {
+            return Err("LDE feasibility input geometry".into());
+        }
+        let height = input
+            .height
+            .checked_shl(input.added_bits as u32)
+            .filter(|&n| n <= u32::MAX as usize && n >= input.height)
+            .ok_or("LDE feasibility height overflow")?;
+        if output_height != 0 && output_height != height {
+            return Err("LDE feasibility requires equal output heights".into());
+        }
+        output_height = height;
+        width = add(width, add(input.width, SALT_COLUMNS)?)?;
+    }
+    let persistent = add(CONSTANT_BYTES, limits.staging_bytes)?;
+    if live < persistent {
+        return Err("LDE feasibility omits engine backing".into());
+    }
+    let hash = OwnedHashPlan::new(
+        output_height,
+        width,
+        limits,
+        max_allocation,
+        slots,
+        tree_mode,
+    )?;
+    let hash_workspace_bytes = add(hash.bytes, super::transport_bytes(limits))?;
+    let full_tree_bytes =
+        bytes(retained_layout(output_height, cap_height, max_allocation)?.elements)?;
+    let sponge_bytes = bytes(mul(output_height, SPONGE_COLUMNS)?)?;
+    let transform_buffer_bytes = bytes(output_height)?;
+    let twiddles = bytes(2 * output_height.ilog2() as usize)?;
+    let query = bytes(QUERY_ELEMENTS)?;
+    let mut largest = [
+        full_tree_bytes,
+        sponge_bytes,
+        transform_buffer_bytes,
+        twiddles / 2,
+        query,
+        hash.largest_allocation,
+    ]
+    .into_iter()
+    .max()
+    .unwrap();
+    largest = largest.max(limits.staging_bytes / slots);
+    if largest > max_allocation || mul(2, transform_buffer_bytes)? > transform_allowance {
+        return Err("LDE complete transform column exceeds allocation or scratch allowance".into());
+    }
+    let mut peak = live;
+    for amount in [
+        hash_workspace_bytes,
+        full_tree_bytes,
+        sponge_bytes,
+        mul(2, transform_buffer_bytes)?,
+        twiddles,
+        query,
+    ] {
+        peak = add(peak, amount)?;
+    }
+    if peak > limits.managed_bytes {
+        return Err("LDE minimum complete transform exceeds managed allowance".into());
+    }
+    Ok(DeviceMinimum {
+        minimum_peak_bytes: peak,
+        largest_allocation_bytes: largest,
+        hash_workspace_bytes,
+        full_tree_bytes,
+        sponge_bytes,
+        transform_buffer_bytes,
+    })
+}
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ColumnTile {
     pub matrix: usize,
@@ -54,6 +162,13 @@ pub struct LdeCommitPlan {
     pub sponge_state_bytes: usize,
     pub hash_workspace_bytes: usize,
     pub retained_tree_bytes: usize,
+    /// The full original device tree remains live throughout construction.
+    /// These fields describe its separate immutable ownership after commit.
+    pub tree_storage_mode: super::RetainedTreeStorageMode,
+    pub retained_tree_device_bytes: usize,
+    /// Charged within the separately reserved worker host-tree quota. This is
+    /// additional to the LDE output/reorder allowance, never free host storage.
+    pub retained_tree_host_bytes: usize,
     pub twiddle_bytes: usize,
     pub query_reserve_bytes: usize,
     pub predicted_managed_peak_bytes: usize,
@@ -272,13 +387,27 @@ impl LdeCommitPlan {
         if host_output_backing_bytes > host_output_budget_bytes {
             return Err("LDE host readback exceeds caller allowance".into());
         }
-        let hash = plan_slots(output_height, total_row_width, limits, max_alloc, slots)?;
-        let hash_workspace_bytes = hash
-            .bytes
-            .checked_sub(persistent_minimum)
-            .ok_or("hash workspace accounting underflow")?;
+        let tree_selection = super::retained_storage::Selection::from_env()?;
+        let hash = OwnedHashPlan::new(
+            output_height,
+            total_row_width,
+            limits,
+            max_alloc,
+            slots,
+            tree_selection.mode,
+        )?;
+        let hash_workspace_bytes = add(hash.bytes, super::transport_bytes(limits))?;
         let retained_tree_bytes =
             bytes(retained_layout(output_height, cap_height, max_alloc)?.elements)?;
+        let retained_tree_host_bytes =
+            tree_selection.charged_tree_bytes(output_height, cap_height)?;
+        if retained_tree_host_bytes > tree_selection.host_bytes {
+            return Err("completed tree exceeds its host-tree quota".into());
+        }
+        let retained_tree_device_bytes = match tree_selection.mode {
+            super::RetainedTreeStorageMode::Device => retained_tree_bytes,
+            super::RetainedTreeStorageMode::HostBacking => 0,
+        };
         let sponge_state_bytes = bytes(mul(output_height, SPONGE_COLUMNS)?)?;
         if sponge_state_bytes > max_alloc {
             return Err("resident sponge state exceeds device allocation limit".into());
@@ -304,9 +433,14 @@ impl LdeCommitPlan {
             .checked_sub(fixed)
             .ok_or("resident LDE fixed allocations exceed managed budget")?;
         let per_column_bytes = bytes(output_height)?;
-        let transform_allowance = match std::env::var(crate::block_v2::worker_memory::env_name("LDE_SCRATCH_BYTES")) {
+        let transform_allowance = match std::env::var(crate::block_v2::worker_memory::env_name(
+            "LDE_SCRATCH_BYTES",
+        )) {
             Err(std::env::VarError::NotPresent) => usize::MAX,
-            Ok(v) => v.parse::<usize>().ok().filter(|&n| n >= 16 && n % 16 == 0)
+            Ok(v) => v
+                .parse::<usize>()
+                .ok()
+                .filter(|&n| n >= 16 && n % 16 == 0)
                 .ok_or("invalid LDE scratch allowance")?,
             Err(_) => return Err("invalid LDE scratch allowance".into()),
         };
@@ -354,6 +488,9 @@ impl LdeCommitPlan {
             sponge_state_bytes,
             hash_workspace_bytes,
             retained_tree_bytes,
+            tree_storage_mode: tree_selection.mode,
+            retained_tree_device_bytes,
+            retained_tree_host_bytes,
             twiddle_bytes,
             query_reserve_bytes,
             predicted_managed_peak_bytes,
@@ -408,6 +545,174 @@ impl LdeCommitPlan {
 #[cfg(test)]
 #[path = "lde_backing_tests.rs"]
 mod backing_tests;
+
+#[cfg(all(test, feature = "stream"))]
+mod minimum_tests {
+    use super::*;
+    use crate::spill_alloc::allocation_requests::measure;
+
+    #[test]
+    fn allocation_free_minimum_matches_runtime_at_the_one_column_boundary() {
+        let inputs = [InputShape {
+            height: 256,
+            width: 7,
+            added_bits: 4,
+        }; 16];
+        let limits = Limits {
+            managed_bytes: 1 << 30,
+            tile_bytes: 1 << 20,
+            staging_bytes: 4096,
+        };
+        let live = CONSTANT_BYTES + limits.staging_bytes + 8192;
+        let mode = super::super::retained_storage::Selection::from_env()
+            .unwrap()
+            .mode;
+        let (minimum, allocations) = measure(|| {
+            device_minimum(&inputs, 6, limits, 1 << 30, 1, live, usize::MAX, mode).unwrap()
+        });
+        assert_eq!(allocations.calls, 0);
+        assert!(!allocations.overflow);
+        let tight = Limits {
+            managed_bytes: minimum.minimum_peak_bytes,
+            ..limits
+        };
+        let runtime = LdeCommitPlan::new_with_retention(
+            &inputs,
+            6,
+            tight,
+            1 << 30,
+            1,
+            live,
+            0,
+            0,
+            LdeRetention::DeviceOnly,
+            super::super::lde_readback::ReadbackLayout::Direct,
+        )
+        .unwrap();
+        assert_eq!(runtime.columns_per_tile(), 1);
+        assert_eq!(
+            runtime.predicted_managed_peak_bytes,
+            minimum.minimum_peak_bytes
+        );
+        assert_eq!(
+            runtime.transform_buffer_bytes,
+            minimum.transform_buffer_bytes
+        );
+        assert_eq!(runtime.retained_tree_bytes, minimum.full_tree_bytes);
+        assert_eq!(runtime.hash_workspace_bytes, minimum.hash_workspace_bytes);
+        assert_eq!(runtime.sponge_state_bytes, minimum.sponge_bytes);
+        assert!(device_minimum(
+            &inputs,
+            6,
+            Limits {
+                managed_bytes: tight.managed_bytes - 1,
+                ..tight
+            },
+            1 << 30,
+            1,
+            live,
+            usize::MAX,
+            super::super::retained_storage::Selection::from_env()
+                .unwrap()
+                .mode
+        )
+        .is_err());
+        assert!(device_minimum(
+            &inputs,
+            6,
+            limits,
+            minimum.largest_allocation_bytes - 1,
+            1,
+            live,
+            usize::MAX,
+            super::super::retained_storage::Selection::from_env()
+                .unwrap()
+                .mode
+        )
+        .is_err());
+        assert!(device_minimum(
+            &inputs,
+            6,
+            limits,
+            1 << 30,
+            1,
+            live,
+            minimum.transform_buffer_bytes * 2 - 1,
+            super::super::retained_storage::Selection::from_env()
+                .unwrap()
+                .mode
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn minimum_rejects_invalid_geometry_before_allocating() {
+        let limits = Limits::default();
+        let live = CONSTANT_BYTES + limits.staging_bytes;
+        for inputs in [
+            vec![],
+            vec![InputShape {
+                height: 3,
+                width: 7,
+                added_bits: 4,
+            }],
+            vec![InputShape {
+                height: 8,
+                width: 0,
+                added_bits: 4,
+            }],
+            vec![InputShape {
+                height: 8,
+                width: 7,
+                added_bits: 32,
+            }],
+            vec![
+                InputShape {
+                    height: 8,
+                    width: 7,
+                    added_bits: 4,
+                },
+                InputShape {
+                    height: 16,
+                    width: 7,
+                    added_bits: 4,
+                },
+            ],
+        ] {
+            assert!(device_minimum(
+                &inputs,
+                6,
+                limits,
+                1 << 30,
+                1,
+                live,
+                usize::MAX,
+                super::super::retained_storage::Selection::from_env()
+                    .unwrap()
+                    .mode
+            )
+            .is_err());
+        }
+        let input = [InputShape {
+            height: 8,
+            width: 7,
+            added_bits: 4,
+        }];
+        assert!(device_minimum(
+            &input,
+            6,
+            limits,
+            1 << 30,
+            1,
+            live - 1,
+            usize::MAX,
+            super::super::retained_storage::Selection::from_env()
+                .unwrap()
+                .mode
+        )
+        .is_err());
+    }
+}
 
 #[cfg(test)]
 mod tests {

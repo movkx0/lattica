@@ -33,11 +33,13 @@ pub mod host;
 pub mod leaf;
 #[cfg(feature = "gpu")]
 pub(crate) mod legacy_wallet;
+#[cfg(all(feature = "gpu", feature = "stream", feature = "note-research-quota"))]
+pub use legacy_wallet::note_admission;
 #[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
 pub(crate) mod lookup_program;
 pub mod machine;
 #[cfg(feature = "gpu")]
-pub(crate) mod native_gpu;
+pub mod native_gpu;
 #[cfg(all(feature = "gpu", feature = "stream", target_os = "linux"))]
 pub(crate) mod native_public_gpu;
 #[cfg(feature = "stream")]
@@ -47,6 +49,10 @@ mod opening_pcs;
 pub mod pcs_field;
 pub mod perf;
 pub mod profile;
+pub mod native_shake_proof;
+pub mod native_aes_proof;
+pub mod native_graph_source_proof;
+
 pub mod quotient_pcs;
 #[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "gpu-cuda"))]
 pub(crate) mod quotient_program;
@@ -69,3 +75,28 @@ pub(crate) mod cuda_wallet;
 mod batched_fri;
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 mod extension_mmcs;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub mod native_uniform_proof;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub mod native_transcript_proof;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub mod native_affine_proof;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub mod native_sparse_proof;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub mod native_ntt_proof;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub mod native_mul_proof;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub mod native_g_bound_proof;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub mod native_permutation_proof;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub mod native_linear_map_proof;

@@ -1,0 +1,31 @@
+{
+  "schema": "private-note-parent-environment-qualification-v1",
+  "normal_tests_passed": 6,
+  "optimized_python_tests_passed": 6,
+  "scope": "Disconnected parent-side environment construction and validation only",
+  "runner_integration": false,
+  "physical_identity_verified": false,
+  "complete_external_admission": false,
+  "dispatch_authority": false,
+  "source_defaults_changed": false,
+  "validation": {
+    "fullgpu-note-environment-tests-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "b72b6c1912e3b588ab2836a7976901de3983a3a236081a198992d6fe6cee6200",
+      "raw_log_sha256": "65378dcad145da2497120819bebfc3c46534dce9714ce064b3d809a56654aca2",
+      "guard_wall_seconds": 2.0758611769997515,
+      "guarded_job_peak_bytes": "11251712",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-note-environment-optimized-tests-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "5c44e71f06f71944d3d3f9ed14474f5ea65d631016f933de646671f22caefa3a",
+      "raw_log_sha256": "65378dcad145da2497120819bebfc3c46534dce9714ce064b3d809a56654aca2",
+      "guard_wall_seconds": 2.112447956984397,
+      "guarded_job_peak_bytes": "11280384",
+      "built_artifact_sha256": {}
+    }
+  }
+}

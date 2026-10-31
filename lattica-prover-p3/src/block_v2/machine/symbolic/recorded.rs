@@ -77,3 +77,6 @@ impl RecordedUni {
         finish(&self.builder, constants)
     }
 }
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(super) mod ringct;

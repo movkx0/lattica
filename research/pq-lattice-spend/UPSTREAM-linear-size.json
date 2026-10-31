@@ -1,0 +1,13 @@
+{
+  "upstream": "https://github.com/lazer-crypto/lazer",
+  "revision": "10eafeca4cd53ff4fc54193dce904dbd0026fefd",
+  "archive_sha256": "a866a82e6723d8de104a46584d50dff6990e25acc06b4bf174fbce536196e528",
+  "license": "MIT; vendor/lazer-original-size-source/LICENSE",
+  "scope": "Unchanged sizing-source excerpts; not the complete LaZer implementation",
+  "source_files": {
+    "LICENSE": "364d467c45559b6dbb83bd317cbb4e971d02eaabf3c1cd390182b2409cf6cee5",
+    "scripts/codegen.sage": "6fd163ff9e41c359169c1fa1ad113016e7c3843d8041ad2ba98582abe6baca43",
+    "scripts/lin-codegen.sage": "dc8a084f5a848b52ebf5ef4dee9a64f823fdc2a82b361824493442ac34a68ebf",
+    "scripts/lnp-tbox-codegen.sage": "38df3f9e4593e904302eb180b0eec6c22468715817cae6bb93210a6a6e38e7e7"
+  }
+}

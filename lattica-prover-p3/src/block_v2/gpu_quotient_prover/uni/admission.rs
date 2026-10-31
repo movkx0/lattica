@@ -4,7 +4,10 @@ use super::*;
 use crate::block_v2::gpu_hash::device::WalletProofMinimum;
 use crate::block_v2::gpu_quotient_prover::program::ProgramShape;
 use crate::block_v2::machine::verifier::periodic::Source as StaticPeriodicSource;
+mod normalized;
 mod periodic;
+pub(super) use normalized::Input as PreparationInput;
+pub(crate) use normalized::Normalized;
 
 pub(crate) struct Prepared {
     pub(super) recorded: symbolic::RecordedUni,
@@ -21,6 +24,18 @@ impl Prepared {
         extension: Extension,
         host_allowance: usize,
     ) -> Result<Self, String> {
+        Self::new_with_source(air, air, rows, extension, host_allowance)
+    }
+
+    /// An independently supplied public source keeps native research AIRs out
+    /// of the core crate without invoking their owned periodic table builders.
+    pub(crate) fn new_with_source<A: Air<symbolic::Builder>, S: StaticPeriodicSource + ?Sized>(
+        air: &A,
+        source: &S,
+        rows: usize,
+        extension: Extension,
+        host_allowance: usize,
+    ) -> Result<Self, String> {
         // The recording remains live while periodic tables are constructed.
         // Those tables then survive normalization and program lowering. Keep
         // the complete symbolic/compiler envelope reserved across these phases
@@ -33,7 +48,7 @@ impl Prepared {
         let recorded = symbolic::RecordedUni::new(air)
             .map_err(|e| format!("wallet symbolic recording: {e:?}"))?;
         let shape = ProgramShape::for_recording(&recorded, extension)?;
-        let periodic = periodic::Source::new(air, rows, periodic_allowance)?;
+        let periodic = periodic::Source::new_with_source(air, source, rows, periodic_allowance)?;
         let prepared = Self {
             recorded,
             shape,
@@ -122,3 +137,35 @@ impl Prepared {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(super) mod ringct;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(super) mod aes;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(super) mod graph_source;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(super) mod uniform;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(super) mod transcript;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(super) mod affine;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(super) mod sparse;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(super) mod ntt;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(super) mod mul;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(super) mod g_bound;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(super) mod permutation;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(super) mod linear_map;

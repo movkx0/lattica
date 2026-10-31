@@ -26,6 +26,18 @@ pub(crate) fn arc_bytes<T>() -> usize {
         .size()
 }
 pub(crate) fn bound(rows: u64, device_salts: bool) -> Result<u64, String> {
+    bound_with_tree_storage(
+        rows,
+        device_salts,
+        engine::retained_storage::Selection::from_env()?,
+    )
+}
+
+pub(crate) fn bound_with_tree_storage(
+    rows: u64,
+    device_salts: bool,
+    trees: engine::retained_storage::Selection,
+) -> Result<u64, String> {
     if !(8..=1 << 24).contains(&rows) || !rows.is_power_of_two() {
         return Err("cached PCS trace height".into());
     }
@@ -38,8 +50,14 @@ pub(crate) fn bound(rows: u64, device_salts: bool) -> Result<u64, String> {
             .and_then(|n| n.checked_mul(4 * core::mem::size_of::<Val>() as u64))
             .ok_or("cached PCS salt storage overflow")?
     };
+    let height = rows
+        .checked_mul(2 << super::super::profile::LOG_BLOWUP)
+        .and_then(|height| usize::try_from(height).ok())
+        .ok_or("cached PCS tree height overflow")?;
+    let tree = trees.charged_tree_bytes(height, super::super::profile::CAP_HEIGHT)? as u64;
     METADATA_BYTES
         .checked_add(host_salts)
+        .and_then(|bytes| bytes.checked_add(tree))
         .ok_or_else(|| "cached PCS bound overflow".into())
 }
 

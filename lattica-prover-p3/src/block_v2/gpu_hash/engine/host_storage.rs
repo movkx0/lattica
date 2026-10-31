@@ -84,6 +84,7 @@ fn census(engine: &Engine) -> Result<RetainedHost, String> {
     )?;
     metadata = add(metadata, arc_bytes::<Mutex<Accounting>>())?;
     metadata = add(metadata, arc_bytes::<JobLease>())?;
+    metadata = add(metadata, arc_bytes::<retained_storage::HostQuota>())?;
     for value in engine.device_selection.iter().flatten() {
         metadata = add(metadata, value.capacity())?;
     }

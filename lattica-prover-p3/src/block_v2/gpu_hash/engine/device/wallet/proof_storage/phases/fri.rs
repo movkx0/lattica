@@ -6,11 +6,11 @@ use crate::block_v2::pcs_field::PcsField;
 
 #[derive(Debug)]
 pub(super) struct FriPlan {
-    name: &'static str,
-    chunks: usize,
-    log_arity: usize,
-    query_count: usize,
-    storage: StoragePlan,
+    pub(super) name: &'static str,
+    pub(super) chunks: usize,
+    pub(super) log_arity: usize,
+    pub(super) query_count: usize,
+    pub(super) storage: StoragePlan,
 }
 impl FriPlan {
     pub(super) fn report(&self) -> serde_json::Value {

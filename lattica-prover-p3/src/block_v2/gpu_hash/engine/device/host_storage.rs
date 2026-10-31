@@ -9,7 +9,7 @@ pub(super) fn new_quota() -> Arc<HostQuota> {
     Arc::new(HostQuota::new(resources::HOST_BYTES))
 }
 
-fn session_bytes() -> usize {
+pub(super) fn session_bytes() -> usize {
     // Session owns only inline counters/mutexes and its context Arc. The
     // context allocation and accounting Arc belong to the engine envelope.
     core::mem::size_of::<DeviceSession>() + arc_bytes::<Session>() + arc_bytes::<HostQuota>()

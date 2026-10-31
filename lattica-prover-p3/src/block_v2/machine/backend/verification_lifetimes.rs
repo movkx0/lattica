@@ -48,6 +48,17 @@ impl Plan {
         cap: &p3_batch_stark::Commitment<Config>,
         limits: Limits,
     ) -> Result<Self, ExecutionError> {
+        Self::from_shape(publics, height, cap.roots().len(), cap.root_capacity(), limits)
+    }
+
+    /// Public metadata only; suitable before cap/shape/symbolic allocation.
+    pub(crate) fn from_shape(
+        publics: usize,
+        height: usize,
+        cap_roots: usize,
+        cap_capacity: usize,
+        limits: Limits,
+    ) -> Result<Self, ExecutionError> {
         limits.validate().map_err(|_| ExecutionError::TooLarge)?;
         if publics > MAX_PUBLIC_VALUES {
             return Err(ExecutionError::TooLarge);
@@ -56,11 +67,11 @@ impl Plan {
             return Err(ExecutionError::InvalidHeight);
         }
         let log_lde = height.ilog2() as usize + 1 + profile::LOG_BLOWUP;
-        if cap.roots().len() != 1 << log_lde.min(profile::CAP_HEIGHT) {
+        if cap_roots != 1 << log_lde.min(profile::CAP_HEIGHT) {
             return Err(ExecutionError::InvalidHeight);
         }
-        let cap_bytes = bytes::<[super::Val; 4]>(cap.root_capacity())?;
-        if cap_bytes > CAP_LIMIT_BYTES {
+        let cap_bytes = bytes::<[super::Val; 4]>(cap_capacity)?;
+        if cap_capacity < cap_roots || cap_bytes > CAP_LIMIT_BYTES {
             return Err(ExecutionError::TooLarge);
         }
         // ProgramBuilder(publics).finish(height) has zero operations and no

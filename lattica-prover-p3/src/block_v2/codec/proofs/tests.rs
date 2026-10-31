@@ -10,6 +10,8 @@ use p3_field::PrimeCharacteristicRing;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::mem::size_of;
 
+mod registered;
+
 fn payload<T: Serialize>(value: &T, encoding: Encoding) -> Vec<u8> {
     let mut bytes = vec![0; profile::MAX_PROOF_BYTES];
     let len = encode_payload(value, encoding, &mut bytes).unwrap().len();

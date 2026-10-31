@@ -174,6 +174,7 @@ impl FriData {
         let per_query = 2 * (arity * core::mem::size_of::<F>() + 4 * 8)
             + 2 * 8
             + path
+            + core::mem::size_of::<Vec<[Val; 4]>>() // batched path array, moved into output
             + core::mem::size_of::<BatchOpening<F, FriExtensionMmcs<F>>>()
             + core::mem::size_of::<Vec<F>>()
             + core::mem::size_of::<Vec<Val>>();
@@ -225,7 +226,8 @@ impl FriData {
                 session.gather_rows(&matrix, indices, host_allowance)?
             }
         };
-        for (query, index) in indices.iter().enumerate() {
+        let paths = self.commitment.open_many(indices)?;
+        for (query, path) in paths.into_iter().enumerate() {
             let width = self.leaves.spec().columns() * F::DIMENSION;
             let mut row = Self::proof_vector(self.leaves.spec().columns())?;
             for v in values[query * width..query * width + width].chunks_exact(F::DIMENSION) {
@@ -237,7 +239,6 @@ impl FriData {
                     .iter()
                     .map(|n| Val::from_u64(*n)),
             );
-            let path = self.commitment.open(*index)?;
             let mut rows = Self::proof_vector(1)?;
             rows.push(row);
             let mut salts = Self::proof_vector(1)?;

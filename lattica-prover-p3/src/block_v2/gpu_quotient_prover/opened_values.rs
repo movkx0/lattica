@@ -76,6 +76,23 @@ fn exact_vec<T>(count: usize) -> Result<Vec<T>, String> {
     Ok(values)
 }
 
+/// Source-derived new descriptor storage shared by preflight and the actual
+/// handoff. Input opening capacities are admitted separately by Storage::plan.
+pub(crate) fn descriptor_host_bound<T>(
+    count: usize,
+    preprocessed_matrices: usize,
+    quotient_matrices: usize,
+) -> Result<usize, String> {
+    let mut descriptor_bytes = bytes::<Instance>(count)?;
+    add(&mut descriptor_bytes, bytes::<bool>(preprocessed_matrices)?)?;
+    add(
+        &mut descriptor_bytes,
+        bytes::<OpenedValuesWithLookups<T>>(count)?,
+    )?;
+    add(&mut descriptor_bytes, bytes::<Vec<T>>(quotient_matrices)?)?;
+    Ok(descriptor_bytes)
+}
+
 impl Storage {
     fn plan<T>(
         values: &PcsValues<T>,
@@ -114,15 +131,10 @@ impl Storage {
         };
         // Layout metadata, the one-to-one preprocessing check, native instance
         // descriptors and quotient-row descriptors conservatively coexist.
-        let mut descriptor_bytes = bytes::<Instance>(count)?;
-        add(&mut descriptor_bytes, bytes::<bool>(preprocessed_matrices)?)?;
-        add(
-            &mut descriptor_bytes,
-            bytes::<OpenedValuesWithLookups<T>>(count)?,
-        )?;
-        add(
-            &mut descriptor_bytes,
-            bytes::<Vec<T>>(values[rounds.quotient()].len())?,
+        let descriptor_bytes = descriptor_host_bound::<T>(
+            count,
+            preprocessed_matrices,
+            values[rounds.quotient()].len(),
         )?;
         let total_bytes = input_bytes
             .checked_add(descriptor_bytes)

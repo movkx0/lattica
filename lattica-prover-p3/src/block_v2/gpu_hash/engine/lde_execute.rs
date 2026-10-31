@@ -4,9 +4,10 @@
 //! Every device allocation uses the existing engine's accounting and lease.
 use super::{
     allocation,
+    direct_tree::OwnedHashPlan,
     lde_plan::{InputShape, LdeCommitPlan, LdeRetention},
     lde_readback::HostReadback,
-    plan_slots, retained_layout, Allocation, Engine, RetainedTree, ENGINE,
+    retained_layout, Allocation, Engine, RetainedTree, ENGINE,
 };
 use crate::block_v2::compute;
 use crate::config::Val;
@@ -15,6 +16,10 @@ use p3_field::{Field, PrimeCharacteristicRing, PrimeField64, TwoAdicField};
 use p3_matrix::dense::RowMajorMatrix;
 use rayon::prelude::*;
 use std::time::Instant;
+
+mod report;
+#[cfg(all(target_os = "linux", target_arch = "x86_64", feature = "gpu"))]
+pub(crate) mod note_storage;
 
 pub(super) const KERNEL_SRC: &str = r#"
 // Absorb an uninterrupted column stream. A tile or matrix boundary is NOT a
@@ -461,7 +466,9 @@ impl Engine {
             let kernel_name = if power_words.is_some() {
                 if self.nvidia_shuffle && self.tuning.ntt_powers(height, width) {
                     "ntt_tile_cached_tuned"
-                } else { "ntt_tile_cached" }
+                } else {
+                    "ntt_tile_cached"
+                }
             } else {
                 "ntt_tile"
             };
@@ -829,34 +836,17 @@ impl Engine {
         // fixed/live terms must be preserved when deriving worker phase plans.
         eprintln!(
             "bounded_gpu_lde_plan {}",
-            serde_json::json!({
-                "schema": "lattica-lde-plan-v1",
-                "managed_cap_bytes": self.limits.managed_bytes,
-                "max_allocation_bytes": self.max_alloc,
-                "inputs": shapes.iter().map(|s| serde_json::json!({
-                    "rows": s.height, "columns": s.width, "added_bits": s.added_bits,
-                })).collect::<Vec<_>>(),
-                "output_rows": height,
-                "live_without_transform_bytes": live,
-                "replaced_hash_workspace_bytes": old_workspace,
-                "owned_output_bytes": device_bytes,
-                "replay_workspace_bytes": replay_bytes,
-                "hash_workspace_bytes": plan.hash_workspace_bytes,
-                "retained_tree_bytes": plan.retained_tree_bytes,
-                "sponge_state_bytes": plan.sponge_state_bytes,
-                "twiddle_bytes": plan.twiddle_bytes,
-                "query_reserve_bytes": plan.query_reserve_bytes,
-                "fixed_bytes": plan.predicted_managed_peak_bytes - 2 * plan.transform_buffer_bytes,
-                "columns_per_tile": plan.columns_per_tile(),
-                "transform_buffer_bytes": plan.transform_buffer_bytes,
-                "predicted_managed_peak_bytes": plan.predicted_managed_peak_bytes,
-                "predicted_host_peak_bytes": plan.predicted_host_peak_bytes,
-                "host_output_payload_bytes": plan.host_output_bytes,
-                "host_output_backing_bytes": plan.host_output_backing_bytes,
-                "host_reorder_payload_bytes": plan.host_reorder_workspace_bytes,
-                "host_reorder_backing_bytes": plan.host_reorder_backing_bytes,
-                "host_budget_bytes": host_budget,
-            })
+            report::LdePlanReport {
+                inputs: &shapes,
+                plan: &plan,
+                managed_cap_bytes: self.limits.managed_bytes,
+                max_allocation_bytes: self.max_alloc,
+                live_without_transform_bytes: live,
+                replaced_hash_workspace_bytes: old_workspace,
+                owned_output_bytes: device_bytes,
+                replay_workspace_bytes: replay_bytes,
+                host_budget_bytes: host_budget,
+            }
         );
         eprintln!(
             "bounded_lde_readback_layout layout={:?} retention={:?} matrices={} output_bytes={} reorder_workspace_bytes={}",
@@ -888,21 +878,32 @@ impl Engine {
             .iter()
             .try_fold(0usize, |n, s| n.checked_add(s.width)?.checked_add(4))
             .ok_or("resident LDE row width overflow")?;
-        let hash_plan = plan_slots(
+        let hash_plan = OwnedHashPlan::new(
             height,
             width,
             execution_limits,
             self.max_alloc,
             self.mode.slots(),
+            plan.tree_storage_mode,
         )?;
+        if hash_plan.bytes + super::transport_bytes(execution_limits) != plan.hash_workspace_bytes {
+            return Err("owned hash schedule differs from admitted LDE plan".into());
+        }
+        let direct_layers = hash_plan.workspace.is_none();
         let layout = retained_layout(height, cap_height, self.max_alloc)?;
+        if plan.tree_storage_mode != self.tree_storage.selection().mode {
+            return Err("retained tree storage changed after LDE planning".into());
+        }
+        let host_reservation = self.reserve_host_tree(layout)?;
         self.fence().finish()?;
         // The planner subtracts only this replaceable workspace. Force exact
         // replacement even if a larger old workspace would otherwise fit.
         let cached = self.lde_workspace.take().filter(|c| c.matches(&plan));
         let reused = cached.is_some();
         self.workspace = None;
-        self.workspace(hash_plan)?;
+        if let Some(hash_plan) = hash_plan.workspace {
+            self.workspace(hash_plan)?;
+        }
         let alloc = |bytes| {
             allocation(
                 &self.pq,
@@ -1313,7 +1314,11 @@ impl Engine {
         unsafe {
             self.commitment_builder("lde_leaf_finalize", height)?
                 .arg(&buffers.sponge.buffer)
-                .arg(&self.workspace.as_ref().unwrap().a.buffer)
+                .arg(if direct_layers {
+                    &storage.buffer
+                } else {
+                    &self.workspace.as_ref().unwrap().a.buffer
+                })
                 .arg(height as u32)
                 .arg(final_offset as u32)
                 .arg(&self.constants[0].buffer)
@@ -1330,7 +1335,11 @@ impl Engine {
         let ns = self.timeline.record("lde_leaf_finalize", &event)?;
         self.stats.lde_sponge_ns += ns;
         self.stats.leaf_kernel_ns += ns;
-        let cap = self.finish_retained_layers(&storage, height, layout)?;
+        let cap = if direct_layers {
+            self.finish_direct_retained_layers(&storage, height, layout)?
+        } else {
+            self.finish_retained_layers(&storage, height, layout)?
+        };
         fence.finish()?;
         self.stats.commits += 1;
         self.stats.lde_commits += 1;
@@ -1361,6 +1370,7 @@ impl Engine {
             );
             self.lde_workspace = Some(buffers);
         }
+        let storage = self.retain_completed_tree(storage, host_reservation, layout)?;
         Ok(LdeCommitOutput {
             matrices,
             device_matrices,

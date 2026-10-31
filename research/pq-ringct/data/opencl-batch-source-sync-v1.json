@@ -1,0 +1,137 @@
+{
+  "batch_package": {
+    "file_count": 9,
+    "file_sha256": {
+      "research/pq-ringct-batch/Cargo.toml": "e1a5a71d1ec294e1d93b3468cfe6f0f60655b4f383ea11e1f426d71e4bef3b02",
+      "research/pq-ringct-batch/README.md": "38ce8ad0ae27e5bd17adf2c1d89602a80bef3dc647c89c78699cfcfa88963009",
+      "research/pq-ringct-batch/src/contract.rs": "84572e36c3705aee0c1e025ccc6ba0fc773a612ac473a6c3026e2311c3661a14",
+      "research/pq-ringct-batch/src/lib.rs": "be7f1b5291f3680648f936a06ea9e8f21a709f6e8e0c39b1c95a4d58090aa309",
+      "research/pq-ringct-batch/src/tests.rs": "f0fe65c433059615c36dc9a44d0715a798b1806eb02fd810a232468346e2766a",
+      "research/pq-ringct-batch/src/tree.rs": "025126c817e1dd5e23389fb714dcead1e3f67824da97843e75a7809a3b9b140a",
+      "research/pq-ringct-batch/tools/accept_recursive_batch.py": "59d7a116723df4bdec24a9f228f8d2a07c466692ff4bc31f5dcd65f15bd498dc",
+      "research/pq-ringct-batch/tools/accept_recursive_batch.rs": "853f1c5a8940c4523844ecad7fa85a70988db191913a09fa6580c19c43284f6b",
+      "research/pq-ringct-batch/tools/frozen_build.py": "259b733d46fc539f98e3cf8e53b58c7fb8795284e460a60c8625584a1248c69b"
+    },
+    "hash_algorithm": "SHA-256 of UTF-8 JSON for file_sha256 with sorted keys, separators=(comma,colon), ensure_ascii=true, and no trailing newline; each key is worktree-relative.",
+    "sha256": "01b9fc96eea60a0f6cd9d9fccec7048824c20de72623e3fce23dc605abf2bf6a"
+  },
+  "before_sha256": {
+    "research/pq-ringct-batch/Cargo.toml": "f434a9e5a13ee4149b5e79086ba0eeb86329dcc4f6c4393dbf2f3c47e35c622d",
+    "research/pq-ringct-batch/README.md": "6792a9faa1db142e957ef3963b8f83909435ecb86d0915fe9e850c9d019c8599",
+    "research/pq-ringct-batch/src/lib.rs": "464f2f84f1ed2718f092fa33b870d6b6cd87a8d1b9299a7525d575e2a98afe36",
+    "research/pq-ringct-batch/src/tree.rs": "b7be7aa15dcf99cc7c63f448e8e037c74fcb80fdf692cef2053db585ff538acf",
+    "research/pq-ringct-batch/tools/accept_recursive_batch.py": "81213974d96246a95956cdded070571e01f9de0f72c6b5744f727d00407beab9",
+    "research/pq-ringct-batch/tools/accept_recursive_batch.rs": "dce6b3186bf08d5e5c9f2e569fa7f9187cc2e0034a07421458d3b9c403e298b3",
+    "research/pq-ringct/OPENCL.md": "95c93f7bb3abc21feb58c92755cc93e14a43dc692e74c7740a811ceff5accbb1"
+  },
+  "canonical_source_input_sha256": {
+    "research/pq-ringct-batch/README.md": "2f3e25747f5775cb1f0624afdf117c75dd10d1c4902bcf0b0e7bda944db3846a",
+    "research/pq-ringct-batch/src/lib.rs": "be7f1b5291f3680648f936a06ea9e8f21a709f6e8e0c39b1c95a4d58090aa309",
+    "research/pq-ringct-batch/src/tree.rs": "025126c817e1dd5e23389fb714dcead1e3f67824da97843e75a7809a3b9b140a",
+    "research/pq-ringct-batch/tools/accept_recursive_batch.py": "59d7a116723df4bdec24a9f228f8d2a07c466692ff4bc31f5dcd65f15bd498dc",
+    "research/pq-ringct-batch/tools/accept_recursive_batch.rs": "853f1c5a8940c4523844ecad7fa85a70988db191913a09fa6580c19c43284f6b"
+  },
+  "canonical_source_worktree": "/home/access/code/lattica/.tools/worktrees/pq-ringct-research",
+  "changed_file_sha256": {
+    "research/pq-ringct-batch/Cargo.toml": "e1a5a71d1ec294e1d93b3468cfe6f0f60655b4f383ea11e1f426d71e4bef3b02",
+    "research/pq-ringct-batch/README.md": "38ce8ad0ae27e5bd17adf2c1d89602a80bef3dc647c89c78699cfcfa88963009",
+    "research/pq-ringct-batch/src/lib.rs": "be7f1b5291f3680648f936a06ea9e8f21a709f6e8e0c39b1c95a4d58090aa309",
+    "research/pq-ringct-batch/src/tree.rs": "025126c817e1dd5e23389fb714dcead1e3f67824da97843e75a7809a3b9b140a",
+    "research/pq-ringct-batch/tools/accept_recursive_batch.py": "59d7a116723df4bdec24a9f228f8d2a07c466692ff4bc31f5dcd65f15bd498dc",
+    "research/pq-ringct-batch/tools/accept_recursive_batch.rs": "853f1c5a8940c4523844ecad7fa85a70988db191913a09fa6580c19c43284f6b",
+    "research/pq-ringct/OPENCL.md": "a60906c2c15462add7b37b5885479883a4aacc75a181a6cd94a4ae9c0b6ffa4d"
+  },
+  "created_utc": "2026-10-20T22:51:13.428083+00:00",
+  "frozen_source_manifest_bindings": {
+    "base_worktree": "/home/access/code/lattica/.tools/worktrees/pq-ringct-research",
+    "qualifies_opencl": false,
+    "role": "CPU source provenance only; these manifests do not qualify the OpenCL tree.",
+    "sha256": {
+      ".tools/pq-logs/producer-branch-acceptance-v1-frozen-source.json": "367f90f88123967d3dc5e3c04095bf0fbfce0839fcf058b23c47aac076e2358e",
+      ".tools/pq-logs/serial-qualification-v1-build-run.json": "0d6741d6fb94318825c8965cb4d4b273d2690f17de3181c309e47239443502b5"
+    }
+  },
+  "limitations": [
+    "Source synchronization and static parsing do not establish compilation, correctness under execution, performance, or GPU qualification.",
+    "Existing native algebra, AES, SHAKE, and auxiliary producers and explicit witness diagnostics remain CPU work.",
+    "Existing full-LDE admission guards remain unchanged.",
+    "Frozen build and acceptance helpers pin CPU artifacts/source/cache identity and are not OpenCL qualification runners; future GPU batch acceptance requires separate GPU identities, trusted registration, and actual strict-stage evidence."
+  ],
+  "runtime_qualification": {
+    "GPU_probes_run": false,
+    "N3N4_GPU_qualified": false,
+    "compiled": false,
+    "complete_graph_GPU_qualified": false,
+    "complete_spend_GPU_qualified": false,
+    "goal_completion_established": false,
+    "pair_GPU_qualified": false,
+    "performance_established": false,
+    "proofs_run": false,
+    "tests_run": false
+  },
+  "schema": "pq-ringct-opencl-batch-source-sync-v1",
+  "scope": {
+    "CUDA_mutated": false,
+    "README_suffix": "OpenCL worktree scope; canonical README prefix remains byte-identical",
+    "cache_preparation_performed": false,
+    "canonical_research_mutated": false,
+    "changes": [
+      "Synchronize current recursive batch relation, public source-fingerprint API fix, and recursive child-witness diagnostics.",
+      "Forward optional batch OpenCL feature to the shared research backend.",
+      "Document explicit strict GPU runtime request, CPU native producers and diagnostics, unchanged conservative full-LDE admission, and CPU-only frozen acceptance helpers."
+    ],
+    "copied_paths": [
+      "research/pq-ringct-batch/README.md",
+      "research/pq-ringct-batch/src/lib.rs",
+      "research/pq-ringct-batch/src/tree.rs",
+      "research/pq-ringct-batch/tools/accept_recursive_batch.py",
+      "research/pq-ringct-batch/tools/accept_recursive_batch.rs"
+    ],
+    "feature_forwarding": {
+      "default": [],
+      "opencl": [
+        "lattica-pq-ringct-research/opencl"
+      ]
+    },
+    "opencl_documentation_section": "Complete recursive aggregation source",
+    "system_changes_performed": false
+  },
+  "static_validation": {
+    "README_canonical_prefix_byte_identical": true,
+    "canonical_input_hashes_unchanged": true,
+    "copied_code_and_helper_files_byte_identical": true,
+    "frozen_manifest_hashes_unchanged": true,
+    "python_ast_parse": {
+      "files": [
+        "research/pq-ringct-batch/tools/accept_recursive_batch.py",
+        "research/pq-ringct-batch/tools/frozen_build.py"
+      ],
+      "helpers_imported_or_executed": false,
+      "status": "passed"
+    },
+    "rustfmt_check": {
+      "arguments": [
+        "--edition",
+        "2021",
+        "--config",
+        "skip_children=true",
+        "--check",
+        "research/pq-ringct-batch/src/lib.rs",
+        "research/pq-ringct-batch/src/tree.rs",
+        "research/pq-ringct-batch/tools/accept_recursive_batch.rs"
+      ],
+      "program": "/home/access/code/lattica/.tools/rust-1.96.0/bin/rustfmt",
+      "status": "passed"
+    },
+    "target_hashes_match_source_sync_staging": true,
+    "toml_parse_and_feature_assertions": {
+      "files": [
+        "research/pq-ringct-batch/Cargo.toml",
+        "research/pq-ringct/Cargo.toml"
+      ],
+      "status": "passed"
+    }
+  },
+  "status": "source_synchronized_and_statically_parsed_only",
+  "worktree": "/home/access/code/lattica/.tools/worktrees/pq-ringct-opencl"
+}

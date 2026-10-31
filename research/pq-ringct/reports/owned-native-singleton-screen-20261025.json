@@ -1,0 +1,554 @@
+{
+  "schema": "ringct-owned-native-shake-component-screen-v1",
+  "created_utc": "2026-10-25T11:45:28.571286+00:00",
+  "scope": "Two fresh singleton native SHAKE proofs with different one-byte witnesses; existing fixed cryptographic profile.",
+  "physical_gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+  "retained_tree_storage": "device",
+  "resource_limits": {
+    "worker_host_bytes": 34359738368,
+    "native_host_bytes": 25769803776,
+    "managed_device_bytes": 8589934592,
+    "context_reserve_bytes": 4294967296
+  },
+  "fresh_native_gpu_proofs": 2,
+  "fresh_native_cpu_proofs": 0,
+  "recursive_proofs": 0,
+  "independent_cpu_acceptances": 2,
+  "independent_cpu_mutation_rejections": 2,
+  "artifact_round_trips": 0,
+  "cases": [
+    {
+      "input_byte": 1,
+      "fresh_gpu_required": true,
+      "independent_cpu_verified": true,
+      "mutation_rejected": true,
+      "managed_live_bytes": 0,
+      "host_tree_live_bytes": 0,
+      "lease_released": true,
+      "managed_peak_bytes": 1376222192,
+      "component_including_mutation_ns": 719711457,
+      "native_report_ns": 412831890,
+      "complete_ringct_workflow": false,
+      "native_trace_rows": 4096,
+      "native_trace_width": 517,
+      "native_report": {
+        "schema": "lattica-proving-stages-v1",
+        "entry_point": "ringct_owned_native_shake",
+        "policy": "gpu_required",
+        "capabilities": {
+          "scope": "proof_request",
+          "profile": "block_v2_cubic",
+          "max_log_fri_arity": 1,
+          "stages": [
+            {
+              "stage": "public_values",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "witness_trace",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "preprocessing",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "transform",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "quotient",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "randomness",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "hiding",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "commitment",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "opening",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "fri_fold",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "fri_query",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "final_polynomial",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "scalar",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "transcript",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "grinding",
+              "backend": "open_cl"
+            }
+          ]
+        },
+        "elapsed_ns": 412831890,
+        "succeeded": true,
+        "stage_coverage_complete": true,
+        "completion_rejected": false,
+        "observation_errors": 0,
+        "observations": [
+          {
+            "stage": "preprocessing",
+            "backend": "open_cl",
+            "calls": 3,
+            "completed_calls": 3,
+            "device_calls": 3,
+            "inclusive_ns": 0,
+            "device_ns": 26400
+          },
+          {
+            "stage": "witness_trace",
+            "backend": "open_cl",
+            "calls": 3,
+            "completed_calls": 3,
+            "device_calls": 3,
+            "inclusive_ns": 0,
+            "device_ns": 6545376
+          },
+          {
+            "stage": "public_values",
+            "backend": "open_cl",
+            "calls": 1,
+            "completed_calls": 1,
+            "device_calls": 1,
+            "inclusive_ns": 0,
+            "device_ns": 10304
+          },
+          {
+            "stage": "transcript",
+            "backend": "open_cl",
+            "calls": 70,
+            "completed_calls": 70,
+            "device_calls": 70,
+            "inclusive_ns": 0,
+            "device_ns": 28836096
+          },
+          {
+            "stage": "grinding",
+            "backend": "open_cl",
+            "calls": 1,
+            "completed_calls": 1,
+            "device_calls": 1,
+            "inclusive_ns": 0,
+            "device_ns": 149824
+          },
+          {
+            "stage": "scalar",
+            "backend": "open_cl",
+            "calls": 3,
+            "completed_calls": 3,
+            "device_calls": 3,
+            "inclusive_ns": 0,
+            "device_ns": 24096
+          },
+          {
+            "stage": "randomness",
+            "backend": "open_cl",
+            "calls": 84,
+            "completed_calls": 84,
+            "device_calls": 84,
+            "inclusive_ns": 0,
+            "device_ns": 2503200
+          },
+          {
+            "stage": "transform",
+            "backend": "open_cl",
+            "calls": 141,
+            "completed_calls": 141,
+            "device_calls": 141,
+            "inclusive_ns": 0,
+            "device_ns": 26406688
+          },
+          {
+            "stage": "quotient",
+            "backend": "open_cl",
+            "calls": 88,
+            "completed_calls": 88,
+            "device_calls": 88,
+            "inclusive_ns": 0,
+            "device_ns": 140156288
+          },
+          {
+            "stage": "hiding",
+            "backend": "open_cl",
+            "calls": 70,
+            "completed_calls": 70,
+            "device_calls": 70,
+            "inclusive_ns": 0,
+            "device_ns": 546848
+          },
+          {
+            "stage": "commitment",
+            "backend": "open_cl",
+            "calls": 16,
+            "completed_calls": 16,
+            "device_calls": 16,
+            "inclusive_ns": 0,
+            "device_ns": 35882912
+          },
+          {
+            "stage": "opening",
+            "backend": "open_cl",
+            "calls": 216,
+            "completed_calls": 216,
+            "device_calls": 216,
+            "inclusive_ns": 0,
+            "device_ns": 3576288
+          },
+          {
+            "stage": "fri_fold",
+            "backend": "open_cl",
+            "calls": 13,
+            "completed_calls": 13,
+            "device_calls": 13,
+            "inclusive_ns": 0,
+            "device_ns": 68608
+          },
+          {
+            "stage": "fri_query",
+            "backend": "open_cl",
+            "calls": 116,
+            "completed_calls": 116,
+            "device_calls": 116,
+            "inclusive_ns": 0,
+            "device_ns": 1364896
+          },
+          {
+            "stage": "final_polynomial",
+            "backend": "open_cl",
+            "calls": 1,
+            "completed_calls": 1,
+            "device_calls": 1,
+            "inclusive_ns": 0,
+            "device_ns": 3904
+          }
+        ],
+        "components": []
+      }
+    },
+    {
+      "input_byte": 2,
+      "fresh_gpu_required": true,
+      "independent_cpu_verified": true,
+      "mutation_rejected": true,
+      "managed_live_bytes": 0,
+      "host_tree_live_bytes": 0,
+      "lease_released": true,
+      "managed_peak_bytes": 1376222192,
+      "component_including_mutation_ns": 549374779,
+      "native_report_ns": 383510673,
+      "complete_ringct_workflow": false,
+      "native_trace_rows": 4096,
+      "native_trace_width": 517,
+      "native_report": {
+        "schema": "lattica-proving-stages-v1",
+        "entry_point": "ringct_owned_native_shake",
+        "policy": "gpu_required",
+        "capabilities": {
+          "scope": "proof_request",
+          "profile": "block_v2_cubic",
+          "max_log_fri_arity": 1,
+          "stages": [
+            {
+              "stage": "public_values",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "witness_trace",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "preprocessing",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "transform",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "quotient",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "randomness",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "hiding",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "commitment",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "opening",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "fri_fold",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "fri_query",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "final_polynomial",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "scalar",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "transcript",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "grinding",
+              "backend": "open_cl"
+            }
+          ]
+        },
+        "elapsed_ns": 383510673,
+        "succeeded": true,
+        "stage_coverage_complete": true,
+        "completion_rejected": false,
+        "observation_errors": 0,
+        "observations": [
+          {
+            "stage": "preprocessing",
+            "backend": "open_cl",
+            "calls": 3,
+            "completed_calls": 3,
+            "device_calls": 3,
+            "inclusive_ns": 0,
+            "device_ns": 12512
+          },
+          {
+            "stage": "witness_trace",
+            "backend": "open_cl",
+            "calls": 3,
+            "completed_calls": 3,
+            "device_calls": 3,
+            "inclusive_ns": 0,
+            "device_ns": 6407968
+          },
+          {
+            "stage": "public_values",
+            "backend": "open_cl",
+            "calls": 1,
+            "completed_calls": 1,
+            "device_calls": 1,
+            "inclusive_ns": 0,
+            "device_ns": 2912
+          },
+          {
+            "stage": "transcript",
+            "backend": "open_cl",
+            "calls": 70,
+            "completed_calls": 70,
+            "device_calls": 70,
+            "inclusive_ns": 0,
+            "device_ns": 28821280
+          },
+          {
+            "stage": "grinding",
+            "backend": "open_cl",
+            "calls": 1,
+            "completed_calls": 1,
+            "device_calls": 1,
+            "inclusive_ns": 0,
+            "device_ns": 151776
+          },
+          {
+            "stage": "scalar",
+            "backend": "open_cl",
+            "calls": 3,
+            "completed_calls": 3,
+            "device_calls": 3,
+            "inclusive_ns": 0,
+            "device_ns": 11744
+          },
+          {
+            "stage": "randomness",
+            "backend": "open_cl",
+            "calls": 84,
+            "completed_calls": 84,
+            "device_calls": 84,
+            "inclusive_ns": 0,
+            "device_ns": 2482592
+          },
+          {
+            "stage": "transform",
+            "backend": "open_cl",
+            "calls": 141,
+            "completed_calls": 141,
+            "device_calls": 141,
+            "inclusive_ns": 0,
+            "device_ns": 25851712
+          },
+          {
+            "stage": "quotient",
+            "backend": "open_cl",
+            "calls": 88,
+            "completed_calls": 88,
+            "device_calls": 88,
+            "inclusive_ns": 0,
+            "device_ns": 139410720
+          },
+          {
+            "stage": "hiding",
+            "backend": "open_cl",
+            "calls": 70,
+            "completed_calls": 70,
+            "device_calls": 70,
+            "inclusive_ns": 0,
+            "device_ns": 541344
+          },
+          {
+            "stage": "commitment",
+            "backend": "open_cl",
+            "calls": 16,
+            "completed_calls": 16,
+            "device_calls": 16,
+            "inclusive_ns": 0,
+            "device_ns": 35696608
+          },
+          {
+            "stage": "opening",
+            "backend": "open_cl",
+            "calls": 216,
+            "completed_calls": 216,
+            "device_calls": 216,
+            "inclusive_ns": 0,
+            "device_ns": 3587264
+          },
+          {
+            "stage": "fri_fold",
+            "backend": "open_cl",
+            "calls": 13,
+            "completed_calls": 13,
+            "device_calls": 13,
+            "inclusive_ns": 0,
+            "device_ns": 71520
+          },
+          {
+            "stage": "fri_query",
+            "backend": "open_cl",
+            "calls": 116,
+            "completed_calls": 116,
+            "device_calls": 116,
+            "inclusive_ns": 0,
+            "device_ns": 1305888
+          },
+          {
+            "stage": "final_polynomial",
+            "backend": "open_cl",
+            "calls": 1,
+            "completed_calls": 1,
+            "device_calls": 1,
+            "inclusive_ns": 0,
+            "device_ns": 3424
+          }
+        ],
+        "components": []
+      }
+    }
+  ],
+  "screen_evidence": {
+    "label": "fullgpu-native-singleton-gpu-screen-1",
+    "record": ".tools/pq-opencl-opt/runs/fullgpu-native-singleton-gpu-screen-1.json",
+    "record_sha256": "ee7d4beb750bae96d8ff0825dd79ff455e0ea3e796f7d6ada6279817e39353ed",
+    "raw_log": ".tools/pq-opencl-opt/runs/fullgpu-native-singleton-gpu-screen-1.log",
+    "raw_log_sha256": "189bf5a80765a0dfb118adb1f03e795f5cec6dea1fe4c15550a2739d27d60685",
+    "source_manifest_sha256": "b89d8f1948dc02776b3abd8cbc7cc5690f0199a75e3d3e6fe7d2621fce2e3e48",
+    "executable_provenance": {
+      "path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/target-opencl/release/deps/lattica_pq_ringct_research-001aa05fa897d703",
+      "resolved_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/build-cache/target-opencl/release/deps/lattica_pq_ringct_research-001aa05fa897d703",
+      "sha256": "3d32af7d22e27a79f793dd96425b79576c498518910961289c6d6ca39eed3a11",
+      "build_record": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/pq-opencl-opt/runs/fullgpu-native-singleton-research-build-1.json",
+      "build_record_sha256": "85b746069bdaf4871024a07e1341ca549ee2cce69aaabe710ec67f51e4dc7959"
+    },
+    "all_subprocesses_terminal_and_reaped": true,
+    "source_inputs_unchanged": true,
+    "executable_unchanged": true,
+    "guard_wall_seconds": 2.1120588800113183,
+    "guarded_job_host_peak_bytes": 225898496,
+    "process_limit_bytes": 48318382080,
+    "swap_limit_bytes": 0
+  },
+  "post_configuration_rejection_evidence": {
+    "label": "fullgpu-native-rejection-gpu-canary-1",
+    "record": ".tools/pq-opencl-opt/runs/fullgpu-native-rejection-gpu-canary-1.json",
+    "record_sha256": "2e70e465ad3ab02879e20a15f19df58c95c369c9c36f6962afd9aa052b748dd4",
+    "raw_log": ".tools/pq-opencl-opt/runs/fullgpu-native-rejection-gpu-canary-1.log",
+    "raw_log_sha256": "a7b2f4faacf622cd70bd5b0cf07c0d66407f56c159f2364b9243f8ba38b24f46",
+    "source_manifest_sha256": "b89d8f1948dc02776b3abd8cbc7cc5690f0199a75e3d3e6fe7d2621fce2e3e48",
+    "executable_provenance": {
+      "path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/target-opencl/release/deps/lattica_prover_p3-e6135dc31d256968",
+      "resolved_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/build-cache/target-opencl/release/deps/lattica_prover_p3-e6135dc31d256968",
+      "sha256": "1d3051224567bdc64d9e1b5db06148ebb82f8402d4b8257022390ad6d064c21c",
+      "build_record": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/pq-opencl-opt/runs/fullgpu-native-rejection-core-build-1.json",
+      "build_record_sha256": "9d633d959502805ae2baf60d87286065522eab7299380df31ccf569e72bd923c"
+    },
+    "all_subprocesses_terminal_and_reaped": true,
+    "source_inputs_unchanged": true,
+    "executable_unchanged": true,
+    "guard_wall_seconds": 2.095913536992157,
+    "guarded_job_host_peak_bytes": 216223744,
+    "process_limit_bytes": 48318382080,
+    "swap_limit_bytes": 0,
+    "configuration_observation": "ringct_owned_config calls=60 bytes=11547 largest=1216 source_bound=76560056",
+    "retirement_observation": "ringct_owned_rejection managed_peak=67109888 managed_live=0 tree_live=0 lease_released=true"
+  },
+  "original_quota_released": true,
+  "timing_scope": {
+    "native_report_ns": "Actual Run from after capacity admission through proof completion; excludes original request creation, preflight, AIR recording, runtime startup/retirement and independent CPU verification.",
+    "component_including_mutation_ns": "From after original request creation through preflight, recording, runtime startup, fresh proof, retirement, independent CPU verification, report serialization and mutation rejection; excludes final proof/request destruction and final quota assertion.",
+    "complete_workflow_ns": null
+  },
+  "memory_scope": "managed_peak_bytes is the exact retired Engine allocation peak, not process VRAM. Guarded host peak is the cgroup observation. Ledger reservations are not measured peaks.",
+  "qualification": {
+    "native_singleton_component": true,
+    "complete_faithful_ringct": false,
+    "paired_native": false,
+    "complete_graph": false,
+    "n3_n4_workflow": false,
+    "speedup": false,
+    "protocol_redesign_speedup": false,
+    "production_adoption": false
+  },
+  "preserved_failures": [
+    {
+      "label": "fullgpu-native-consumer-opening-output-core-tests-1",
+      "correction": "B041 corrects a test-only allocation-free claim; inherited planner requests fit the original source-derived partition. Production unchanged."
+    },
+    {
+      "label": "fullgpu-native-singleton-research-cpu-tests-1",
+      "correction": "A022-r2 tests the existing earlier oversized-request refusal. Production unchanged."
+    }
+  ]
+}

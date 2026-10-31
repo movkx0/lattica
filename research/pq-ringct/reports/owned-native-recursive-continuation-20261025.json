@@ -1,0 +1,237 @@
+{
+  "schema": "lattica-owned-native-recursive-continuation-qualification-v1",
+  "created_utc": "2026-10-25T13:42:09.594570+00:00",
+  "research_only": true,
+  "production_default_changed": false,
+  "complete_faithful_ringct_workflow": false,
+  "n3_n4_aggregation_qualified": false,
+  "paired_gpu_request_qualified": false,
+  "performance_qualified": false,
+  "qualified_source_base_commit": "ec5180f29ae1717d0d3a29ad2c1726bff673dc2d",
+  "scope": [
+    "Original reservation split/reunite and sealed actual-runtime retirement",
+    "CPU source-bound singleton/pair/odd-tail compiler conformance",
+    "Two distinct fresh native GPU witnesses, independent CPU and graph-child verification, two mutations, original runtime restoration without restored dispatch",
+    "Controlled post-configuration normalization refusal with original retirement and terminal cleanup",
+    "One fresh native GPU proof feeding one fresh recursive GPU proof with original startup/PCS claims retained"
+  ],
+  "limitations": [
+    "Component endpoint context and statement are explicit test placeholders; public byte endpoints are independently derived",
+    "Bounded compiler and public endpoint preprocessing remain CPU operations",
+    "Continuation success qualifier restores but does not dispatch its restored runtime; native-to-outer qualifier dispatches its separately restored outer runtime",
+    "Controlled rejection is neither asynchronous GPU failure nor complete high-level producer failure coverage",
+    "No complete transaction, paired/odd-tail GPU graph, final aggregate, throughput comparison or cryptographic adoption claim"
+  ],
+  "resource_envelope": {
+    "managed_gpu_bytes": 8589934592,
+    "gpu_context_reserve_bytes": 4294967296,
+    "worker_host_bytes": 34359738368,
+    "native_output_bytes": 25769803776,
+    "host_tree_bytes_within_worker": 8589934592,
+    "gpu_process_max_bytes": 48318382080,
+    "gpu_process_high_bytes": 46170898432,
+    "gpu_fresh_admission_bytes": 50465865728,
+    "job_swap_max_bytes": 0,
+    "physical_gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+    "limits_changed": false
+  },
+  "native_to_outer": {
+    "native_proofs": 1,
+    "recursive_proofs": 1,
+    "mutation_rejections": 2,
+    "active_rows": 101670,
+    "padded_rows": 131072,
+    "compiler_ns": 421071323,
+    "setup_ns": 20397182999,
+    "proving_ns": 3137724984,
+    "cpu_verification_ns": 29184591,
+    "component_including_mutations_ns": 25400545658
+  },
+  "runs": [
+    {
+      "label": "fullgpu-continuity-source-core-cpu-tests-1",
+      "record": ".tools/pq-opencl-opt/runs/fullgpu-continuity-source-core-cpu-tests-1.json",
+      "record_sha256": "f8523d8fe832d4d471ab35d8e12f505ee4842516c3982b7bcbea667ee3c2b7d4",
+      "raw_log": ".tools/pq-opencl-opt/runs/fullgpu-continuity-source-core-cpu-tests-1.log",
+      "raw_log_sha256": "9586f1051a0f7e1856405139ed0652c61cb4129927d75ee1623a7bfe5378861f",
+      "status": "passed",
+      "guard_wall_seconds": 250.5485412160051,
+      "host_peak_bytes": 5600731136,
+      "process_max_bytes": 8589934592,
+      "swap_max_bytes": 0,
+      "terminal_source_executable_log_audits_passed": true,
+      "test_results": [
+        "test result: ok. 30 passed; 0 failed; 2 ignored; 0 measured; 1835 filtered out; finished in 0.01s"
+      ],
+      "component_events": []
+    },
+    {
+      "label": "fullgpu-r023-r024-guard-policy-tests-1",
+      "record": ".tools/pq-opencl-opt/runs/fullgpu-r023-r024-guard-policy-tests-1.json",
+      "record_sha256": "861170f7532aa669ea0b524d4f03f88a51b8efaacb6dc317f4c54ad63ec0a392",
+      "raw_log": ".tools/pq-opencl-opt/runs/fullgpu-r023-r024-guard-policy-tests-1.log",
+      "raw_log_sha256": "75c1841d427aa9fbf3918198bde473a4e154d9921459ac7e2ee2ddf0707d6856",
+      "status": "passed",
+      "guard_wall_seconds": 2.0826586399925873,
+      "host_peak_bytes": 19570688,
+      "process_max_bytes": 8589934592,
+      "swap_max_bytes": 0,
+      "terminal_source_executable_log_audits_passed": true,
+      "test_results": [
+        "Ran 23 tests in 0.067s"
+      ],
+      "component_events": []
+    },
+    {
+      "label": "fullgpu-source-shape-guard-policy-tests-1",
+      "record": ".tools/pq-opencl-opt/runs/fullgpu-source-shape-guard-policy-tests-1.json",
+      "record_sha256": "4f4111ec2a39fc8b15cbd56027781d0745578d6e7ad235fd178423dcf2b7764f",
+      "raw_log": ".tools/pq-opencl-opt/runs/fullgpu-source-shape-guard-policy-tests-1.log",
+      "raw_log_sha256": "921b60a7fd52e978fbb551cacd29df2d6708879400278e1fcc70fceeb0c6f8e0",
+      "status": "passed",
+      "guard_wall_seconds": 2.0787135019782,
+      "host_peak_bytes": 15081472,
+      "process_max_bytes": 8589934592,
+      "swap_max_bytes": 0,
+      "terminal_source_executable_log_audits_passed": true,
+      "test_results": [
+        "Ran 3 tests in 0.001s"
+      ],
+      "component_events": []
+    },
+    {
+      "label": "fullgpu-continuity-source-research-cpu-tests-2",
+      "record": ".tools/pq-opencl-opt/runs/fullgpu-continuity-source-research-cpu-tests-2.json",
+      "record_sha256": "53b823534209e46168dc51e92b8e7079c0af6ee7a2f1ab225e627dadea0286a9",
+      "raw_log": ".tools/pq-opencl-opt/runs/fullgpu-continuity-source-research-cpu-tests-2.log",
+      "raw_log_sha256": "c5ecb97f573b8e283b56be93c2c47f410b7696971c65b7a89d29560c7bba4cbf",
+      "status": "passed",
+      "guard_wall_seconds": 94.26957015501102,
+      "host_peak_bytes": 1731694592,
+      "process_max_bytes": 8589934592,
+      "swap_max_bytes": 0,
+      "terminal_source_executable_log_audits_passed": true,
+      "test_results": [
+        "test result: ok. 62 passed; 0 failed; 12 ignored; 0 measured; 385 filtered out; finished in 0.16s"
+      ],
+      "component_events": []
+    },
+    {
+      "label": "fullgpu-continuity-source-research-build-1",
+      "record": ".tools/pq-opencl-opt/runs/fullgpu-continuity-source-research-build-1.json",
+      "record_sha256": "f8d91d49f9fb0ce292ac85dfaf70f55110835ba6a4216d97466935bfe9e90b6e",
+      "raw_log": ".tools/pq-opencl-opt/runs/fullgpu-continuity-source-research-build-1.log",
+      "raw_log_sha256": "93a80150bd91ef202c577d5006bfb49201735a37958b7bb27faf9ab37df77a0a",
+      "status": "passed",
+      "guard_wall_seconds": 2.1153952320164535,
+      "host_peak_bytes": 25362432,
+      "process_max_bytes": 8589934592,
+      "swap_max_bytes": 0,
+      "terminal_source_executable_log_audits_passed": true,
+      "test_results": [],
+      "component_events": []
+    },
+    {
+      "label": "fullgpu-source-shape-genuine-cpu-2",
+      "record": ".tools/pq-opencl-opt/runs/fullgpu-source-shape-genuine-cpu-2.json",
+      "record_sha256": "fff13c46a212597e8391221862588127804840d63374ad0214c109d98a717a00",
+      "raw_log": ".tools/pq-opencl-opt/runs/fullgpu-source-shape-genuine-cpu-2.log",
+      "raw_log_sha256": "19b73bd798dce55965a89064fba697d472c64a19997ccdf42db6beffc40f156d",
+      "status": "passed",
+      "guard_wall_seconds": 32.15494175301865,
+      "host_peak_bytes": 821800960,
+      "process_max_bytes": 34359738368,
+      "swap_max_bytes": 0,
+      "terminal_source_executable_log_audits_passed": true,
+      "test_results": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 458 filtered out; finished in 30.89s"
+      ],
+      "component_events": [
+        "ringct_owned_shake_source_bound layout=Singleton ordinal=0 active_upper=101701 padded_upper=131072 wires_upper=1504404 input_values=155319 hint_words_upper=1113600 actual_active=101683 actual_padded=131072 source_precedes_native=true cpu_fixture_only=true complete_ringct_workflow=false",
+        "ringct_owned_shake_source_bound layout=PairedV1 ordinal=0 active_upper=203288 padded_upper=262144 wires_upper=3007054 input_values=310638 hint_words_upper=2227200 actual_active=203181 actual_padded=262144 source_precedes_native=true cpu_fixture_only=true complete_ringct_workflow=false",
+        "ringct_owned_shake_source_bound layout=PairedV1 ordinal=1 active_upper=101622 padded_upper=131072 wires_upper=1502647 input_values=155319 hint_words_upper=1113600 actual_active=101600 actual_padded=131072 source_precedes_native=true cpu_fixture_only=true complete_ringct_workflow=false"
+      ]
+    },
+    {
+      "label": "fullgpu-native-continuation-gpu-3",
+      "record": ".tools/pq-opencl-opt/runs/fullgpu-native-continuation-gpu-3.json",
+      "record_sha256": "202a2ad5abcd019b3b655dd653db835b60969c6c354544f6d672be694f1eb9d4",
+      "raw_log": ".tools/pq-opencl-opt/runs/fullgpu-native-continuation-gpu-3.log",
+      "raw_log_sha256": "6edcc2e1fea705a8ece32e63224e6b5e3efbe9a856f7bd40692d45fccbc12bb3",
+      "status": "passed",
+      "guard_wall_seconds": 2.0996083920181263,
+      "host_peak_bytes": 254771200,
+      "process_max_bytes": 48318382080,
+      "swap_max_bytes": 0,
+      "terminal_source_executable_log_audits_passed": true,
+      "test_results": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 458 filtered out; finished in 1.27s"
+      ],
+      "component_events": [
+        "ringct_owned_native_continuation_case input_byte=1 fresh_gpu_required=true independent_cpu_verified=true mutation_rejected=true child_cpu_verified=true exact_originals_retained=true transfer_ledger_unchanged=true declared_original_capacity_matched=true source_runtime_restored=true restored_runtime_dispatched=false managed_live_bytes=0 host_tree_live_bytes=0 lease_released=true retained_managed_claim_bytes=8589934592 component_including_mutation_attachment_transfer_ns=693134684 complete_ringct_workflow=false",
+        "ringct_owned_native_continuation_case input_byte=2 fresh_gpu_required=true independent_cpu_verified=true mutation_rejected=true child_cpu_verified=true exact_originals_retained=true transfer_ledger_unchanged=true declared_original_capacity_matched=true source_runtime_restored=true restored_runtime_dispatched=false managed_live_bytes=0 host_tree_live_bytes=0 lease_released=true retained_managed_claim_bytes=8589934592 component_including_mutation_attachment_transfer_ns=577597489 complete_ringct_workflow=false",
+        "ringct_owned_native_continuation_terminal original_quota_released=true complete_ringct_workflow=false"
+      ]
+    },
+    {
+      "label": "fullgpu-native-continuation-rejection-gpu-1",
+      "record": ".tools/pq-opencl-opt/runs/fullgpu-native-continuation-rejection-gpu-1.json",
+      "record_sha256": "9d54643308c26ff31549819d8e44931587af93626a18a359870692875c856e55",
+      "raw_log": ".tools/pq-opencl-opt/runs/fullgpu-native-continuation-rejection-gpu-1.log",
+      "raw_log_sha256": "d5011277f10fd2f0a0afdf87e4dc73ede760b16024017d48847663c5900c6d1f",
+      "status": "passed",
+      "guard_wall_seconds": 2.102836689009564,
+      "host_peak_bytes": 214839296,
+      "process_max_bytes": 48318382080,
+      "swap_max_bytes": 0,
+      "terminal_source_executable_log_audits_passed": true,
+      "test_results": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 458 filtered out; finished in 0.21s"
+      ],
+      "component_events": [
+        "ringct_owned_native_continuation_rejection failure_stage=normalization actual_configuration_completed=true private_trace_started=false proof_produced=false retry_attempted=false readmission_after_attempt=false original_retirement_snapshot_unchanged=true extraction_delta_only_pending_proof_report=true peaks_unchanged=true managed_live_bytes=0 host_tree_live_bytes=0 lease_released=true retained_managed_claim_bytes=8589934592 managed_peak_bytes=67109888 high_level_producer_qualified=false async_failure_qualified=false complete_ringct_workflow=false",
+        "ringct_owned_native_continuation_rejection_terminal original_quota_released=true actual_runtime_retired=true proof_produced=false complete_ringct_workflow=false"
+      ]
+    },
+    {
+      "label": "fullgpu-native-to-outer-gpu-1",
+      "record": ".tools/pq-opencl-opt/runs/fullgpu-native-to-outer-gpu-1.json",
+      "record_sha256": "6b2c9266f0a5ecfb49a23b41c596144fa41b47259e9ad60f95eb2bf50ee3b419",
+      "raw_log": ".tools/pq-opencl-opt/runs/fullgpu-native-to-outer-gpu-1.log",
+      "raw_log_sha256": "c7e2b44ccc036b8a51aa01883d63ccd1588a078ce4f387169eb50ef96ba77964",
+      "status": "passed",
+      "guard_wall_seconds": 26.14149846098735,
+      "host_peak_bytes": 1970233344,
+      "process_max_bytes": 48318382080,
+      "swap_max_bytes": 0,
+      "terminal_source_executable_log_audits_passed": true,
+      "test_results": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 458 filtered out; finished in 25.41s"
+      ],
+      "component_events": [
+        "ringct_native_to_outer_preissued source_bounds_complete=true original_phase_owners_live=true native_dispatch_started=false host_bytes=34359738368 device_bytes=8589934592",
+        "ringct_native_to_outer_singleton native_proofs=1 recursive_proofs=1 fresh_gpu_required=true compiler_backend=cpu public_endpoint_preprocessing=cpu source_preclaims_before_native=true original_runtime_pcs_reused=true attachment_and_bind_ledger_unchanged=true independent_cpu_verified=true mutation_rejections=2 active_rows=101670 padded_rows=131072 compiler_ns=421071323 setup_ns=20397182999 proving_ns=3137724984 cpu_verification_ns=29184591 component_including_mutations_ns=25400545658 complete_ringct_workflow=false",
+        "ringct_native_to_outer_terminal original_quota_released=true complete_ringct_workflow=false"
+      ]
+    }
+  ],
+  "preserved_failures": [
+    {
+      "label": "fullgpu-continuity-source-research-cpu-tests-1",
+      "kind": "Compilation E0716 temporary input lifetime; fixed in A031; no production change"
+    },
+    {
+      "label": "fullgpu-source-shape-genuine-cpu-1",
+      "kind": "Argument order refused before service creation"
+    },
+    {
+      "label": "fullgpu-native-continuation-gpu-1",
+      "kind": "Fresh host memory admission refused before service creation"
+    },
+    {
+      "label": "fullgpu-native-continuation-gpu-2",
+      "kind": "Fresh host memory admission refused before service creation"
+    }
+  ],
+  "integration_incident": "B046-r2 first copy stopped at a read-only integration target; exact original/payload preimages and all dependency pins verified by recovery script before completion; original checkout unchanged"
+}

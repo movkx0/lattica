@@ -1,0 +1,66 @@
+{
+  "schema": "constructor-census-qualification-v1",
+  "snapshots": [
+    "B013",
+    "B014",
+    "B015"
+  ],
+  "focused_tests_passed": 6,
+  "genuine_native_fixture_checks_passed": 1,
+  "scope": "Partial constructor shape and requested-allocation census; fixed BTree source audit with allocation observer",
+  "complete_constructor_bound": false,
+  "paired_dispatch_authority": false,
+  "complete_workflow_measurement": false,
+  "validation": {
+    "fullgpu-constructor-census-cpu-tests-2": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "389328b6e590dc23020a2b15f7b946b3ffdc06f13a47c1ea2fb81cf910a636c6",
+      "raw_log_sha256": "febea0538717322ac2ae1f699a6d906dbbd24c544fe14f40ab35f6dab3ab16ce",
+      "guard_wall_seconds": 40.156787258019904,
+      "guarded_job_peak_bytes": "1277353984",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-constructor-census-genuine-fixture-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "d6af41d92d75a92783da09060f92c2afc40367438c8f7537170b420ebf49a9f6",
+      "raw_log_sha256": "3657825b590cdda9795803703fbd3c223b2cd29a6cbb734caba3334914187cd5",
+      "guard_wall_seconds": 2.0913414710084908,
+      "guarded_job_peak_bytes": "243806208",
+      "built_artifact_sha256": {}
+    }
+  },
+  "stopped_overbroad_selection": {
+    "status": "failed_or_incomplete",
+    "terminal_integrity_audit_passed": false,
+    "record_sha256": "d753c4f46c5d12645599dea80dac5aa0fc3e83802a25109217409b8476d61eba",
+    "raw_log_sha256": "11a22436bd7e8e63cf879a2c872ad94d2b05825eca2a9dc5d618b4a99cc734dd",
+    "guard_wall_seconds": 38.155021163023775,
+    "guarded_job_peak_bytes": "[not set]",
+    "built_artifact_sha256": {},
+    "external_terminal_cleanup_report": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/fullgpu-constructor-census-cpu-tests-1-external-cleanup.json",
+    "external_terminal_cleanup_sha256": "5b462d95630f7146dbc6a5843c902504117c09da6aa42d688f99be4907345e33"
+  },
+  "external_cleanup": {
+    "schema": "externally-stopped-validation-cleanup-v1",
+    "label": "fullgpu-constructor-census-cpu-tests-1",
+    "reason": "Coordinator stopped an overly broad test filter before tests ran; systemd collected unit before guard final cleanup",
+    "original_failed_record_preserved": true,
+    "record_sha256": "d753c4f46c5d12645599dea80dac5aa0fc3e83802a25109217409b8476d61eba",
+    "service": {
+      "LoadState": "not-found",
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "MainPID": "0",
+      "ControlPID": "0",
+      "ControlGroup": ""
+    },
+    "matching_cgroups": [],
+    "compiler_processes": [],
+    "wrapper_pid_retired": true,
+    "tests_qualified": false,
+    "utc": "2026-10-25T07:02:09.290028+00:00"
+  },
+  "external_cleanup_sha256": "5b462d95630f7146dbc6a5843c902504117c09da6aa42d688f99be4907345e33"
+}

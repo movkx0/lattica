@@ -4,10 +4,10 @@ use super::*;
 
 #[derive(Debug)]
 pub(super) struct RandomnessPlan {
-    name: &'static str,
-    chunks: usize,
-    retain_outputs: bool,
-    storage: FieldStoragePlan,
+    pub(super) name: &'static str,
+    pub(super) chunks: usize,
+    pub(super) retain_outputs: bool,
+    pub(super) storage: FieldStoragePlan,
 }
 impl RandomnessPlan {
     pub(super) fn report(&self) -> serde_json::Value {

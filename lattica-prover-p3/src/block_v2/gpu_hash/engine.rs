@@ -3,10 +3,12 @@
 use crate::block_v2::compute;
 use crate::block_v2::worker_memory::MEMORY_BACKEND;
 use crate::config::Val;
-pub mod device;
 mod capacity;
-#[cfg(feature = "gpu")]
-mod tuning;
+#[cfg(all(target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info"))]
+pub(crate) mod note_ocl_wrapper_census;
+pub mod device;
+pub use device::public_hash::report::PublicHashExecution;
+mod direct_tree;
 pub(crate) mod fri_fold;
 pub mod lde_execute;
 pub mod lde_plan;
@@ -14,6 +16,8 @@ pub(crate) mod lde_readback;
 pub(crate) mod opening_reduce;
 pub(super) mod query_reconstruct;
 pub(crate) mod quotient;
+#[cfg(feature = "gpu")]
+mod tuning;
 use compute::{Buffer, Event, ProQue, Queue};
 use p3_field::PrimeCharacteristicRing;
 use rayon::prelude::*;
@@ -161,6 +165,26 @@ impl Limits {
     }
 }
 
+/// Persistent engine owners plus the lazily allocated authentication query
+/// buffer. Owned phase plans never subtract these from a live snapshot.
+pub(crate) fn retained_query_base_bytes(limits: Limits) -> Result<usize, String> {
+    limits.validate()?;
+    CONSTANT_BYTES
+        .checked_add(limits.staging_bytes)
+        .and_then(|n| n.checked_add(transport_bytes(limits)))
+        .and_then(|n| n.checked_add(QUERY_ELEMENTS * 8))
+        .ok_or_else(|| "engine retained base overflow".into())
+}
+
+/// A one-shot plan starts before registration creates any shared context.
+pub(crate) fn registration_preflight_idle() -> Result<bool, String> {
+    let Some(engine) = ENGINE.get() else {
+        return Ok(true);
+    };
+    let guard = engine.lock().map_err(|_| "GPU engine poisoned")?;
+    Ok(guard.is_none())
+}
+
 #[derive(Clone, Copy, Debug)]
 struct Plan {
     rows: usize,
@@ -242,6 +266,8 @@ mod memory;
 pub(crate) use memory::begin_memory_window;
 mod allocation_limit;
 pub(crate) mod host_storage;
+pub(crate) mod retained_storage;
+pub use retained_storage::RetainedTreeStorageMode;
 
 #[derive(Default, Debug, Clone, Copy)]
 struct Accounting {
@@ -322,14 +348,21 @@ fn reserve(
     if next > limit {
         return Err("GPU aggregate allocation budget exceeded".into());
     }
-    let outside_capacity_generation = a.proof_capacity
+    let outside_capacity_generation = a
+        .proof_capacity
         .as_ref()
         .map(|capacity| capacity.check(a.live, bytes, limit))
         .transpose()?
         .flatten();
-    let allocations = a.allocations.checked_add(1).ok_or("GPU allocation counter overflow")?;
+    let allocations = a
+        .allocations
+        .checked_add(1)
+        .ok_or("GPU allocation counter overflow")?;
     if let Some(generation) = outside_capacity_generation {
-        a.proof_capacity.as_mut().unwrap().charge_outside(generation, bytes);
+        a.proof_capacity
+            .as_mut()
+            .unwrap()
+            .charge_outside(generation, bytes);
     }
     a.live = next;
     a.peak = a.peak.max(next);
@@ -403,15 +436,20 @@ impl Workspace {
 /// A synchronous, immutable device tree. No unaccounted buffer clones escape.
 /// Buffer and reservations drop before the shared process/context lease.
 pub struct RetainedTree {
-    storage: Allocation,
+    // A host reservation covers this cap and the raw tree. Drop the cap before
+    // Storage::Host releases that reservation; the context lease stays last.
+    cap: Vec<[Val; 4]>,
+    storage: retained_storage::Storage,
     height: usize,
     layout: RetainedLayout,
-    cap: Vec<[Val; 4]>,
     _job_lease: Arc<JobLease>,
 }
 impl RetainedTree {
     pub(crate) fn cached_host_backing(&self) -> Result<usize, String> {
-        super::cache_metadata::capacity::<[Val; 4]>(self.cap.capacity())
+        super::cache_metadata::add(
+            super::cache_metadata::capacity::<[Val; 4]>(self.cap.capacity())?,
+            self.storage.host_backing_bytes()?,
+        )
     }
     pub(super) fn cap(&self) -> &[[Val; 4]] {
         &self.cap
@@ -433,6 +471,24 @@ impl RetainedTree {
             return Err("retained tree belongs to another GPU context".into());
         }
         engine.open_retained(self, index)
+    }
+
+    pub(crate) fn open_many(
+        &self,
+        indices: &[usize],
+        cap_height: usize,
+    ) -> Result<Vec<Vec<[Val; 4]>>, String> {
+        if retained_layout(self.height, cap_height, usize::MAX)? != self.layout {
+            return Err("retained-tree batch opening geometry mismatch".into());
+        }
+        let mut slot = ENGINE
+            .get()
+            .ok_or("GPU hashing was not initialized")?
+            .lock()
+            .map_err(|_| "GPU engine poisoned")?;
+        slot.as_mut()
+            .ok_or("GPU hashing was shut down")?
+            .open_retained_batch(self, indices)
     }
 }
 
@@ -657,6 +713,9 @@ struct Engine {
     tuning: tuning::Tuning,
     #[cfg(feature = "gpu")]
     nvidia_shuffle: bool,
+    public_hash_execution: device::public_hash::report::Observation,
+    #[cfg(feature = "gpu")]
+    native_private_spend_program: Option<ocl::Program>,
     #[cfg(feature = "gpu")]
     event_receipts: device::EventReceipts,
     copy_queue: Queue,
@@ -675,6 +734,7 @@ struct Engine {
     fri_fold: bool,
     query: Option<Allocation>,
     retain_trees: bool,
+    tree_storage: Arc<retained_storage::HostQuota>,
     query_gather: bool,
     opening_denominator_cache: bool,
     retained_copy_device_ns: u128,
@@ -745,11 +805,20 @@ fn job_lease() -> Result<JobLease, String> {
         let workers = super::device_slots::workers()?;
         let device = lease_file(&format!("{}.lock", uuid.to_ascii_lowercase()), workers > 1)?;
         let slot = if workers > 1 {
-            let dir = std::path::Path::new("/tmp").join(format!("lattica-v2-gpu-slots-{}-{}", unsafe { libc::geteuid() }, uuid.to_ascii_lowercase()));
-            Some(super::device_slots::acquire(&dir, workers,
+            let dir = std::path::Path::new("/tmp").join(format!(
+                "lattica-v2-gpu-slots-{}-{}",
+                unsafe { libc::geteuid() },
+                uuid.to_ascii_lowercase()
+            ));
+            Some(super::device_slots::acquire(
+                &dir,
+                workers,
                 env_bytes("LATTICA_V2_GPU_MANAGED_BYTES", MAX_MANAGED_BYTES)?,
-                env_bytes("LATTICA_V2_GPU_CONTEXT_BYTES", DRIVER_RESERVE_BYTES)?)?)
-        } else { None };
+                env_bytes("LATTICA_V2_GPU_CONTEXT_BYTES", DRIVER_RESERVE_BYTES)?,
+            )?)
+        } else {
+            None
+        };
         Ok(JobLease {
             _global: global,
             _device: Some(device),
@@ -778,7 +847,7 @@ fn job_lease() -> Result<JobLease, String> {
     Ok(JobLease {
         _global: lease_file("exclusive.lock", coordinated)?,
         _device: None,
-            _slot: None,
+        _slot: None,
     })
 }
 #[cfg(not(any(target_os = "linux", all(target_os = "macos", feature = "gpu-metal"))))]
@@ -830,6 +899,59 @@ pub(super) fn initialize_mode(limits: Limits, mode: TransferMode) -> Result<(), 
 // True means this call created the engine; a failed later setup step may then
 // retire it without tearing down an engine borrowed from an earlier caller.
 fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, String> {
+    initialize_mode_selected(
+        limits,
+        mode,
+        #[cfg(feature = "gpu")]
+        None,
+        #[cfg(all(target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info"))]
+        None,
+    )
+}
+
+/// Create a fresh engine from the bounded physical selection already owned by
+/// a sealed startup plan. The caller retains its real startup reservation and
+/// immutable configuration owner across source/context construction and cleanup.
+/// The borrowed selection remains owned for subsequent physical rechecks.
+#[cfg(all(target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info"))]
+pub(crate) fn initialize_explicit(
+    limits: Limits,
+    selected: &crate::gpu_device::bounded::Snapshot,
+) -> Result<owned_runtime::OwnedRuntime, String> {
+    let mode = if switch("LATTICA_V2_GPU_PIPELINE")? {
+        TransferMode::Overlap
+    } else {
+        TransferMode::Serial
+    };
+    let requested_index = std::env::var("LATTICA_V2_GPU_DEVICE")
+        .ok()
+        .and_then(|value| value.parse::<usize>().ok());
+    let requested_uuid = std::env::var("LATTICA_GPU_DEVICE_UUID")
+        .map_err(|_| "explicit GPU startup requires its pinned UUID")?;
+    if requested_index != Some(selected.identity().opencl_index)
+        || !selected.identity().uuid.as_ref()
+            .is_some_and(|uuid| uuid.eq_ignore_ascii_case(&requested_uuid))
+    {
+        return Err("explicit GPU selection differs from sealed selectors".into());
+    }
+    let mut owner = None;
+    initialize_mode_selected(
+        limits,
+        mode,
+        Some((selected.platform(), selected.device(), selected.identity())),
+        Some(&mut owner),
+    )?;
+    owner.ok_or_else(|| "explicit GPU startup did not return its runtime owner".into())
+}
+
+fn initialize_mode_selected(
+    limits: Limits,
+    mode: TransferMode,
+    #[cfg(feature = "gpu")]
+    explicit: Option<(ocl::Platform, ocl::Device, &crate::gpu_device::Identity)>,
+    #[cfg(all(target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info"))]
+    owner_out: Option<&mut Option<owned_runtime::OwnedRuntime>>,
+) -> Result<bool, String> {
     #[cfg(feature = "gpu")]
     let tuning = tuning::Tuning::from_env()?;
     // An assignment can constrain tiling below the device's hardware limit.
@@ -843,6 +965,12 @@ fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, S
     host_storage::check_selection(&device_selection)?;
     let retain_trees = switch("LATTICA_V2_GPU_RETAIN_TREES")?;
     let query_gather = switch("LATTICA_V2_GPU_QUERY_GATHER")?;
+    let tree_storage_selection = retained_storage::Selection::from_env()?;
+    if tree_storage_selection.mode == RetainedTreeStorageMode::HostBacking
+        && (!retain_trees || !query_gather)
+    {
+        return Err("host tree storage requires retained trees and GPU query gather".into());
+    }
     let opening_denominator_cache = switch("LATTICA_V2_GPU_OPENING_DENOMINATOR_CACHE")?;
     let fri_fold = switch("LATTICA_V2_GPU_FRI_FOLD")?;
     #[cfg(feature = "gpu-metal")]
@@ -859,6 +987,10 @@ fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, S
     if let Some(engine) = ENGINE.get() {
         if let Some(engine) = engine.lock().map_err(|_| "GPU engine poisoned")?.as_ref() {
             #[cfg(feature = "gpu")]
+            if explicit.is_some() {
+                return Err("explicit GPU startup requires a fresh engine".into());
+            }
+            #[cfg(feature = "gpu")]
             if engine.tuning != tuning {
                 return Err("GPU tuning cannot change after initialization".into());
             }
@@ -869,6 +1001,7 @@ fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, S
                 && engine.mode == mode
                 && engine.device_selection == device_selection
                 && engine.retain_trees == retain_trees
+                && engine.tree_storage.selection() == tree_storage_selection
                 && engine.query_gather == query_gather
                 && engine.opening_denominator_cache == opening_denominator_cache
                 && engine.lde_workspace_limit == lde_workspace_limit
@@ -887,8 +1020,15 @@ fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, S
         return Err("GPU context allowance below minimum".into());
     }
     #[cfg(feature = "gpu")]
-    let (index, pq, max_alloc, global, device_name) = {
-        let (platform, device, identity) = crate::gpu_device::select()?;
+    let (index, pq, max_alloc, global, device_name, initialized_device) = {
+        let legacy_selection;
+        let (platform, device, identity) = match explicit {
+            Some(selected) => selected,
+            None => {
+                legacy_selection = crate::gpu_device::select()?;
+                (legacy_selection.0, legacy_selection.1, &legacy_selection.2)
+            }
+        };
         let index = identity.opencl_index;
         use compute::core::{DeviceInfo, DeviceInfoResult};
         let max_alloc = match device
@@ -910,7 +1050,12 @@ fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, S
             }
             _ => return Err("GPU global memory unavailable".into()),
         };
-        super::device_slots::check_capacity(super::device_slots::workers()?, limits.managed_bytes, driver_reserve, global)?;
+        super::device_slots::check_capacity(
+            super::device_slots::workers()?,
+            limits.managed_bytes,
+            driver_reserve,
+            global,
+        )?;
         if limits
             .managed_bytes
             .checked_add(driver_reserve)
@@ -950,6 +1095,19 @@ fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, S
                     device::STORAGE_KERNEL_SRC,
                     device::WITNESS_KERNEL_SRC,
                     device::WALLET_KERNEL_SRC,
+                    device::PQ_POSEIDON_KERNEL_SRC,
+                    #[cfg(feature = "gpu")]
+                    device::PQ_OPERATIONS_KERNEL_SRC,
+                    device::OPERATIONS_HASH_KERNEL_SRC,
+                    #[cfg(feature = "gpu")]
+                    device::PQ_CRYPTO_KERNEL_SRC,
+                    device::PQ_RAW_CRYPTO_KERNEL_SRC,
+                    #[cfg(feature = "gpu")]
+                    device::RESEARCH_ARITHMETIC_KERNEL_SRC,
+                    device::OPERATIONS_ARITHMETIC_KERNEL_SRC,
+                    device::PQ_SOURCES_KERNEL_SRC,
+                    #[cfg(feature = "gpu")]
+                    device::PQ_SAMPLING_KERNEL_SRC,
                     device::WALLET_BATCH_KERNEL_SRC,
                     device::PERIODIC_KERNEL_SRC,
                     device::HTLC_KERNEL_SRC,
@@ -962,7 +1120,9 @@ fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, S
                     device::COMPILER_FOLDING_KERNEL_SRC,
                     device::PUBLIC_HASH_KERNEL_SRC,
                     device::EVALUATIONS_KERNEL_SRC,
-                    &tuning::kernel_source(!device::public_hash::nvidia::source_prefix(device).is_empty()),
+                    &tuning::kernel_source(
+                        !device::public_hash::nvidia::source_prefix(device).is_empty(),
+                    ),
                 ]
                 .join("\n"),
             )
@@ -971,7 +1131,7 @@ fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, S
             .build()
             .map_err(|e| e.to_string())?;
         let device_name = device.name().map_err(|e| e.to_string())?;
-        (index, pq, max_alloc, global, device_name)
+        (index, pq, max_alloc, global, device_name, device)
     };
     #[cfg(feature = "gpu-metal")]
     let (index, pq, max_alloc, global, device_name) = {
@@ -1083,8 +1243,11 @@ fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, S
         tuning,
         #[cfg(feature = "gpu")]
         nvidia_shuffle: !device::public_hash::nvidia::source_prefix(pq.device()).is_empty(),
+        public_hash_execution: device::public_hash::report::Observation::default(),
         #[cfg(feature = "gpu")]
         event_receipts: device::EventReceipts::default(),
+        #[cfg(feature = "gpu")]
+        native_private_spend_program: None,
         #[cfg(feature = "gpu-metal")]
         _backend_transfer_lease: backend_transfer_lease,
         pq,
@@ -1112,6 +1275,7 @@ fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, S
         fri_fold,
         query: None,
         retain_trees,
+        tree_storage: retained_storage::HostQuota::new(tree_storage_selection),
         query_gather,
         opening_denominator_cache,
         retained_copy_device_ns: 0,
@@ -1154,10 +1318,20 @@ fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, S
     };
     #[cfg(feature = "gpu")]
     host_storage::admit(&engine)?;
-    *ENGINE
+    let mut slot = ENGINE
         .get_or_init(|| Mutex::new(None))
         .lock()
-        .map_err(|_| "GPU engine poisoned")? = Some(engine);
+        .map_err(|_| "GPU engine poisoned")?;
+    #[cfg(all(target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info"))]
+    if let Some(owner_out) = owner_out {
+        // Capture the exact epoch before publication and while INITIALIZE is
+        // still held. OwnedRuntime has no public constructor or clone path.
+        let owner = owned_runtime::OwnedRuntime::new(Arc::clone(&engine._job_lease), initialized_device);
+        *slot = Some(engine);
+        *owner_out = Some(owner);
+        return Ok(true);
+    }
+    *slot = Some(engine);
     Ok(true)
 }
 
@@ -1411,9 +1585,11 @@ fn event_range(event: &Event) -> Result<(u64, u64), String> {
 
 impl Engine {
     #[cfg(feature = "gpu")]
-    fn commitment_builder(&self, name: &'static str, rows: usize)
-        -> Result<compute::builders::KernelBuilder<'_>, String>
-    {
+    fn commitment_builder(
+        &self,
+        name: &'static str,
+        rows: usize,
+    ) -> Result<compute::builders::KernelBuilder<'_>, String> {
         let cooperative = self.tuning.commitment && self.nvidia_shuffle;
         let selected = if cooperative {
             match name {
@@ -1423,20 +1599,28 @@ impl Engine {
                 "lde_leaf_finalize" => "lde_leaf_finalize_shuffle",
                 _ => return Err("unknown cooperative commitment kernel".into()),
             }
-        } else { name };
+        } else {
+            name
+        };
         let mut builder = self.pq.kernel_builder(selected);
         if cooperative {
-            let global = rows.checked_add(15).and_then(|n| (n / 16).checked_mul(128))
+            let global = rows
+                .checked_add(15)
+                .and_then(|n| (n / 16).checked_mul(128))
                 .ok_or("cooperative commitment launch overflow")?;
             builder.global_work_size(global).local_work_size(128);
-        } else { builder.global_work_size(rows); }
+        } else {
+            builder.global_work_size(rows);
+        }
         Ok(builder)
     }
 
     #[cfg(feature = "gpu-metal")]
-    fn commitment_builder(&self, name: &'static str, rows: usize)
-        -> Result<crate::metal_compute::KernelBuilder<'_>, String>
-    {
+    fn commitment_builder(
+        &self,
+        name: &'static str,
+        rows: usize,
+    ) -> Result<crate::metal_compute::KernelBuilder<'_>, String> {
         Ok(self.pq.kernel_builder(name).global_work_size(rows))
     }
 
@@ -1538,6 +1722,7 @@ impl Engine {
             self.mode.slots(),
         )?;
         let layout = retained_layout(height, cap_height, self.max_alloc)?;
+        let host_reservation = self.reserve_host_tree(layout)?;
         self.admit_retained(p, height)?;
         self.workspace(p)?;
         let mut storage = allocation(
@@ -1560,6 +1745,7 @@ impl Engine {
         fence.finish()?;
         self.stats.commits += 1;
         self.stats.hashing_wall_ns += started.elapsed().as_nanos();
+        let storage = self.retain_completed_tree(storage, host_reservation, layout)?;
         Ok(RetainedTree {
             storage,
             height,
@@ -1614,6 +1800,9 @@ impl Engine {
         }
         debug_assert_eq!(offset, layout.elements);
         let cap = self.download_buffer(&storage.buffer, layout.cap_offset, layout.cap_rows)?;
+        if cap.capacity() != layout.cap_rows {
+            return Err("retained tree cap capacity exceeds its reservation".into());
+        }
         Ok(cap)
     }
 
@@ -1622,8 +1811,26 @@ impl Engine {
         tree: &RetainedTree,
         index: usize,
     ) -> Result<Vec<[Val; 4]>, String> {
+        match &tree.storage {
+            retained_storage::Storage::Device(device) => {
+                self.open_retained_buffer(tree, &device.buffer, index)
+            }
+            retained_storage::Storage::Host(_) => self
+                .open_retained_batch(tree, &[index])?
+                .pop()
+                .ok_or_else(|| "retained-tree query returned no path".into()),
+        }
+    }
+
+    fn open_retained_buffer(
+        &mut self,
+        tree: &RetainedTree,
+        source: &Buffer<u64>,
+        index: usize,
+    ) -> Result<Vec<[Val; 4]>, String> {
         if index >= tree.height
             || tree.layout.path_len * 4 > QUERY_ELEMENTS
+            || source.len() != tree.layout.elements
             || !Arc::ptr_eq(&self._job_lease, &tree._job_lease)
         {
             return Err("retained-tree query context or bounds mismatch".into());
@@ -1650,7 +1857,7 @@ impl Engine {
         unsafe {
             self.pq
                 .kernel_builder("retained_merkle_path")
-                .arg(&tree.storage.buffer)
+                .arg(source)
                 .arg(query)
                 .arg(tree.height as u32)
                 .arg(index as u32)
@@ -2109,6 +2316,20 @@ pub(super) fn hash_rows_retained(
         .hash_rows_retained(height, width, cap_height, fill)
 }
 
+/// Read completed public-hash execution evidence without creating a context,
+/// enumerating devices, re-reading selectors, or dispatching GPU work. Call
+/// before shutdown; no engine or no completed hash returns None. Mixed
+/// implementations in one context are refused rather than reporting the last.
+pub fn public_hash_execution() -> Result<Option<PublicHashExecution>, String> {
+    let Some(engine) = ENGINE.get() else {
+        return Ok(None);
+    };
+    let engine = engine.lock().map_err(|_| "GPU engine poisoned")?;
+    engine
+        .as_ref()
+        .map_or(Ok(None), |engine| engine.public_hash_execution.get())
+}
+
 pub fn report(label: &str) -> Option<Snapshot> {
     let mut guard = ENGINE.get()?.lock().expect("GPU engine poisoned");
     let e = guard.as_mut()?;
@@ -2118,6 +2339,7 @@ pub fn report(label: &str) -> Option<Snapshot> {
     #[cfg(feature = "gpu-metal")]
     e.pq.report();
     let s = e.snapshot();
+    e.tree_storage.report(label);
     #[cfg(feature = "gpu-metal")]
     println!(
         "metal_timing deferred={} pending_peak={} pending_limit={}",
@@ -2303,10 +2525,14 @@ pub fn shutdown() -> Result<(), String> {
     }
     if let Some(engine) = slot.take() {
         let accounting = engine.accounting.clone();
+        let tree_storage = Arc::clone(&engine.tree_storage);
         drop(engine); // job lease is the last field dropped.
         let live = accounting.lock().unwrap().live;
         if live != 0 {
             return Err("GPU allocations survived shutdown".into());
+        }
+        if tree_storage.live() != 0 {
+            return Err("host retained trees survived shutdown".into());
         }
         println!("bounded_gpu_shutdown managed_live_bytes=0 lease_released=true");
     }
@@ -2416,36 +2642,69 @@ mod tests {
     #[test]
     #[ignore = "isolated GPU query permit/fence injection"]
     fn gpu_apple_query_reconstruction_error_and_unwind_release_permit() {
-        use p3_matrix::dense::RowMajorMatrix;
-        use compute::enums::{CommandExecutionStatus, EventInfo, EventInfoResult};
         use crate::block_v2::worker_memory;
+        use compute::enums::{CommandExecutionStatus, EventInfo, EventInfoResult};
+        use p3_matrix::dense::RowMajorMatrix;
         let _shutdown = TestShutdownGuard;
         let dir = std::env::temp_dir().join(format!("lattica-query-fence-{}", std::process::id()));
         worker_memory::private_directory(&dir).unwrap();
         std::env::set_var(crate::block_v2::worker_memory::env_name("PHASE_DIR"), &dir);
-        std::env::set_var(crate::block_v2::worker_memory::env_name("QUERY_PHASE_SLOTS"), "1");
-        initialize_mode(Limits { managed_bytes: 16*MIB, tile_bytes: 64*1024, staging_bytes: 32*1024 }, TransferMode::Serial).unwrap();
-        let prefixes = vec![super::super::prefix_storage::host(RowMajorMatrix::new(vec![Val::ONE; 8*3], 3))];
+        std::env::set_var(
+            crate::block_v2::worker_memory::env_name("QUERY_PHASE_SLOTS"),
+            "1",
+        );
+        initialize_mode(
+            Limits {
+                managed_bytes: 16 * MIB,
+                tile_bytes: 64 * 1024,
+                staging_bytes: 32 * 1024,
+            },
+            TransferMode::Serial,
+        )
+        .unwrap();
+        let prefixes = vec![super::super::prefix_storage::host(RowMajorMatrix::new(
+            vec![Val::ONE; 8 * 3],
+            3,
+        ))];
         for unwind in [false, true] {
             let (before, release) = {
                 let mut slot = ENGINE.get().unwrap().lock().unwrap();
                 let e = slot.as_mut().unwrap();
                 let (gate, notify, release) = delayed_gate(e);
-                e.lde_gate = Some(gate); e.lde_submitted = Some(notify); e.fail_lde_after_enqueue = Some(unwind);
+                e.lde_gate = Some(gate);
+                e.lde_submitted = Some(notify);
+                e.fail_lde_after_enqueue = Some(unwind);
                 (e.snapshot().managed_live_bytes, release)
             };
-            let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| query_reconstruct::reconstruct(&prefixes, 128, &[0, 127])));
-            if unwind { assert!(result.is_err()); } else { assert!(result.unwrap().is_err()); }
+            let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                query_reconstruct::reconstruct(&prefixes, 128, &[0, 127])
+            }));
+            if unwind {
+                assert!(result.is_err());
+            } else {
+                assert!(result.unwrap().is_err());
+            }
             let lock = ENGINE.get().unwrap();
             let mut slot = lock.lock().unwrap_or_else(|e| e.into_inner());
             lock.clear_poison();
             let e = slot.as_mut().unwrap();
-            assert!(matches!(e.injected_event.take().unwrap().info(EventInfo::CommandExecutionStatus).unwrap(), EventInfoResult::CommandExecutionStatus(CommandExecutionStatus::Complete)));
-            release.join(); e.lde_gate = None;
+            assert!(matches!(
+                e.injected_event
+                    .take()
+                    .unwrap()
+                    .info(EventInfo::CommandExecutionStatus)
+                    .unwrap(),
+                EventInfoResult::CommandExecutionStatus(CommandExecutionStatus::Complete)
+            ));
+            release.join();
+            e.lde_gate = None;
             assert_eq!(e.snapshot().managed_live_bytes, before);
             drop(slot);
             let permit = worker_memory::lock_file(&dir.join("query/phase-0.lock")).unwrap();
-            assert!(worker_memory::lock(&permit, true).unwrap(), "query permit leaked");
+            assert!(
+                worker_memory::lock(&permit, true).unwrap(),
+                "query permit leaked"
+            );
         }
         let rows = query_reconstruct::reconstruct(&prefixes, 128, &[0, 127]).unwrap();
         assert_eq!(rows, vec![vec![vec![Val::ONE; 3]]; 2]);
@@ -2495,23 +2754,44 @@ mod tests {
         use p3_field::Field;
         use p3_matrix::dense::RowMajorMatrix;
         assert!(crate::block_v2::worker_memory::reclaim_enabled());
-        initialize_mode(Limits { managed_bytes: 16 * MIB, tile_bytes: 64 * 1024, staging_bytes: 32 * 1024 }, TransferMode::Serial).unwrap();
+        initialize_mode(
+            Limits {
+                managed_bytes: 16 * MIB,
+                tile_bytes: 64 * 1024,
+                staging_bytes: 32 * 1024,
+            },
+            TransferMode::Serial,
+        )
+        .unwrap();
         let mut engine = TestEngine::take();
         engine.lde_workspace_limit = MIB;
         let evaluations = RowMajorMatrix::new(vec![Val::ONE; 128 * 7], 7);
         let salts = RowMajorMatrix::new(vec![Val::ONE; 512 * 4], 4);
-        let inputs = [LdeInput { evaluations: &evaluations, salts: &salts, added_bits: 2, shift: Val::GENERATOR }];
+        let inputs = [LdeInput {
+            evaluations: &evaluations,
+            salts: &salts,
+            added_bits: 2,
+            shift: Val::GENERATOR,
+        }];
         let output = engine.coset_lde_commit(&inputs, 6, MIB).unwrap();
         let path = engine.open_retained(&output.tree, 511).unwrap();
         let before = engine.snapshot().managed_live_bytes;
-        let cached = engine.lde_workspace.as_ref().expect("test must retain scratch").bytes();
+        let cached = engine
+            .lde_workspace
+            .as_ref()
+            .expect("test must retain scratch")
+            .bytes();
         assert!(cached > 0);
-        engine.reclaim_transient_scratch("retirement test", false).unwrap();
+        engine
+            .reclaim_transient_scratch("retirement test", false)
+            .unwrap();
         assert!(engine.lde_workspace.is_none() && engine.workspace.is_none());
         assert!(engine.snapshot().managed_live_bytes <= before - cached);
         assert_eq!(counters(&engine.accounting).retained_trees, 1);
         assert_eq!(engine.open_retained(&output.tree, 511).unwrap(), path);
-        engine.reclaim_transient_scratch("retirement repeated", true).unwrap();
+        engine
+            .reclaim_transient_scratch("retirement repeated", true)
+            .unwrap();
         assert_eq!(engine.open_retained(&output.tree, 511).unwrap(), path);
         drop(output);
         assert_eq!(counters(&engine.accounting).retained_trees, 0);
@@ -3396,47 +3676,81 @@ impl Engine {
             let mut heights = Vec::new();
             for input in inputs {
                 heights.push(input.height);
-                heights.push(input.height.checked_shl(input.added_bits as u32).ok_or("LDE table height overflow")?);
+                heights.push(
+                    input
+                        .height
+                        .checked_shl(input.added_bits as u32)
+                        .ok_or("LDE table height overflow")?,
+                );
             }
             let reserve = self.pq.ntt_cache_reserve(&heights)?;
             let mut limits = self.limits;
             // Backend NTT tables are not engine Lease allocations. Reserve their
             // possible live size before selecting transform column tiles.
-            limits.managed_bytes = limits.managed_bytes.checked_sub(reserve)
+            limits.managed_bytes = limits
+                .managed_bytes
+                .checked_sub(reserve)
                 .ok_or("LDE NTT cache exceeds managed allowance")?;
             Ok(limits)
         }
         #[cfg(not(feature = "gpu-metal"))]
-        { let _ = inputs; Ok(self.limits) }
+        {
+            let _ = inputs;
+            Ok(self.limits)
+        }
     }
 }
 
 pub(crate) fn reclaim_scratch() -> Result<(), String> {
-    if !crate::block_v2::worker_memory::reclaim_enabled() { return Ok(()); }
-    let Some(engine) = ENGINE.get() else { return Ok(()) };
+    if !crate::block_v2::worker_memory::reclaim_enabled() {
+        return Ok(());
+    }
+    let Some(engine) = ENGINE.get() else {
+        return Ok(());
+    };
     let mut slot = engine.lock().map_err(|_| "GPU engine poisoned")?;
-    let Some(engine) = slot.as_mut() else { return Ok(()) };
+    let Some(engine) = slot.as_mut() else {
+        return Ok(());
+    };
     engine.reclaim_transient_scratch("scratch retired", true)
 }
 
 impl Engine {
     /// Called while the engine is already locked. Never re-enter ENGINE here.
-    fn reclaim_transient_scratch(&mut self, label: &str, retire_tables: bool) -> Result<(), String> {
-        if !crate::block_v2::worker_memory::reclaim_enabled() { return Ok(()); }
+    fn reclaim_transient_scratch(
+        &mut self,
+        label: &str,
+        retire_tables: bool,
+    ) -> Result<(), String> {
+        if !crate::block_v2::worker_memory::reclaim_enabled() {
+            return Ok(());
+        }
         self.fence().finish()?;
         self.resolve_timing()?;
         let released_bytes = self.workspace.as_ref().map_or(0, Workspace::bytes)
-            + self.lde_workspace.as_ref().map_or(0, lde_execute::TransformBuffers::bytes);
+            + self
+                .lde_workspace
+                .as_ref()
+                .map_or(0, lde_execute::TransformBuffers::bytes);
         self.workspace = None;
         self.lde_workspace = None;
         #[cfg(feature = "gpu-metal")]
-        if retire_tables { self.pq.retire_ntt_cache()?; }
+        if retire_tables {
+            self.pq.retire_ntt_cache()?;
+        }
         // OpenCL NTT roots are workspace allocations, not a backend cache.
         #[cfg(not(feature = "gpu-metal"))]
         let _ = retire_tables;
-        let live = self.accounting.lock().map_err(|_| "GPU accounting poisoned")?.live;
+        let live = self
+            .accounting
+            .lock()
+            .map_err(|_| "GPU accounting poisoned")?
+            .live;
         eprintln!("{MEMORY_BACKEND}_scratch_retired pid={} label={label:?} released_bytes={released_bytes} managed_live_bytes={live}", std::process::id());
         crate::block_v2::worker_memory::checkpoint(label);
         Ok(())
     }
 }
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info"))]
+pub(crate) mod owned_runtime;

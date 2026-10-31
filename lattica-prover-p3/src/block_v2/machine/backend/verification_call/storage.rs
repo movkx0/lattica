@@ -22,101 +22,11 @@ fn bytes<T>(capacity: usize) -> Result<usize, &'static str> {
     capacity.checked_mul(core::mem::size_of::<T>()).ok_or(ERROR)
 }
 
-#[derive(Default)]
-struct Backing(usize);
-impl Backing {
-    fn capacity<T>(&mut self, capacity: usize) -> Result<(), &'static str> {
-        self.0 = add(self.0, bytes::<T>(capacity)?)?;
-        if self.0 > PROOF_LIMIT_BYTES {
-            return Err(ERROR);
-        }
-        Ok(())
-    }
-    fn vector<T>(&mut self, value: &Vec<T>) -> Result<(), &'static str> {
-        self.capacity::<T>(value.capacity())
-    }
-    fn cap(&mut self, cap: &p3_batch_stark::Commitment<Config>) -> Result<(), &'static str> {
-        self.capacity::<[Val; 4]>(cap.root_capacity())
-    }
-    fn rows<T>(&mut self, rows: &Vec<Vec<T>>) -> Result<(), &'static str> {
-        self.vector(rows)?;
-        for row in rows {
-            self.vector(row)?;
-        }
-        Ok(())
-    }
-    fn optional<T>(&mut self, value: &Option<Vec<T>>) -> Result<(), &'static str> {
-        if let Some(value) = value {
-            self.vector(value)?;
-        }
-        Ok(())
-    }
-    fn authentication(
-        &mut self,
-        (salts, path): &(Vec<Vec<Val>>, Vec<[Val; 4]>),
-    ) -> Result<(), &'static str> {
-        self.rows(salts)?;
-        self.vector(path)
-    }
-}
-
-/// Walk only initialized entries. Each outer capacity is admitted before its
-/// children, so even before the envelope this traversal has bounded work and
-/// makes no allocation. The structural envelope is still required separately.
-/// Each Vec backing buffer is charged once, including spare capacity; inline
-/// Vec headers in outer buffers are charged by the outer element size.
+/// Same release-x86_64 verifier admission and error as before. The portable
+/// helper only counts backing capacities; it never validates a proof.
 pub(in super::super) fn proof_bytes(proof: &BatchProof<Config>) -> Result<usize, &'static str> {
-    let mut heap = Backing::default();
-    heap.cap(&proof.commitments.main)?;
-    heap.cap(&proof.commitments.quotient_chunks)?;
-    for cap in [&proof.commitments.permutation, &proof.commitments.random]
-        .into_iter()
-        .flatten()
-    {
-        heap.cap(cap)?;
-    }
-    heap.vector(&proof.degree_bits)?;
-    heap.vector(&proof.lookup_terminals)?;
-    heap.vector(&proof.opened_values.instances)?;
-    for instance in &proof.opened_values.instances {
-        let base = &instance.base_opened_values;
-        heap.vector(&base.trace_local)?;
-        heap.optional(&base.trace_next)?;
-        heap.optional(&base.preprocessed_local)?;
-        heap.optional(&base.preprocessed_next)?;
-        heap.optional(&base.random)?;
-        heap.rows(&base.quotient_chunks)?;
-        heap.vector(&instance.permutation_local)?;
-        heap.vector(&instance.permutation_next)?;
-    }
-    let (hiding, fri) = &proof.opening_proof;
-    heap.vector(hiding)?;
-    for matrices in hiding {
-        heap.vector(matrices)?;
-        for points in matrices {
-            heap.rows(points)?;
-        }
-    }
-    heap.vector(&fri.commit_phase_commits)?;
-    for cap in &fri.commit_phase_commits {
-        heap.cap(cap)?;
-    }
-    heap.vector(&fri.commit_pow_witnesses)?;
-    heap.vector(&fri.final_poly)?;
-    heap.vector(&fri.query_proofs)?;
-    for query in &fri.query_proofs {
-        heap.vector(&query.input_proof)?;
-        for opening in &query.input_proof {
-            heap.rows(&opening.opened_values)?;
-            heap.authentication(&opening.opening_proof)?;
-        }
-        heap.vector(&query.commit_phase_openings)?;
-        for layer in &query.commit_phase_openings {
-            heap.vector(&layer.sibling_values)?;
-            heap.authentication(&layer.opening_proof)?;
-        }
-    }
-    Ok(heap.0)
+    super::super::retained_proof_capacity_bytes(proof, PROOF_LIMIT_BYTES)
+        .map_err(|_| ERROR)
 }
 
 impl Plan {
@@ -164,9 +74,6 @@ mod arithmetic_tests {
     fn capacity_and_temporary_limits_reject_overflow_and_accept_exact_boundary() {
         assert!(add(usize::MAX, 1).is_err());
         assert!(bytes::<Val>(usize::MAX).is_err());
-        let mut heap = Backing::default();
-        heap.capacity::<u8>(PROOF_LIMIT_BYTES).unwrap();
-        assert!(heap.capacity::<u8>(1).is_err());
         let mut plan = Plan {
             proof_backing_bytes: PROOF_LIMIT_BYTES,
             numerical_bytes: 0,

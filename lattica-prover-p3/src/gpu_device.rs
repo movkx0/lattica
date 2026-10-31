@@ -1,4 +1,17 @@
 //! Shared OpenCL identity selection. NVIDIA and OpenCL enumeration orders differ.
+#[cfg(all(
+    target_os = "linux",
+    target_arch = "x86_64",
+    any(test, feature = "note-research-quota", feature = "gpu-bounded-info")
+))]
+pub(crate) mod bounded;
+#[cfg(all(
+    target_os = "linux",
+    target_arch = "x86_64",
+    any(test, feature = "note-research-quota", feature = "gpu-bounded-info")
+))]
+pub(crate) mod process_memory;
+
 use ocl::{
     core::{DeviceInfo, DeviceInfoResult},
     Device, Platform,
@@ -94,3 +107,6 @@ pub fn select() -> Result<(Platform, Device, Identity), String> {
         .nth(selected)
         .ok_or("selected OpenCL GPU unavailable".into())
 }
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64"))]
+pub(crate) mod sealed_environment;

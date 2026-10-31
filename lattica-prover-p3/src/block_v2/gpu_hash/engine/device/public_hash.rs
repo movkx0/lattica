@@ -5,6 +5,11 @@ use crate::block_v2::{commitment, machine::programs};
 
 #[cfg(feature = "gpu")]
 pub(crate) mod nvidia;
+pub(crate) mod report;
+mod selection;
+#[cfg(feature = "gpu-tuning")]
+pub(crate) mod batched;
+pub(crate) use selection::Selection as PublicHashSelection;
 
 pub(crate) const BATCH_WORDS: usize = 4096;
 pub(crate) const WORKSPACE_BYTES: u64 = (BATCH_WORDS as u64 + 4) * 8;
@@ -15,7 +20,11 @@ pub(crate) const HOST_BYTES: u64 = 1 << 16;
 const HASH_LANES: usize = 8;
 const COOPERATIVE_MIN_WORDS: usize = 64;
 
-pub(crate) const KERNEL_SRC: &str = r#"
+// Keep the default program byte-for-byte unchanged. The experimental entry
+// point is compiled only by a build which explicitly enables gpu-tuning.
+macro_rules! public_hash_source {
+    ($extra:expr) => {
+        concat!(r#"
 __kernel void device_public_hash(__global ulong *state, __global const ulong *input,
     const ulong domain, const ulong length, const uint first, const uint count,
     __global const ulong *rci, __global const ulong *rcp,
@@ -147,7 +156,16 @@ __kernel void device_validate_summary(__global const ulong *words, __global ulon
     }
     status[0] = 0;
 }
-"#;
+"#, $extra)
+    };
+}
+
+#[cfg(not(feature = "gpu-tuning"))]
+pub(crate) const KERNEL_SRC: &str = public_hash_source!("");
+#[cfg(feature = "gpu-tuning")]
+pub(crate) const KERNEL_SRC: &str = public_hash_source!(concat!(
+    include_str!("public_hash/sbox_pair.cl"), include_str!("public_hash/batched.cl")
+));
 
 #[cfg(test)]
 fn validate(domain: u64, fields: &[u64]) -> Result<u64, String> {
@@ -386,24 +404,83 @@ impl DeviceSession {
         produce: impl FnMut(&mut FieldSink<'_>) -> Result<(), String>,
         after_batch: impl FnMut(u128) -> Result<(), String>,
     ) -> Result<[u64; 4], String> {
-        self.hash_public_stream_kernel(domain, produce, after_batch, true)
+        // Capture once, before reading the stream; a selector change cannot
+        // change implementations halfway through a sequential sponge.
+        let selected = PublicHashSelection::from_env()?;
+        let result =
+            self.hash_public_stream_selected(domain, produce, after_batch, true, selected)?;
+        #[cfg(test)]
+        if let Some(execution) = crate::block_v2::gpu_hash::engine::public_hash_execution()? {
+            println!(
+                "PUBLIC_HASH_EXECUTION {}",
+                serde_json::to_string(&execution).map_err(|e| e.to_string())?
+            );
+        }
+        Ok(result)
     }
 
+    #[cfg(test)]
     fn hash_public_stream_kernel(
+        &self,
+        domain: u64,
+        produce: impl FnMut(&mut FieldSink<'_>) -> Result<(), String>,
+        after_batch: impl FnMut(u128) -> Result<(), String>,
+        cooperative: bool,
+    ) -> Result<[u64; 4], String> {
+        self.hash_public_stream_selected(
+            domain,
+            produce,
+            after_batch,
+            cooperative,
+            selection::Selection::Baseline,
+        )
+    }
+
+    fn hash_public_stream_selected(
         &self,
         domain: u64,
         mut produce: impl FnMut(&mut FieldSink<'_>) -> Result<(), String>,
         mut after_batch: impl FnMut(u128) -> Result<(), String>,
         cooperative: bool,
+        selected: selection::Selection,
     ) -> Result<[u64; 4], String> {
         let length = stream_length(domain, &mut produce)?;
         #[cfg(not(feature = "gpu"))]
         {
-            let _ = (length, after_batch, cooperative);
+            let _ = (length, after_batch, cooperative, selected);
             return Err("GPU public hashing is not implemented on Metal".into());
         }
         #[cfg(feature = "gpu")]
         self.with_engine(|engine| {
+            selected.require_device(engine.pq.device())?;
+            // Inspect the physical kernel before allocating output or upload
+            // scratch. Null arguments are replaced only after admission; this
+            // kernel is built once and reused for every batch, including tails.
+            let paired = if selected == selection::Selection::SboxPairV1 {
+                let kernel = engine
+                    .pq
+                    .kernel_builder("device_public_hash_sbox_pair")
+                    .arg(None::<&ocl::Buffer<u64>>)
+                    .arg(None::<&ocl::Buffer<u64>>)
+                    .arg(domain)
+                    .arg(length as u64)
+                    .arg(0u32)
+                    .arg(0u32)
+                    .arg(&engine.constants[0].buffer)
+                    .arg(&engine.constants[1].buffer)
+                    .arg(&engine.constants[2].buffer)
+                    .arg(&engine.constants[3].buffer)
+                    .global_work_size(selection::PAIR_LANES)
+                    .local_work_size(selection::PAIR_LANES)
+                    .build()
+                    .map_err(|e| e.to_string())?;
+                let (local, private) = selection::inspect_kernel(&kernel, engine.pq.device())?;
+                eprintln!("bounded_gpu_public_hash selection=sbox-pair-v1 gpu_tuning={} physical_lanes={} global_workspace_bytes={WORKSPACE_BYTES} max_allocation_bytes={MAX_ALLOCATION_BYTES} driver_local_bytes={local} driver_private_bytes_per_lane={private}",
+                    cfg!(feature = "gpu-tuning"), selection::PAIR_LANES);
+                Some(kernel)
+            } else {
+                None
+            };
             let specs = [
                 MatrixSpec::new(0, 4, Extension::Base, RowOrder::Natural, 1)?,
                 MatrixSpec::new(0, BATCH_WORDS, Extension::Base, RowOrder::Natural, 1)?,
@@ -411,6 +488,16 @@ impl DeviceSession {
             let _plan = Self::plan(engine, &specs)?;
             let state = self.allocate(engine, specs[0])?;
             let input = self.allocate(engine, specs[1])?;
+            // Kernels retain their arguments. Drop this owner before the
+            // tracked buffers and their memory reservations are released.
+            let paired = paired;
+            if let Some(kernel) = &paired {
+                kernel.set_arg(0, &state.storage.buffer).map_err(|e| e.to_string())?;
+                kernel.set_arg(1, &input.storage.buffer).map_err(|e| e.to_string())?;
+            }
+            // Handles retain their buffer arguments and must drop before the
+            // accounted buffers on success, refusal and callback failure.
+            let mut baseline: Option<(&str, ocl::Kernel)> = None;
             let mut result = [0u64; 4];
             let fence = engine.fence();
             batches(length, &mut produce, |words, first| {
@@ -423,18 +510,32 @@ impl DeviceSession {
                         .map_err(|e| e.to_string())?;
                 }
                 let mut event = compute::Event::empty();
-                let (kernel, lanes) = if cooperative && words.len() >= COOPERATIVE_MIN_WORDS {
+                let (kernel, lanes) = if paired.is_some() {
+                    ("device_public_hash_sbox_pair", selection::PAIR_LANES)
+                } else if cooperative && words.len() >= COOPERATIVE_MIN_WORDS {
                     ("device_public_hash_cooperative", HASH_LANES)
                 } else {
                     ("device_public_hash", 1)
                 };
+                let execution = report::PublicHashExecution::validated_kernel(kernel, engine.nvidia_shuffle)?;
                 // SAFETY: one workgroup owns the four capacity words. The
-                // cooperative kernel requires exactly eight uniformly active
-                // lanes and 64 bytes of static local SRAM. No barriers depend
-                // on per-lane branches. Every full chunk is a multiple of the
-                // four-word rate; only the final chunk is zero padded.
+                // baseline cooperative kernel requires eight uniformly active
+                // lanes. The opt-in pair kernel requires sixteen and executes
+                // every exchange uniformly, including partial rounds; only
+                // even lanes write the four state words. Its physical local
+                // and private storage was checked before allocation. Every
+                // full chunk is a multiple of the four-word rate; only the
+                // final chunk is zero padded.
                 unsafe {
-                    engine
+                    if let Some(candidate) = &paired {
+                        candidate.set_arg(4, u32::from(first)).map_err(|e| e.to_string())?;
+                        candidate.set_arg(5, words.len() as u32).map_err(|e| e.to_string())?;
+                        candidate.cmd().enew(&mut event).enq().map_err(|e| e.to_string())?;
+                    } else {
+                        // Full chunks share one kernel. Only the final short
+                        // tail can switch to scalar, so each is built once.
+                        if baseline.as_ref().is_none_or(|(name, _)| *name != kernel) {
+                        baseline = Some((kernel, engine
                         .pq
                         .kernel_builder(kernel)
                         .arg(&state.storage.buffer)
@@ -450,13 +551,16 @@ impl DeviceSession {
                         .global_work_size(lanes)
                         .local_work_size(lanes)
                         .build()
-                        .map_err(|e| e.to_string())?
-                        .cmd()
-                        .enew(&mut event)
-                        .enq()
-                        .map_err(|e| e.to_string())?;
+                        .map_err(|e| e.to_string())?));
+                        }
+                        let candidate = &baseline.as_ref().expect("selected baseline kernel").1;
+                        candidate.set_arg(4, u32::from(first)).map_err(|e| e.to_string())?;
+                        candidate.set_arg(5, words.len() as u32).map_err(|e| e.to_string())?;
+                        candidate.cmd().enew(&mut event).enq().map_err(|e| e.to_string())?;
+                    }
                 }
                 let ns = engine.timeline.record(kernel, &event)?;
+                engine.public_hash_execution.record(execution);
                 engine.stats.uploaded_bytes += words.len() as u64 * 8;
                 {
                     let mut stats = self.session.stats.lock().unwrap();
@@ -488,9 +592,17 @@ impl DeviceSession {
 
 #[cfg(all(test, feature = "gpu"))]
 mod cooperative_tests;
+#[cfg(all(test, feature = "gpu", feature = "gpu-tuning"))]
+mod sbox_pair_tests;
+#[cfg(all(test, feature = "gpu", feature = "gpu-tuning"))]
+mod fused_partial_probe;
+#[cfg(all(test, feature = "gpu", feature = "gpu-tuning"))]
+mod redux_sum_probe;
+#[cfg(all(test, feature = "gpu", feature = "gpu-tuning"))]
+mod serial_lane_probe;
 #[cfg(all(test, feature = "gpu"))]
 mod shuffle_tests;
-#[cfg(all(test, feature = "gpu"))]
-mod unroll_tests;
 #[cfg(test)]
 mod tests;
+#[cfg(all(test, feature = "gpu"))]
+mod unroll_tests;

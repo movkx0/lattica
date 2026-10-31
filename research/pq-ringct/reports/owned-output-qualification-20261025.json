@@ -1,0 +1,77 @@
+{
+  "schema": "ringct-owned-output-qualification-v1",
+  "snapshots": [
+    "B007",
+    "B010"
+  ],
+  "validation": {
+    "fullgpu-owned-output-build-1": {
+      "status": "failed_or_incomplete",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "1be8250584f4de11e04f2f8e9d8b06037acbff32d4e593b8d31c93aaf8d7e0d0",
+      "raw_log_sha256": "dbae8a9c14dab27a702d1077918e267e7a69a2c52580133b39a7d83e59f0ce65",
+      "guard_wall_seconds": 46.1607841749792,
+      "guarded_job_peak_bytes": "1522790400",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-owned-output-build-2": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "32f23444dfc2300949242119748cef5beb5e1aa52df7d7d75f61c3b810cc45c1",
+      "raw_log_sha256": "41a753acec5a14144e1b28b3d8167162a335dd8d14538250e89dcc30b504b5d3",
+      "guard_wall_seconds": 32.146048391005024,
+      "guarded_job_peak_bytes": "1205231616",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-owned-output-record-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "e05d7cd8b6da930fd5f1407e0f2e4e3b1cc87208692886b7e7203ee28c906f2a",
+      "raw_log_sha256": "5c7373015c0eb16e3bef162eff08fba86dd59c4679e63f4f4873252959a5f75d",
+      "guard_wall_seconds": 2.1022628270147834,
+      "guarded_job_peak_bytes": "25448448",
+      "built_artifact_sha256": {
+        "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/target-opencl/release/deps/lattica_pq_ringct_research-3dd0ddffaf022116": "b3ba2d239645d8fbe0db3f5b0897e4de5255d0c59d700942d60178ecdb3d6783"
+      }
+    },
+    "fullgpu-owned-output-pure-tests-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "c8ceb353fc0044a61d77e41d8da20285d54ae2ef76660ddabfaae5727b8a8b18",
+      "raw_log_sha256": "5abf3deec5a63adff887b3d0f54065df14a4e9bb9c189e83272b73cb509f752d",
+      "guard_wall_seconds": 2.083417224988807,
+      "guarded_job_peak_bytes": "6561792",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-owned-output-genuine-cpu-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "37610cd9809734bf20474370da9c03ecfc1f76b0fec582efca53a57fe2acd02f",
+      "raw_log_sha256": "4e7a7b324aa5bdf6c2864d0bf4be605f03ed5d9919829f7eaeaa9df07400f2bc",
+      "guard_wall_seconds": 2.0806829319917597,
+      "guarded_job_peak_bytes": "16502784",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-owned-output-memory-diagnostic-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "76f743e6f10695245b8323c336071e0c9d71696e7c1229704d3671bd2435fcab",
+      "raw_log_sha256": "a63c6958d82afaa100137c2c5896351c72edf7016b78d5f1c576c42839321f6d",
+      "guard_wall_seconds": 74.22246863198234,
+      "guarded_job_peak_bytes": "1526444032",
+      "built_artifact_sha256": {}
+    }
+  },
+  "complete_direct_memory_diagnostic_unchanged": true,
+  "diagnostic_sha256": "c91d12b47975f367e82c2b75eac2425c17485e7deaff70beff4610ebd6510897",
+  "pure_tests_passed": 20,
+  "pure_tests_ignored": 4,
+  "genuine_test_passed": 1,
+  "genuine_scope": "Six fresh CPU proofs of a 64-row equality relation; independent verification, identity/capacity mismatch rejection, context retirement, move/drop ownership, and zero final ledger. Not a SHAKE relation.",
+  "source_changes": "Source-derived producer/key/verifier output claims; helper factoring leaves the existing direct memory diagnostic unchanged. Added already-locked p3-fri test dependency.",
+  "paired_dispatch_enabled": false,
+  "faithful_ringct_workflow_qualified": false,
+  "production_acceptance_changed": false,
+  "resource_limits_changed": false,
+  "initial_build_failure_preserved": "Missing direct p3-fri test dependency; corrected without package version changes."
+}

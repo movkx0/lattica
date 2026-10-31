@@ -6,16 +6,24 @@ use crate::block_v2::compute;
 use crate::config::Val;
 use std::sync::{Arc, Mutex};
 
-mod host_storage;
-mod observation;
 #[cfg(feature = "gpu")]
 mod event_batch;
+mod host_storage;
+#[cfg(all(target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info"))]
+pub mod ringct_runtime;
+#[cfg(all(test, target_os = "linux", target_arch = "x86_64", feature = "gpu"))]
+mod native_launch;
+mod observation;
+#[cfg(all(target_os = "linux", target_arch = "x86_64", feature = "gpu"))]
+pub(crate) mod raw_graph_resources;
+pub(crate) mod note_quotient_policy;
 #[cfg(feature = "gpu")]
 pub(super) use event_batch::EventReceipts;
 pub(crate) use host_storage::HostScope;
 pub(crate) use observation::ExecutionObservation;
 mod commit_storage;
 mod compiler_constants;
+pub(crate) use compiler_constants::{PERIODIC_MAX_ALLOCATION_BYTES, PERIODIC_WORKSPACE_BYTES};
 mod compiler_folding;
 pub(crate) use commit_storage::{CommitInputStorage, SampleLocation};
 mod evaluations;
@@ -36,9 +44,15 @@ pub(crate) use transcript::{DeviceTranscript, TranscriptAttempt};
 pub(super) use transcript_kernels::KERNEL_SRC as TRANSCRIPT_KERNEL_SRC;
 mod htlc_kernels;
 mod periodic;
+#[cfg(all(target_os = "linux", target_arch = "x86_64", feature = "gpu"))]
+pub(crate) mod note_payload;
 pub(crate) use periodic::PeriodicShape;
+mod pq_sources;
 mod trace_commit;
 mod wallet;
+#[cfg(all(feature = "gpu", feature = "stream", feature = "note-research-quota"))]
+pub(crate) use wallet::note_runtime;
+pub(super) use pq_sources::KERNEL_SRC as PQ_SOURCES_KERNEL_SRC;
 mod wallet_kernels;
 pub(super) use periodic::KERNEL_SRC as PERIODIC_KERNEL_SRC;
 #[cfg(feature = "gpu")]
@@ -54,7 +68,47 @@ pub(crate) use random::{DeviceRandom, RandomWords};
 pub(super) use random_kernels::KERNEL_SRC as RANDOM_KERNEL_SRC;
 #[cfg(test)]
 pub(super) use random_kernels::REFERENCE_KERNEL_SRC as RANDOM_REFERENCE_KERNEL_SRC;
-pub(crate) use wallet::{WalletDevicePlan, WalletProofMinimum, WalletTrace};
+pub(crate) use wallet::{WalletDevicePlan, WalletPlannerResources, WalletProofMinimum, WalletTrace};
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream"
+))]
+pub(crate) use wallet::ShakeSourceDeviceCensus;
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream"
+))]
+pub(crate) use wallet::AesSourceDeviceCensus;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use wallet::GraphSourceDeviceCensus;
+
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream",
+    feature = "ringct-research-quota"
+))]
+pub(crate) use wallet::ShakeDeviceLease;
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream",
+    feature = "ringct-research-quota"
+))]
+pub(crate) use wallet::AesDeviceLease;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use wallet::GraphSourceDeviceLease;
+
 pub(super) use wallet_kernels::KERNEL_SRC as WALLET_KERNEL_SRC;
 pub(crate) use witness::{PreparedWitness, PreprocessingTrace, WitnessError};
 pub(super) use witness_kernels::KERNEL_SRC as WITNESS_KERNEL_SRC;
@@ -82,6 +136,7 @@ mod quotient;
 mod quotient_commit;
 pub(crate) use lookup::PreparedLookup;
 pub(super) use lookup_kernels::KERNEL_SRC as LOOKUP_KERNEL_SRC;
+pub(crate) use quotient::PartitionStorage;
 pub(crate) use quotient::PreparedQuotient;
 pub(super) use quotient::KERNEL_SRC as QUOTIENT_KERNEL_SRC;
 pub(super) use quotient_commit::KERNEL_SRC as QUOTIENT_COMMIT_KERNEL_SRC;
@@ -187,6 +242,7 @@ impl Lease {
     }
 }
 struct Session {
+    quotient_policy: note_quotient_policy::Policy,
     context: Arc<JobLease>,
     stats: Mutex<SessionStats>,
     observed_stages: std::sync::atomic::AtomicU32,
@@ -229,7 +285,7 @@ impl DeviceMatrix {
     }
 }
 
-fn matrix_host_backing(has_scrub_owner: bool) -> usize {
+pub(crate) fn matrix_host_backing(has_scrub_owner: bool) -> usize {
     use crate::block_v2::gpu_hash::cache_metadata::arc_bytes;
     arc_bytes::<Allocation>()
         + if has_scrub_owner {
@@ -237,6 +293,62 @@ fn matrix_host_backing(has_scrub_owner: bool) -> usize {
         } else {
             0
         }
+}
+
+pub(crate) fn retained_stream_host_backing() -> usize {
+    random::retained_stream_host_backing()
+}
+
+/// The opening partition subtracts its runtime backing from the PCS allowance
+/// after the outer registration has already reserved the shared runtime. Keep
+/// that local feasibility charge explicit, using the same maintained owners.
+/// This census does not initialize an engine or allocate a transcript.
+pub(crate) fn opening_runtime_host_bound() -> Result<usize, String> {
+    let engine = usize::try_from(super::host_storage::RETAINED_HOST_BYTES)
+        .map_err(|_| "opening runtime engine host bound overflow")?;
+    let family = transcript::maximum_family_host_backing()?;
+    let scratch = crate::block_v2::challenger::storage::reservation()?;
+    engine
+        .checked_add(host_storage::session_bytes())
+        .and_then(|bytes| bytes.checked_add(family))
+        .and_then(|bytes| bytes.checked_add(scratch))
+        .ok_or_else(|| "opening runtime host bound overflow".into())
+}
+
+pub(crate) fn transform_storage_plan(
+    spec: MatrixSpec,
+    output_log_rows: u32,
+    live: usize,
+    limits: super::Limits,
+    max_alloc: usize,
+) -> Result<MemoryPlan, String> {
+    transform::storage_plan(spec, output_log_rows, live, limits, max_alloc)
+}
+
+pub(crate) fn opening_evaluation_plan(
+    spec: MatrixSpec,
+    points: usize,
+    degree: usize,
+    live: usize,
+    limits: super::Limits,
+    max_alloc: usize,
+) -> Result<(usize, usize), String> {
+    let plan = opening::EvaluationPlan::new(spec, points, degree, live, limits, max_alloc)?;
+    Ok((plan.rows, plan.peak))
+}
+
+pub(crate) fn opening_reduction_plan(
+    spec: MatrixSpec,
+    log_rows: u32,
+    points: usize,
+    degree: usize,
+    live: usize,
+    limits: super::Limits,
+    max_alloc: usize,
+) -> Result<(usize, usize), String> {
+    let plan =
+        opening::ReductionPlan::new(spec, log_rows, points, degree, live, limits, max_alloc)?;
+    Ok((plan.rows, plan.peak))
 }
 
 #[cfg(all(test, feature = "stream"))]
@@ -272,6 +384,24 @@ impl DeviceCommitment {
         stats.queries += 1;
         Ok(path)
     }
+
+    /// Preserve input order and duplicates. Host-backed digest trees upload
+    /// once for the batch, then use the same device authentication-path gather.
+    pub(crate) fn open_many(&self, indices: &[usize]) -> Result<Vec<Vec<[Val; 4]>>, String> {
+        let paths = self.tree.open_many(indices, self.cap_height)?;
+        let bytes = paths
+            .iter()
+            .try_fold(0usize, |total, path| {
+                path.len()
+                    .checked_mul(32)
+                    .and_then(|bytes| total.checked_add(bytes))
+            })
+            .ok_or("device commitment path byte count overflow")?;
+        let mut stats = self.session.stats.lock().unwrap();
+        stats.downloaded_bytes += bytes as u64;
+        stats.queries += paths.len() as u64;
+        Ok(paths)
+    }
 }
 
 impl DeviceSession {
@@ -284,6 +414,7 @@ impl DeviceSession {
         let engine = slot.as_ref().ok_or("GPU engine shut down")?;
         Ok(Self {
             session: Arc::new(Session {
+                quotient_policy: note_quotient_policy::Policy::default(),
                 context: engine._job_lease.clone(),
                 stats: Mutex::new(SessionStats::default()),
                 observed_stages: std::sync::atomic::AtomicU32::new(0),
@@ -409,7 +540,7 @@ impl DeviceSession {
         shape: MatrixSpec,
         cap_height: usize,
         pending_salt_bytes: usize,
-    ) -> Result<(super::RetainedLayout, super::Plan), String> {
+    ) -> Result<(super::RetainedLayout, Option<super::Plan>), String> {
         let width = shape
             .columns
             .checked_mul(shape.extension.degree())
@@ -423,13 +554,15 @@ impl DeviceSession {
         }
         let height = shape.rows();
         let layout = super::retained_layout(height, cap_height, engine.max_alloc)?;
-        let plan = super::plan_slots(
+        let hash = super::direct_tree::OwnedHashPlan::new(
             height,
             width + 4,
             engine.limits,
             engine.max_alloc,
             engine.mode.slots(),
+            engine.tree_storage.selection().mode,
         )?;
+        let plan = hash.workspace;
         let sponge_words = height.checked_mul(8).ok_or("device sponge size overflow")?;
         let sponge_bytes = sponge_words
             .checked_mul(8)
@@ -441,17 +574,15 @@ impl DeviceSession {
         // all previous commitments stay live throughout this operation.
         let cached = engine.lde_workspace.as_ref().map_or(0, |w| w.bytes());
         let old_workspace = engine.workspace.as_ref().map_or(0, super::Workspace::bytes);
-        let next_workspace = if engine
-            .workspace
-            .as_ref()
-            .is_some_and(|w| w.fits(plan, engine.mode.slots()))
-        {
+        let next_workspace = if plan.is_some_and(|plan| {
+            engine
+                .workspace
+                .as_ref()
+                .is_some_and(|w| w.fits(plan, engine.mode.slots()))
+        }) {
             old_workspace
         } else {
-            plan.bytes
-                - super::CONSTANT_BYTES
-                - engine.limits.staging_bytes
-                - super::transport_bytes(engine.limits)
+            hash.bytes
         };
         let live = engine
             .accounting
@@ -534,11 +665,17 @@ impl DeviceSession {
         self.with_engine(|engine| {
             self.observe_engine(engine, |engine| {
                 let (layout, plan) = Self::commit_plan(engine, shape, cap_height, 0)?;
+                let host_reservation = engine.reserve_host_tree(layout)?;
                 let height = shape.rows();
                 let sponge_words = height * 8;
                 engine.fence().finish()?;
                 engine.lde_workspace = None;
-                engine.workspace(plan)?;
+                if let Some(plan) = plan {
+                    engine.workspace(plan)?;
+                } else {
+                    engine.workspace = None;
+                }
+                let direct_layers = plan.is_none();
                 let sponge = allocation(
                     &engine.pq,
                     &engine.accounting,
@@ -576,9 +713,14 @@ impl DeviceSession {
                 // SAFETY: planner checked the height, eight-word states, four-word
                 // leaves and all live allocations. Fence precedes buffer release.
                 unsafe {
-                    engine.commitment_builder("lde_leaf_finalize", height)?
+                    engine
+                        .commitment_builder("lde_leaf_finalize", height)?
                         .arg(&sponge.buffer)
-                        .arg(&engine.workspace.as_ref().unwrap().a.buffer)
+                        .arg(if direct_layers {
+                            &storage.buffer
+                        } else {
+                            &engine.workspace.as_ref().unwrap().a.buffer
+                        })
                         .arg(height as u32)
                         .arg((width % 4) as u32)
                         .arg(&engine.constants[0].buffer)
@@ -594,9 +736,14 @@ impl DeviceSession {
                 }
                 let ns = engine.timeline.record("resident_commit_finalize", &event)?;
                 engine.stats.leaf_kernel_ns += ns;
-                let cap = engine.finish_retained_layers(&storage, height, layout)?;
+                let cap = if direct_layers {
+                    engine.finish_direct_retained_layers(&storage, height, layout)?
+                } else {
+                    engine.finish_retained_layers(&storage, height, layout)?
+                };
                 fence.finish()?;
                 engine.stats.commits += 1;
+                let storage = engine.retain_completed_tree(storage, host_reservation, layout)?;
                 let mut stats = self.session.stats.lock().unwrap();
                 stats.commitments += 1;
                 stats.downloaded_bytes += (cap.len() * 4 * 8) as u64;
@@ -722,3 +869,88 @@ impl DeviceSession {
 
 #[cfg(test)]
 mod tests;
+
+pub(super) const PQ_POSEIDON_KERNEL_SRC: &str = include_str!("device/pq_poseidon.cl");
+
+#[cfg(feature = "gpu")]
+mod pq_sampling;
+#[cfg(feature = "gpu")]
+pub(super) use pq_sampling::KERNEL_SRC as PQ_SAMPLING_KERNEL_SRC;
+
+#[cfg(feature = "gpu")]
+mod research_arithmetic;
+#[cfg(feature = "gpu")]
+pub(super) const RESEARCH_ARITHMETIC_KERNEL_SRC: &str =
+    include_str!("device/research_arithmetic.cl");
+
+#[cfg(feature = "gpu")]
+mod pq_crypto;
+#[cfg(feature = "gpu")]
+pub(super) use pq_crypto::KERNEL_SRC as PQ_CRYPTO_KERNEL_SRC;
+
+#[cfg(feature = "gpu")]
+mod pq_operations;
+#[cfg(feature = "gpu")]
+pub(super) use pq_operations::KERNEL_SRC as PQ_OPERATIONS_KERNEL_SRC;
+#[cfg(feature = "gpu")]
+mod operations_hash;
+#[cfg(feature = "gpu")]
+pub(super) const OPERATIONS_HASH_KERNEL_SRC: &str = include_str!("device/operations_hash.cl");
+
+#[cfg(feature = "gpu")]
+mod pq_raw_crypto;
+#[cfg(feature = "gpu")]
+pub(super) use pq_raw_crypto::KERNEL_SRC as PQ_RAW_CRYPTO_KERNEL_SRC;
+#[cfg(feature = "gpu")]
+mod operations_arithmetic;
+#[cfg(feature = "gpu")]
+pub(super) const OPERATIONS_ARITHMETIC_KERNEL_SRC: &str =
+    include_str!("device/operations_arithmetic.cl");
+
+#[cfg(feature = "gpu")]
+mod native_private_spend;
+#[cfg(all(target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "ringct-research-quota"))]
+pub use native_private_spend::source::{NativeSpendOperationPlan, NativeSpendSourceError};
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use wallet::UniformDeviceCensus;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use wallet::TranscriptDeviceCensus;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use wallet::SparseDeviceCensus;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use wallet::UniformDeviceLease;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use wallet::TranscriptDeviceLease;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use wallet::AffineDeviceCensus;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use wallet::AffineDeviceLease;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use wallet::SparseDeviceLease;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use wallet::NttDeviceCensus;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use wallet::NttDeviceLease;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use wallet::MulDeviceCensus;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use wallet::MulDeviceLease;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use wallet::GBoundDeviceCensus;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use wallet::GBoundDeviceLease;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use wallet::PermutationDeviceCensus;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use wallet::PermutationDeviceLease;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use wallet::LinearMapDeviceCensus;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use wallet::LinearMapDeviceLease;

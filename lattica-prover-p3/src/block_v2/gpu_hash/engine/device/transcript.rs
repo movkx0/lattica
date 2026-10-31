@@ -152,6 +152,10 @@ pub(super) fn state_host_backing() -> Result<usize, String> {
     host_storage::family_bytes(1)
 }
 
+pub(super) fn maximum_family_host_backing() -> Result<usize, String> {
+    host_storage::family_bytes(crate::transcript_limits::LIVE_STATES)
+}
+
 /// Whole-proof retirement, including failures outside transcript operations.
 /// The guard holds no mutex while the proof runs or its snapshots are used.
 pub(crate) struct TranscriptAttempt {

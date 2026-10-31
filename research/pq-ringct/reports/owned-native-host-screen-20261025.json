@@ -1,0 +1,583 @@
+{
+  "schema": "ringct-owned-native-shake-host-component-screen-v1",
+  "created_utc": "2026-10-25T12:30:00.586112+00:00",
+  "scope": "Two fresh singleton native SHAKE proofs with different one-byte witnesses under the explicit outer_host_v1 tree profile; existing fixed cryptographic profile.",
+  "physical_gpu_uuid": "GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c",
+  "retained_tree_storage": "host",
+  "retained_tree_host_quota_bytes_inside_worker": 8589934592,
+  "resource_limits": {
+    "worker_host_bytes": 34359738368,
+    "native_host_bytes": 25769803776,
+    "managed_device_bytes": 8589934592,
+    "context_reserve_bytes": 4294967296
+  },
+  "fresh_native_gpu_proofs": 2,
+  "fresh_native_cpu_proofs": 0,
+  "recursive_proofs": 0,
+  "independent_cpu_acceptances": 4,
+  "preissued_graph_child_attachments": 2,
+  "independent_cpu_mutation_rejections": 2,
+  "artifact_round_trips": 0,
+  "preissued_adapter_and_additional_verifier_claims": true,
+  "attachment_preserved_complete_original_ledger_snapshot": true,
+  "cases": [
+    {
+      "input_byte": 1,
+      "tree_profile": "outer_host_v1",
+      "fresh_gpu_required": true,
+      "independent_cpu_verified": true,
+      "mutation_rejected": true,
+      "managed_live_bytes": 0,
+      "host_tree_live_bytes": 0,
+      "lease_released": true,
+      "managed_peak_bytes": 1235715536,
+      "component_including_mutation_ns": 654709029,
+      "native_report_ns": 383896071,
+      "complete_ringct_workflow": false,
+      "preissued_child": {
+        "input_byte": 1,
+        "tree_profile": "outer_host_v1",
+        "preissued_adapter": true,
+        "attachment_ledger_unchanged": true,
+        "final_child_cpu_verified": true,
+        "component_including_mutation_attachment_reverify_ns": 682701561,
+        "complete_ringct_workflow": false
+      },
+      "native_trace_rows": 4096,
+      "native_trace_width": 517,
+      "native_report": {
+        "schema": "lattica-proving-stages-v1",
+        "entry_point": "ringct_owned_native_shake",
+        "policy": "gpu_required",
+        "capabilities": {
+          "scope": "proof_request",
+          "profile": "block_v2_cubic",
+          "max_log_fri_arity": 1,
+          "stages": [
+            {
+              "stage": "public_values",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "witness_trace",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "preprocessing",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "transform",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "quotient",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "randomness",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "hiding",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "commitment",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "opening",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "fri_fold",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "fri_query",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "final_polynomial",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "scalar",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "transcript",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "grinding",
+              "backend": "open_cl"
+            }
+          ]
+        },
+        "elapsed_ns": 383896071,
+        "succeeded": true,
+        "stage_coverage_complete": true,
+        "completion_rejected": false,
+        "observation_errors": 0,
+        "observations": [
+          {
+            "stage": "preprocessing",
+            "backend": "open_cl",
+            "calls": 3,
+            "completed_calls": 3,
+            "device_calls": 3,
+            "inclusive_ns": 0,
+            "device_ns": 13792
+          },
+          {
+            "stage": "witness_trace",
+            "backend": "open_cl",
+            "calls": 3,
+            "completed_calls": 3,
+            "device_calls": 3,
+            "inclusive_ns": 0,
+            "device_ns": 6411744
+          },
+          {
+            "stage": "public_values",
+            "backend": "open_cl",
+            "calls": 1,
+            "completed_calls": 1,
+            "device_calls": 1,
+            "inclusive_ns": 0,
+            "device_ns": 2784
+          },
+          {
+            "stage": "transcript",
+            "backend": "open_cl",
+            "calls": 70,
+            "completed_calls": 70,
+            "device_calls": 70,
+            "inclusive_ns": 0,
+            "device_ns": 28827360
+          },
+          {
+            "stage": "grinding",
+            "backend": "open_cl",
+            "calls": 1,
+            "completed_calls": 1,
+            "device_calls": 1,
+            "inclusive_ns": 0,
+            "device_ns": 287552
+          },
+          {
+            "stage": "scalar",
+            "backend": "open_cl",
+            "calls": 3,
+            "completed_calls": 3,
+            "device_calls": 3,
+            "inclusive_ns": 0,
+            "device_ns": 10848
+          },
+          {
+            "stage": "randomness",
+            "backend": "open_cl",
+            "calls": 84,
+            "completed_calls": 84,
+            "device_calls": 84,
+            "inclusive_ns": 0,
+            "device_ns": 2495104
+          },
+          {
+            "stage": "transform",
+            "backend": "open_cl",
+            "calls": 141,
+            "completed_calls": 141,
+            "device_calls": 141,
+            "inclusive_ns": 0,
+            "device_ns": 25837344
+          },
+          {
+            "stage": "quotient",
+            "backend": "open_cl",
+            "calls": 88,
+            "completed_calls": 88,
+            "device_calls": 88,
+            "inclusive_ns": 0,
+            "device_ns": 139478848
+          },
+          {
+            "stage": "hiding",
+            "backend": "open_cl",
+            "calls": 70,
+            "completed_calls": 70,
+            "device_calls": 70,
+            "inclusive_ns": 0,
+            "device_ns": 533248
+          },
+          {
+            "stage": "commitment",
+            "backend": "open_cl",
+            "calls": 16,
+            "completed_calls": 16,
+            "device_calls": 16,
+            "inclusive_ns": 0,
+            "device_ns": 35703488
+          },
+          {
+            "stage": "opening",
+            "backend": "open_cl",
+            "calls": 216,
+            "completed_calls": 216,
+            "device_calls": 216,
+            "inclusive_ns": 0,
+            "device_ns": 3567648
+          },
+          {
+            "stage": "fri_fold",
+            "backend": "open_cl",
+            "calls": 13,
+            "completed_calls": 13,
+            "device_calls": 13,
+            "inclusive_ns": 0,
+            "device_ns": 74720
+          },
+          {
+            "stage": "fri_query",
+            "backend": "open_cl",
+            "calls": 116,
+            "completed_calls": 116,
+            "device_calls": 116,
+            "inclusive_ns": 0,
+            "device_ns": 1306144
+          },
+          {
+            "stage": "final_polynomial",
+            "backend": "open_cl",
+            "calls": 1,
+            "completed_calls": 1,
+            "device_calls": 1,
+            "inclusive_ns": 0,
+            "device_ns": 3680
+          }
+        ],
+        "components": []
+      }
+    },
+    {
+      "input_byte": 2,
+      "tree_profile": "outer_host_v1",
+      "fresh_gpu_required": true,
+      "independent_cpu_verified": true,
+      "mutation_rejected": true,
+      "managed_live_bytes": 0,
+      "host_tree_live_bytes": 0,
+      "lease_released": true,
+      "managed_peak_bytes": 1235715536,
+      "component_including_mutation_ns": 531661903,
+      "native_report_ns": 381942540,
+      "complete_ringct_workflow": false,
+      "preissued_child": {
+        "input_byte": 2,
+        "tree_profile": "outer_host_v1",
+        "preissued_adapter": true,
+        "attachment_ledger_unchanged": true,
+        "final_child_cpu_verified": true,
+        "component_including_mutation_attachment_reverify_ns": 559441286,
+        "complete_ringct_workflow": false
+      },
+      "native_trace_rows": 4096,
+      "native_trace_width": 517,
+      "native_report": {
+        "schema": "lattica-proving-stages-v1",
+        "entry_point": "ringct_owned_native_shake",
+        "policy": "gpu_required",
+        "capabilities": {
+          "scope": "proof_request",
+          "profile": "block_v2_cubic",
+          "max_log_fri_arity": 1,
+          "stages": [
+            {
+              "stage": "public_values",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "witness_trace",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "preprocessing",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "transform",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "quotient",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "randomness",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "hiding",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "commitment",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "opening",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "fri_fold",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "fri_query",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "final_polynomial",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "scalar",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "transcript",
+              "backend": "open_cl"
+            },
+            {
+              "stage": "grinding",
+              "backend": "open_cl"
+            }
+          ]
+        },
+        "elapsed_ns": 381942540,
+        "succeeded": true,
+        "stage_coverage_complete": true,
+        "completion_rejected": false,
+        "observation_errors": 0,
+        "observations": [
+          {
+            "stage": "preprocessing",
+            "backend": "open_cl",
+            "calls": 3,
+            "completed_calls": 3,
+            "device_calls": 3,
+            "inclusive_ns": 0,
+            "device_ns": 12640
+          },
+          {
+            "stage": "witness_trace",
+            "backend": "open_cl",
+            "calls": 3,
+            "completed_calls": 3,
+            "device_calls": 3,
+            "inclusive_ns": 0,
+            "device_ns": 6402976
+          },
+          {
+            "stage": "public_values",
+            "backend": "open_cl",
+            "calls": 1,
+            "completed_calls": 1,
+            "device_calls": 1,
+            "inclusive_ns": 0,
+            "device_ns": 3392
+          },
+          {
+            "stage": "transcript",
+            "backend": "open_cl",
+            "calls": 70,
+            "completed_calls": 70,
+            "device_calls": 70,
+            "inclusive_ns": 0,
+            "device_ns": 28835072
+          },
+          {
+            "stage": "grinding",
+            "backend": "open_cl",
+            "calls": 1,
+            "completed_calls": 1,
+            "device_calls": 1,
+            "inclusive_ns": 0,
+            "device_ns": 420480
+          },
+          {
+            "stage": "scalar",
+            "backend": "open_cl",
+            "calls": 3,
+            "completed_calls": 3,
+            "device_calls": 3,
+            "inclusive_ns": 0,
+            "device_ns": 10688
+          },
+          {
+            "stage": "randomness",
+            "backend": "open_cl",
+            "calls": 84,
+            "completed_calls": 84,
+            "device_calls": 84,
+            "inclusive_ns": 0,
+            "device_ns": 2487904
+          },
+          {
+            "stage": "transform",
+            "backend": "open_cl",
+            "calls": 141,
+            "completed_calls": 141,
+            "device_calls": 141,
+            "inclusive_ns": 0,
+            "device_ns": 25902880
+          },
+          {
+            "stage": "quotient",
+            "backend": "open_cl",
+            "calls": 88,
+            "completed_calls": 88,
+            "device_calls": 88,
+            "inclusive_ns": 0,
+            "device_ns": 139483456
+          },
+          {
+            "stage": "hiding",
+            "backend": "open_cl",
+            "calls": 70,
+            "completed_calls": 70,
+            "device_calls": 70,
+            "inclusive_ns": 0,
+            "device_ns": 532480
+          },
+          {
+            "stage": "commitment",
+            "backend": "open_cl",
+            "calls": 16,
+            "completed_calls": 16,
+            "device_calls": 16,
+            "inclusive_ns": 0,
+            "device_ns": 35684864
+          },
+          {
+            "stage": "opening",
+            "backend": "open_cl",
+            "calls": 216,
+            "completed_calls": 216,
+            "device_calls": 216,
+            "inclusive_ns": 0,
+            "device_ns": 3587712
+          },
+          {
+            "stage": "fri_fold",
+            "backend": "open_cl",
+            "calls": 13,
+            "completed_calls": 13,
+            "device_calls": 13,
+            "inclusive_ns": 0,
+            "device_ns": 70976
+          },
+          {
+            "stage": "fri_query",
+            "backend": "open_cl",
+            "calls": 116,
+            "completed_calls": 116,
+            "device_calls": 116,
+            "inclusive_ns": 0,
+            "device_ns": 1305248
+          },
+          {
+            "stage": "final_polynomial",
+            "backend": "open_cl",
+            "calls": 1,
+            "completed_calls": 1,
+            "device_calls": 1,
+            "inclusive_ns": 0,
+            "device_ns": 3936
+          }
+        ],
+        "components": []
+      }
+    }
+  ],
+  "screen_evidence": {
+    "label": "fullgpu-native-host-gpu-screen-1",
+    "record": ".tools/pq-opencl-opt/runs/fullgpu-native-host-gpu-screen-1.json",
+    "record_sha256": "34a0645420c3061903fc4f7078f995ed7331a0b68998dd94404c636c4aa22b72",
+    "raw_log": ".tools/pq-opencl-opt/runs/fullgpu-native-host-gpu-screen-1.log",
+    "raw_log_sha256": "a242fa791d198cee479d544d836b2284d18b66e6b7f139b0a7283e18af167d92",
+    "source_manifest_sha256": "2ce7b3f57822335a1e61f8fc28973b903c089ad00e8b4f4c9364634ac71484bf",
+    "executable_provenance": {
+      "path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/target-opencl/release/deps/lattica_pq_ringct_research-001aa05fa897d703",
+      "resolved_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/build-cache/target-opencl/release/deps/lattica_pq_ringct_research-001aa05fa897d703",
+      "sha256": "2686c4cce472780687901471c57b8d985b124a496209cb29b2b0f65765e81bc9",
+      "build_record": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/pq-opencl-opt/runs/fullgpu-native-host-research-build-1.json",
+      "build_record_sha256": "70d966e76c35f0ee91b1d66a26bf6035b8b022d14a7ee9dcd2ff5a13c105f3ce"
+    },
+    "all_subprocesses_terminal_and_reaped": true,
+    "source_inputs_unchanged": true,
+    "executable_unchanged": true,
+    "guard_wall_seconds": 2.0980154940043576,
+    "guarded_job_host_peak_bytes": 255537152,
+    "process_limit_bytes": 48318382080,
+    "swap_limit_bytes": 0
+  },
+  "device_profile_rejection_regression_evidence": {
+    "label": "fullgpu-native-rejection-gpu-canary-1",
+    "record": ".tools/pq-opencl-opt/runs/fullgpu-native-rejection-gpu-canary-1.json",
+    "record_sha256": "2e70e465ad3ab02879e20a15f19df58c95c369c9c36f6962afd9aa052b748dd4",
+    "raw_log": ".tools/pq-opencl-opt/runs/fullgpu-native-rejection-gpu-canary-1.log",
+    "raw_log_sha256": "a7b2f4faacf622cd70bd5b0cf07c0d66407f56c159f2364b9243f8ba38b24f46",
+    "source_manifest_sha256": "b89d8f1948dc02776b3abd8cbc7cc5690f0199a75e3d3e6fe7d2621fce2e3e48",
+    "executable_provenance": {
+      "path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/target-opencl/release/deps/lattica_prover_p3-e6135dc31d256968",
+      "resolved_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/build-cache/target-opencl/release/deps/lattica_prover_p3-e6135dc31d256968",
+      "sha256": "1d3051224567bdc64d9e1b5db06148ebb82f8402d4b8257022390ad6d064c21c",
+      "build_record": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/pq-opencl-opt/runs/fullgpu-native-rejection-core-build-1.json",
+      "build_record_sha256": "9d633d959502805ae2baf60d87286065522eab7299380df31ccf569e72bd923c"
+    },
+    "all_subprocesses_terminal_and_reaped": true,
+    "source_inputs_unchanged": true,
+    "executable_unchanged": true,
+    "guard_wall_seconds": 2.095913536992157,
+    "guarded_job_host_peak_bytes": 216223744,
+    "process_limit_bytes": 48318382080,
+    "swap_limit_bytes": 0,
+    "configuration_observation": "ringct_owned_config calls=60 bytes=11547 largest=1216 source_bound=76560056",
+    "retirement_observation": "ringct_owned_rejection managed_peak=67109888 managed_live=0 tree_live=0 lease_released=true"
+  },
+  "original_quota_released": true,
+  "timing_scope": {
+    "native_report_ns": "Actual Run from after capacity admission through proof completion; excludes original request creation, preflight, AIR recording, runtime startup/retirement and independent CPU verification.",
+    "component_including_mutation_ns": "From after original request creation through preissued adapter/key and additional verifier claims, preflight, recording, runtime startup, fresh proof, retirement, independent CPU verification, report serialization and mutation rejection; excludes final proof/request destruction and final quota assertion.",
+    "component_including_mutation_attachment_reverify_ns": "Same start as component_including_mutation_ns, extended through intact graph-child attachment and another independent CPU verification; excludes final child/request destruction and final quota assertion.",
+    "complete_workflow_ns": null
+  },
+  "memory_scope": "managed_peak_bytes is the exact retired Engine allocation peak, not process VRAM. Guarded host peak is the cgroup observation. Ledger reservations are not measured peaks.",
+  "qualification": {
+    "native_singleton_component": true,
+    "native_host_component": true,
+    "preissued_native_child_component": true,
+    "complete_graph_phase_preadmission": false,
+    "host_profile_rejection_cleanup": false,
+    "complete_faithful_ringct": false,
+    "paired_native": false,
+    "complete_graph": false,
+    "n3_n4_workflow": false,
+    "speedup": false,
+    "protocol_redesign_speedup": false,
+    "production_adoption": false
+  },
+  "preserved_failures": [
+    {
+      "label": "fullgpu-native-consumer-opening-output-core-tests-1",
+      "correction": "B041 corrects a test-only allocation-free claim; inherited planner requests fit the original source-derived partition. Production unchanged."
+    },
+    {
+      "label": "fullgpu-native-singleton-research-cpu-tests-1",
+      "correction": "A022-r2 tests the existing earlier oversized-request refusal. Production unchanged."
+    }
+  ]
+}

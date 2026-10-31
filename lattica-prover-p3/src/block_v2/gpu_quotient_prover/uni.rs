@@ -12,14 +12,22 @@ use crate::block_v2::{
 };
 use crate::config::Val;
 use crate::proving::Run;
-use p3_air::{symbolic::AirLayout, Air};
+use p3_air::{symbolic::AirLayout, Air, BaseAir};
 use p3_challenger::{CanObserve, FieldChallenger};
 use p3_commit::Pcs;
 use p3_field::{PrimeCharacteristicRing, PrimeField64};
 use p3_lookup::LogUpGadget;
 use p3_uni_stark::{Commitments, Proof, StarkGenericConfig};
 mod admission;
-pub(crate) use admission::Prepared;
+use admission::PreparationInput;
+pub(crate) use admission::{Normalized, Prepared};
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) mod native_shake;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) mod native_aes;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) mod native_graph_source;
+
 
 /// Static public tables are encoded compactly on the host. Expansion,
 /// interpolation and coset evaluation run on GPU; no periodic evaluations return.
@@ -74,6 +82,53 @@ pub(crate) fn prove<
     run: &Run,
     prepared: Prepared,
 ) -> Result<Proof<ProvingConfig<E>>, String> {
+    prove_prepared(
+        config,
+        air,
+        trace,
+        public_values,
+        run,
+        PreparationInput::Recorded(prepared),
+    )
+}
+
+/// Internal continuation for an already normalized, single-use public owner.
+/// Full producer admission and private witness generation remain the caller's
+/// responsibility. No public dispatch facade is provided by this extraction.
+pub(crate) fn prove_normalized<
+    E: PcsField,
+    #[cfg(debug_assertions)] A: Air<symbolic::Builder> + for<'a> Air<p3_air::DebugConstraintBuilder<'a, Val>>,
+    #[cfg(not(debug_assertions))] A: Air<symbolic::Builder>,
+>(
+    config: &ProvingConfig<E>,
+    air: &A,
+    trace: DeviceMatrix,
+    public_values: &[Val],
+    run: &Run,
+    prepared: Normalized,
+) -> Result<Proof<ProvingConfig<E>>, String> {
+    prove_prepared(
+        config,
+        air,
+        trace,
+        public_values,
+        run,
+        PreparationInput::Normalized(prepared),
+    )
+}
+
+fn prove_prepared<
+    E: PcsField,
+    #[cfg(debug_assertions)] A: Air<symbolic::Builder> + for<'a> Air<p3_air::DebugConstraintBuilder<'a, Val>>,
+    #[cfg(not(debug_assertions))] A: BaseAir<Val>,
+>(
+    config: &ProvingConfig<E>,
+    air: &A,
+    trace: DeviceMatrix,
+    public_values: &[Val],
+    run: &Run,
+    prepared: PreparationInput,
+) -> Result<Proof<ProvingConfig<E>>, String> {
     let pcs = config.pcs();
     prepared.check_operation_host_allowance(pcs.host_output_budget())?;
     let periodic_host_allowance = prepared.periodic_host_bytes();
@@ -83,9 +138,9 @@ pub(crate) fn prove<
     let log_degree = input.height().ilog2() as usize;
     let log_ext_degree = log_degree + 1;
     let layout = AirLayout::from_air::<Val>(air);
-    if prepared.rows != input.height()
-        || prepared.shape.extension != E::DEVICE_EXTENSION
-        || !prepared.recorded.matches_layout(layout)
+    if prepared.rows() != input.height()
+        || prepared.extension() != E::DEVICE_EXTENSION
+        || !prepared.matches_layout(layout)
     {
         return Err("owned uni recording differs from runtime shape".into());
     }
@@ -98,7 +153,7 @@ pub(crate) fn prove<
                 .into(),
         );
     }
-    let mut compiled = compile::Batch::new(1, symbolic::HOST_BYTES as usize)?;
+    let (mut compiled, progress) = prepared.into_compilation()?;
     let _execution = session.observe_single_air(run)?;
     let randomness_attempt = pcs.begin_randomness_attempt()?;
     let mut challenger = config.initialise_challenger();
@@ -126,26 +181,8 @@ pub(crate) fn prove<
 
     // The empty lookup list preserves the uni constraint order and hiding
     // degree rule. Only the internal evaluator layout lowers periodic inputs.
-    let gadget = LogUpGadget::new();
-    let constraints = prepared
-        .recorded
-        .normalize(Constants::device(&session, run))
-        .map_err(|e| format!("owned uni symbolic compilation: {e:?}"))?;
-    let log_chunks = symbolic::batch_log_chunks(air, &constraints, &[], &gadget, 1)
-        .map_err(|e| format!("owned uni quotient degree: {e:?}"))?;
-    if air
-        .num_constraints()
-        .is_some_and(|n| n != constraints.base.len())
-    {
-        return Err("owned uni constraint count hint differs from symbolic evaluation".into());
-    }
-    let constraints = constraints
-        .into_base_only::<E>()
-        .map_err(|e| format!("owned uni base constraints: {e:?}"))?;
-    let program = Program::from_periodic_constraints(layout, &constraints)?;
-    prepared.shape.check(&program)?;
-    compiled.push(program, log_chunks, constraints.base.len())?;
-    drop(constraints);
+    let (log_chunks, periodic_source) =
+        progress.finish::<E, A>(air, layout, &session, run, &mut compiled)?;
     compiled.report();
     let chunks = 1usize
         .checked_shl((log_chunks + 1) as u32)
@@ -153,7 +190,7 @@ pub(crate) fn prove<
     let trace_domain = DomainSpec::new(1, log_degree)?;
     let ext_domain = DomainSpec::new(1, log_ext_degree)?;
     let quotient_domain = session.disjoint_domain(ext_domain, log_ext_degree + log_chunks)?;
-    let periodic = if let Some(source) = prepared.periodic {
+    let periodic = if let Some(source) = periodic_source {
         periodic_prefix(
             &session,
             source.columns(),
@@ -257,3 +294,53 @@ pub(crate) fn prove<
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use admission::ringct::prepared_from_closed_shake;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use admission::aes::prepared_from_closed_aes;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use admission::graph_source::prepared_from_closed_graph_source;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) mod native_uniform;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) mod native_transcript;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) mod native_sparse;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use admission::uniform::prepared_from_closed_uniform;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use admission::transcript::prepared_from_closed_transcript;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) mod native_affine;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use admission::affine::prepared_from_closed_affine;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use admission::sparse::prepared_from_closed_sparse;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) mod native_ntt;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use admission::ntt::prepared_from_closed_ntt;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) mod native_mul;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use admission::mul::prepared_from_closed_mul;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) mod native_g_bound;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use admission::g_bound::prepared_from_closed_g_bound;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) mod native_permutation;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use admission::permutation::prepared_from_closed_permutation;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) mod native_linear_map;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use admission::linear_map::prepared_from_closed_linear_map;

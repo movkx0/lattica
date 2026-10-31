@@ -1,0 +1,152 @@
+{
+  "schema": "lattica.ringct.integration.v1",
+  "recorded_utc": "2026-10-31T02:21:20.458627+00:00",
+  "status": "integrated_research_checkpoint_gpu_screen_cancelled_by_user",
+  "scope": "Research only; production transaction acceptance unchanged. Not a complete-workflow performance promotion.",
+  "source": {
+    "archive": "host-preprocessing-v3-source.tar.gz",
+    "archive_sha256": "38bcf4bf1c5a405d84026c207ac037fdf444dc3caca4edcdb2a68675d2b859f2",
+    "archive_files": 2956,
+    "merge_base": "efff6ec2d526ed8701e6de96e2ab255a3a219089",
+    "cuda_parent": "e397ef8a8135c02b92203051a10e3cec30a14a02",
+    "imported_new_files": 2131,
+    "merged_core_files": 68,
+    "conflicts_resolved_preserving_both_changes": [
+      "lattica-prover-p3/src/block_v2/gpu_hash/engine/device.rs",
+      "lattica-prover-p3/src/block_v2/machine/compiler_constants.rs",
+      "lattica-prover-p3/src/block_v2/machine/program.rs"
+    ],
+    "notes": [
+      "The archive contains source inputs, not a complete replacement for main. Files absent from the archive were retained.",
+      "All newer CUDA files and the shared stack-backed WirePorts implementation were retained.",
+      "Research lockfiles are refreshed against the combined manifests. Original checkpoint verification applies to the archived tree; integration checks are recorded separately."
+    ],
+    "integration_adjustments": [
+      "Refresh standalone workspace lockfiles for the current CUDA dependency and new OpenCL patch.",
+      "Reject progression candidates whose one-part lower-bound cost cannot beat dense evaluation before doing or reporting planner arithmetic. This fixes the existing compiler scratch-admission regression test without changing eligible progression choices.",
+      "Remove extra EOF blank lines from 52 first-party source files; preserve vendored and generated source bytes.",
+      "Update the RingCT README to describe main integration and the cancelled screening run."
+    ]
+  },
+  "defaults": {
+    "host_profile": "standard",
+    "identity_preprocessing": "serial",
+    "planning_cache": "off",
+    "shake_wrapper_layout": "singleton",
+    "public_hash": "baseline"
+  },
+  "cancelled_run": {
+    "label": "prep-v3-full-n3-serial-cache-r1",
+    "case": "N3",
+    "layout": "singleton",
+    "host_profile": "standard",
+    "identity_preprocessing": "serial",
+    "planning_cache": "geometry-v1",
+    "public_hash": "baseline",
+    "user_requested_cancellation": true,
+    "runner_record": {
+      "status": "failed_or_incomplete",
+      "started_utc": "2026-10-30T22:14:13.580780+00:00",
+      "finished_utc": "2026-10-31T02:12:05.737095+00:00",
+      "error": "ValueError('service memory policy changed'); cleanup: ValueError('service stop failed: Failed to stop lattica-opencl-opt-prep-v3-full-n3-serial-cache-r1.service: Unit lattica-opencl-opt-prep-v3-full-n3-serial-cache-r1.service not loaded.\\n')",
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": null
+    },
+    "independent_terminal_check": {
+      "service": "lattica-opencl-opt-prep-v3-full-n3-serial-cache-r1.service",
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "MainPID": 0,
+      "ControlGroup": "",
+      "ringct_proof_processes_remaining": 0
+    },
+    "interpretation": "The runner reports failed_or_incomplete after external cancellation. Its terminal/reaping field is null; the independent host service/process check confirms the workload stopped. No completed N3 result is claimed.",
+    "N4_started": false
+  },
+  "prior_checkpoint_validation": {
+    "ringct_focused_cpu_tests_passed": 92,
+    "core_cpu_tests_passed": 10,
+    "gpu_hash_tests_passed": 8,
+    "python_guard_receipt_tests_passed": 73,
+    "note": "These results precede integration and are not a new GPU qualification."
+  },
+  "component_evidence": "ringct-preprocessing-components-2026-10-30.json",
+  "remaining": [
+    "Complete CPU-only N3/N4 source-geometry admission matrix for serial and widths 1/2/4.",
+    "Complete fresh N3/N4 workflow screening and terminal, receipt, artifact, native-execution, mutation and exact-case audits.",
+    "Matched full-workflow repetitions before claiming throughput improvement.",
+    "Qualified cryptographic review before any adoption of direct-spend research."
+  ],
+  "integration_validation": {
+    "status": "passed_focused_checks_no_new_gpu_qualification",
+    "compile_checks": [
+      {
+        "scope": "RingCT identity-batch-experiment release all-targets",
+        "status": "passed",
+        "log_sha256": "5b682863493fd454296af4304240df4f2eedefedf80c9a26d8201e68df369b93",
+        "locked_offline": true,
+        "after_final_source_changes": true
+      },
+      {
+        "scope": "CUDA opt-in features release all-targets, separately from OpenCL",
+        "status": "passed",
+        "log_sha256": "f931309de96ea794d34b97654537711c78496e8fee0ad6030e0d006f447a3223",
+        "locked_offline": true,
+        "after_final_source_changes": true
+      },
+      {
+        "scope": "Direct-ring and private-note experimental release all-targets",
+        "status": "passed",
+        "log_sha256": "ca0e3923634f7b76fdbbd0194fd7648184950f21362bfad53e0b50afa570af0d",
+        "locked_offline": true,
+        "after_final_source_changes": true
+      },
+      {
+        "scope": "RingCT aggregation OpenCL release all-targets",
+        "status": "passed",
+        "log_sha256": "98dbb53b3219debb61e52f6323c8f1aa62b277a6ff0895c252d6832c6b02908b",
+        "locked_offline": true,
+        "after_final_source_changes": true
+      }
+    ],
+    "rust_cpu_tests": {
+      "passed": 65,
+      "failed": 0,
+      "scope": [
+        "machine program construction and wire ports",
+        "compiler constants",
+        "periodic expressions and progression equivalence"
+      ],
+      "features": [
+        "block-v2",
+        "block-v2-capacity-128"
+      ],
+      "log_sha256": "40da4df412eeb4c3a309b9aa34e2617dc108cf7b432a085bfa91529bf43c1013"
+    },
+    "python_tests": {
+      "ringct_guard_receipt_tests_passed": 116,
+      "cuda_profile_launcher_tests_passed": 70
+    },
+    "previously_failed_regression": "compiler_constant_consumers_reject_quota_before_cpu_arithmetic; fixed by rejecting impossible progression costs before arithmetic",
+    "limited_checks": [
+      "The first RingCT check used debug mode; the owned experimental path requires release mode and the release check passed.",
+      "CUDA and OpenCL are intentionally separate transports; a combined feature invocation was rejected, then the supported builds passed separately.",
+      "A broad CPU machine suite was interrupted to avoid lengthy unrelated circuit cases. The affected compiler tests were rerun as a complete focused selection and all 65 passed.",
+      "No GPU benchmarks were restarted. These integration checks do not qualify Apple execution or complete RingCT throughput."
+    ],
+    "source_audit": {
+      "status": "passed",
+      "apple_required_modules_indexed": 6,
+      "archive_files_accounted_for": 2956,
+      "archive_files_present_at_original_paths": 2955,
+      "existing_byte_identical_relocation": {
+        "from": "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/wallet_batch_kernels.rs",
+        "to": "lattica-prover-p3/src/gpu_wallet/batch_kernels.rs"
+      },
+      "new_core_research_files_staged": 2131,
+      "cuda_and_metal_kernel_changes_in_ringct_commit": 0
+    },
+    "vendor_whitespace": "Historical whitespace in vendored sources and generated native_private_spend/bundle.cl is preserved."
+  }
+}

@@ -1,6 +1,9 @@
 //! Owned GPU proving for the existing quadratic wallet proof format.
 //! Selection is explicit research initialization, shared with the owned PCS;
 //! serialization and the legacy CPU verifier remain unchanged.
+#[cfg(all(feature = "stream", feature = "note-research-quota"))]
+pub mod note_admission;
+
 use crate::block_v2::{
     gpu_hash::{
         self,

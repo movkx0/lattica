@@ -1,0 +1,285 @@
+{
+  "schema": "lattica-public-hash-matched-direct-research-v2",
+  "research_only": true,
+  "faithful_ringct_performance_qualified": false,
+  "audited_artifact_bytes_revalidated": true,
+  "preserved_stdout_workflow_revalidated": true,
+  "audit_script_sha256": "004eb87f8df30c7811a0dfc56ac02b4f017d731e957946fd9863af270673302b",
+  "supersedes": "public-hash-matched-direct-research-20261025.json (initial artifact-rebinding audit incomplete)",
+  "production_default_changed": false,
+  "screening_pair_one_excluded": true,
+  "exclusion_reason": "First baseline includes first-session/kernel compilation startup absent in candidate.",
+  "comparison": "Three alternating pairs on the same public fixture; six distinct fresh proof artifacts.",
+  "limitations": [
+    "One research relation per workflow; no recursive aggregate.",
+    "Does not establish the direct-spend redesign speedup against faithful RingCT.",
+    "Fresh faithful N3/N4 screening and matched validation remain required for adoption."
+  ],
+  "geometry": {
+    "profile": "ring-direct-v1",
+    "representation": "fused-ternary-ranges-v1",
+    "active_rows": 321793,
+    "padded_rows": 524288,
+    "wires": 6114044
+  },
+  "identity": {
+    "expected_context": [
+      19,
+      19,
+      19,
+      19,
+      19,
+      19,
+      19,
+      19,
+      19,
+      19,
+      19,
+      19,
+      19,
+      19,
+      19,
+      19,
+      19,
+      19,
+      19,
+      19,
+      19,
+      19,
+      19,
+      19,
+      19,
+      19,
+      19,
+      19,
+      19,
+      19,
+      19,
+      19
+    ],
+    "expected_public_binding": [
+      1928989784930739608,
+      3678233269042140,
+      8643584841033128181,
+      8289660542228579337
+    ],
+    "artifact_profile_digest": [
+      145,
+      109,
+      102,
+      145,
+      203,
+      124,
+      206,
+      129,
+      125,
+      144,
+      208,
+      202,
+      61,
+      74,
+      241,
+      244,
+      45,
+      149,
+      70,
+      69,
+      97,
+      170,
+      208,
+      164,
+      206,
+      3,
+      17,
+      102,
+      23,
+      192,
+      21,
+      72
+    ]
+  },
+  "build": "fullgpu-public-hash-direct-build-1",
+  "executable": {
+    "path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/target-opencl/release/lattica-pq-direct-spend-research",
+    "resolved_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/build-cache/target-opencl/release/lattica-pq-direct-spend-research",
+    "sha256": "2b9874d2457db4294b6296cf45643bb607a675a556fbfeb61bbf98dcbca70b05",
+    "build_record": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/pq-opencl-opt/runs/fullgpu-public-hash-direct-build-1.json",
+    "build_record_sha256": "f902ddb1349189a22b267e6f6bd4052b511e7f7a4ef12d0b4313267492deca65"
+  },
+  "process_limits": {
+    "memory_max_bytes": 48318382080,
+    "memory_high_bytes": 46170898432,
+    "fresh_memavailable_required_bytes": 50465865728
+  },
+  "worker_limits": {
+    "managed_gpu_bytes": 8589934592,
+    "context_reserve_bytes": 4294967296,
+    "worker_host_bytes": 34359738368,
+    "native_host_bytes": 25769803776,
+    "swap_bytes": 0
+  },
+  "workflow_median_ns": {
+    "baseline": 207819305094,
+    "candidate": 190716101822
+  },
+  "workflow_median_reduction_percent": 8.229843355632404,
+  "peak_bytes": 7348432896,
+  "rows": [
+    {
+      "label": "fullgpu-public-hash-workflow-2-baseline",
+      "pair": 2,
+      "variant": "baseline",
+      "public_hash": {
+        "kernel": "baseline",
+        "gpu_tuning_compiled": true,
+        "nvidia_supported": true
+      },
+      "workflow_ns": 207819305094,
+      "prover_setup_ns": 96212005228,
+      "proving_ns": 8770590970,
+      "verifier_setup_ns": 96272334301,
+      "cpu_verification_ns": 31485318,
+      "prover_session_start_ns": 71195385,
+      "verifier_session_start_ns": 65785692,
+      "memory_peak_bytes": 7341785088,
+      "artifact_sha3_256": "23a9a2d68512a4f834c275429453d65bfbb1e51e9d0e52e936f663e2aecae349",
+      "record_sha256": "6ca2c059ec7c574a35302d68484756e51c10bddd1866597bd896d0945f995905",
+      "raw_log_sha256": "f07832cd4e993d9c71487c5e740db9ef7d489a2087686c90bfed2a76e36f5d46",
+      "report_sha256": {
+        "workflow": "365e71cf2597c9d6ec18c4bd54b2cd0fbfd47dff65555bff41db210d67573bb9",
+        "proving": "dac9db87ae3934e800341db720a14bfc752e7b4a2ef47ef1c50bbf3bbca8c1c3",
+        "verification": "e54d400355c64c1ed06fdfaf71302bb26ad239d11ea68d69af8819fca7d3fe4c"
+      }
+    },
+    {
+      "label": "fullgpu-public-hash-workflow-2-candidate",
+      "pair": 2,
+      "variant": "candidate",
+      "public_hash": {
+        "kernel": "sbox-pair-v1",
+        "gpu_tuning_compiled": true,
+        "nvidia_supported": true
+      },
+      "workflow_ns": 190779334401,
+      "prover_setup_ns": 87589396862,
+      "proving_ns": 8958054323,
+      "verifier_setup_ns": 87534706083,
+      "cpu_verification_ns": 31724159,
+      "prover_session_start_ns": 70161053,
+      "verifier_session_start_ns": 66284294,
+      "memory_peak_bytes": 7342968832,
+      "artifact_sha3_256": "657c742a919a2ac6d6d83dee435425d274baf2e54a93045c157264913722af2f",
+      "record_sha256": "77ab36074eb07b50e2728c25e0623878483c6a38e912ef2f5360a57f6f5fed54",
+      "raw_log_sha256": "495245367f40a2f37268bfe358e1e9d113f1f09baef84cba59f9f12544e23fe7",
+      "report_sha256": {
+        "workflow": "fd3f9b800d9ae07105e7fb008b6f2e2797220e7215ee7fa54da54468a5eb3920",
+        "proving": "c4bee7c1b9c9ee98b6d5bb95382d31dd3d1f4fbd22fcbe66fab425bf7ec20884",
+        "verification": "c7f7646762b25551aed20aa14d3a50935b5981d472e38637be6fcc4cae48b219"
+      }
+    },
+    {
+      "label": "fullgpu-public-hash-workflow-3-candidate",
+      "pair": 3,
+      "variant": "candidate",
+      "public_hash": {
+        "kernel": "sbox-pair-v1",
+        "gpu_tuning_compiled": true,
+        "nvidia_supported": true
+      },
+      "workflow_ns": 190716101822,
+      "prover_setup_ns": 87589565336,
+      "proving_ns": 8904930533,
+      "verifier_setup_ns": 87614631144,
+      "cpu_verification_ns": 31815024,
+      "prover_session_start_ns": 69948995,
+      "verifier_session_start_ns": 66400936,
+      "memory_peak_bytes": 7343681536,
+      "artifact_sha3_256": "60dc96570ea3cb1fd8b13eed90789750063d420d68ca71217c92fe66bfe0538b",
+      "record_sha256": "e8a2fb8fd90d61caccaedfd6fa5b0fdf79b5f4ac91d6df43e83b205368b87606",
+      "raw_log_sha256": "b11c1cd85ece1537a7a26324236e53b2bc41d541e6447b508c11b09d2e49f4b2",
+      "report_sha256": {
+        "workflow": "d5447a3d2ead8a6d088e447532f0bbc23a4731311015e467aa7d9f97c1a7a537",
+        "proving": "3a3a3542f76f106457f8b623f84905723ac453a83901ebfc5c150dfaf9acac45",
+        "verification": "13eb187d58a2e0311edcfe58bfb7d0f555a5280952208dfb0ca22ee4084bd73d"
+      }
+    },
+    {
+      "label": "fullgpu-public-hash-workflow-3-baseline",
+      "pair": 3,
+      "variant": "baseline",
+      "public_hash": {
+        "kernel": "baseline",
+        "gpu_tuning_compiled": true,
+        "nvidia_supported": true
+      },
+      "workflow_ns": 208613385605,
+      "prover_setup_ns": 96684767324,
+      "proving_ns": 8841982775,
+      "verifier_setup_ns": 96235784168,
+      "cpu_verification_ns": 31723267,
+      "prover_session_start_ns": 74074174,
+      "verifier_session_start_ns": 65686810,
+      "memory_peak_bytes": 7346786304,
+      "artifact_sha3_256": "268734a344660d570887dccccf2464e4a78a304c7a13334885fb6b06248b2dec",
+      "record_sha256": "5098f87d0ca9b12dc8040f70e2ccde53bb6dbeb65e3dbdea8d276c2ec103a469",
+      "raw_log_sha256": "99d512ad3cbfac79c2553c07b7bc2247f284e03869d4990de33f757672773972",
+      "report_sha256": {
+        "workflow": "7226b60fc269f96a5a3530c5429adf4ae9a00680577993338b45f9cda4645f1a",
+        "proving": "7fdde9f2a375341b446adf4956381490e2a514eccdba84ba3d4faf214cdd280c",
+        "verification": "b843c712bb50b8eab9c112bdebaf01536898861868294d24b87ae1c6472aa4cb"
+      }
+    },
+    {
+      "label": "fullgpu-public-hash-workflow-4-baseline",
+      "pair": 4,
+      "variant": "baseline",
+      "public_hash": {
+        "kernel": "baseline",
+        "gpu_tuning_compiled": true,
+        "nvidia_supported": true
+      },
+      "workflow_ns": 207783508678,
+      "prover_setup_ns": 96226428324,
+      "proving_ns": 8722678842,
+      "verifier_setup_ns": 96227665211,
+      "cpu_verification_ns": 31570155,
+      "prover_session_start_ns": 70495426,
+      "verifier_session_start_ns": 64900307,
+      "memory_peak_bytes": 7348432896,
+      "artifact_sha3_256": "56a462cda3134bfbd081ba991d7f6f508334882f90039913d5a5b2d7730f7e3d",
+      "record_sha256": "53d7f93b67ab651acd5c90013bf6dc12c47f2130cc5a82bd0c3bf19e04fd81ea",
+      "raw_log_sha256": "eb2d4137b4fa4cf61b4be55fc607337b0119e705df9a76ee81431f7d32fa9d81",
+      "report_sha256": {
+        "workflow": "2f4870d833c1353b7671a8522c7f59462f46978de943befdbbb39dba5f8acd97",
+        "proving": "1395021727bdbfd92fb2c3c0fb646e481380f520f6ab1e8cf05f8592388e8bb0",
+        "verification": "449346806acbad02e1da84e3784e032be2dc1d03a8958b1c81609acb7a5b5af7"
+      }
+    },
+    {
+      "label": "fullgpu-public-hash-workflow-4-candidate",
+      "pair": 4,
+      "variant": "candidate",
+      "public_hash": {
+        "kernel": "sbox-pair-v1",
+        "gpu_tuning_compiled": true,
+        "nvidia_supported": true
+      },
+      "workflow_ns": 190399219199,
+      "prover_setup_ns": 87579725294,
+      "proving_ns": 8713542479,
+      "verifier_setup_ns": 87575774443,
+      "cpu_verification_ns": 31753683,
+      "prover_session_start_ns": 72279459,
+      "verifier_session_start_ns": 68517027,
+      "memory_peak_bytes": 7340908544,
+      "artifact_sha3_256": "307d3678b9ac95eff355d935384594c5de43a28c10da86a9ca681f211fb89486",
+      "record_sha256": "94b5dd5eccbf97f5a4361493f47b113f5afec853c4e7e4f08ebe48110c476893",
+      "raw_log_sha256": "29a66f1da2b167d86e9f8541eab8d0cbf47ea9281d21f2fb7fc615fa9ccb017c",
+      "report_sha256": {
+        "workflow": "d8e1d88bc4fa0dab26ced613c506023818cabd5b088a4cf23bd2b58689ae6d73",
+        "proving": "cc1b41dd06d1517c0eb797e763b6436d24dc05b508b2c43dc4f93bd2bd3168c5",
+        "verification": "a0f65d464abd0e7791424a1423dbeecd63c7e510a213af5e26dc286003810cfb"
+      }
+    }
+  ]
+}

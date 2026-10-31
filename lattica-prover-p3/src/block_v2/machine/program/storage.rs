@@ -3,6 +3,16 @@
 use super::*;
 
 impl Program {
+    /// Requested storage retained by this immutable program, including spare
+    /// and nested vector capacities and the Arc allocation used by MachineAir.
+    /// This read-only query allocates no scratch on success. It is not RSS or
+    /// an admission token: callers must separately include witness, trace,
+    /// evaluation scratch and enclosing worker storage before execution.
+    pub fn retained_host_bytes(&self) -> Result<usize, ExecutionError> {
+        self.source_host_bytes()
+            .map_err(|_| ExecutionError::TooLarge)
+    }
+
     pub(crate) fn source_host_bytes(&self) -> Result<usize, String> {
         fn bytes<T>(capacity: usize) -> Result<usize, String> {
             capacity

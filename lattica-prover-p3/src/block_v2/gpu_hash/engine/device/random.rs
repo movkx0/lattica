@@ -100,7 +100,7 @@ struct Stream {
 #[derive(Clone)]
 pub(crate) struct DeviceRandom(Arc<Stream>);
 
-fn retained_stream_host_backing() -> usize {
+pub(super) fn retained_stream_host_backing() -> usize {
     use crate::block_v2::gpu_hash::cache_metadata::arc_bytes;
     arc_bytes::<Stream>() + arc_bytes::<SecretAllocation>() + arc_bytes::<Allocation>()
 }

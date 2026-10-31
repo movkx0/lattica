@@ -1,0 +1,135 @@
+{
+  "schema": "owned-raw-differential-and-outer-admission-screen-v1",
+  "capsules": [
+    "A015",
+    "B027"
+  ],
+  "base_commit": "a410609d8eb5e763cbc1a713dc99d9f2eb0a4b58",
+  "validation": {
+    "fullgpu-raw-differential-cpu-tests-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "576285f88ec72f474604fe96f30c79b4242993970fbd840e62a0617850026ce5",
+      "raw_log_sha256": "570733d790c6c08608253dc641450947c2a871c6c0a00af0f571e7720b8abec8",
+      "guard_wall_seconds": 90.2473986959958,
+      "guarded_job_peak_bytes": "1548656640",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-owned-outer-ocl-cpu-tests-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "d07c73f3d5768209773227a08c11103b914c16b566dd7f939ddbfe060e8f0d59",
+      "raw_log_sha256": "79ef8d2f375539718ae7a6194a5d4bdfdc70d7599c0de19e2b36f32322ed10a4",
+      "guard_wall_seconds": 2.0954695010150317,
+      "guarded_job_peak_bytes": "26947584",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-owned-runtime-research-provenance-2": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "5fb6bfe539755114ebb7c2f7d6da40b6e9e3a7f3bb805b873d2a320852d46f63",
+      "raw_log_sha256": "9482281b0703013389041e5c1bcc0d1148f75274d9139765503dc3633769db0a",
+      "guard_wall_seconds": 2.1090675320010632,
+      "guarded_job_peak_bytes": "25104384",
+      "built_artifact_sha256": {
+        "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/target-opencl/release/deps/lattica_pq_ringct_research-3751ac8c33b80f90": "3fcb72d45d046664cb5567bda35f72f6816d3c889388afca6d430d750a41d17f"
+      }
+    },
+    "fullgpu-reserved-raw-differential-gpu-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "e16a0c825cf9755f1296bd25602eccd5341f186a8aa85351daa22371ce88fdda",
+      "raw_log_sha256": "a1e0df8cb8a30bc9e53314e144191a4d839a20720c1e34a6565bbbf2b5119fc9",
+      "guard_wall_seconds": 4.1063341020199005,
+      "guarded_job_peak_bytes": "291233792",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-outer-ocl-core-canaries-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "ea50e43a0118ea97c7a8cc5246b90e10d509dedd22d41340e3740c20ca8e167b",
+      "raw_log_sha256": "7b43a72d9eb7b0790abedbcdac84a6027a2f3d4efb649fc47b01929171914ae8",
+      "guard_wall_seconds": 252.55154058799963,
+      "guarded_job_peak_bytes": "5540577280",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-owned-outer-hybrid-gpu-screen-1": {
+      "status": "failed_or_incomplete",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "332ba43a7f5d582960737cb4b3357262118e9e69d1478cf05d7fee31549e3638",
+      "raw_log_sha256": "f3cc55d6b6a38929a58157668e4a33ff7f99eeced89962ba4a0e6d2b2110e70d",
+      "guard_wall_seconds": 4.101033135986654,
+      "guarded_job_peak_bytes": "818987008",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-outer-refusal-cpu-tests-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "6a07172406400e04d9cbfb210165b9ff9ef3cdd1496d9661f07f5d7d03bc13d2",
+      "raw_log_sha256": "7069abef1177a331676aa4f6e331fc89f37f4c2a7707f638db13b809e1da84ab",
+      "guard_wall_seconds": 90.25743476598291,
+      "guarded_job_peak_bytes": "1546895360",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-outer-refusal-research-provenance-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "3b0b58df9d34c74d9c368e0ab86d9de7bdede7b818b4d503e93906128b7a6b0f",
+      "raw_log_sha256": "4f7c736ef659eb7909694a2365b0d39be5ba534c30359689a4c602fd75489bd4",
+      "guard_wall_seconds": 2.111115264997352,
+      "guarded_job_peak_bytes": "25747456",
+      "built_artifact_sha256": {
+        "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/target-opencl/release/deps/lattica_pq_ringct_research-3751ac8c33b80f90": "f62e67366d25a45754612fc21e4351a55de91d739371839cde50ce73a9460ff1"
+      }
+    },
+    "fullgpu-owned-outer-hybrid-gpu-screen-2": {
+      "status": "failed_or_incomplete",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "9efc1fd678fbb3d6315c8dd902f09360dfad3bfee7a9ef496cd370f133c10110",
+      "raw_log_sha256": "04e55d05854cd3ec7ae2ec2cbe2708e5837b00f96c6b061b7b4272d40a1ea970",
+      "guard_wall_seconds": 4.102687859005528,
+      "guarded_job_peak_bytes": "818794496",
+      "built_artifact_sha256": {}
+    }
+  },
+  "differential": {
+    "polynomials": 1770,
+    "byte_nodes": 8,
+    "expressions": 505162,
+    "operations": 1311,
+    "cpu_reference_lower_ns": 66348224,
+    "runtime_startup_ns": 161652022,
+    "gpu_raw_preparation_ns": 2686135299,
+    "exact_comparison_ns": 900955,
+    "mutation_cases_rejected": 12,
+    "original_ledger_retired": true,
+    "scope": "All values, commitments, sources, expressions and ordered edges compared; only validated private owner IDs normalized."
+  },
+  "outer_admission": {
+    "status": "refused_before_runtime_startup_and_proof_dispatch",
+    "phase": "PreparedOuter::new; bounded phase diagnostics added separately in B028",
+    "compiler_peak_host_bytes": 323322560,
+    "compiler_retained_host_bytes": 113407717,
+    "wrapper_host_reservation_bytes": 11133134,
+    "wrapper_device_reservation_bytes": 0
+  },
+  "resource_limits_changed": false,
+  "faithful_ringct_workflow_qualified": false,
+  "paired_transaction_dispatch_enabled": false,
+  "performance_promoted": false,
+  "limitations": [
+    "Raw GPU lowering was slower than CPU lowering in this screen.",
+    "Native SHAKE fixtures were built on CPU; neither raw lowering nor the outer hybrid test establishes full GPU native proving.",
+    "The outer screen refused admission and did not produce any recursive proof.",
+    "No complete-workflow speedup claim."
+  ],
+  "bounded_refusal_diagnostic": {
+    "capsule": "B028",
+    "cpu_tests_passed": 5,
+    "phase": "BackendPlan",
+    "reason": "complete registered phase plan requires the pinned wide host-tree profile",
+    "truncated": false,
+    "proof_dispatch_started": false,
+    "runtime_initialization_started": false
+  }
+}

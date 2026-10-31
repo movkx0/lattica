@@ -8,7 +8,49 @@ use p3_field::PrimeField64;
 mod batch;
 mod htlc;
 mod proof_storage;
-pub(crate) use proof_storage::{WalletDevicePlan, WalletProofMinimum};
+#[cfg(all(feature = "gpu", feature = "stream", feature = "note-research-quota"))]
+pub(crate) use proof_storage::note_runtime;
+pub(crate) use proof_storage::{WalletDevicePlan, WalletPlannerResources, WalletProofMinimum};
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream"
+))]
+pub(crate) use proof_storage::ShakeSourceDeviceCensus;
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream"
+))]
+pub(crate) use proof_storage::AesSourceDeviceCensus;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use proof_storage::GraphSourceDeviceCensus;
+
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream",
+    feature = "ringct-research-quota"
+))]
+pub(crate) use proof_storage::ShakeDeviceLease;
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream",
+    feature = "ringct-research-quota"
+))]
+pub(crate) use proof_storage::AesDeviceLease;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use proof_storage::GraphSourceDeviceLease;
+
 
 /// A batch generates one single-wallet frame at a time. Bound its auxiliary
 /// storage with the actual single/batch planners, including empty batches.
@@ -315,3 +357,46 @@ impl DeviceSession {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use proof_storage::UniformDeviceCensus;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use proof_storage::TranscriptDeviceCensus;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use proof_storage::SparseDeviceCensus;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use proof_storage::UniformDeviceLease;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use proof_storage::TranscriptDeviceLease;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use proof_storage::AffineDeviceCensus;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use proof_storage::AffineDeviceLease;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use proof_storage::SparseDeviceLease;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use proof_storage::NttDeviceCensus;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use proof_storage::NttDeviceLease;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use proof_storage::MulDeviceCensus;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use proof_storage::MulDeviceLease;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use proof_storage::GBoundDeviceCensus;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use proof_storage::GBoundDeviceLease;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use proof_storage::PermutationDeviceCensus;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use proof_storage::PermutationDeviceLease;
+
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use proof_storage::LinearMapDeviceCensus;
+#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+pub(crate) use proof_storage::LinearMapDeviceLease;

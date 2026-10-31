@@ -1,0 +1,137 @@
+{
+  "schema": "owned-note-independent-verification-screen-v1",
+  "capsule": "C017",
+  "peer_review": "A PASS; root feature/guard review",
+  "validation": {
+    "fullgpu-note-handoff-cpu-tests-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "75c9395c0a66ac2312c36eee34afda0549eefc56e62cad5b5e4060c8d626f5cc",
+      "raw_log_sha256": "697d7da559bb4b1efee63b6c7bbf4ab564e5a946285c66ed10be573f8437d0cf",
+      "guard_wall_seconds": 54.20413057800033,
+      "guarded_job_peak_bytes": "1698754560",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-note-handoff-reference-cpu-tests-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "ee47f4cd3d527e560f12486e98caaaa64caea7e9753ca9eedb7c4d2df76c43e1",
+      "raw_log_sha256": "fd88c067c55d7b6f9ac5ae05702b9c84ac80053672a6a06e5ddd5aaa6fb5cdca",
+      "guard_wall_seconds": 6.102702315984061,
+      "guarded_job_peak_bytes": "278708224",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-note-handoff-research-provenance-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "c3d3eaae60111ce0098f6c3ecc8a700ddeca805bd0339f5eafc47de880d57474",
+      "raw_log_sha256": "b547c1bef28f8e5f12463d736c72f20beed63ab88e9f775c2f45df155fe3fd5e",
+      "guard_wall_seconds": 2.096203884022543,
+      "guarded_job_peak_bytes": "24543232",
+      "built_artifact_sha256": {
+        "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/target-opencl/release/deps/lattica_pq_direct_spend_research-3fdd90f91e728ff8": "8bb037486f380f8d976e74f296981e328003ea2d3be300637f8389013d8eed7b"
+      }
+    },
+    "fullgpu-note-handoff-gpu-verify-screen-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "7cb1f72ffbdd1ce6cb038e98e3d5dedab8c79f244b43845e0cba3b6a0d7ee104",
+      "raw_log_sha256": "9db1af844091308c2c4ea9177f3c0a16c18c7719fea6f60278dc0bbb98068615",
+      "guard_wall_seconds": 2.0808779200015124,
+      "guarded_job_peak_bytes": "223199232",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-owned-core-note-admission-tests-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "dfc9a2d41e44b19f6fc5287aac4252af6e0c8050002fec9bc6e11699762f27a2",
+      "raw_log_sha256": "202e4fb05e4f2444ecabe876b5691b0bbdb6f538c1ad6b0cacd988899a623560",
+      "guard_wall_seconds": 2.0946953060047235,
+      "guarded_job_peak_bytes": "25567232",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-note-preparation-without-prover-tests-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "58e8a9b6c5e074067e9fb57567bb957102ccc05e85185c7b48a0ddfbb1df47ba",
+      "raw_log_sha256": "d568aad06e23bd69e24c76987ddadf0ac1c8b6e05087baac6959bef02ec6fd38",
+      "guard_wall_seconds": 50.18014520601719,
+      "guarded_job_peak_bytes": "1702051840",
+      "built_artifact_sha256": {}
+    }
+  },
+  "focused_cpu_tests": 21,
+  "fresh_cpu_reference_tests": 2,
+  "gpu_proofs": [
+    {
+      "ordinal": 0,
+      "native_proofs": 1,
+      "recursive_proofs": 0,
+      "fresh_public_preparation": true,
+      "setup_ns": 250160,
+      "native_and_retirement_ns": 320025199,
+      "independent_cpu_verification_ns": 15438549,
+      "roundtrip_ns": 16272463,
+      "qualification_interval_ns": 353669881,
+      "proof_bytes": 457891,
+      "retained_operation_bytes": 72628772,
+      "original_quota_peak": 726681490,
+      "independent_verification": true,
+      "runtime_retired": true,
+      "matched_ringct_workflow": false,
+      "production_acceptance": false
+    },
+    {
+      "ordinal": 1,
+      "native_proofs": 1,
+      "recursive_proofs": 0,
+      "fresh_public_preparation": true,
+      "setup_ns": 128016,
+      "native_and_retirement_ns": 220920197,
+      "independent_cpu_verification_ns": 15240890,
+      "roundtrip_ns": 16389098,
+      "qualification_interval_ns": 254354181,
+      "proof_bytes": 458037,
+      "retained_operation_bytes": 72628772,
+      "original_quota_peak": 726681490,
+      "independent_verification": true,
+      "runtime_retired": true,
+      "matched_ringct_workflow": false,
+      "production_acceptance": false
+    }
+  ],
+  "gpu_scope_reports": [
+    {
+      "entry_point": "private_note_gpu",
+      "policy": "gpu_required",
+      "elapsed_ns": 109307700,
+      "succeeded": true,
+      "stage_coverage_complete": true,
+      "observation_errors": 0
+    },
+    {
+      "entry_point": "private_note_gpu",
+      "policy": "gpu_required",
+      "elapsed_ns": 109031708,
+      "succeeded": true,
+      "stage_coverage_complete": true,
+      "observation_errors": 0
+    }
+  ],
+  "mutation_cases_rejected": 12,
+  "original_quota_released": true,
+  "resource_limits_unchanged": true,
+  "production_acceptance_changed": false,
+  "qualified_faithful_ringct_workflow": false,
+  "performance_promoted": false,
+  "limitations": [
+    "Two fresh proofs use the same valid statement and distinct proof randomness; seven distinct-spend fixtures remain pending.",
+    "qualification_interval_ns covers preparation, native proof and retirement, decode, independent CPU verification, and packet roundtrip verification; fixture generation and mutations are outside this interval.",
+    "No matched CPU/GPU or faithful RingCT complete-workflow speedup claim.",
+    "No recursive aggregate is included in this isolated private-note research path."
+  ],
+  "supplemental_cpu_tests": {
+    "core_note_admission_tests": 12,
+    "experiment_disabled_note_tests": 17
+  }
+}

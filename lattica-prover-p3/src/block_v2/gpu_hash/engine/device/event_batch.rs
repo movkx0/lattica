@@ -1,9 +1,13 @@
 //! Scoped event collection on the existing in-order queue. The engine's inline
 //! array is included in its retained-host census; no unbounded event heap exists.
 use super::*;
-use crate::proving::Stage;
+use crate::proving::{Backend, Run, Stage};
 
 pub(in crate::block_v2::gpu_hash::engine) const CAPACITY: usize = 64;
+
+#[cfg(test)]
+#[path = "event_batch/compiler_tests.rs"]
+mod compiler_tests;
 
 pub(in crate::block_v2::gpu_hash::engine) struct PendingEvents<T> {
     entries: [Option<(&'static str, T)>; CAPACITY],
@@ -30,10 +34,53 @@ impl<T> PendingEvents<T> {
 
 pub(in crate::block_v2::gpu_hash::engine) type EventReceipts = PendingEvents<compute::Event>;
 
+enum ReceiptOwner<'a> {
+    Session(&'a Session),
+    Run(&'a Run),
+}
+impl ReceiptOwner<'_> {
+    fn observation_failed(&self) {
+        match self {
+            Self::Session(owner) => owner.observation_failed(),
+            Self::Run(run) => run.observation_failed(),
+        }
+    }
+
+    fn record_execution(&self, stage: Stage, ns: u128) -> Result<(), String> {
+        match self {
+            Self::Session(owner) => {
+                owner.record_execution(stage, 1, ns);
+                Ok(())
+            }
+            Self::Run(run) => run
+                .observe_device(stage, Backend::OpenCl, 1, ns)
+                .map_err(|error| error.to_string()),
+        }
+    }
+
+    fn record_event(
+        &self,
+        engine: &mut Engine,
+        stage: Stage,
+        label: &'static str,
+        event: &compute::Event,
+    ) -> Result<u128, String> {
+        let result = engine.timeline.record(label, event).and_then(|ns| {
+            self.record_execution(stage, ns)?;
+            Ok(ns)
+        });
+        if result.is_err() {
+            self.observation_failed();
+        }
+        result
+    }
+}
+
 pub(super) struct EventBatch<'a> {
     pub(super) engine: &'a mut Engine,
-    owner: &'a Session,
+    owner: ReceiptOwner<'a>,
     stage: Stage,
+    batched: bool,
     total_ns: u128,
     finished: bool,
 }
@@ -41,10 +88,26 @@ impl<'a> EventBatch<'a> {
     pub(super) fn new(engine: &'a mut Engine, owner: &'a Session, stage: Stage) -> Self {
         // The exclusive engine borrow prevents another batch/session entering.
         assert_eq!(engine.event_receipts.len, 0, "undrained GPU event batch");
+        let batched = engine.tuning.events;
         Self {
             engine,
-            owner,
+            owner: ReceiptOwner::Session(owner),
             stage,
+            batched,
+            total_ns: 0,
+            finished: false,
+        }
+    }
+
+    /// Compiler work precedes the session observer. Attribute completed
+    /// commands directly to that explicit run, with bounded event retention.
+    pub(super) fn for_run(engine: &'a mut Engine, run: &'a Run, stage: Stage) -> Self {
+        assert_eq!(engine.event_receipts.len, 0, "undrained GPU event batch");
+        Self {
+            engine,
+            owner: ReceiptOwner::Run(run),
+            stage,
+            batched: true,
             total_ns: 0,
             finished: false,
         }
@@ -55,7 +118,7 @@ impl<'a> EventBatch<'a> {
         label: &'static str,
         event: compute::Event,
     ) -> Result<(), String> {
-        if !self.engine.tuning.events {
+        if !self.batched {
             let ns = self
                 .owner
                 .record_event(self.engine, self.stage, label, &event)?;
@@ -90,7 +153,9 @@ impl<'a> EventBatch<'a> {
             let (label, event) = self.engine.event_receipts.entries[index].take().unwrap();
             match self.engine.timeline.record(label, &event) {
                 Ok(ns) => {
-                    self.owner.record_execution(self.stage, 1, ns);
+                    if let Err(e) = self.owner.record_execution(self.stage, ns) {
+                        error.get_or_insert(e);
+                    }
                     match self.total_ns.checked_add(ns) {
                         Some(total) => self.total_ns = total,
                         None => {
@@ -178,7 +243,11 @@ mod tests {
                 let spec = MatrixSpec::new(0, 4, Extension::Base, RowOrder::Natural, 1)?;
                 let output = session.allocate(engine, spec)?;
                 const GUARD: u64 = 0xa5a5_936c_d18e_72b4;
-                output.storage.buffer.write(&[GUARD; 4][..]).enq()
+                output
+                    .storage
+                    .buffer
+                    .write(&[GUARD; 4][..])
+                    .enq()
                     .map_err(|e| e.to_string())?;
                 let kernel = engine
                     .pq
@@ -243,11 +312,20 @@ mod tests {
                     assert_eq!(after.2 - before.2, u64::from(failure != 0));
                     assert_eq!(other.session.test_receipt(Stage::Transform), untouched);
                     let mut words = [0u64; 4];
-                    output.storage.buffer.read(&mut words[..]).enq()
+                    output
+                        .storage
+                        .buffer
+                        .read(&mut words[..])
+                        .enq()
                         .map_err(|e| e.to_string())?;
                     assert_eq!(
                         words,
-                        [Val::from_u64(8).inverse().as_canonical_u64(), 7, GUARD, GUARD]
+                        [
+                            Val::from_u64(8).inverse().as_canonical_u64(),
+                            7,
+                            GUARD,
+                            GUARD
+                        ]
                     );
                 }
                 let before = session.session.test_receipt(Stage::Transform);

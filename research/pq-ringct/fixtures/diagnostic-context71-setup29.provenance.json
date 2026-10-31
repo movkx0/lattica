@@ -1,0 +1,8 @@
+{
+  "source": "/home/access/code/lattica/.tools/worktrees/pq-ringct-research/.tools/pq-child-cache/complete-spend-acceptance-v1-1db18b9e1bece2fd/fixture-0.json",
+  "copy": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/fixtures/diagnostic-context71-setup29.json",
+  "sha256": "b78c234c604cdbc2e44925715f6c900a739e24408223df60ab6a9b1846d5898a",
+  "bytes": 833617,
+  "purpose": "diagnostic public-shape fixture screen only; not accepted N3/N4 geometry or a fresh proof",
+  "allow_create": false
+}

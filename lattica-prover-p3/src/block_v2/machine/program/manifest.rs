@@ -2,6 +2,9 @@
 //! fixed-size operation address arrays are copied onto the stack.
 use super::*;
 
+mod cursor;
+pub(crate) use cursor::ManifestCursor;
+
 type Sink<'a> = dyn FnMut(u64) -> Result<(), String> + 'a;
 
 fn words(values: impl IntoIterator<Item = u64>, emit: &mut Sink<'_>) -> Result<(), String> {

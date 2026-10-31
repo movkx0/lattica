@@ -4,6 +4,34 @@
 use super::*;
 use crate::block_v2::gpu_quotient_prover::program::ProgramShape;
 
+/// Every coset transform has the same output height. Expanding larger widths
+/// first minimizes the retained-output overlap with the two-buffer transform.
+/// Equal widths keep their semantic order; the returned indices never change
+/// which input occupies the main/preprocessed/permutation argument slot.
+pub(super) fn expansion_order(inputs: &[MatrixSpec]) -> Result<[usize; 3], String> {
+    if inputs.is_empty() || inputs.len() > 3 {
+        return Err("quotient expansion input count".into());
+    }
+    let mut order = [0, 1, 2];
+    for i in 1..inputs.len() {
+        let mut at = i;
+        while at > 0 {
+            let width = |index: usize| {
+                inputs[index]
+                    .columns
+                    .checked_mul(inputs[index].extension.degree())
+                    .ok_or("quotient expansion width overflow")
+            };
+            if width(order[at - 1])? >= width(order[at])? {
+                break;
+            }
+            order.swap(at - 1, at);
+            at -= 1;
+        }
+    }
+    Ok(order)
+}
+
 #[derive(Debug)]
 pub(crate) struct PartitionStorage {
     pub output: MatrixSpec,
@@ -55,7 +83,8 @@ impl PartitionStorage {
             .ok_or("partition output storage overflow")?;
         let mut expanded = 0usize;
         let mut expansion_peak_bytes = base;
-        for &input in inputs {
+        for index in expansion_order(inputs)?.into_iter().take(inputs.len()) {
+            let input = inputs[index];
             if cosets == 1 && input.log_rows == part_log {
                 // The one split domain retains the original shift. Runtime
                 // aliases this input, so its bytes are already in `live`.
@@ -128,6 +157,82 @@ impl PartitionStorage {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn expansion_schedule_uses_flattened_width_and_preserves_equal_width_order() {
+        let matrix = |columns, extension| {
+            MatrixSpec::new(10, columns, extension, RowOrder::BitReversed, 7).unwrap()
+        };
+        let inputs = [
+            matrix(94, Extension::Base),
+            matrix(200, Extension::Base),
+            matrix(17, Extension::Cubic),
+        ];
+        assert_eq!(expansion_order(&inputs).unwrap(), [1, 0, 2]);
+        let equal = [
+            matrix(3, Extension::Base),
+            matrix(1, Extension::Cubic),
+            matrix(2, Extension::Quadratic),
+        ];
+        assert_eq!(expansion_order(&equal).unwrap(), [2, 0, 1]);
+        assert_eq!(expansion_order(&inputs[..1]).unwrap(), [0, 1, 2]);
+        assert!(expansion_order(&[]).is_err());
+        assert!(expansion_order(&[inputs[0]; 4]).is_err());
+    }
+
+    #[test]
+    fn largest_first_keeps_full_wide_quotient_prefixes_in_the_original_budget() {
+        let inputs = [
+            MatrixSpec::new(20, 94, Extension::Base, RowOrder::BitReversed, 7).unwrap(),
+            MatrixSpec::new(20, 200, Extension::Base, RowOrder::BitReversed, 7).unwrap(),
+            MatrixSpec::new(20, 17, Extension::Cubic, RowOrder::BitReversed, 7).unwrap(),
+        ];
+        // Three original hidden prefixes, two projected input copies, and
+        // explicit metadata/engine bytes are already retained in live.
+        let base = (353 + 145) * (1 << 20) * 8 + (96 << 20);
+        let program = ProgramShape {
+            extension: Extension::Cubic,
+            instruction_words: 10,
+            registers: 1,
+            constraints: 1,
+            row_words: 2 * (94 + 200 + 51),
+            parameter_words: 0,
+        };
+        let limits = super::super::super::super::Limits {
+            managed_bytes: 8 << 30,
+            tile_bytes: 64 << 20,
+            staging_bytes: 64 << 20,
+        };
+        let plan =
+            PartitionStorage::new(&inputs, 19, 23, 7, program, base, 0, limits, 4 << 30).unwrap();
+        let output = (1 << 23) * 3 * 8;
+        let roots = (20 + 20 + 2) * 8;
+        assert_eq!(
+            plan.expansion_peak_bytes,
+            base + output + 2 * inputs[1].bytes() + roots
+        );
+        // In semantic order the preprocessed transform unnecessarily overlaps
+        // the already-expanded main matrix. That former peak exceeds 8 GiB.
+        let former = base + output + inputs[0].bytes() + 2 * inputs[1].bytes() + roots;
+        assert!(former > limits.managed_bytes);
+        assert_eq!(former - plan.expansion_peak_bytes, inputs[0].bytes());
+        assert!(plan.peak_bytes <= limits.managed_bytes);
+        assert!(PartitionStorage::new(
+            &inputs,
+            19,
+            23,
+            7,
+            program,
+            base,
+            0,
+            super::super::super::super::Limits {
+                managed_bytes: plan.peak_bytes - 1,
+                ..limits
+            },
+            4 << 30
+        )
+        .is_err());
+    }
     #[test]
     fn a_single_coset_keeps_same_domain_aliases_within_a_tight_budget() {
         let input = MatrixSpec::new(10, 200, Extension::Base, RowOrder::BitReversed, 7).unwrap();

@@ -27,15 +27,47 @@ pub(crate) fn batch_with_constants(
         analysis::analyze_prepared(air, &prepared)
             .map_err(|_| CompileError::Shape("template AIR geometry"))?
     };
+    batch_from_geometry(air, a.quotient_chunks, a.permutation_width_base)
+}
+
+/// Private shape-planning construction; enclosing storage is admitted before
+/// this function. No invalid template or program escapes the bounds-only API.
+pub(super) fn batch_bounded_shape(air: &MachineAir) -> Result<BatchProof<Config>, CompileError> {
+    let (quotient_chunks, permutation_width_base) = {
+        let prepared = super::super::symbolic::verifier::prepare_registry(
+            air, super::super::symbolic::verifier::Limits::default(),
+        )?;
+        if prepared.log_chunks > profile::LOG_BLOWUP {
+            return Err(CompileError::Shape("bounded batch template quotient degree"));
+        }
+        (1 << (prepared.log_chunks + 1), (prepared.lookups.len() + 1) * 3)
+    };
+    // Packing cannot create more lookup columns than the 4*LANES + publics
+    // interactions emitted by MachineAir. This bound does not assume a sampled
+    // packed count (which can vary with the number of public values).
+    if air.width() > 94 || air.preprocessed_width() > 200
+        || permutation_width_base > 3 * (4 * super::super::program::LANES + air.num_public_values() + 1)
+        || quotient_chunks > 32 || air.num_periodic_columns() != 0
+    {
+        return Err(CompileError::Shape("bounded batch template dimensions"));
+    }
+    batch_from_geometry(air, quotient_chunks, permutation_width_base)
+}
+
+fn batch_from_geometry(
+    air: &MachineAir,
+    quotient_chunks: usize,
+    permutation_width_base: usize,
+) -> Result<BatchProof<Config>, CompileError> {
     let degree = air.program().height().ilog2() as usize + 1;
     let log_lde = degree + profile::LOG_BLOWUP;
     let cap = |log: usize| MerkleCap::new(vec![[Val::ZERO; 4]; 1 << log.min(profile::CAP_HEIGHT)]);
     let widths = [
         vec![3],
         vec![air.width()],
-        vec![3; a.quotient_chunks],
+        vec![3; quotient_chunks],
         vec![air.preprocessed_width()],
-        vec![a.permutation_width_base],
+        vec![permutation_width_base],
     ];
     let point_counts = [1, 1, 1, 1, 2];
     let random = widths
@@ -112,11 +144,11 @@ pub(crate) fn batch_with_constants(
                     trace_next: None,
                     preprocessed_local: Some(vec![Challenge::ZERO; air.preprocessed_width()]),
                     preprocessed_next: None,
-                    quotient_chunks: vec![vec![Challenge::ZERO; 3]; a.quotient_chunks],
+                    quotient_chunks: vec![vec![Challenge::ZERO; 3]; quotient_chunks],
                     random: Some(vec![Challenge::ZERO; 3]),
                 },
-                permutation_local: vec![Challenge::ZERO; a.permutation_width_base],
-                permutation_next: vec![Challenge::ZERO; a.permutation_width_base],
+                permutation_local: vec![Challenge::ZERO; permutation_width_base],
+                permutation_next: vec![Challenge::ZERO; permutation_width_base],
             }],
         },
         opening_proof: (
@@ -131,6 +163,64 @@ pub(crate) fn batch_with_constants(
         ),
         lookup_terminals: vec![Some(LookupTerminal(Challenge::ZERO))],
         degree_bits: vec![degree],
+    })
+}
+
+/// Invalid private shape fixture. The closed native planner reserves the
+/// source-derived three-round backing before this constructor. No production
+/// proof/key or caller-chosen callback receives the returned object.
+pub(super) fn uni_bounded_shape(
+    width: usize,
+    height: usize,
+    next: bool,
+    quotient_chunks: usize,
+) -> Result<p3_uni_stark::Proof<Config>, CompileError> {
+    if !(1..=1024).contains(&width) || !(8..=1 << 24).contains(&height)
+        || !height.is_power_of_two() || !quotient_chunks.is_power_of_two()
+        || quotient_chunks > 32 || profile::LOG_BLOWUP != 4
+        || profile::CAP_HEIGHT != 6 || profile::NUM_QUERIES != 128
+        || profile::NUM_RANDOM_CODEWORDS != 4
+    {
+        return Err(CompileError::Shape("native template pinned geometry"));
+    }
+    let degree = height.ilog2() as usize + 1;
+    let log_lde = degree + profile::LOG_BLOWUP;
+    let cap = |log: usize| MerkleCap::new(vec![[Val::ZERO; 4]; 1 << log.min(profile::CAP_HEIGHT)]);
+    let widths = [vec![3], vec![width], vec![3; quotient_chunks]];
+    let point_counts = [1, 1 + usize::from(next), 1];
+    let hiding = widths.iter().zip(point_counts).map(|(w, points)| {
+        w.iter().map(|_| vec![vec![Challenge::ZERO; profile::NUM_RANDOM_CODEWORDS]; points]).collect()
+    }).collect();
+    let queries = (0..profile::NUM_QUERIES).map(|_| QueryProof {
+        input_proof: widths.iter().map(|w| BatchOpening::new(
+            w.iter().map(|&n| vec![Val::ZERO; n + profile::NUM_RANDOM_CODEWORDS]).collect(),
+            (vec![vec![Val::ZERO; 4]; w.len()],
+                vec![[Val::ZERO; 4]; log_lde.saturating_sub(profile::CAP_HEIGHT)]),
+        )).collect(),
+        commit_phase_openings: (0..degree).map(|r| CommitPhaseProofStep {
+            log_arity: 1,
+            sibling_values: vec![Challenge::ZERO],
+            opening_proof: (vec![vec![Val::ZERO; 4]],
+                vec![[Val::ZERO; 4]; (log_lde - r - 1).saturating_sub(profile::CAP_HEIGHT)]),
+        }).collect(),
+    }).collect();
+    Ok(p3_uni_stark::Proof {
+        commitments: p3_uni_stark::Commitments {
+            trace: cap(log_lde), quotient_chunks: cap(log_lde), random: Some(cap(log_lde)),
+        },
+        opened_values: p3_uni_stark::OpenedValues {
+            trace_local: vec![Challenge::ZERO; width],
+            trace_next: next.then(|| vec![Challenge::ZERO; width]),
+            preprocessed_local: None, preprocessed_next: None,
+            quotient_chunks: vec![vec![Challenge::ZERO; 3]; quotient_chunks],
+            random: Some(vec![Challenge::ZERO; 3]),
+        },
+        opening_proof: (hiding, FriProof {
+            commit_phase_commits: (0..degree).map(|r| cap(log_lde-r-1)).collect(),
+            commit_pow_witnesses: vec![Val::ZERO; degree], query_proofs: queries,
+            final_poly: vec![Challenge::ZERO], query_pow_witness: Val::ZERO,
+        }),
+        degree_bits: degree,
     })
 }
 

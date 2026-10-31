@@ -1,0 +1,87 @@
+//! Concrete table items match the named producer/constructor return types.
+//! Declare owning dependency layers separately; no table is self-referential.
+use super::{CaseOwnerTable, RuntimeTable, Original, Outcome, PhaseFailure, RetainedOriginal, WorkflowError};
+use crate::graph_tree::owned_parent::GraphParentFailure;
+use crate::spend_pipeline::full_workflow::affine_native_compile::{AffineNativeCompilePlan, AffineNativeCompileFailure};
+use crate::graph_tree::affine_sources::{AffineLeafBlueprint, AffineLeafFailure, OwnedCompiledAffine};
+use crate::graph_tree::owned_parent::{AffineLeafOuterPlan, PreissuedAffineLeafOuter};
+pub(crate) type AffineBlueprintResult<'a, 'graph> = Outcome<AffineLeafBlueprint<'a, 'graph>, AffineLeafFailure>;
+pub(crate) type AffineBlueprintTable<'case, 'a, 'graph> = CaseOwnerTable<'case, AffineBlueprintResult<'a, 'graph>>;
+pub(crate) type AffineCompilerPlanResult<'a> = Outcome<AffineNativeCompilePlan<'a>, (AffineNativeCompileFailure, Original)>;
+pub(crate) type AffineCompilerPlanTable<'case, 'a> = CaseOwnerTable<'case, AffineCompilerPlanResult<'a>>;
+pub(crate) type AffineOuterPlanResult<'source, 'a> = Outcome<AffineLeafOuterPlan<'source, 'a>, GraphParentFailure>;
+pub(crate) type AffineOuterPlanTable<'case, 'source, 'a> = CaseOwnerTable<'case, AffineOuterPlanResult<'source, 'a>>;
+pub(crate) type AffineCompiledResult<'a> = Outcome<RetainedOriginal<OwnedCompiledAffine<'a, 'a, 'a>>, PhaseFailure<AffineNativeCompileFailure>>;
+pub(crate) type AffineCompiledOutputs<'case, 'a> = RuntimeTable<'case, AffineCompiledResult<'a>>;
+pub(crate) type AffineOuterPreissueResult<'plan, 'source, 'a> = Outcome<PreissuedAffineLeafOuter<'plan, 'source, 'a>, WorkflowError>;
+pub(crate) type AffineOuterPreissues<'case, 'plan, 'source, 'a> = RuntimeTable<'case, AffineOuterPreissueResult<'plan, 'source, 'a>>;
+
+use crate::spend_pipeline::full_workflow::ntt_native_compile::{NttNativeCompilePlan, NttNativeCompileFailure};
+use crate::graph_tree::ntt_sources::{NttLeafBlueprint, NttLeafFailure, OwnedCompiledNtt};
+use crate::graph_tree::owned_parent::{NttLeafOuterPlan, PreissuedNttLeafOuter};
+pub(crate) type NttBlueprintResult<'a, 'graph> = Outcome<NttLeafBlueprint<'a, 'graph>, NttLeafFailure>;
+pub(crate) type NttBlueprintTable<'case, 'a, 'graph> = CaseOwnerTable<'case, NttBlueprintResult<'a, 'graph>>;
+pub(crate) type NttCompilerPlanResult<'a> = Outcome<NttNativeCompilePlan<'a>, (NttNativeCompileFailure, Original)>;
+pub(crate) type NttCompilerPlanTable<'case, 'a> = CaseOwnerTable<'case, NttCompilerPlanResult<'a>>;
+pub(crate) type NttOuterPlanResult<'source, 'a> = Outcome<NttLeafOuterPlan<'source, 'a>, GraphParentFailure>;
+pub(crate) type NttOuterPlanTable<'case, 'source, 'a> = CaseOwnerTable<'case, NttOuterPlanResult<'source, 'a>>;
+pub(crate) type NttCompiledResult<'a> = Outcome<RetainedOriginal<OwnedCompiledNtt<'a, 'a, 'a>>, PhaseFailure<NttNativeCompileFailure>>;
+pub(crate) type NttCompiledOutputs<'case, 'a> = RuntimeTable<'case, NttCompiledResult<'a>>;
+pub(crate) type NttOuterPreissueResult<'plan, 'source, 'a> = Outcome<PreissuedNttLeafOuter<'plan, 'source, 'a>, WorkflowError>;
+pub(crate) type NttOuterPreissues<'case, 'plan, 'source, 'a> = RuntimeTable<'case, NttOuterPreissueResult<'plan, 'source, 'a>>;
+
+use crate::spend_pipeline::full_workflow::mul_native_compile::{MulNativeCompilePlan, MulNativeCompileFailure};
+use crate::graph_tree::mul_sources::{MulLeafBlueprint, MulLeafFailure, OwnedCompiledMul};
+use crate::graph_tree::owned_parent::{MulLeafOuterPlan, PreissuedMulLeafOuter};
+pub(crate) type MulBlueprintResult<'a, 'graph> = Outcome<MulLeafBlueprint<'a, 'graph>, MulLeafFailure>;
+pub(crate) type MulBlueprintTable<'case, 'a, 'graph> = CaseOwnerTable<'case, MulBlueprintResult<'a, 'graph>>;
+pub(crate) type MulCompilerPlanResult<'a> = Outcome<MulNativeCompilePlan<'a>, (MulNativeCompileFailure, Original)>;
+pub(crate) type MulCompilerPlanTable<'case, 'a> = CaseOwnerTable<'case, MulCompilerPlanResult<'a>>;
+pub(crate) type MulOuterPlanResult<'source, 'a> = Outcome<MulLeafOuterPlan<'source, 'a>, GraphParentFailure>;
+pub(crate) type MulOuterPlanTable<'case, 'source, 'a> = CaseOwnerTable<'case, MulOuterPlanResult<'source, 'a>>;
+pub(crate) type MulCompiledResult<'a> = Outcome<RetainedOriginal<OwnedCompiledMul<'a, 'a, 'a>>, PhaseFailure<MulNativeCompileFailure>>;
+pub(crate) type MulCompiledOutputs<'case, 'a> = RuntimeTable<'case, MulCompiledResult<'a>>;
+pub(crate) type MulOuterPreissueResult<'plan, 'source, 'a> = Outcome<PreissuedMulLeafOuter<'plan, 'source, 'a>, WorkflowError>;
+pub(crate) type MulOuterPreissues<'case, 'plan, 'source, 'a> = RuntimeTable<'case, MulOuterPreissueResult<'plan, 'source, 'a>>;
+
+use crate::spend_pipeline::full_workflow::g_bound_native_compile::{GBoundNativeCompilePlan, GBoundNativeCompileFailure};
+use crate::graph_tree::g_bound_sources::{GBoundLeafBlueprint, GBoundLeafFailure, OwnedCompiledGBound};
+use crate::graph_tree::owned_parent::{GBoundLeafOuterPlan, PreissuedGBoundLeafOuter};
+pub(crate) type GBoundBlueprintResult<'a, 'graph> = Outcome<GBoundLeafBlueprint<'a, 'graph>, GBoundLeafFailure>;
+pub(crate) type GBoundBlueprintTable<'case, 'a, 'graph> = CaseOwnerTable<'case, GBoundBlueprintResult<'a, 'graph>>;
+pub(crate) type GBoundCompilerPlanResult<'a> = Outcome<GBoundNativeCompilePlan<'a>, (GBoundNativeCompileFailure, Original)>;
+pub(crate) type GBoundCompilerPlanTable<'case, 'a> = CaseOwnerTable<'case, GBoundCompilerPlanResult<'a>>;
+pub(crate) type GBoundOuterPlanResult<'source, 'a> = Outcome<GBoundLeafOuterPlan<'source, 'a>, GraphParentFailure>;
+pub(crate) type GBoundOuterPlanTable<'case, 'source, 'a> = CaseOwnerTable<'case, GBoundOuterPlanResult<'source, 'a>>;
+pub(crate) type GBoundCompiledResult<'a> = Outcome<RetainedOriginal<OwnedCompiledGBound<'a, 'a, 'a>>, PhaseFailure<GBoundNativeCompileFailure>>;
+pub(crate) type GBoundCompiledOutputs<'case, 'a> = RuntimeTable<'case, GBoundCompiledResult<'a>>;
+pub(crate) type GBoundOuterPreissueResult<'plan, 'source, 'a> = Outcome<PreissuedGBoundLeafOuter<'plan, 'source, 'a>, WorkflowError>;
+pub(crate) type GBoundOuterPreissues<'case, 'plan, 'source, 'a> = RuntimeTable<'case, GBoundOuterPreissueResult<'plan, 'source, 'a>>;
+
+use crate::spend_pipeline::full_workflow::permutation_native_compile::{PermutationNativeCompilePlan, PermutationNativeCompileFailure};
+use crate::graph_tree::permutation_sources::{PermutationLeafBlueprint, PermutationLeafFailure, OwnedCompiledPermutation};
+use crate::graph_tree::owned_parent::{PermutationLeafOuterPlan, PreissuedPermutationLeafOuter};
+pub(crate) type PermutationBlueprintResult<'a, 'graph> = Outcome<PermutationLeafBlueprint<'a, 'graph>, PermutationLeafFailure>;
+pub(crate) type PermutationBlueprintTable<'case, 'a, 'graph> = CaseOwnerTable<'case, PermutationBlueprintResult<'a, 'graph>>;
+pub(crate) type PermutationCompilerPlanResult<'a> = Outcome<PermutationNativeCompilePlan<'a>, (PermutationNativeCompileFailure, Original)>;
+pub(crate) type PermutationCompilerPlanTable<'case, 'a> = CaseOwnerTable<'case, PermutationCompilerPlanResult<'a>>;
+pub(crate) type PermutationOuterPlanResult<'source, 'a> = Outcome<PermutationLeafOuterPlan<'source, 'a>, GraphParentFailure>;
+pub(crate) type PermutationOuterPlanTable<'case, 'source, 'a> = CaseOwnerTable<'case, PermutationOuterPlanResult<'source, 'a>>;
+pub(crate) type PermutationCompiledResult<'a> = Outcome<RetainedOriginal<OwnedCompiledPermutation<'a, 'a, 'a>>, PhaseFailure<PermutationNativeCompileFailure>>;
+pub(crate) type PermutationCompiledOutputs<'case, 'a> = RuntimeTable<'case, PermutationCompiledResult<'a>>;
+pub(crate) type PermutationOuterPreissueResult<'plan, 'source, 'a> = Outcome<PreissuedPermutationLeafOuter<'plan, 'source, 'a>, WorkflowError>;
+pub(crate) type PermutationOuterPreissues<'case, 'plan, 'source, 'a> = RuntimeTable<'case, PermutationOuterPreissueResult<'plan, 'source, 'a>>;
+
+use crate::spend_pipeline::full_workflow::linear_map_native_compile::{LinearMapNativeCompilePlan, LinearMapNativeCompileFailure};
+use crate::graph_tree::linear_map_sources::{LinearMapLeafBlueprint, LinearMapLeafFailure, OwnedCompiledLinearMap};
+use crate::graph_tree::owned_parent::{LinearMapLeafOuterPlan, PreissuedLinearMapLeafOuter};
+pub(crate) type LinearMapBlueprintResult<'a, 'graph> = Outcome<LinearMapLeafBlueprint<'a, 'graph>, LinearMapLeafFailure>;
+pub(crate) type LinearMapBlueprintTable<'case, 'a, 'graph> = CaseOwnerTable<'case, LinearMapBlueprintResult<'a, 'graph>>;
+pub(crate) type LinearMapCompilerPlanResult<'a> = Outcome<LinearMapNativeCompilePlan<'a>, (LinearMapNativeCompileFailure, Original)>;
+pub(crate) type LinearMapCompilerPlanTable<'case, 'a> = CaseOwnerTable<'case, LinearMapCompilerPlanResult<'a>>;
+pub(crate) type LinearMapOuterPlanResult<'source, 'a> = Outcome<LinearMapLeafOuterPlan<'source, 'a>, GraphParentFailure>;
+pub(crate) type LinearMapOuterPlanTable<'case, 'source, 'a> = CaseOwnerTable<'case, LinearMapOuterPlanResult<'source, 'a>>;
+pub(crate) type LinearMapCompiledResult<'a> = Outcome<RetainedOriginal<OwnedCompiledLinearMap<'a, 'a, 'a>>, PhaseFailure<LinearMapNativeCompileFailure>>;
+pub(crate) type LinearMapCompiledOutputs<'case, 'a> = RuntimeTable<'case, LinearMapCompiledResult<'a>>;
+pub(crate) type LinearMapOuterPreissueResult<'plan, 'source, 'a> = Outcome<PreissuedLinearMapLeafOuter<'plan, 'source, 'a>, WorkflowError>;
+pub(crate) type LinearMapOuterPreissues<'case, 'plan, 'source, 'a> = RuntimeTable<'case, LinearMapOuterPreissueResult<'plan, 'source, 'a>>;

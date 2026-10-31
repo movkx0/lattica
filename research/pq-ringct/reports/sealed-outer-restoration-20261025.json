@@ -1,0 +1,107 @@
+{
+  "schema": "lattica-sealed-outer-restoration-qualification-v1",
+  "research_only": true,
+  "production_default_changed": false,
+  "complete_faithful_ringct_workflow": false,
+  "paired_request_execution_qualified": false,
+  "second_outer_dispatch_qualified": false,
+  "n3_n4_aggregation_qualified": false,
+  "performance_qualified": false,
+  "resource_limits_changed": false,
+  "job_swap_max_bytes": 0,
+  "scope": [
+    "Actual retired native runtime refuses outer-only restoration while its native phase binding survives; complete owner and full ledger snapshot preserved",
+    "One actual fresh native GPU proof plus one actual fresh recursive GPU proof; independent CPU verification/mutations; sealed original outer retirement and unstarted restoration/drop; terminal quota zero"
+  ],
+  "limitations": [
+    "Existing B046 native-to-outer qualifier is separately preserved",
+    "No second outer dispatch or complete paired/odd-tail request",
+    "Bounded compiler and public endpoints remain CPU work; component context/statement placeholders remain explicit",
+    "No asynchronous failure qualification, full RingCT workflow, final aggregate, performance or cryptographic adoption claim"
+  ],
+  "runs": [
+    {
+      "label": "fullgpu-sealed-outer-startup-core-tests-1",
+      "record": ".tools/pq-opencl-opt/runs/fullgpu-sealed-outer-startup-core-tests-1.json",
+      "record_sha256": "11e9049d99f6e83b523453d76c545d9b0ae07dae6e4642d3dcfcdb901e316aad",
+      "raw_log": ".tools/pq-opencl-opt/runs/fullgpu-sealed-outer-startup-core-tests-1.log",
+      "raw_log_sha256": "9bc0ae555103865258c19f425b2722b54d67d0757ae854d4f8e39b8c55b534e9",
+      "source_snapshot_sha256": "dc21c9ee9ea9d1f967bf3ebba09bc08a64f17ffd16bd279247b697150075df55",
+      "guard_wall_seconds": 256.5650372749951,
+      "host_peak_bytes": 5629857792,
+      "terminal_source_executable_log_audits_passed": true,
+      "events": [],
+      "test_results": [
+        "test result: ok. 20 passed; 0 failed; 2 ignored; 0 measured; 1847 filtered out; finished in 0.01s"
+      ]
+    },
+    {
+      "label": "fullgpu-outer-retirement-research-tests-1",
+      "record": ".tools/pq-opencl-opt/runs/fullgpu-outer-retirement-research-tests-1.json",
+      "record_sha256": "4935a72fc4245708fa092ebe4b0e6dae0fc41d37d577d44e6b81b0a31e711cb0",
+      "raw_log": ".tools/pq-opencl-opt/runs/fullgpu-outer-retirement-research-tests-1.log",
+      "raw_log_sha256": "d3065703129410b22d3666715bcd471fcd433df36faa74cb606c146ae9ca300c",
+      "source_snapshot_sha256": "cbb7e97f77dbad1e25e89f67f189fc23f4f2cf785760575df7e57961bfa12150",
+      "guard_wall_seconds": 94.27315367598203,
+      "host_peak_bytes": 1729826816,
+      "terminal_source_executable_log_audits_passed": true,
+      "events": [],
+      "test_results": [
+        "test result: ok. 64 passed; 0 failed; 13 ignored; 0 measured; 385 filtered out; finished in 0.24s"
+      ]
+    },
+    {
+      "label": "fullgpu-outer-retirement-guard-policy-tests-1",
+      "record": ".tools/pq-opencl-opt/runs/fullgpu-outer-retirement-guard-policy-tests-1.json",
+      "record_sha256": "5a362bab0c92a7038d982d412216b961270418079682e189fdc3fc1060f536bd",
+      "raw_log": ".tools/pq-opencl-opt/runs/fullgpu-outer-retirement-guard-policy-tests-1.log",
+      "raw_log_sha256": "8d143c695e42e35dc7584c3e2dc48139b3ce054f08ed83d65799e171806b4288",
+      "source_snapshot_sha256": "ebcc89cd8024b8a8c0ee2fcc5942bafe0e9c6f12126c88835ea4add64f31cc5f",
+      "guard_wall_seconds": 2.080025820003357,
+      "host_peak_bytes": 20795392,
+      "terminal_source_executable_log_audits_passed": true,
+      "events": [],
+      "test_results": [
+        "Ran 24 tests in 0.077s"
+      ]
+    },
+    {
+      "label": "fullgpu-outer-native-binding-rejection-gpu-1",
+      "record": ".tools/pq-opencl-opt/runs/fullgpu-outer-native-binding-rejection-gpu-1.json",
+      "record_sha256": "94cf7735136756756b1bc861a36e9cd7f321f6029c7e79e9fb3b1ba5d3bba9f5",
+      "raw_log": ".tools/pq-opencl-opt/runs/fullgpu-outer-native-binding-rejection-gpu-1.log",
+      "raw_log_sha256": "5701a87a15bf4ae173884c16d51820a7ef61c800fff5b09344ba6e8c369c7948",
+      "source_snapshot_sha256": "f54718765ffc67a45bfba58b9bcfa4ff20cfe881e6afc947048909468d902adc",
+      "guard_wall_seconds": 2.0966799089801498,
+      "host_peak_bytes": 216842240,
+      "terminal_source_executable_log_audits_passed": true,
+      "events": [
+        "ringct_owned_native_continuation_rejection failure_stage=normalization actual_configuration_completed=true private_trace_started=false proof_produced=false retry_attempted=false readmission_after_attempt=false original_retirement_snapshot_unchanged=true outer_only_restore_refused=true native_binding_retained=true outer_refusal_snapshot_unchanged=true extraction_delta_only_pending_proof_report=true peaks_unchanged=true managed_live_bytes=0 host_tree_live_bytes=0 lease_released=true retained_managed_claim_bytes=8589934592 managed_peak_bytes=67109888 high_level_producer_qualified=false async_failure_qualified=false complete_ringct_workflow=false",
+        "ringct_owned_native_continuation_rejection_terminal original_quota_released=true actual_runtime_retired=true proof_produced=false complete_ringct_workflow=false"
+      ],
+      "test_results": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 461 filtered out; finished in 0.21s"
+      ]
+    },
+    {
+      "label": "fullgpu-outer-continuation-gpu-1",
+      "record": ".tools/pq-opencl-opt/runs/fullgpu-outer-continuation-gpu-1.json",
+      "record_sha256": "ed31500b8ec639394df3591e537795d8b7075f3a775a640917a709472967b2b3",
+      "raw_log": ".tools/pq-opencl-opt/runs/fullgpu-outer-continuation-gpu-1.log",
+      "raw_log_sha256": "098f4376ea2c73412ab6f3d6b10ce785c03471789e0584e46708620365258d9b",
+      "source_snapshot_sha256": "f54718765ffc67a45bfba58b9bcfa4ff20cfe881e6afc947048909468d902adc",
+      "guard_wall_seconds": 26.140258778992575,
+      "host_peak_bytes": 1968394240,
+      "terminal_source_executable_log_audits_passed": true,
+      "events": [
+        "ringct_outer_retirement_preissued source_bounds_complete=true original_phase_owners_live=true native_dispatch_started=false restored_outer_dispatched=false host_bytes=34359738368 device_bytes=8589934592",
+        "ringct_outer_retirement_restored sealed_actual_outer_retirement=true original_startup_restored=true original_pcs_unchanged=true complete_ledger_snapshot_unchanged=true restored_outer_dispatched=false",
+        "ringct_outer_retirement_singleton native_proofs=1 recursive_proofs=1 fresh_gpu_required=true compiler_backend=cpu public_endpoint_preprocessing=cpu source_preclaims_before_native=true original_runtime_pcs_reused=true attachment_and_bind_ledger_unchanged=true original_outer_startup_restored=true restored_outer_dispatched=false independent_cpu_verified=true mutation_rejections=2 active_rows=101670 padded_rows=131072 compiler_ns=398566850 setup_ns=20384781023 proving_ns=3203650455 cpu_verification_ns=29161953 component_including_mutations_ns=25412971281 complete_ringct_workflow=false",
+        "ringct_outer_retirement_terminal original_quota_released=true restored_outer_dispatched=false complete_ringct_workflow=false"
+      ],
+      "test_results": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 461 filtered out; finished in 25.42s"
+      ]
+    }
+  ]
+}

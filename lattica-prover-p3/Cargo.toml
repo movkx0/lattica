@@ -8,9 +8,11 @@ version = "0.1.0"
 edition = "2021"
 
 [workspace]
-exclude = ["vendor/p3-lookup", "vendor/p3-field", "vendor/p3-symmetric"]
+exclude = ["vendor/p3-lookup", "vendor/p3-field", "vendor/p3-symmetric", "vendor/ocl-core"]
 
 [patch.crates-io]
+# Pinned upstream behavior by default; bounded metadata queries are opt-in.
+ocl-core = { path = "vendor/ocl-core" }
 # Pinned 0.6.1 with an allocation-free, checked owned-container constructor.
 p3-lookup = { path = "vendor/p3-lookup" }
 # Same arithmetic; single-chunk inversions do not dispatch to Rayon.
@@ -112,6 +114,7 @@ path = "src/bin/block_v2_paired_probe.rs"
 required-features = ["block-v2", "stream"]
 
 [dependencies]
+sha3 = "=0.10.8"
 itertools = "0.14"
 serde_json = "1"
 p3-air = "0.6.1"
@@ -137,6 +140,7 @@ postcard = { version = "1", features = ["alloc"] }
 serde = { version = "1", default-features = false, features = ["alloc", "derive"] }
 # GPU-accelerated proving: OpenCL DFT/LDE, included by the default `gpu` feature.
 ocl = { version = "0.19", optional = true }
+ocl-core = { version = "=0.11.5", optional = true }
 cudarc = { version = "=0.19.10", optional = true, default-features = false, features = ["std", "driver", "nvrtc", "dynamic-loading", "cuda-12090"] }
 rayon = { version = "1", optional = true } # parallelize the GPU leaf-buffer marshalling
 libc = { version = "0.2", optional = true } # streaming allocator and research filesystem safeguards
@@ -153,6 +157,16 @@ objc2-foundation = { version = "0.3.2", optional = true }
 objc2-metal = { version = "0.3.2", optional = true }
 
 [features]
+# Shared original RingCT research reservation ownership; no GPU dependency.
+ringct-research-quota = []
+# Isolated cumulative ownership for private-note research; no GPU dependency.
+note-research-quota = []
+# Isolated Linux/x86_64 owned-note qualification; production dispatch is unchanged.
+note-gpu-proving-experiment = ["note-research-quota", "block-v2", "gpu-bounded-info", "stream"]
+# Explicit deterministic native-spend qualification; never a production default.
+native-spend-oracle = ["gpu", "block-v2"]
+# Explicit full-column diagnostic readback; off in production builds.
+native-trace-audit = ["gpu", "block-v2"]
 
 # Isolated exact-integer component experiment; does not select a prover backend.
 cpu-sme2 = ["dep:libc"]
@@ -161,6 +175,8 @@ default = ["gpu"]
 # Enable GPU (OpenCL) acceleration of the LDE. Proving calls select the GPU backend explicitly.
 # Requires an OpenCL runtime + a GPU when used; the wire format and verifier are unchanged.
 gpu = ["dep:ocl", "dep:rayon", "dep:libc", "dep:p3-util"]
+# Isolated query ceilings; neither runtime admission nor a production default.
+gpu-bounded-info = ["gpu", "dep:ocl-core", "ocl-core/bounded-info"]
 # Native CUDA transport. Separate from the OpenCL default; proof integration is
 # qualified incrementally and must never advertise unavailable GPU stages.
 gpu-cuda = ["dep:cudarc", "dep:rayon", "dep:libc", "dep:p3-util", "dep:blake3"]
@@ -192,6 +208,8 @@ block-v2 = ["dep:p3-batch-stark", "dep:p3-lookup", "dep:tracing", "dep:libc", "d
 # Never use this build with legacy candidate keys or as a measured-series runner.
 # No production ABI/activation. Native validation and recursive closure are separate gates.
 block-v2-wide-lanes = ["block-v2"]
+# Isolated CPU measurements only; exposes no verifier or acceptance authority.
+verifier-metadata-screen = ["block-v2-wide-lanes"]
 # Distinct depth-seven research profile; legacy 64-transaction builds remain compatible.
 block-v2-capacity-128 = ["block-v2"]
 # Versioned research host verification. No legacy verifier fallback or activation.

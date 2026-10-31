@@ -1,0 +1,118 @@
+{
+  "schema": "lattica-research-owned-outer-host-qualification-v1",
+  "classification": "Hybrid component correctness screen: fresh CPU native child proofs and compiler, GPU outer proof, independent CPU verifier.",
+  "label": "fullgpu-owned-outer-hybrid-gpu-screen-3",
+  "cases": [
+    {
+      "layout": "Singleton",
+      "ordinal": 0,
+      "native_cpu_proofs": 1,
+      "recursive_gpu_proofs": 1,
+      "active_rows": 101683,
+      "padded_rows": 131072,
+      "fixture_preparation_ns": 2550929978,
+      "setup_ns": 20151489814,
+      "proving_ns": 29785384526,
+      "cpu_verification_ns": 28661490,
+      "component_elapsed_ns": 52741843392,
+      "full_gpu_workflow": false,
+      "ledger_reserved_host_peak_bytes": 34359738368,
+      "ledger_reserved_device_peak_bytes": 8589934592,
+      "independent_cpu_verification_passed": true,
+      "original_ledger_returned_to_prior_state": true
+    },
+    {
+      "layout": "PairedV1",
+      "ordinal": 0,
+      "native_cpu_proofs": 2,
+      "recursive_gpu_proofs": 1,
+      "active_rows": 203181,
+      "padded_rows": 262144,
+      "fixture_preparation_ns": 4319086733,
+      "setup_ns": 40402951291,
+      "proving_ns": 5920235235,
+      "cpu_verification_ns": 29620718,
+      "component_elapsed_ns": 50818752921,
+      "full_gpu_workflow": false,
+      "ledger_reserved_host_peak_bytes": 34359738368,
+      "ledger_reserved_device_peak_bytes": 8589934592,
+      "independent_cpu_verification_passed": true,
+      "original_ledger_returned_to_prior_state": true
+    },
+    {
+      "layout": "PairedV1",
+      "ordinal": 1,
+      "native_cpu_proofs": 1,
+      "recursive_gpu_proofs": 1,
+      "active_rows": 101600,
+      "padded_rows": 131072,
+      "fixture_preparation_ns": 2084822507,
+      "setup_ns": 20129397564,
+      "proving_ns": 3148097875,
+      "cpu_verification_ns": 27959539,
+      "component_elapsed_ns": 25522308269,
+      "full_gpu_workflow": false,
+      "ledger_reserved_host_peak_bytes": 34359738368,
+      "ledger_reserved_device_peak_bytes": 8589934592,
+      "independent_cpu_verification_passed": true,
+      "original_ledger_returned_to_prior_state": true
+    }
+  ],
+  "totals": {
+    "fresh_cpu_native_proofs": 4,
+    "fresh_gpu_recursive_proofs": 3,
+    "independent_cpu_verifications": 3
+  },
+  "guard": {
+    "record_sha256": "2d0dbff8bf420a87733bcdd7927a310bcdcbd65d576649fc81f9300f807bf81c",
+    "raw_log_sha256": "596c85cd44471a989de5b53f32bf497ec02430933e4ba742fb0e1d67598773f1",
+    "source_manifest_sha256": "412ce0f4f70127234965662f4f63dadc885c604c74c77c48be63b38701a1113a",
+    "build_label": "fullgpu-outer-host-research-provenance-1",
+    "executable_provenance": {
+      "path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/target-opencl/release/deps/lattica_pq_ringct_research-373d34f66754766a",
+      "resolved_path": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/build-cache/target-opencl/release/deps/lattica_pq_ringct_research-373d34f66754766a",
+      "sha256": "744b34f95c4c36726b8cc171d4edde923cd928285983ce10cf95bfba1adbafea",
+      "build_record": "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/pq-opencl-opt/runs/fullgpu-outer-host-research-provenance-1.json",
+      "build_record_sha256": "cd99faa548c3b704c52215d88c2f5ee49f1446663847d77bc6d901d150dd3323"
+    },
+    "wall_seconds": 130.32180914501077,
+    "actual_cgroup_host_peak_bytes": 3995729920,
+    "actual_process_gpu_peak_bytes": null,
+    "managed_allocation_peak_bytes": null,
+    "memory_max_bytes": 48318382080,
+    "memory_high_bytes": 46170898432,
+    "memory_swap_max_bytes": 0,
+    "terminal_integrity_audit_passed": true
+  },
+  "scope": {
+    "runtime_profile": "source-fixed outer host tree 8GiB inside original worker32GiB",
+    "complete_faithful_ringct_workflow": false,
+    "native_gpu_proving_qualified": false,
+    "transaction_context_authenticated": false,
+    "authenticated_source_key": false,
+    "matched_workflow_speedup_qualified": false,
+    "benchmark_promoted": false,
+    "production_acceptance_changed": false,
+    "resource_limits_changed": false
+  },
+  "interpretation": [
+    "Singleton, pair and odd-tail wrappers verified; exact original ledger/runtime cleanup assertions passed.",
+    "First-case proving time differs substantially from later cases; this sequential screen is not a matched timing comparison and supplies no speedup conclusion.",
+    "Ledger reserved peaks are admissions, distinct from actual cgroup memory telemetry. No process VRAM measurement is asserted."
+  ],
+  "prior_refusals_preserved": [
+    "fullgpu-owned-outer-hybrid-gpu-screen-1",
+    "fullgpu-owned-outer-hybrid-gpu-screen-2"
+  ],
+  "focused_checks": [
+    "fullgpu-outer-host-producer-cpu-tests-2",
+    "fullgpu-outer-host-runtime-research-tests-1",
+    "fullgpu-native-shake-pcs-core-tests-2",
+    "fullgpu-native-shake-ocl-core-tests-1"
+  ],
+  "pending": [
+    "Fresh fixed native SHAKE GPU producer and independent CPU verification",
+    "Complete transaction graph recursive closure and fresh N3/N4 workflows",
+    "Matched alternating complete-workflow performance validation"
+  ]
+}

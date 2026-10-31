@@ -1,0 +1,166 @@
+{
+  "schema": "reserved-runtime-and-raw-gpu-qualification-v1",
+  "base_commit": "cb97d74",
+  "capsules": [
+    "A013",
+    "A014",
+    "R003",
+    "B026a",
+    "B026b"
+  ],
+  "validation": {
+    "fullgpu-owned-selectors-policy-tests-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "fcbc40cec0e6750f35fca39e3a1fd0467a3ac1ca4b2c499fd8008c43f009d2bb",
+      "raw_log_sha256": "c85e44116f14ff1dd26195049beb85bb5d7d7acc141cfd198d549bea399f2258",
+      "guard_wall_seconds": 2.0749300220049918,
+      "guarded_job_peak_bytes": "19345408",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-owned-outer-runtime-cpu-build-1": {
+      "status": "failed_or_incomplete",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "279fa3b1fb0f7d88748478ebf37007b68f5b616eae29be015bf77a34a12a3f13",
+      "raw_log_sha256": "b78a43a1a6e176e457c29a195cf2321e1a9c8dd8a758d42ddf7c5461bb441b72",
+      "guard_wall_seconds": 46.17620473500574,
+      "guarded_job_peak_bytes": "1543032832",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-owned-outer-runtime-cpu-build-2": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "89878515e1bbdb07fd46a30ec42cdff4df0e593751b5b9f6fdae06537261cf73",
+      "raw_log_sha256": "78612f24a7d91f419437403bba59b8015c4cbd9dcd8f18112f12ca79eb343ca2",
+      "guard_wall_seconds": 46.17832901701331,
+      "guarded_job_peak_bytes": "1434513408",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-owned-outer-report-cpu-tests-1": {
+      "status": "refused_before_record",
+      "guard_returncode": 1
+    },
+    "fullgpu-owned-outer-report-cpu-tests-2": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "47b8b495b73d0049fd2e9f97f6f570346d5431ac9504d52e150b7a2f4b2d4a5d",
+      "raw_log_sha256": "9e4dc81e43648d557c64aa02e6d27f721570c07f7e2945154a8f1a8d55a96856",
+      "guard_wall_seconds": 2.0997008999984246,
+      "guarded_job_peak_bytes": "26075136",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-owned-raw-boundary-cpu-tests-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "9ddcb73654d76985f9ebd5c6426912574d0b744bf95ad7ea822b202416534059",
+      "raw_log_sha256": "962cf5a284148195118b74a82c79fb3ec3184858d55211f880e9eee777cbc2f5",
+      "guard_wall_seconds": 2.0937701009970624,
+      "guarded_job_peak_bytes": "27234304",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-owned-runtime-research-provenance-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "e66041b149469f71933eb95a068ed2b5d45189e0b2f00cce9ac7a9667c6d8771",
+      "raw_log_sha256": "9fc6c8d07c8785a7b3b5e5539482f94004c0a9d0170e7465cdae9c4db62f81e3",
+      "guard_wall_seconds": 2.1115942579926923,
+      "guarded_job_peak_bytes": "26017792",
+      "built_artifact_sha256": {
+        "/home/access/code/lattica/.tools/ringct-concurrent/campaign-20261024/integration/.tools/target-opencl/release/deps/lattica_pq_ringct_research-3751ac8c33b80f90": "2b0a75969ef33c10b16186dd6bde615165a401b18b0abb3d0061cce2b065c823"
+      }
+    },
+    "fullgpu-reserved-runtime-gpu-screen-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "6fffa65d7da4a7e17379a9f1847c6908e526f63b9b3539d30e964b34845a3f70",
+      "raw_log_sha256": "07f713047ee887273def34c77908c28ddc9dce8376dc18191b1e4fc9e3c34f51",
+      "guard_wall_seconds": 2.0926926539978012,
+      "guarded_job_peak_bytes": "217026560",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-reserved-raw-error-gpu-screen-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "0220ab70233ddc966880c1fc992379de5cabc63e025fc68c341b3132b508cd35",
+      "raw_log_sha256": "1e89faae422224e08d6d4486b2d51d3fb082d0bbff7271df3bee1d2caa85c70a",
+      "guard_wall_seconds": 2.0969868039828725,
+      "guarded_job_peak_bytes": "217092096",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-reserved-raw-graph-gpu-screen-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "cc7f6cb7f9efadcfeeab7d5c9bc0d3f649cd66a798b6b1d49349f5714b518a2b",
+      "raw_log_sha256": "5c85a70b1e7ac7578e60e5dd67e5b43b6ac07c549bf3cafe299624085f0b318a",
+      "guard_wall_seconds": 4.102626300998963,
+      "guarded_job_peak_bytes": "262836224",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-ordinary-opencl-check-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "433e6196538d45ef5025dcb6f2d96370f3ae5246ab843cb9f9c071906d02526f",
+      "raw_log_sha256": "bc42b902539c10f0c81701a83c3952e61ed73b4961fff7a848c844dc16f8e9d7",
+      "guard_wall_seconds": 14.145932143001119,
+      "guarded_job_peak_bytes": "946585600",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-owned-core-runtime-tests-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "329bda422ba10e6d325fc0aefc1962565fbc66027d50d92f2a5866addd9cfad4",
+      "raw_log_sha256": "9e6ea60e8fed6407ddf2b07d96a70905c1050e7e3ed83567d61cbebf2b09ed42",
+      "guard_wall_seconds": 248.5229933130031,
+      "guarded_job_peak_bytes": "5535842304",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-fixed-report-storage-cpu-tests-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "6504c4106848a306fc9d1d26637498f81f1005ff571411eca5398abd831dc02c",
+      "raw_log_sha256": "48e392d7867b201c03c94659124286f34505246c942848821fd671b534bda279",
+      "guard_wall_seconds": 2.095358574006241,
+      "guarded_job_peak_bytes": "26165248",
+      "built_artifact_sha256": {}
+    },
+    "fullgpu-fixed-device-capture-cpu-tests-1": {
+      "status": "passed",
+      "terminal_integrity_audit_passed": true,
+      "record_sha256": "fc9ef292c10cd7224437e103ea77d4cc5c3b2570ac5cd45173217d1a22680572",
+      "raw_log_sha256": "cad0690c93a54a60738d986c44653a18cd92a858e8a0e6f99e20742cede76983",
+      "guard_wall_seconds": 2.1088278100069147,
+      "guarded_job_peak_bytes": "27607040",
+      "built_artifact_sha256": {}
+    }
+  },
+  "checks": {
+    "guard_policy_tests": 15,
+    "runtime_admission_cpu_tests": 3,
+    "outer_report_cpu_tests": 3,
+    "raw_boundary_cpu_tests": 2,
+    "original_runtime_gpu_startup_and_retirement": true,
+    "raw_success_and_real_gpu_overflow_cleanup": true,
+    "genuine_raw_graph_gpu_operations": 7793,
+    "genuine_raw_graph_scope_ns": 2701062172,
+    "genuine_raw_graph_cpu_differential": false,
+    "ordinary_opencl_configuration_compiles": true
+  },
+  "limits_changed": false,
+  "outer_gpu_execution": "held: separate outer kernel-wrapper and specialized Program census pending",
+  "limitations": [
+    "Genuine fixture uses CPU native proof construction before GPU raw graph lowering.",
+    "Raw graph strict operation receipts do not establish native or recursive proof completion.",
+    "Independent CPU differential of the complete raw graph remains pending.",
+    "B026a/B026b CPU build and report tests passed; outer GPU execution has not been attempted.",
+    "No complete faithful RingCT workflow or performance claim."
+  ],
+  "refusals_and_failures_preserved": {
+    "fullgpu-owned-outer-runtime-cpu-build-1": "wrong RegisteredProgram import path; corrected by B026b",
+    "fullgpu-owned-outer-report-cpu-tests-1": "record-artifact requested on executing test command; refused before dispatch; separately recorded using test --no-run"
+  },
+  "supplemental_cpu_tests": {
+    "core_runtime_plan_tests": 2,
+    "fixed_report_storage_tests": 3,
+    "fixed_device_capture_tests": 2
+  }
+}

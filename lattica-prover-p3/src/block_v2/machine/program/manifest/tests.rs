@@ -200,6 +200,7 @@ fn all_operations() -> Program {
 fn borrowed_manifest_matches_frozen_encoding_for_all_operations() {
     let program = all_operations();
     let expected = legacy(&program);
+    assert_eq!(ManifestCursor::new(&program).collect::<Result<Vec<_>, _>>().unwrap(), expected);
     assert_eq!(program.manifest_fields(), expected);
     let mut actual = vec![];
     program
@@ -225,6 +226,30 @@ fn manifest_rejects_invalid_shared_operation_indices_and_hash_families() {
         let mut program = all_operations();
         program.rows[0] = row;
         assert!(program.emit_manifest(&mut |_| Ok(())).is_err());
+        let mut cursor = ManifestCursor::new(&program);
+        assert!(cursor.by_ref().collect::<Result<Vec<_>, _>>().is_err());
+        assert!(cursor.next().is_none());
+    }
+}
+
+#[test]
+fn resumable_manifest_keeps_large_hint_boundaries_and_empty_rows() {
+    let mut program = all_operations();
+    program.operations.push(Op::SelectHint {
+        entries: (0..8193).map(Wire).collect(), bits: (0..15).map(Wire).collect(), out: Wire(19),
+    });
+    program.rows.push(Row::Alu(vec![(program.operations.len() - 1) as u32]));
+    let expected = legacy(&program);
+    for chunk in [1, 3, 4, 4095, 4096, 4097] {
+        let mut cursor = ManifestCursor::new(&program);
+        let mut actual = Vec::new();
+        loop {
+            let words = cursor.by_ref().take(chunk).collect::<Result<Vec<_>, _>>().unwrap();
+            if words.is_empty() { break; }
+            actual.extend(words);
+        }
+        assert_eq!(actual, expected);
+        assert!(cursor.next().is_none());
     }
 }
 

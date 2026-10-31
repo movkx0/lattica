@@ -16,12 +16,13 @@ pub enum AdmissionError {
     MultiplicityBound,
     RegistryCommitmentMismatch,
     QuotientDegree,
+    Symbolic(super::verifier::CompileError),
     ProvingPolicy(crate::proving::Error),
     Gpu(String),
     RamLowerBound { required: u64, budget: u64 },
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MachineAnalysis {
     pub height: usize,
     pub main_width: usize,
@@ -36,6 +37,25 @@ pub struct MachineAnalysis {
     pub retained_lde_bytes: u64,
     /// FRI/ALI estimate only. LogUp and composition require separate accounting.
     pub fri_ali_bits: usize,
+}
+
+/// Maximum simultaneously live requested symbolic graph storage used by
+/// `analyze_bounded_cpu`. Caller-owned program storage, fixed AIR helpers,
+/// stacks and allocator overhead require separate enclosing accounting.
+pub const BOUNDED_CPU_ANALYSIS_GRAPH_BYTES: u64 = super::symbolic::HOST_BYTES;
+
+/// Analyze this immutable AIR using the existing fixed CPU symbolic quotas.
+/// No trace, commitment, registry, proof, GPU state or dispatch token is made.
+/// The graph workspaces retire before returning the small geometry report.
+/// Callers must reserve the graph allowance and their surrounding storage
+/// before entry. This function never falls back to unbounded analysis.
+pub fn analyze_bounded_cpu(air: &MachineAir) -> Result<MachineAnalysis, AdmissionError> {
+    let prepared = super::symbolic::verifier::prepare_registry(
+        air,
+        super::symbolic::verifier::Limits::default(),
+    )
+    .map_err(AdmissionError::Symbolic)?;
+    analyze_prepared(air, &prepared)
 }
 
 pub fn analyze(air: &MachineAir) -> Result<MachineAnalysis, AdmissionError> {
@@ -232,6 +252,23 @@ impl MachineAnalysis {
 #[cfg(test)]
 mod compact_admission_tests {
     use super::*;
+
+    #[test]
+    fn bounded_cpu_analysis_matches_reference_across_public_banks_and_heights() {
+        use super::super::program::ProgramBuilder;
+        assert_eq!(
+            BOUNDED_CPU_ANALYSIS_GRAPH_BYTES as usize,
+            super::super::symbolic::verifier::Limits::default().workspace()
+        );
+        for (publics, height) in [(0, 8), (4, 8), (46, 131072), (46, 262144), (64, 262144)] {
+            let program = ProgramBuilder::new(publics)
+                .unwrap()
+                .finish(Some(height))
+                .unwrap();
+            let air = MachineAir::new(program);
+            assert_eq!(analyze_bounded_cpu(&air).unwrap(), analyze(&air).unwrap());
+        }
+    }
 
     #[test]
     fn compact_layout_has_its_own_boundary_without_relaxing_full_storage() {
