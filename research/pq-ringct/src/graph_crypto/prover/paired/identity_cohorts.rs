@@ -1,35 +1,41 @@
 //! Reorder only independent native/leaf-compile blocks, before slot assignment.
 //! Recursive nodes, native segments and the logical outer/merge order are fixed.
 use super::*;
-use lattica_prover_p3::block_v2::machine::backend::identity_batch::IdentityHashSchedule;
 
-pub(crate) const MAX_IDENTITY_STREAMS: usize = 16;
+
+pub(crate) use lattica_prover_p3::block_v2::machine::backend::identity_cpu::MAX_IDENTITY_STREAMS;
 
 impl PairedRequestPlan<'_> {
-    pub(crate) fn identity_limits(&self) -> IdentityBatchLimits {
+    pub(crate) fn identity_limits(&self) -> IdentityCpuOptions {
         self.identity_limits
     }
 
-    pub(crate) fn with_identity_limits(mut self, limits: IdentityBatchLimits) -> Result<Self> {
-        if self.identity_limits != IdentityBatchLimits::default() || self.endpoint_attempted.get() {
+    pub(crate) fn with_identity_limits(mut self, limits: IdentityCpuOptions) -> Result<Self> {
+        if self.identity_limits.parallel() || self.endpoint_attempted.get() {
             return Err(PairedFailure::Order);
         }
-        if limits.schedule == IdentityHashSchedule::Serial {
+        // Only the existing PCS operation allowance is available to identity
+        // scratch. Original compiler slots remain in complete admission.
+        let ready = self.nodes.iter().filter(|n| n.group.is_some()).count().max(1);
+        let limits = limits.fit_ready(ready, self.request.memory_budget)
+            .map_err(|_| PairedFailure::Resource)?;
+        if !limits.parallel() {
+            self.identity_limits = limits;
             return Ok(self);
         }
-        #[cfg(not(feature = "identity-batch-experiment"))]
+        #[cfg(not(feature = "full-workflow-experiment"))]
         {
             let _ = limits;
             Err(PairedFailure::Authority)
         }
-        #[cfg(feature = "identity-batch-experiment")]
+        #[cfg(feature = "full-workflow-experiment")]
         {
-            use lattica_prover_p3::block_v2::machine::backend::identity_batch::{
-                IdentityBatchContext, IDENTITY_PREFIX_HOST_BYTES,
+            use lattica_prover_p3::block_v2::machine::backend::identity_cpu::{
+                IdentityCpuContext, IDENTITY_PREFIX_HOST_BYTES,
             };
             reorder(&mut self.steps, limits.max_streams())?;
             self.identity_limits = limits;
-            self.identity_context = Some(IdentityBatchContext::new());
+            self.identity_context = Some(IdentityCpuContext::new());
             let mut hash = Sha3_256::new();
             hash.update(b"lattica/owned-shake-identity-cohorts/v1");
             hash.update(self.source_fingerprint);
@@ -62,7 +68,7 @@ impl PairedRequestPlan<'_> {
         node: usize,
     ) -> Result<([usize; MAX_IDENTITY_STREAMS], usize)> {
         let mut nodes = [0; MAX_IDENTITY_STREAMS];
-        if self.identity_limits.schedule == IdentityHashSchedule::Serial {
+        if !self.identity_limits.parallel() {
             return Ok((nodes, 0));
         }
         let position = self
@@ -94,10 +100,35 @@ impl PairedRequestPlan<'_> {
         Ok((nodes, count))
     }
 
-    #[cfg(feature = "identity-batch-experiment")]
+    #[cfg(feature = "full-workflow-experiment")]
+    pub(crate) fn identity_footprint(
+        &self,
+        node: usize,
+    ) -> Result<
+        Option<
+            lattica_prover_p3::block_v2::machine::backend::identity_cpu::IdentityBatchFootprint,
+        >,
+    > {
+        use lattica_prover_p3::block_v2::machine::backend::identity_cpu::IdentityBatchFootprint;
+        let (nodes, count) = self.identity_cohort(node)?;
+        if count == 0 {
+            return Ok(None);
+        }
+        let source_bytes = nodes[..count].iter().try_fold(0u64, |total, &node| {
+            let source = self.nodes.get(node).ok_or(PairedFailure::Order)?.source;
+            total
+                .checked_add(source.retained_program_host_bytes()? as u64)
+                .ok_or(PairedFailure::Overflow)
+        })?;
+        IdentityBatchFootprint::for_borrowed_program_bounds(count, source_bytes)
+            .map(Some)
+            .map_err(|_| PairedFailure::Resource)
+    }
+
+    #[cfg(feature = "full-workflow-experiment")]
     pub(crate) fn identity_context(
         &self,
-    ) -> Result<&lattica_prover_p3::block_v2::machine::backend::identity_batch::IdentityBatchContext>
+    ) -> Result<&lattica_prover_p3::block_v2::machine::backend::identity_cpu::IdentityCpuContext>
     {
         self.identity_context
             .as_ref()
@@ -109,7 +140,7 @@ impl PairedRequestPlan<'_> {
 /// in-place rotation. The non-leaf subsequence never changes; no second copy
 /// of the compiler schedule or witness storage is allocated.
 fn reorder(steps: &mut [RequestStep], width: usize) -> Result<()> {
-    if !matches!(width, 1 | 2 | 4 | 8 | 16) {
+    if !(1..=MAX_IDENTITY_STREAMS).contains(&width) {
         return Err(PairedFailure::Coverage);
     }
     let mut after = 0;
@@ -162,6 +193,28 @@ mod tests {
         }
     }
     #[test]
+    fn identity_cohorts_fill_every_supported_width_before_each_partial_tail() {
+        use RequestStepKind::*;
+        let count = MAX_IDENTITY_STREAMS + 1;
+        for width in 1..=MAX_IDENTITY_STREAMS {
+            let mut original = vec![Endpoints];
+            for node in 0..count {
+                original.extend([Native { index: node }, Group { node }, Outer { node }]);
+            }
+            let mut steps: Vec<_> = original.into_iter().map(step).collect();
+            reorder(&mut steps, width).unwrap();
+            let mut expected = vec![Endpoints];
+            for first in (0..count).step_by(width) {
+                let end = (first + width).min(count);
+                for node in first..end {
+                    expected.extend([Native { index: node }, Group { node }]);
+                }
+                expected.extend((first..end).map(|node| Outer { node }));
+            }
+            assert_eq!(steps.iter().map(|s| s.kind).collect::<Vec<_>>(), expected);
+        }
+    }
+    #[test]
     fn identity_cohorts_keep_native_and_recursive_order_with_odd_tail() {
         use RequestStepKind::*;
         let original = [
@@ -189,7 +242,7 @@ mod tests {
             },
             Outer { node: 4 },
         ];
-        for width in [1, 2, 4, 8, 16] {
+        for width in 1..=MAX_IDENTITY_STREAMS {
             let mut steps: Vec<_> = original.iter().copied().map(step).collect();
             reorder(&mut steps, width).unwrap();
             let kinds: Vec<_> = steps.iter().map(|s| s.kind).collect();

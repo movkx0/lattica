@@ -30,11 +30,20 @@ impl AesBlueprint {
         requirement(Category::PhaseScratch, self.storage.total_requested_bytes)
     }
 
+    pub(crate) fn metadata_request(&self) -> native_shape::cohort::Request<'static> {
+        native_shape::cohort::Request { descriptor:native_shape::cohort::Descriptor::Native(self.descriptor),
+            auxiliary:self.storage.auxiliary_peak_bytes }
+    }
+
     /// The same bounded native recorder used by the concrete compiler below,
     /// plus the unchanged component header and both endpoint conditions.
     pub(crate) fn inspect(&self) -> Result<ComponentSourceFacts> {
         let core = native_shape::native_core_bound(self.descriptor, construction(),
             self.storage.auxiliary_peak_bytes).map_err(|_| PairedFailure::Source)?;
+        self.inspect_bound(core)
+    }
+
+    pub(crate) fn inspect_bound(&self, core: native_shape::NativeCoreBound) -> Result<ComponentSourceFacts> {
         if core.storage != self.storage { return Err(PairedFailure::SourceDrift); }
         let framing = framing::AES_WRAPPER;
         if framing.cubic != 0 { return Err(PairedFailure::SourceDrift); }

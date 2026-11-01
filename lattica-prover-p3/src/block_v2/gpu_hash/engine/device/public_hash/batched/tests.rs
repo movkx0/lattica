@@ -3,8 +3,8 @@ use super::*;
 #[test]
 fn batch_census_and_canonical_validation_precede_execution() {
     assert!(Footprint::for_streams::<std::iter::Empty<Result<u64, String>>>(0).is_err());
-    assert!(Footprint::for_streams::<std::iter::Empty<Result<u64, String>>>(17).is_err());
-    for n in 1..=16 {
+    assert!(Footprint::for_streams::<std::iter::Empty<Result<u64, String>>>(MAX_STREAMS + 1).is_err());
+    for n in 1..=MAX_STREAMS {
         let p = Footprint::for_streams::<std::iter::Empty<Result<u64, String>>>(n).unwrap();
         assert_eq!(p.device_bytes, n as u64 * (4096 + 8) * 8);
         assert!(p.host_bytes > p.device_bytes);
@@ -38,9 +38,10 @@ fn gpu_identity_prefix_batches_match_exact_serial_hash_and_release_buffers() {
     super::super::tests::initialize();
     let session = DeviceSession::new().unwrap();
     let live = super::super::tests::live(&session);
-    for n in [1, 2, 4, 8, 16] {
+    for n in 1..=MAX_STREAMS {
         let inputs: Vec<Vec<u64>> = (0..n).map(|i| {
-            let length = [0, 1, 3, 4, 63, 64, 65, 4095, 4096, 4097, 8191, 8192, 8193, 16, 8, 7][i];
+            let lengths = [0, 1, 3, 4, 63, 64, 65, 4095, 4096, 4097, 8191, 8192, 8193, 16, 8, 7];
+            let length = lengths[i % lengths.len()];
             (0..length).map(|j| [0, 1, GOLDILOCKS_MODULUS - 1, (j + i) as u64][j % 4]).collect()
         }).collect();
         for split in [0usize, 4, 64, 4096, usize::MAX] {

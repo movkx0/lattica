@@ -177,9 +177,23 @@ impl<'request> OwnedAesRequestPlan<'request> {
         let mut carry = [None; usize::BITS as usize];
         let mut live = 0usize;
         let mut maximum_live = 0usize;
+        use crate::component_tree::native_shape::cohort;
+        let mut cores = [None; cohort::MAX];
         for index in 0..request.segments().len() {
             let blueprint = source::AesBlueprint::new(request, index)?;
-            let leaf_source = blueprint.inspect()?;
+            if index % cohort::MAX == 0 {
+                let count = cohort::MAX.min(request.segments().len() - index);
+                let mut requests = [blueprint.metadata_request(); cohort::MAX];
+                for (offset, slot) in requests[..count].iter_mut().enumerate() {
+                    *slot = source::AesBlueprint::new(request, index + offset)?.metadata_request();
+                }
+                // The original scratch above covers the largest source planner.
+                // Consume returned numbers directly, also without a cache scope.
+                cores = cohort::bounds_exact(&requests[..count], source::construction())
+                    .map_err(|_| PairedFailure::Source)?;
+            }
+            let leaf_source = blueprint.inspect_bound(cores[index % cohort::MAX].take()
+                .ok_or(PairedFailure::SourceDrift)?)?;
             let segment = request.segments().get(index).ok_or(PairedFailure::Coverage)?;
             let (output, scratch) = memory::native_requirements(request, index)?;
             plan.slots.native = maxima(plan.slots.native, output);
@@ -250,7 +264,7 @@ impl<'request> OwnedAesRequestPlan<'request> {
         if id == self.nodes.capacity() { return Err(PairedFailure::Capacity); }
         self.nodes.push(OwnedAesNodeSource { id, span: ComponentSpan::merge(a.span, b.span)?, source,
             children: Some([left, right]), segment: None });
-        let (output, scratch) = source::compiler_requirements(None)?;
+        let (output, scratch) = source::compiler_requirements(source, None)?;
         self.slots.compiled = maxima(self.slots.compiled, output);
         self.push(OwnedAesStepKind::Merge { node: id, left, right }, PhaseKind::ParentCompile, output, scratch)?;
         self.push_outer(id)?;

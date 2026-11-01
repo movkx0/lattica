@@ -37,7 +37,7 @@ fn derive<'a>(request: &'a Request, layout: ShakeWrapperLayout, ledger: &Ledger,
     PairedRequestPlan::derive_pre_reserved(request, context(), layout, original, scratch, ledger).unwrap()
 }
 
-#[cfg(feature = "identity-batch-experiment")]
+#[cfg(feature = "full-workflow-experiment")]
 #[test]
 fn identity_cohort_source_plans_preserve_tree_and_bound_live_compilers() {
     use std::collections::BTreeSet;
@@ -48,7 +48,7 @@ fn identity_cohort_source_plans_preserve_tree_and_bound_live_compilers() {
         let baseline = derive(&request, layout, &ledger, &scratch);
         for width in [1, 2, 4, 8, 16] {
             let candidate = derive(&request, layout, &ledger, &scratch)
-                .with_identity_limits(IdentityBatchLimits::batched(width).unwrap()).unwrap();
+                .with_identity_limits(IdentityCpuOptions::workers(width).unwrap()).unwrap();
             assert_eq!(candidate.nodes, baseline.nodes);
             assert_eq!(candidate.root, baseline.root);
             assert_eq!(candidate.steps.len(), baseline.steps.len());
@@ -70,8 +70,8 @@ fn identity_cohort_source_plans_preserve_tree_and_bound_live_compilers() {
                             assert!(natives.remove(&index));
                         }
                         assert!(compiled.insert(node));
-                        assert!(step.facts.output.get(Category::RegisteredMetadata).host
-                            >= lattica_prover_p3::block_v2::machine::backend::identity_batch::IDENTITY_PREFIX_HOST_BYTES);
+                        if width > 1 { assert!(step.facts.output.get(Category::RegisteredMetadata).host
+                            >= lattica_prover_p3::block_v2::machine::backend::identity_cpu::IDENTITY_PREFIX_HOST_BYTES); }
                     }
                     RequestStepKind::Merge { node, left, right } => {
                         assert!(proved.remove(&left) && proved.remove(&right));

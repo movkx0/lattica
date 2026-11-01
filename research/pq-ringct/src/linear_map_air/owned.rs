@@ -22,9 +22,11 @@ impl LinearMapDescriptor {
         let decode = |encoded: &[u64;2]| if encoded[0]!=0 {
             PolynomialKind::Canonical {modulus:encoded[0]}
         } else { PolynomialKind::Signed {bound:encoded[1] as u32} };
-        Self {inputs:kind.kinds()[..kind.inputs()].iter().map(decode).collect(),
+        let mut result = Self {inputs:kind.kinds()[..kind.inputs()].iter().map(decode).collect(),
             output:decode(&kind.kinds()[kind.inputs()]), coefficients:kind.coefficients().to_vec(),
-            constant:*kind.constant(), quotient_bound:kind.quotient_bound(), bits:kind.bits(), bounds:kind.bounds().to_vec()}
+            constant:*kind.constant(), quotient_bound:kind.quotient_bound(), bits:kind.bits(), bounds:kind.bounds().to_vec(), metadata_key:[0;32]};
+        result.metadata_key = result.compute_metadata_key();
+        result
     }
     pub(crate) const fn maximum_owned_clone_backing_bytes() -> usize {
         16 * core::mem::size_of::<PolynomialKind>() + 16 * core::mem::size_of::<[i64;D]>() + 18 * core::mem::size_of::<u32>()

@@ -234,7 +234,10 @@ impl RegisteredLeaf {
             "leaf public layout mismatch",
         )?;
         let registered =
-            RegisteredProgram::new_with_memory_budget(MachineAir::new(program), memory_budget)
+            RegisteredProgram::new_with_cpu_identity_from_env(
+MachineAir::new(program),
+memory_budget,
+)
                 .map_err(error)?;
         Ok(Self {
             registered,
@@ -413,10 +416,10 @@ impl PreparedPair {
         let dummy = [Val::ZERO; PUBLIC_VALUES];
         let compiled = compile_pair(leaf, [&dummy, &dummy], [&template, &template])?;
         // Templates establish shape only. They never become valid artifacts.
-        let registered = RegisteredProgram::new_with_memory_budget(
-            MachineAir::new(compiled.program),
-            memory_budget,
-        )
+        let registered = RegisteredProgram::new_with_cpu_identity_from_env(
+MachineAir::new(compiled.program),
+memory_budget,
+)
         .map_err(error)?;
         Ok(Self {
             registered,

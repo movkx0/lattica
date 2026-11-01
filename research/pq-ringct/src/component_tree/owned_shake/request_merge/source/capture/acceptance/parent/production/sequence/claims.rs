@@ -1,4 +1,5 @@
 //! Added complete enclosing ownership/caller frames; never shared payload quota.
+use lattica_prover_p3::block_v2::machine::backend::identity_cpu::RegistrationReports;
 use super::*;
 
 fn frames<T>() -> Result<usize> {
@@ -157,13 +158,14 @@ pub(super) fn attempt_requirement() -> Result<Requirements> {
             )>,
         >()?,
         frames::<RegisteredProgram>()?,
-        frames::<(RegisteredProgram, Report)>()?,
-        frames::<core::result::Result<(RegisteredProgram, Report), AdmissionError>>()?,
+        frames::<(RegisteredProgram, RegistrationReports)>()?,
+        frames::<core::result::Result<(RegisteredProgram, RegistrationReports), AdmissionError>>()?,
         frames::<(BatchProof<Config>, Report)>()?,
         frames::<core::result::Result<(BatchProof<Config>, Report), ExecutionError>>()?,
         frames::<NodeKey>()?,
         frames::<NodeProof>()?,
         frames::<Report>()?,
+        frames::<RegistrationReports>()?,
         frames::<&Report>()?,
         frames::<Option<&Report>>()?,
         frames::<Request>()?,

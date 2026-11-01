@@ -2,7 +2,7 @@
 use super::*;
 use crate::proving::{Backend, Run, Stage};
 
-pub(crate) const MAX_STREAMS: usize = 16;
+pub(crate) const MAX_STREAMS: usize = crate::block_v2::machine::backend::identity_batch::MAX_IDENTITY_STREAMS;
 
 #[derive(Clone, Copy, Debug, serde::Serialize)]
 pub(crate) struct Footprint {

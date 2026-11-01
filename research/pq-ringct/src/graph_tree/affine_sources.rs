@@ -1,6 +1,7 @@
 //! Concrete unchanged Affine graph leaves with exact algebra-batch membership.
 //!
-//! The allocation-free blueprint describes the exact registered source leaf.
+//! The blueprint describes the exact registered source leaf. Workflow queries
+//! reuse bounded numerical analysis held by the admitted prepared source.
 //! Its bounded template inspection runs under an original planning claim, and
 //! compilation borrows an independently verified child and original compiler
 //! claims. Neither operation is native/outer dispatch or a graph-root proof.
@@ -163,31 +164,33 @@ impl<'a, 'graph> AffineLeafBlueprint<'a, 'graph> {
         if !core::ptr::eq(plan, prepared.plan()) || !core::ptr::eq(graph, prepared.graph())
             || !core::ptr::eq(context, prepared.context())
         { return Err(AffineLeafFailure::Source); }
-        let fixed = FixedSourceCensus::from_graph(graph).map_err(|_| AffineLeafFailure::Source)?;
+        let metadata = prepared.metadata().map_err(|_| AffineLeafFailure::Source)?;
+        let fixed = metadata.fixed();
         let kind = source.kind();
         let crate::graph_proofs::ComponentKind::Affine { kind: operation, modulus } = source.batch().kind()
             else { return Err(AffineLeafFailure::Source); };
         let expected = OperationFamily::Affine { kind: *operation, modulus: *modulus };
-        let mut selected = plan.leaves().iter().enumerate().filter(|(_, leaf)|
-            matches!(leaf.kind(), LeafKind::Operations(component) if component == &expected)
-                && leaf.operation_indices() == source.operation_indices());
-        let (ordinal, leaf) = selected.next().ok_or(AffineLeafFailure::Coverage)?;
-        if selected.next().is_some()
-            || !leaf.byte_indices().iter().copied().eq(graph.bytes().iter().enumerate()
-                .filter_map(|(i, node)| matches!(node.source, Source::Context | Source::StatementSeed).then_some(i)))
+        let (ordinal, leaf) = metadata.leaf(plan, &expected, source.operation_indices())
+            .map_err(|_| AffineLeafFailure::Coverage)?;
+        if leaf.byte_indices() != metadata.common_bytes()
             || leaf.polynomial_indices().len() != kind.count()
             || !leaf.operation_indices().iter().copied().eq(source.operation_indices().iter().copied())
         { return Err(AffineLeafFailure::Coverage); }
         // Every expected polynomial is the exact derived output of one of the
         // selected operations; source planning already rejects duplicates.
-        if !leaf.polynomial_indices().iter().copied().eq(graph.polynomials().iter().enumerate()
-            .filter_map(|(index, node)| match node.source {
-                Source::Derived { operation } if source.operation_indices().binary_search(&operation).is_ok() => Some(index),
-                _ => None,
-            }))
+        if !metadata.derived_matches(source.operation_indices(), leaf.polynomial_indices())
         { return Err(AffineLeafFailure::Coverage); }
         let descriptor = OtherNativeDescriptor::Algebra { kind: source.batch().kind(), count: kind.count() };
         let storage = descriptor.storage(construction()).map_err(|_| AffineLeafFailure::Resource)?;
+        let key = crate::component_tree::native_shape::cohort::Descriptor::Other(descriptor).key();
+        let (planning, output, scratch) = metadata.footprint(1, key, storage,
+            || Self::source_requirements(kind, &storage, &fixed))?;
+        Ok(Self { plan, graph, context, source, kind, descriptor, storage, ordinal,
+            planning, output, scratch })
+    }
+    fn source_requirements(kind: AffineDescriptor, storage: &NativePlanningStorage, fixed: &FixedSourceCensus)
+        -> AffineResult<(Requirements, Requirements, Requirements)>
+    {
         let wrapper_heap = sum([
             bytes::<crate::affine_air::PendingAffine>(kind.count())?, bytes::<usize>(kind.count())?,
             size_of::<Vec<crate::affine_air::PendingAffine>>(), size_of::<Vec<usize>>(),
@@ -202,6 +205,7 @@ impl<'a, 'graph> AffineLeafBlueprint<'a, 'graph> {
         ])?;
         let wrapper_frames = mul(8, sum([
             size_of::<Self>(), size_of::<AffineResult<Self>>(), size_of::<NativeCoreBound>(),
+            size_of::<Option<crate::component_tree::native_shape::cohort::ResolvedBound>>(),
             size_of::<AffineLeafCompiler<'static, 'static, 'static>>(),
             size_of::<AffineResult<AffineLeafCompiler<'static, 'static, 'static>>>(),
             size_of::<AffineLeafFacts>(), size_of::<AffineResult<AffineLeafFacts>>(),
@@ -219,6 +223,7 @@ impl<'a, 'graph> AffineLeafBlueprint<'a, 'graph> {
             size_of::<[Wire; PUBLIC_VALUES]>(), size_of::<[Requirements; 4]>(),
             16 * size_of::<Vec<Wire>>(), 16 * size_of::<usize>(),
         ])?)?;
+        let wrapper_frames = add(wrapper_frames, crate::graph_tree::metadata::GraphMetadata::construction_bytes())?;
         let auxiliary = sum([storage.auxiliary_peak_bytes, fixed.source_scratch_bytes,
             fixed.frame_bytes, wrapper_heap, wrapper_frames])?;
         if auxiliary > AUXILIARY_BYTES || fixed.construction.max_input_values != ROOT_INPUTS {
@@ -240,15 +245,22 @@ impl<'a, 'graph> AffineLeafBlueprint<'a, 'graph> {
                         OwnedCompiledAffine<'static, 'static, 'static>>>()])?)?
                 .get(Category::RegisteredMetadata)).map_err(|_| AffineLeafFailure::Resource)?;
         let scratch = requirement(Category::PhaseScratch, auxiliary)?;
-        Ok(Self { plan, graph, context, source, kind, descriptor, storage, ordinal,
-            planning, output, scratch })
+        Ok((planning, output, scratch))
     }
+
     pub(crate) fn kind(&self) -> AffineDescriptor { self.kind }
     pub(crate) fn ordinal(&self) -> usize { self.ordinal }
     pub(crate) fn graph_plan(&self) -> &'a Plan { self.plan }
     pub(crate) fn relation_graph(&self) -> &'a UnprovedRelationGraph { self.graph }
     pub(crate) fn context(&self) -> &'a GraphContext { self.context }
     pub(crate) fn source(&self) -> AffineSource<'graph> { self.source }
+    /// Numeric-only request; normal inspection still authenticates originals.
+    pub(crate) fn metadata_request(&self) -> crate::component_tree::native_shape::cohort::Request<'_> {
+        crate::component_tree::native_shape::cohort::Request {
+            descriptor: crate::component_tree::native_shape::cohort::Descriptor::Other(self.descriptor),
+            auxiliary: self.storage.auxiliary_peak_bytes,
+        }
+    }
     pub(crate) fn planning_requirements(&self) -> Requirements { self.planning }
     pub(crate) fn compiler_requirements(&self) -> (Requirements, Requirements) { (self.output, self.scratch) }
 
@@ -256,10 +268,20 @@ impl<'a, 'graph> AffineLeafBlueprint<'a, 'graph> {
     /// original claim covers bounded recorder/template/builder allocations.
     pub(crate) fn inspect<'plan>(&'plan self, original: &Reservation, ledger: &Ledger)
         -> AffineResult<AffineLeafCompiler<'plan, 'a, 'graph>>
+    { self.inspect_inner(original, ledger, None) }
+    pub(crate) fn inspect_resolved<'plan>(&'plan self, original: &Reservation, ledger: &Ledger,
+        resolved: crate::component_tree::native_shape::cohort::ResolvedBound)
+        -> AffineResult<AffineLeafCompiler<'plan, 'a, 'graph>>
+    { self.inspect_inner(original, ledger, Some(resolved)) }
+    fn inspect_inner<'plan>(&'plan self, original: &Reservation, ledger: &Ledger,
+        resolved: Option<crate::component_tree::native_shape::cohort::ResolvedBound>)
+        -> AffineResult<AffineLeafCompiler<'plan, 'a, 'graph>>
     {
         admitted(original, ledger, self.planning)?;
-        let core = other_native_core_bound(self.descriptor, construction(), self.storage.auxiliary_peak_bytes)
-            .map_err(|_| AffineLeafFailure::Compile)?;
+        let core = match resolved {
+            Some(bound) => bound.for_request(self.metadata_request(), construction()),
+            None => other_native_core_bound(self.descriptor, construction(), self.storage.auxiliary_peak_bytes),
+        }.map_err(|_| AffineLeafFailure::Compile)?;
         if core.storage != self.storage { return Err(AffineLeafFailure::SourceDrift); }
         Ok(AffineLeafCompiler { blueprint: self, facts: AffineLeafFacts::from_core(core, self.kind)? })
     }

@@ -190,7 +190,7 @@ impl GenerationContextPlan {
 fn pristine_registry(context: &ProvingContext) -> GenerationResult<()> {
     let state = context.registry.try_borrow().map_err(|_| GenerationError::Busy)?;
     if state.prepared.is_some() || !state.metadata.is_empty()
-        || !state.identity_hints.entries.is_empty() || state.trace.attempted() != 0
+        || state.trace.attempted() != 0
         || state.registrations != 0 || state.prepared_hits != 0 || state.metadata_hits != 0
         || state.identity_hints_supplied != 0 || state.identity_hint_hits != 0
         || state.prepared_evictions != 0 || state.metadata_evictions != 0

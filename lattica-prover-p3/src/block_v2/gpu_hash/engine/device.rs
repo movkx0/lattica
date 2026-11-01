@@ -954,3 +954,15 @@ pub(crate) use wallet::PermutationDeviceLease;
 pub(crate) use wallet::LinearMapDeviceCensus;
 #[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
 pub(crate) use wallet::LinearMapDeviceLease;
+
+/// Weak evidence of the actual preprocessing GPU lease. It grants no runtime
+/// authority and cannot keep an epoch alive while CPU workers execute.
+pub(crate) struct RetirementFence(std::sync::Weak<JobLease>);
+impl RetirementFence {
+    pub(crate) fn retired(&self) -> bool { self.0.upgrade().is_none() }
+}
+impl DeviceSession {
+    pub(crate) fn retirement_fence(&self) -> RetirementFence {
+        RetirementFence(Arc::downgrade(&self.session.context))
+    }
+}

@@ -221,3 +221,36 @@ mod legacy {
         }
     }
 }
+
+#[test]
+fn geometry_inputs_keep_unknown_wires_and_no_value_buffer() {
+    let limits = super::super::ConstructionLimits {
+        max_requested_program_bytes: 64 << 20,
+        max_wires: 1000,
+        max_input_values: 64,
+    };
+    let mut counted = ProgramBuilder::new_counting(0, limits).unwrap();
+    let mut inputs = ProofInputs::counting();
+    let bases = inputs.bases_geometry(&mut counted, 3).unwrap();
+    let exts = inputs.extensions_geometry(&mut counted, 2).unwrap();
+    let cap = inputs.cap_geometry(&mut counted, 1).unwrap();
+    assert_eq!(bases, [Wire(0), Wire(1), Wire(2)]);
+    assert_eq!(
+        exts,
+        [[Wire(3), Wire(4), Wire(5)], [Wire(6), Wire(7), Wire(8)]]
+    );
+    assert_eq!(cap.len(), 2);
+    assert_eq!(inputs.len(&counted), 17);
+    assert_eq!(inputs.values.capacity(), 0);
+    // Zero placeholders are unknown inputs, never folded constants.
+    counted.mul(bases[0], bases[1]);
+    assert_eq!(counted.finish_counts().unwrap().witnesses, 17);
+    let mut real = ProgramBuilder::new_with_construction_limits(0, limits).unwrap();
+    assert!(inputs.bases_geometry(&mut real, 3).is_err());
+    assert_eq!(real.witnesses, 0);
+    inputs.base(&mut real, Val::ONE);
+    assert_eq!(inputs.values, [Val::ONE]);
+    let mut counted = ProgramBuilder::new_counting(0, limits).unwrap();
+    assert!(inputs.bases_geometry(&mut counted, 3).is_err());
+    assert_eq!(counted.witnesses, 0);
+}

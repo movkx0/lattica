@@ -1,0 +1,153 @@
+{
+  "schema": "ringct-metadata-optimization-handoff-v1",
+  "date": "2026-11-01",
+  "status": "completed v5 baseline copied and verified; ready for further optimization",
+  "worktree": "/home/access/code/lattica/.tools/ringct-metadata-v5-source",
+  "branch": "codex/ringct-metadata-v5-followup",
+  "base_commit": "a5582651cdaa1429d1244c3b00db1c9cc27db200",
+  "git_state": "The baseline source changes are uncommitted. This includes preceding uncommitted preprocessing changes needed by v5. No source commits or edits to the original checkout were made during handoff.",
+  "source_origin": "/home/access/code/lattica",
+  "validated_source_files": 3035,
+  "source_matches_final_validated_build": true,
+  "scope": "Existing public descriptor catalog and isolated synthetic numerical graph-index benchmark. No full N3/N4 transaction workflow measurement; no GPU metadata port.",
+  "completed_priorities": [
+    "Detailed native/crypto/graph/final constructor wall-clock timings are emitted as RINGCT_METADATA_TIMING before execute_constructed_case. Timing aggregation, report serialization and proof-exclusion boundary are tested.",
+    "One source-owned lazy graph analysis caches fixed census, operation-to-leaf mapping, derived polynomial membership/counts, shared bytes, and exact native source-prefix coverage. Immutable original source, context, family and membership checks remain enforced.",
+    "The source preparation original retains room for the analysis before allocation. Bootstrap and blueprint scratch include its construction frames. Thirty-two bounded footprint slots are keyed by descriptor digest, family and complete storage, scoped to the same owner.",
+    "Identical parent metadata originals are accumulated by checked category-wise multiplication; serial scratch remains a maximum. Tests compare serial addition and overflow refusal.",
+    "Program builders reuse vacant expression probes with per-map identity and generation checks. Stale, moved, cleared, cross-map and growth cases are tested; RandomState hashing and full-key equality remain.",
+    "A 528-byte read-only FFT parameter table shares inverse roots and normalization across CPU compilations. All 33 lengths are verified against the field implementation. No columns, coefficients or builder wires are retained globally."
+  ],
+  "read_first": [
+    "lattica-prover-p3/AGENTS.md",
+    "research/pq-ringct/PREPROCESSING.md",
+    "docs/evidence/ringct-metadata-v5-2026-11-01.json"
+  ],
+  "implementation_locations": {
+    "metadata_timing": "research/pq-ringct/src/spend_pipeline/full_workflow/driver/metadata_timing.rs",
+    "source_owned_graph_analysis_and_requirement_cache": "research/pq-ringct/src/graph_tree/metadata.rs",
+    "analysis_retained_admission": "research/pq-ringct/src/spend_pipeline/full_workflow/source_preparation.rs",
+    "parent_budget_aggregation": "research/pq-ringct/src/spend_pipeline/full_workflow/metadata_planning/inspection.rs",
+    "fused_compiler_interning": "lattica-prover-p3/src/block_v2/machine/program/construction.rs",
+    "fft_parameter_table": "lattica-prover-p3/src/block_v2/machine/compiler_constants/periodic_parameters.rs",
+    "native_catalog_profile": "research/pq-ringct/src/component_tree/native_shape/profiling/tests.rs"
+  },
+  "measurements": {
+    "catalog_descriptors": 159,
+    "catalog_cold_seconds": {
+      "baseline": 55.870806539,
+      "optimized": 51.878437109,
+      "final": 49.430305625
+    },
+    "final_lowering_phase_seconds": {
+      "constraints_ns": 1.134450799,
+      "pcs_folding_ns": 9.032460916,
+      "pcs_ns": 27.208919975,
+      "pcs_opening_ns": 2.682971894,
+      "pcs_query_ns": 0.990226666,
+      "pcs_reduction_ns": 14.389620688,
+      "pcs_setup_ns": 0.095822166,
+      "periodic_emission_ns": 13.820158578,
+      "periodic_interpolation_ns": 0.322341994,
+      "periodic_ns": 20.042910695,
+      "periodic_specialization_ns": 5.506486166,
+      "quotient_ns": 0.074009349,
+      "selectors_ns": 0.00136919,
+      "setup_ns": 0.017451719
+    },
+    "native_table": {
+      "hits": 159,
+      "compiler_jobs": 0,
+      "query_ns": 318126
+    },
+    "registered_table": {
+      "heights": 72,
+      "envelope_hits": 4,
+      "compiler_jobs": 0
+    },
+    "graph_index_microbenchmark": {
+      "checksums_equal": true,
+      "construction_ns": 3710,
+      "index_bytes": 8856,
+      "indexed_ns": 2385019,
+      "iterations": 512,
+      "leaves": 164,
+      "legacy_ns": 348752482,
+      "operations": 1311,
+      "polynomials": 1770,
+      "retained_analysis_bytes": 26592,
+      "scope": "synthetic numerical indexes only; no prepared-source or proof authority"
+    },
+    "limits": [
+      "Table-query timing excludes one-time availability validation and source preparation.",
+      "Synthetic graph-index timings measure numerical lookup and coverage only, not authenticated full constructors or transactions.",
+      "Periodic interpolation measured about0.32s both before and after; observed compiler gains mainly affect circuit emission and PCS.",
+      "The complete metadata-stage report is instrumented but has not been measured on a real retained workload in this catalog-only scope."
+    ]
+  },
+  "continuation_notes": [
+    "Start from this worktree and the v5 evidence; the four priorities above are already implemented.",
+    "PCS work and periodic circuit emission remain the main measured cold compiler costs. Warm catalog table queries already start zero compiler jobs.",
+    "Full metadata constructor timing is instrumented but has not been measured on a real retained workflow; do not infer a full transaction speedup from the catalog or index microbenchmark.",
+    "Use the existing descriptor catalog. A real public transaction fixture or descriptor inventory was not provided.",
+    "Keep the GPU metadata port deferred; CPU identity hashing with GPU proof generation remains the existing policy.",
+    "Preserve original resource admission, source/context/coverage checks, exact descriptor checks, and bounded cache accounting."
+  ],
+  "validation": {
+    "completed_guarded_runs": 24,
+    "python_tests_passed": 61,
+    "source_manifest": ".tools/metadata-v5-baseline/source-manifest.json",
+    "baseline_patch": ".tools/metadata-v5-baseline/baseline.patch",
+    "snapshot_inventory": ".tools/metadata-v5-baseline/snapshot.json",
+    "copied_historical_receipts_and_logs": ".tools/metadata-v5-baseline/validation",
+    "historical_evidence_note": "Copied receipts retain their original absolute paths and artifact provenance. They document the baseline; a new worktree build and fresh receipts are required to execute changed code.",
+    "first_build_command": [
+      "python3",
+      "research/pq-ringct/tools/opencl_private_spend_validate.py",
+      "--profile",
+      "build",
+      "--label",
+      "ringct-metadata-followup-build-r1",
+      "--seconds",
+      "1800",
+      "--execute",
+      "--exclusive-window",
+      "--",
+      "/home/access/code/lattica/.tools/ringct-metadata-v5-source/.tools/rust-1.96.0/bin/cargo",
+      "test",
+      "--release",
+      "--locked",
+      "--offline",
+      "--manifest-path",
+      "research/pq-ringct/Cargo.toml",
+      "--features",
+      "full-workflow-experiment",
+      "--lib",
+      "--no-run",
+      "-j2"
+    ],
+    "test_selector_native_profile": "component_tree::native_shape::profiling::tests::native_metadata_profile",
+    "test_selector_full_count_parity": "metadata_counting_matches_",
+    "test_selector_graph_metadata": "graph_tree::metadata::tests::",
+    "requirements": [
+      "Run Rust builds and CPU/GPU tests through research/pq-ringct/tools/opencl_private_spend_validate.py with --execute --exclusive-window and a unique label.",
+      "Use the executable recorded by the fresh build receipt and pass its label using --build-label for each test.",
+      "The native profile selector requires --native-metadata-profile --expect-tests and the exact ignored selector with --test-threads=1 --nocapture.",
+      "Do not edit core, research, or vendor source while its guarded job is active; the guard pins all source hashes.",
+      "Use release, locked, offline Rust builds with -j2. Regenerate and requalify both numerical metadata tables after compiler source changes.",
+      "Read lattica-prover-p3/AGENTS.md before source commits; this handoff creates no commit."
+    ],
+    "baseline_source_archive": ".tools/metadata-v5-baseline/working-files.tar.gz"
+  },
+  "tooling": {
+    "shared_readable_toolchain": "/home/access/code/lattica/.tools/rust-1.96.0",
+    "shared_dependency_cache": "/home/access/code/lattica/.tools/cargo-opencl",
+    "isolated_build_outputs": "/home/access/code/lattica/.tools/ringct-metadata-v5-source/.tools/target-opencl",
+    "fresh_validation_records": "/home/access/code/lattica/.tools/ringct-metadata-v5-source/.tools/pq-opencl-opt/runs",
+    "validation_lock_shared_with_original_checkout": "/home/access/code/lattica/.tools/pq-opencl-opt/validation.lock"
+  },
+  "excluded_from_copy": [
+    "Session configuration under .codex, .agents and .aws",
+    "Existing compiled executables and Cargo target output"
+  ]
+}

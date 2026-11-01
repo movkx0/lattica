@@ -21,7 +21,8 @@ use lattica_prover_p3::block_v2::{
         program::{ConstructionLimits, Val, Wire, MAX_WIRES},
         verifier::{
             uni::{
-                self, shape::NativeCoreCounts, BoundedSymbolicAllowance, BoundedSymbolicBuilder,
+                self, shape::NativeCoreMetadata as NativeCoreCounts, BoundedSymbolicAllowance,
+                BoundedSymbolicBuilder,
             },
             CompileError,
         },
@@ -30,7 +31,12 @@ use lattica_prover_p3::block_v2::{
 };
 use p3_air::{Air, AirBuilder, BaseAir};
 
+pub(crate) mod cache;
+pub(crate) mod cohort;
 pub mod framing;
+mod key;
+mod precomputed;
+pub(crate) mod profiling;
 pub mod unchanged;
 
 /// Public descriptors of exactly the trusted implementations audited below.
@@ -373,6 +379,68 @@ impl NativePlanningStorage {
     }
 }
 
+struct PreparedCore<'a> {
+    native: uni::shape::PreparedNativeMetadata,
+    columns: std::borrow::Cow<'a, [Vec<Val>]>,
+    storage: NativePlanningStorage,
+}
+impl PreparedCore<'_> {
+    fn lower(&self, construction: ConstructionLimits) -> Result<NativeCoreBound, CompileError> {
+        let mut times = uni::shape::NativeMetadataTimings::default();
+        let counts = self.native.lower(
+            &self.columns,
+            construction,
+            profiling::enabled().then_some(&mut times),
+        )?;
+        profiling::compiler(times);
+        Ok(NativeCoreBound {
+            counts,
+            storage: self.storage,
+        })
+    }
+}
+fn prepare<A>(
+    air: &A,
+    storage: NativePlanningStorage,
+) -> Result<PreparedCore<'static>, CompileError>
+where
+    A: BaseAir<Val> + Air<BoundedSymbolicBuilder>,
+{
+    let columns = profiling::measured(profiling::Phase::Periodic, || air.periodic_columns());
+    prepare_columns(air, storage, std::borrow::Cow::Owned(columns))
+}
+fn prepare_columns<'a, A>(
+    air: &A,
+    storage: NativePlanningStorage,
+    columns: std::borrow::Cow<'a, [Vec<Val>]>,
+) -> Result<PreparedCore<'a>, CompileError>
+where
+    A: BaseAir<Val> + Air<BoundedSymbolicBuilder>,
+{
+    let g = storage.geometry;
+    if air.width() != g.width
+        || air.num_public_values() != g.public_values
+        || air.num_periodic_columns() != g.periodic_columns
+        || columns.len() != g.periodic_columns
+        || columns
+            .iter()
+            .any(|c| !c.len().is_power_of_two() || c.len() > g.maximum_period)
+    {
+        return Err(CompileError::Shape(
+            "native planner AIR or periodic source drift",
+        ));
+    }
+    let started = profiling::start();
+    let native =
+        uni::shape::prepare_native_metadata(air, g.height, BoundedSymbolicAllowance::REQUIRED)?;
+    profiling::finish(profiling::Phase::Symbolic, started);
+    Ok(PreparedCore {
+        native,
+        columns,
+        storage,
+    })
+}
+
 fn compile<A>(
     air: &A,
     storage: NativePlanningStorage,
@@ -388,7 +456,25 @@ where
     {
         return Err(CompileError::Shape("native planner AIR source drift"));
     }
-    let columns = air.periodic_columns();
+    let columns = profiling::measured(profiling::Phase::Periodic, || air.periodic_columns());
+    compile_prepared_columns(air, storage, construction, &columns)
+}
+fn compile_prepared_columns<A>(
+    air: &A,
+    storage: NativePlanningStorage,
+    construction: ConstructionLimits,
+    columns: &[Vec<Val>],
+) -> Result<NativeCoreBound, CompileError>
+where
+    A: BaseAir<Val> + Air<BoundedSymbolicBuilder>,
+{
+    let g = storage.geometry;
+    if air.width() != g.width
+        || air.num_public_values() != g.public_values
+        || air.num_periodic_columns() != g.periodic_columns
+    {
+        return Err(CompileError::Shape("native planner AIR source drift"));
+    }
     if columns.len() != g.periodic_columns
         || columns
             .iter()
@@ -396,13 +482,25 @@ where
     {
         return Err(CompileError::Shape("native planner periodic source drift"));
     }
-    let counts = uni::shape::verifier_core_counts(
-        air,
-        g.height,
-        &columns,
-        construction,
-        BoundedSymbolicAllowance::REQUIRED,
-    )?;
+    let counts = if profiling::enabled() {
+        let (counts, times) = uni::shape::verifier_core_metadata_profiled(
+            air,
+            g.height,
+            &columns,
+            construction,
+            BoundedSymbolicAllowance::REQUIRED,
+        )?;
+        profiling::compiler(times);
+        counts
+    } else {
+        uni::shape::verifier_core_metadata(
+            air,
+            g.height,
+            &columns,
+            construction,
+            BoundedSymbolicAllowance::REQUIRED,
+        )?
+    };
     Ok(NativeCoreBound { counts, storage })
 }
 
@@ -413,14 +511,37 @@ pub fn native_core_bound(
     construction: ConstructionLimits,
     auxiliary_host_allowance: usize,
 ) -> Result<NativeCoreBound, CompileError> {
-    let storage = NativePlanningStorage::for_descriptor(descriptor, construction)?;
+    let storage = profiling::measured(profiling::Phase::Preflight, || {
+        NativePlanningStorage::for_descriptor(descriptor, construction)
+    })?;
     if storage.auxiliary_peak_bytes > auxiliary_host_allowance {
         return Err(CompileError::ResourceAdmission(
             "native planner auxiliary allowance",
         ));
     }
+    cache::memoized(
+        0,
+        &descriptor,
+        construction,
+        auxiliary_host_allowance,
+        storage,
+        || compile_descriptor(descriptor, storage, construction, None),
+    )
+}
+fn compile_descriptor(
+    descriptor: NativeDescriptor<'_>,
+    storage: NativePlanningStorage,
+    construction: ConstructionLimits,
+    aes_columns: Option<&[Vec<Val>]>,
+) -> Result<NativeCoreBound, CompileError> {
     match descriptor {
-        NativeDescriptor::Aes { .. } => compile(&descriptor.aes()?, storage, construction),
+        NativeDescriptor::Aes { .. } => {
+            let air = descriptor.aes()?;
+            match aes_columns {
+                Some(columns) => compile_prepared_columns(&air, storage, construction, columns),
+                None => compile(&air, storage, construction),
+            }
+        }
         NativeDescriptor::Shake { .. } => compile(&descriptor.shake()?, storage, construction),
         NativeDescriptor::Transcript(parts) => {
             let air = TranscriptAir::new(parts.to_vec())
@@ -429,6 +550,32 @@ pub fn native_core_bound(
         }
         NativeDescriptor::Sparse(kind) => compile(&SparseAir::new(kind), storage, construction),
         NativeDescriptor::Uniform(kind) => compile(&UniformAir::new(kind), storage, construction),
+    }
+}
+
+fn prepare_descriptor<'a>(
+    descriptor: NativeDescriptor<'_>,
+    storage: NativePlanningStorage,
+    aes_columns: Option<&'a [Vec<Val>]>,
+) -> Result<PreparedCore<'a>, CompileError> {
+    match descriptor {
+        NativeDescriptor::Aes { .. } => {
+            let air = descriptor.aes()?;
+            match aes_columns {
+                Some(columns) => {
+                    prepare_columns(&air, storage, std::borrow::Cow::Borrowed(columns))
+                }
+                None => prepare(&air, storage),
+            }
+        }
+        NativeDescriptor::Shake { .. } => prepare(&descriptor.shake()?, storage),
+        NativeDescriptor::Transcript(parts) => {
+            let air = TranscriptAir::new(parts.to_vec())
+                .map_err(|_| CompileError::Shape("native planner transcript construction"))?;
+            prepare(&air, storage)
+        }
+        NativeDescriptor::Sparse(kind) => prepare(&SparseAir::new(kind), storage),
+        NativeDescriptor::Uniform(kind) => prepare(&UniformAir::new(kind), storage),
     }
 }
 

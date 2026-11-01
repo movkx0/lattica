@@ -63,14 +63,9 @@ impl<'plan, 'request> PreissuedPairedOuter<'plan, 'request> {
         let binding = PhaseBinding::for_paired(plan, ordinal).map_err(|_| PairedFailure::Authority)?;
         let backend_bytes = access.backend_bytes();
         let pcs_host = access.pcs_host_bytes();
-        #[cfg(feature = "identity-batch-experiment")]
+        #[cfg(feature = "full-workflow-experiment")]
         {
-            let (_, streams) = plan.identity_cohort(node)?;
-            if streams != 0 {
-                use lattica_prover_p3::block_v2::machine::backend::identity_batch::IdentityBatchFootprint;
-                let source_bytes = source::mul(streams, source::PROGRAM_BYTES)? as u64;
-                let prefix = IdentityBatchFootprint::for_program_bounds(streams, source_bytes)
-                    .map_err(|_| PairedFailure::Resource)?;
+            if let Some(prefix) = plan.identity_footprint(node)? {
                 if prefix.host_bytes > pcs_host || prefix.managed_bytes > 8 << 30 {
                     return Err(PairedFailure::Resource);
                 }

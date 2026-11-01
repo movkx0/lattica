@@ -13,7 +13,7 @@ pub(crate) enum Error { Report, Order, Write }
 pub(crate) fn required_host_bytes() -> Result<u64, Error> {
     use core::mem::size_of;
     let mut total = lattica_prover_p3::proving::FixedProofReportStorage::fixed()
-        .map_err(|_| Error::Report)?.required_host_bytes();
+        .map_err(|_| Error::Report)?.required_host_bytes().checked_mul(2).ok_or(Error::Report)?;
     for bytes in [
         8 * size_of::<Sequence>(), 8 * size_of::<ReportView<'static>>(),
         8 * size_of::<Result<(), Error>>(), 8 * size_of::<Result<State, Error>>(),
@@ -28,7 +28,7 @@ pub(crate) fn required_host_bytes() -> Result<u64, Error> {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum State { Setup, Proof, Complete, Poisoned }
+enum State { Setup, Identity, Proof, Complete, Poisoned }
 
 /// Bounded inline record of exactly one fresh setup followed by one proof.
 /// An invalid receipt or publication failure permanently closes this sequence.
@@ -45,7 +45,8 @@ impl Sequence {
     fn begin(&mut self, scope: CoverageScope) -> Result<State, Error> {
         let previous = core::mem::replace(&mut self.state, State::Poisoned);
         match (previous, scope) {
-            (State::Setup, CoverageScope::Preprocessing) => Ok(State::Proof),
+            (State::Setup, CoverageScope::Preprocessing) => Ok(State::Identity),
+            (State::Identity, CoverageScope::Operation) => Ok(State::Proof),
             (State::Proof, CoverageScope::RegisteredProof) => Ok(State::Complete),
             _ => Err(Error::Order),
         }
@@ -61,7 +62,8 @@ impl Sequence {
         super::report_transport::emit(b"proving_stage_report ", report)
             .map_err(|_| Error::Write)?;
         match next {
-            State::Proof => self.setup_ns = Some(report.elapsed_ns),
+            State::Identity => self.setup_ns = Some(report.elapsed_ns),
+            State::Proof => {},
             State::Complete => self.proving_ns = Some(report.elapsed_ns),
             _ => unreachable!("validated receipt transition"),
         }
@@ -132,6 +134,21 @@ pub(crate) fn validate_report(report: &Report, scope: CoverageScope) -> Result<(
 }
 
 fn validate_view(report: ReportView<'_>, scope: CoverageScope) -> Result<(), Error> {
+    if scope == CoverageScope::Operation {
+        if report.schema != "lattica-proving-stages-v1" || report.entry_point != "block_v2_cpu_identity"
+            || report.policy != Policy::CpuRequired || report.profile != Profile::BlockV2Cubic
+            || report.max_log_fri_arity != 1 || report.scope != CoverageScope::Operation
+            || !report.succeeded || !report.stage_coverage_complete || report.completion_rejected
+            || report.observation_errors != 0 || report.component_count != 0 || report.stages.len() != 1
+            || report.observations.len() != 1 { return Err(Error::Report); }
+        let stage = &report.stages[0]; let observation = &report.observations[0];
+        if stage.stage != Stage::Preprocessing || stage.backend != Backend::Cpu
+            || observation.stage != Stage::Preprocessing || observation.backend != Backend::Cpu
+            || observation.calls != 1 || observation.completed_calls != 1 || observation.device_calls != 0 || observation.device_ns != 0 {
+            return Err(Error::Report);
+        }
+        return Ok(());
+    }
     let entry = match scope {
         CoverageScope::Preprocessing => "block_v2_preprocessing",
         CoverageScope::RegisteredProof => "block_v2_registered_program",

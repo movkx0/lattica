@@ -233,13 +233,13 @@ pub(crate) struct PairedOuterOperation<'plan, 'request> {
     binding: PhaseBinding,
 }
 impl<'request> PairedOuterOperation<'_, 'request> {
-    #[cfg(feature = "identity-batch-experiment")]
+    #[cfg(feature = "full-workflow-experiment")]
     pub(crate) fn identity_plan(&self) -> &PairedRequestPlan<'request> { self.plan }
-    #[cfg(feature = "identity-batch-experiment")]
+    #[cfg(feature = "full-workflow-experiment")]
     pub(crate) fn identity_node(&self) -> usize { self.node }
-    #[cfg(feature = "identity-batch-experiment")]
+    #[cfg(feature = "full-workflow-experiment")]
     pub(crate) fn identity_compiler(&self) -> &PairedCompiled<'request> { self.compiled.get() }
-    #[cfg(feature = "identity-batch-experiment")]
+    #[cfg(feature = "full-workflow-experiment")]
     pub(crate) fn validate_identity_peer(&self, peer: &Retained<PairedCompiled<'request>>,
         node: usize, execution: &ExecutionAccess<'_>) -> Result<()> {
         self.borrowed_parts(execution)?;

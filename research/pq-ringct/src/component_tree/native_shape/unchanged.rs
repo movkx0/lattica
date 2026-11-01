@@ -240,12 +240,28 @@ pub fn other_native_core_bound(
     construction: ConstructionLimits,
     auxiliary_allowance: usize,
 ) -> Result<NativeCoreBound, CompileError> {
-    let storage = descriptor.storage(construction)?;
+    let storage = super::profiling::measured(super::profiling::Phase::Preflight, || {
+        descriptor.storage(construction)
+    })?;
     if storage.auxiliary_peak_bytes > auxiliary_allowance {
         return Err(CompileError::ResourceAdmission(
             "unchanged native auxiliary allowance",
         ));
     }
+    super::cache::memoized(
+        1,
+        &descriptor,
+        construction,
+        auxiliary_allowance,
+        storage,
+        || compile_descriptor(descriptor, storage, construction),
+    )
+}
+pub(super) fn compile_descriptor(
+    descriptor: OtherNativeDescriptor<'_>,
+    storage: NativePlanningStorage,
+    construction: ConstructionLimits,
+) -> Result<NativeCoreBound, CompileError> {
     match descriptor {
         OtherNativeDescriptor::Statement { setup_seed } => {
             compile(&StatementAir { setup_seed }, storage, construction)
@@ -279,6 +295,51 @@ pub fn other_native_core_bound(
                 // Vec cloning is deliberately after the complete admission.
                 let air = LinearMapAir::new(descriptor.clone());
                 compile(&air, storage, construction)
+            }
+            ComponentKind::External => Err(CompileError::Unsupported(
+                "unchanged native external family",
+            )),
+        },
+    }
+}
+
+pub(super) fn prepare_descriptor(
+    descriptor: OtherNativeDescriptor<'_>,
+    storage: NativePlanningStorage,
+) -> Result<super::PreparedCore<'static>, CompileError> {
+    match descriptor {
+        OtherNativeDescriptor::Statement { setup_seed } => {
+            super::prepare(&StatementAir { setup_seed }, storage)
+        }
+        OtherNativeDescriptor::PrivateProof => super::prepare(&ProofAir, storage),
+        OtherNativeDescriptor::Algebra { kind, count } => match kind {
+            ComponentKind::Affine { kind, modulus } => {
+                let air = AffineAir::new(*kind, *modulus, count)
+                    .map_err(|_| CompileError::Shape("unchanged native affine construction"))?;
+                super::prepare(&air, storage)
+            }
+            ComponentKind::Ntt { modulus } => {
+                let air = NttAir::new(*modulus, count)
+                    .map_err(|_| CompileError::Shape("unchanged native NTT construction"))?;
+                super::prepare(&air, storage)
+            }
+            ComponentKind::Mul { modulus } => {
+                let air = MulAir::new(*modulus, count)
+                    .map_err(|_| CompileError::Shape("unchanged native multiply construction"))?;
+                super::prepare(&air, storage)
+            }
+            ComponentKind::GBound { bound } => {
+                let air = GBoundAir::new(*bound)
+                    .map_err(|_| CompileError::Shape("unchanged native G-bound construction"))?;
+                super::prepare(&air, storage)
+            }
+            ComponentKind::Permutation { kind } => {
+                super::prepare(&PermutationAir::new(*kind), storage)
+            }
+            ComponentKind::LinearMap { descriptor } => {
+                // Vec cloning is deliberately after the complete admission.
+                let air = LinearMapAir::new(descriptor.clone());
+                super::prepare(&air, storage)
             }
             ComponentKind::External => Err(CompileError::Unsupported(
                 "unchanged native external family",

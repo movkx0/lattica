@@ -14,6 +14,8 @@ pub struct LinearMapDescriptor {
     pub(super) quotient_bound: u64,
     pub(super) bits: usize,
     pub(super) bounds: Vec<u32>,
+    // Computed once after normalization; every field above is immutable.
+    pub(super) metadata_key: [u8; 32],
 }
 fn centered(value: i128, modulus: u64) -> i64 {
     let residue = value.rem_euclid(i128::from(modulus));
@@ -103,7 +105,7 @@ impl LinearMapDescriptor {
                 (bits, bounds.into_iter().collect(), 0)
             }
         };
-        Ok(Self {
+        let mut descriptor = Self {
             inputs,
             output,
             coefficients,
@@ -111,13 +113,59 @@ impl LinearMapDescriptor {
             quotient_bound,
             bits,
             bounds,
-        })
+            metadata_key: [0; 32],
+        };
+        descriptor.metadata_key = descriptor.compute_metadata_key();
+        Ok(descriptor)
     }
     pub fn inputs(&self) -> &[PolynomialKind] {
         &self.inputs
     }
     pub fn output(&self) -> PolynomialKind {
         self.output
+    }
+
+    pub(crate) fn metadata_key(&self) -> [u8; 32] {
+        self.metadata_key
+    }
+
+    pub(super) fn compute_metadata_key(&self) -> [u8; 32] {
+        use sha3::{Digest, Sha3_256};
+        let mut h = Sha3_256::new();
+        h.update(b"ringct/native-linear-map/v1\0");
+        fn kind(h: &mut Sha3_256, k: PolynomialKind) {
+            match k {
+                PolynomialKind::Canonical { modulus } => {
+                    h.update([0]);
+                    h.update(modulus.to_le_bytes());
+                }
+                PolynomialKind::Signed { bound } => {
+                    h.update([1]);
+                    h.update(bound.to_le_bytes());
+                }
+            }
+        }
+        h.update((self.inputs.len() as u64).to_le_bytes());
+        for &input in &self.inputs {
+            kind(&mut h, input);
+        }
+        kind(&mut h, self.output);
+        h.update((self.coefficients.len() as u64).to_le_bytes());
+        for coefficient in self
+            .coefficients
+            .iter()
+            .flatten()
+            .chain(self.constant.iter())
+        {
+            h.update(coefficient.to_le_bytes());
+        }
+        h.update(self.quotient_bound.to_le_bytes());
+        h.update((self.bits as u64).to_le_bytes());
+        h.update((self.bounds.len() as u64).to_le_bytes());
+        for bound in &self.bounds {
+            h.update(bound.to_le_bytes());
+        }
+        h.finalize().into()
     }
 }
 

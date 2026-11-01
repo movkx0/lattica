@@ -16,16 +16,16 @@ fn run() -> Result<(), String> {
     let mut paired = None;
     let mut seed = None;
     let mut context = None;
-    let mut identity_schedule = None;
-    let mut identity_streams = None;
+    let mut identity_workers = None;
     let mut host_profile = None;
     let mut planning_cache = None;
+    let mut metadata_workers = None;
     let mut args = std::env::args().skip(1);
     while let Some(argument) = args.next() {
         if argument == "--help" {
             println!("Host memory: --host-profile standard|expanded-36|expanded-40 (default standard); must match the runner. No automatic escalation.");
-            println!("Planning: --planning-cache off|geometry-v1 (default off), 64 numerical entries within the 64 MiB metadata allowance.");
-            println!("Optional preprocessing: --identity-preprocessing serial|batched-v1 --identity-max-streams 1|2|4|8|16. Batched mode requires identity-batch-experiment and complete pre-dispatch memory admission; default is serial.");
+            println!("Planning: --planning-cache off|geometry-v1 (default geometry-v1), 64 numerical entries within the 64 MiB metadata allowance. --metadata-cpu-workers auto|INTEGER (1..=16, default auto), further limited by the original planning reservation.");
+            println!("Identity hashing: --identity-cpu-workers auto|INTEGER (1..=16, default auto). CPU hashing with GPU preprocessing and proof generation.");
             println!("pq-ringct-full-workflow --case n3|n4 --layout singleton|paired-v1 --seed HEX64 --context HEX64\nFresh transaction generation, complete proof graphs, aggregation and CPU verification. Run with the serialized resource guard. Artifact and mutation qualification are explicit report fields.");
             return Ok(());
         }
@@ -56,22 +56,24 @@ fn run() -> Result<(), String> {
             }
             "--seed" if seed.is_none() => seed = Some(hex32(&value)?),
             "--context" if context.is_none() => context = Some(hex32(&value)?),
-            "--identity-preprocessing" if identity_schedule.is_none() => identity_schedule = Some(value),
-            "--identity-max-streams" if identity_streams.is_none() =>
-                identity_streams = Some(value.parse::<usize>().map_err(|_| "invalid identity stream ceiling")?),
+            "--identity-cpu-workers" if identity_workers.is_none() => identity_workers = Some(value),
+            "--metadata-cpu-workers" if metadata_workers.is_none() => metadata_workers = Some(value),
             _ => return Err("unknown or repeated option".into()),
         }
     }
-    let limits = lattica_prover_p3::block_v2::machine::backend::identity_batch::IdentityBatchLimits::parse(
-        identity_schedule.as_deref().unwrap_or("serial"), identity_streams).map_err(str::to_owned)?;
-    lattica_pq_ringct_research::full_workflow_experiment::run_case_with_options(
+    let limits = lattica_prover_p3::block_v2::machine::backend::identity_cpu::IdentityCpuOptions::parse(
+        identity_workers.as_deref().unwrap_or("auto")).map_err(str::to_owned)?;
+    let metadata = lattica_prover_p3::block_v2::machine::verifier::batch::shape::MetadataCpuOptions::parse(
+        metadata_workers.as_deref().unwrap_or("auto")).map_err(str::to_owned)?;
+    lattica_pq_ringct_research::full_workflow_experiment::run_case_with_planning(
         case.ok_or("--case is required")?,
         paired.ok_or("--layout is required")?,
         seed.ok_or("--seed is required")?,
         context.ok_or("--context is required")?,
         limits,
         host_profile.unwrap_or_default(),
-        planning_cache.unwrap_or(false),
+        planning_cache.unwrap_or(true),
+        metadata,
     )
 }
 fn main() {

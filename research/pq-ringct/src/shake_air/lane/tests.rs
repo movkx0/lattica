@@ -335,7 +335,11 @@ fn lane_shake_actual_recursive_stark_rejects_mutations() {
         geometry.retained_lde_bytes
     );
     let registered =
-        RegisteredProgram::new_with_request(machine, 32_u64 << 30, Request::compatible()).unwrap();
+        RegisteredProgram::new_with_cpu_identity(
+machine,
+32_u64 << 30,
+Request::compatible(),
+).unwrap();
     let mut proof = registered
         .prove_with_request(&public, &inputs, Request::compatible())
         .unwrap();

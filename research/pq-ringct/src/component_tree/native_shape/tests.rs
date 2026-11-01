@@ -157,7 +157,7 @@ fn source_storage_preflight_refuses_before_native_compilation() {
 
 fn reference<A>(air: &A, height: usize) -> (OperationCounts, usize, usize, [u8; 32])
 where
-    A: BaseAir<Val> + Air<SymbolicAirBuilder<Val>>,
+    A: BaseAir<Val> + Air<SymbolicAirBuilder<Val>> + Air<BoundedSymbolicBuilder>,
 {
     let template = crate::component_tree::shape_diagnostic::invalid_native_template(air, height);
     let mut builder = ProgramBuilder::new(0).unwrap();
@@ -184,7 +184,7 @@ where
 
 fn qualify<A>(name: &str, descriptor: NativeDescriptor<'_>, air: &A, height: usize)
 where
-    A: BaseAir<Val> + Air<SymbolicAirBuilder<Val>>,
+    A: BaseAir<Val> + Air<SymbolicAirBuilder<Val>> + Air<BoundedSymbolicBuilder>,
 {
     // Reference objects are fully dropped before the bounded planner begins.
     let expected = reference(air, height);
@@ -193,12 +193,17 @@ where
         (
             bound.counts.operations,
             bound.counts.wires,
-            bound.counts.input_values,
-            bound.counts.manifest_sha3_256
+            bound.counts.input_values
         ),
-        expected,
+        (expected.0, expected.1, expected.2),
         "native core bounded/reference primitive or input geometry drift: {name}"
     );
+    let audit = uni::shape::verifier_core_counts(air, height, &air.periodic_columns(),
+        limits(), BoundedSymbolicAllowance::REQUIRED).unwrap();
+    assert_eq!(audit.manifest_sha3_256, expected.3, "retained compiler manifest drift");
+    assert_eq!(audit.selection_hint_words, bound.counts.selection_hint_words);
+    assert_eq!(audit.quotient_chunks, bound.counts.quotient_chunks);
+    assert!(bound.counts.planner_requested_program_bytes_peak < audit.planner_requested_program_bytes_peak);
     eprintln!("native_core_shape kind={name} width={} height={} publics={} quotient_chunks={} scalar={} cubic={} poseidon={} active_rows={} padded_rows={} auxiliary_reservation={} planner_requested_peak={} proof_produced=false ownership_admitted=false",
         bound.storage.geometry.width, height, air.num_public_values(), bound.counts.quotient_chunks,
         expected.0.scalar, expected.0.cubic, expected.0.poseidon,
@@ -275,4 +280,63 @@ fn exact_native_cores_match_reference_and_late_refusal_releases_state() {
         Err(CompileError::ResourceAdmission(_))
     ));
     assert!(native_core_bound(d, limits(), 512 << 20).is_ok());
+}
+
+#[test]
+#[ignore = "native metadata counting parity; serialized release CPU guard"]
+fn metadata_counting_matches_native_family_references() {
+    assert!(cfg!(all(not(debug_assertions), target_arch = "x86_64")));
+    assert_eq!(
+        std::env::var("LATTICA_PROVING_POLICY").as_deref(),
+        Ok("cpu-required")
+    );
+    let aes = NativeDescriptor::Aes {
+        descriptor: aes_lane_air::Descriptor {
+            domain: 0x4368,
+            start_counter: 0,
+            output_len: 16,
+        },
+        first: 0,
+        count: 1,
+    };
+    let air = aes.aes().unwrap();
+    qualify("counted-aes", aes, &air, air.height);
+    for kind in [uniform_air::Kind::SampleG4, uniform_air::Kind::ExpandAlpha2] {
+        let air = UniformAir::new(kind);
+        qualify(
+            "counted-uniform",
+            NativeDescriptor::Uniform(kind),
+            &air,
+            air.height(),
+        );
+    }
+    let shake = NativeDescriptor::Shake {
+        descriptor: shake_air::Descriptor {
+            input_len: 1,
+            output_len: 137,
+        },
+        first: 1,
+        count: 1,
+    };
+    let air = shake.shake().unwrap();
+    qualify("counted-shake", shake, &air, air.height());
+    let parts = [PartKind::Bytes32];
+    let air = TranscriptAir::new(parts.to_vec()).unwrap();
+    qualify(
+        "counted-transcript",
+        NativeDescriptor::Transcript(&parts),
+        &air,
+        air.height(),
+    );
+    for kind in [
+        sparse_air::Kind::AlphaPrime39,
+        sparse_air::Kind::ChallengeX44,
+    ] {
+        qualify(
+            "counted-sparse",
+            NativeDescriptor::Sparse(kind),
+            &SparseAir::new(kind),
+            sparse_air::HEIGHT,
+        );
+    }
 }

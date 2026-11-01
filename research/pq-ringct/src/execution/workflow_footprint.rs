@@ -157,7 +157,7 @@ impl ProvingContext {
         }
         let registry = self.registry.try_borrow().map_err(|_| "workflow registry busy")?;
         if registry.prepared.is_some() || !registry.metadata.is_empty()
-            || !registry.identity_hints.entries.is_empty() || registry.registrations != 0
+            || registry.registrations != 0
             || registry.trace.attempted() != 0 || registry.metadata_bytes > PUBLIC_METADATA_LIMIT_BYTES
         {
             return Err("workflow enclosing census requires a pristine registry");

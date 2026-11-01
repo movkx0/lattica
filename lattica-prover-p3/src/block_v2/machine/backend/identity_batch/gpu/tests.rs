@@ -36,9 +36,9 @@ fn identity_batch_plan_rejects_duplicates_and_insufficient_memory_without_gpu() 
 #[test]
 fn identity_source_footprint_refuses_overflow_and_bounds_prefix_storage() {
     assert!(IdentityBatchFootprint::for_program_bounds(0, 0).is_err());
-    assert!(IdentityBatchFootprint::for_program_bounds(17, 0).is_err());
+    assert!(IdentityBatchFootprint::for_program_bounds(MAX_IDENTITY_STREAMS + 1, 0).is_err());
     assert!(IdentityBatchFootprint::for_program_bounds(2, u64::MAX).is_err());
-    for count in [1, 2, 4, 8, 16] {
+    for count in 1..=MAX_IDENTITY_STREAMS {
         let source = count as u64 * (2 << 30);
         let bound = IdentityBatchFootprint::for_program_bounds(count, source).unwrap();
         assert_eq!(bound.retained_host_bytes, source + count as u64 * IDENTITY_PREFIX_HOST_BYTES);
@@ -48,20 +48,49 @@ fn identity_source_footprint_refuses_overflow_and_bounds_prefix_storage() {
 }
 
 #[test]
+fn borrowed_prefix_plan_charges_only_additional_storage_and_retains_no_credit() {
+    let context = IdentityBatchContext::new();
+    let programs = [program(3), program(5)];
+    let limits = IdentityBatchLimits::batched(2).unwrap();
+    let source = programs.iter().map(|p| p.source_host_bytes().unwrap() as u64).sum::<u64>();
+    let owned = context.plan(limits, programs.iter().enumerate()
+        .map(|(job, p)| (job as u64, Arc::clone(p))).collect(), 2 << 30, 8 << 30).unwrap().footprint();
+    let borrowed = context.plan_borrowed(limits, programs.iter().enumerate()
+        .map(|(job, p)| (job as u64, p)).collect(), 2 << 30, 8 << 30).unwrap().footprint();
+    assert_eq!(borrowed.program_storage, IdentityProgramStorage::Borrowed);
+    assert_eq!(borrowed.borrowed_program_host_bytes, source);
+    assert_eq!(owned.borrowed_program_host_bytes, 0);
+    assert_eq!(owned.host_bytes, borrowed.host_bytes + source);
+    assert_eq!(owned.retained_host_bytes, borrowed.retained_host_bytes + source);
+    assert_eq!(owned.managed_bytes, borrowed.managed_bytes);
+    assert!(context.plan_borrowed(limits, vec![(0, &programs[0]), (0, &programs[1])],
+        2 << 30, 8 << 30).is_err());
+    assert!(context.plan_borrowed(limits, vec![(0, &programs[0]), (1, &programs[1])],
+        borrowed.host_bytes - 1, borrowed.managed_bytes).is_err());
+    assert!(context.plan_borrowed(limits, vec![(0, &programs[0]), (1, &programs[1])],
+        borrowed.host_bytes, borrowed.managed_bytes).is_ok());
+    assert!(context.plan(limits, programs.iter().enumerate()
+        .map(|(job, p)| (job as u64, Arc::clone(p))).collect(),
+        borrowed.host_bytes, borrowed.managed_bytes).is_err());
+    assert!(IdentityBatchFootprint::for_borrowed_program_bounds(24, u64::MAX).is_err());
+}
+
+#[test]
 #[ignore = "requires strict OpenCL worker; run serially with the existing resource guard"]
 fn gpu_identity_prefix_registration_preserves_caps_ids_and_fresh_proofs() {
     let _shutdown = gpu_hash::TestShutdownGuard;
     initialize();
     let context = IdentityBatchContext::new();
-    let programs = [program(3), program(5), program(7), program(9)];
+    let programs: Vec<_> = (0..MAX_IDENTITY_STREAMS).map(|i| program(3 + 2 * i as u64)).collect();
     let request = Request { policy: Policy::GpuRequired, emit_report: false };
-    let plan = context.plan(IdentityBatchLimits::batched(4).unwrap(),
-        programs.iter().enumerate().map(|(i, p)| (i as u64, Arc::clone(p))).collect(), 2 << 30, 8 << 30).unwrap();
+    let plan = context.plan_borrowed(IdentityBatchLimits::batched(MAX_IDENTITY_STREAMS).unwrap(),
+        programs.iter().enumerate().map(|(i, p)| (i as u64, p)).collect(), 2 << 30, 8 << 30).unwrap();
     let pending = plan.execute(request).unwrap();
-    assert!(pending.pending.iter().all(|p| !p.prefix.origin_retired()));
+    assert!(pending.pending.pending.iter().all(|p| !p.prefix.origin_retired()));
     gpu_hash::shutdown().unwrap();
     let (mut tokens, report) = pending.complete_after_retirement().unwrap();
-    assert_eq!(report.streams, 4);
+    assert_eq!(report.streams, MAX_IDENTITY_STREAMS);
+    assert_eq!(report.footprint.program_storage, IdentityProgramStorage::Borrowed);
     assert!(report.device_ns > 0 && report.preprocessing.stage_coverage_complete);
     println!("IDENTITY_BATCH_REPORT {}", serde_json::to_string(&report).unwrap());
     let wrong_context = IdentityBatchContext::new();

@@ -29,7 +29,7 @@ mod operations;
 mod execute;
 mod outer;
 mod identity_cohorts;
-use lattica_prover_p3::block_v2::machine::backend::identity_batch::IdentityBatchLimits;
+use lattica_prover_p3::block_v2::machine::backend::identity_cpu::IdentityCpuOptions;
 pub(crate) use outer::{BoundPairedOuter, PreissuedPairedOuter};
 pub(crate) use execute::{PairedExecuteError, PairedRequestOutput, PairedRequestReport};
 #[cfg(test)]
@@ -86,9 +86,9 @@ pub(crate) struct PairedRequestPlan<'request> {
     steps: Vec<RequestStep>,
     slots: RequestSlotRequirements,
     root: usize,
-    identity_limits: IdentityBatchLimits,
-    #[cfg(feature = "identity-batch-experiment")]
-    identity_context: Option<lattica_prover_p3::block_v2::machine::backend::identity_batch::IdentityBatchContext>,
+    identity_limits: IdentityCpuOptions,
+    #[cfg(feature = "full-workflow-experiment")]
+    identity_context: Option<lattica_prover_p3::block_v2::machine::backend::identity_cpu::IdentityCpuContext>,
     source_endpoints: endpoints::SourceEndpointStore<'request>,
     endpoint_attempted: Cell<bool>,
     // Must outlive the metadata vectors and every other field above.
@@ -166,8 +166,8 @@ impl<'request> PairedRequestPlan<'request> {
         }
         let mut plan = Self { request, context, layout, source_fingerprint: hash.finalize().into(),
             compiled_source_fingerprint: code, nodes: Vec::new(), steps: Vec::new(),
-            slots: RequestSlotRequirements::default(), root: 0, identity_limits: IdentityBatchLimits::default(),
-            #[cfg(feature = "identity-batch-experiment")]
+            slots: RequestSlotRequirements::default(), root: 0, identity_limits: IdentityCpuOptions::workers(1).expect("one CPU worker"),
+            #[cfg(feature = "full-workflow-experiment")]
             identity_context: None,
             source_endpoints: endpoints::SourceEndpointStore::new(request),
             endpoint_attempted: Cell::new(false), _metadata_original: metadata_original };
@@ -196,7 +196,7 @@ impl<'request> PairedRequestPlan<'request> {
             let id = plan.nodes.len();
             plan.nodes.push(RequestNodeSource { id, span: ComponentSpan::leaf(span)?, source: leaf_source,
                 children: None, group: Some(span) });
-            let (output, scratch) = source::compiler_requirements(Some(span.segment_count))?;
+            let (output, scratch) = source::compiler_requirements(leaf_source, Some(span.segment_count))?;
             plan.slots.compiled = maxima(plan.slots.compiled, output);
             plan.push(RequestStepKind::Group { node: id }, PhaseKind::GroupCompile, output,
                 combine(&[scratch, endpoints::group_preparation_requirements(request)?.0])?)?;
@@ -256,7 +256,7 @@ impl<'request> PairedRequestPlan<'request> {
         if id == self.nodes.capacity() { return Err(PairedFailure::Capacity); }
         self.nodes.push(RequestNodeSource { id, span: ComponentSpan::merge(a.span, b.span)?, source,
             children: Some([left, right]), group: None });
-        let (output, scratch) = source::compiler_requirements(None)?;
+        let (output, scratch) = source::compiler_requirements(source, None)?;
         self.slots.compiled = maxima(self.slots.compiled, output);
         self.push(RequestStepKind::Merge { node: id, left, right }, PhaseKind::ParentCompile, output, scratch)?;
         self.push_outer(id)?;

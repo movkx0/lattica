@@ -134,6 +134,8 @@ impl<'context> WorkflowPlanning<'context> {
         let original = self.capability.ledger().admit_phase(requirements)?;
         self.original.replace_depleted(original, self.capability.ledger())?;
         self.scratch = self.original.split(scratch_requirements)?;
+        let positions = self.original.split(plan.position_requirements().map_err(|_| WorkflowError::Planning)?)?;
+        plan.initialize_positions(positions).map_err(|_| WorkflowError::Planning)?;
         self.producer_metadata = Some(Installation {
             plan: plan as *const _ as *const (), scope: plan.scope() as *const _ as *const (),
             members, count: plan.members().len(), case: case as *const _ as *const (),

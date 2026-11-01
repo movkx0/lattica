@@ -31,6 +31,10 @@ pub use cache::{ArchivedReverification, CacheOutcome, ProofCache};
 pub(crate) fn compiled_source_fingerprint() -> [u8; 32] {
     version::source_fingerprint()
 }
+
+pub(crate) fn native_numeric_source_fingerprint() -> [u8; 32] {
+    version::NATIVE_NUMERIC_SOURCE
+}
 #[cfg(all(test, feature = "native-matrict"))]
 mod geometry_tests;
 #[cfg(all(test, feature = "native-matrict", feature = "recursive-wide"))]

@@ -5,7 +5,7 @@ use crate::block_v2::gpu_hash::device::public_hash::batched;
 use crate::proving::{Backend, Capabilities, CoverageScope, Policy, Report, Request, Run, Stage};
 use p3_field::PrimeField64;
 use p3_uni_stark::StarkGenericConfig;
-use std::sync::{Arc, atomic::{AtomicU64, Ordering}};
+use std::{marker::PhantomData, sync::{Arc, atomic::{AtomicU64, Ordering}}};
 
 const DOMAIN: u64 = 0x4c42563210;
 type Cursor<'a> = std::iter::Take<identity_stream::Cursor<'a>>;
@@ -19,8 +19,34 @@ impl IdentityBatchContext {
     pub fn new() -> Self { Self { authority: Arc::new(()), next_batch: AtomicU64::new(0) } }
     pub fn plan(&self, limits: IdentityBatchLimits, programs: Vec<(u64, Arc<Program>)>,
         host_allowance: u64, managed_allowance: u64) -> Result<IdentityBatchPlan, String> {
+        self.plan_storage(limits, programs, host_allowance, managed_allowance,
+            IdentityProgramStorage::Standalone)
+    }
+
+    /// The caller retains and separately charges each immutable program owner.
+    /// Only incremental prefix storage is charged here. The borrow lasts through
+    /// GPU retirement; completed tokens must remain under the original program
+    /// owners until registration consumes them. This grants no ledger credit.
+    pub fn plan_borrowed<'program>(&self, limits: IdentityBatchLimits,
+        programs: Vec<(u64, &'program Arc<Program>)>, host_allowance: u64,
+        managed_allowance: u64) -> Result<BorrowedIdentityBatchPlan<'program>, String> {
+        if programs.is_empty() || programs.len() > limits.max_streams()
+            || programs.capacity() > MAX_IDENTITY_STREAMS {
+            return Err("borrowed identity batch admission geometry".into());
+        }
+        let mut shared = Vec::new();
+        shared.try_reserve_exact(programs.len()).map_err(|_| "borrowed identity batch handles")?;
+        for (job, program) in programs { shared.push((job, Arc::clone(program))); }
+        let plan = self.plan_storage(limits, shared, host_allowance, managed_allowance,
+            IdentityProgramStorage::Borrowed)?;
+        Ok(BorrowedIdentityBatchPlan { plan, owners: PhantomData })
+    }
+
+    fn plan_storage(&self, limits: IdentityBatchLimits, programs: Vec<(u64, Arc<Program>)>,
+        host_allowance: u64, managed_allowance: u64, storage: IdentityProgramStorage)
+        -> Result<IdentityBatchPlan, String> {
         if limits.schedule != IdentityHashSchedule::BatchedV1 || programs.is_empty()
-            || programs.len() > limits.max_streams() || programs.capacity() > 16 || host_allowance > 32 << 30
+            || programs.len() > limits.max_streams() || programs.capacity() > MAX_IDENTITY_STREAMS || host_allowance > 32 << 30
             || managed_allowance > 8 << 30
         { return Err("identity batch admission geometry".into()); }
         for (i, (id, program)) in programs.iter().enumerate() {
@@ -32,7 +58,7 @@ impl IdentityBatchContext {
         let source_bytes = programs.iter().try_fold(0u64, |sum, (_, p)| {
             sum.checked_add(p.source_host_bytes()? as u64).ok_or_else(|| "identity batch source size overflow".to_string())
         })?;
-        let footprint = IdentityBatchFootprint::for_program_bounds(programs.len(), source_bytes)?;
+        let footprint = IdentityBatchFootprint::for_storage(programs.len(), source_bytes, storage)?;
         if footprint.host_bytes > host_allowance || footprint.managed_bytes > managed_allowance {
             return Err("identity batch exceeds supplied admission".into());
         }
@@ -45,8 +71,16 @@ impl IdentityBatchContext {
 #[cfg(test)]
 mod tests;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum IdentityProgramStorage { Standalone, Borrowed }
+
 #[derive(Clone, Copy, Debug, serde::Serialize)]
 pub struct IdentityBatchFootprint {
+    pub program_storage: IdentityProgramStorage,
+    /// Diagnostic backing held by the caller, excluded from this operation's
+    /// host_bytes and retained_host_bytes. Never subtracted from another claim.
+    pub borrowed_program_host_bytes: u64,
     pub host_bytes: u64,
     pub retained_host_bytes: u64,
     pub managed_bytes: u64,
@@ -55,12 +89,27 @@ pub struct IdentityBatchFootprint {
 impl IdentityBatchFootprint {
     /// Allocation-free source bound, available before any witness or proof.
     pub fn for_program_bounds(streams: usize, total_source_bytes: u64) -> Result<Self, String> {
+        Self::for_storage(streams, total_source_bytes, IdentityProgramStorage::Standalone)
+    }
+    /// Additional storage when original compiler owners remain charged in the
+    /// enclosing workflow. The source bound is reported separately, not credit.
+    pub fn for_borrowed_program_bounds(streams: usize, total_source_bytes: u64) -> Result<Self, String> {
+        Self::for_storage(streams, total_source_bytes, IdentityProgramStorage::Borrowed)
+    }
+    fn for_storage(streams: usize, total_source_bytes: u64, storage: IdentityProgramStorage)
+        -> Result<Self, String> {
         let stream = batched::Footprint::for_streams::<Cursor<'_>>(streams)?;
+        let owned_source = if storage == IdentityProgramStorage::Standalone { total_source_bytes } else { 0 };
         let retained_host_bytes = (streams as u64).checked_mul(IDENTITY_PREFIX_HOST_BYTES)
-            .and_then(|n| n.checked_add(total_source_bytes)).ok_or("identity batch retained size overflow")?;
+            .and_then(|n| n.checked_add(owned_source)).ok_or("identity batch retained size overflow")?;
         let host_bytes = retained_host_bytes.checked_add(symbolic::HOST_BYTES)
             .and_then(|n| n.checked_add(stream.host_bytes)).ok_or("identity batch host size overflow")?;
-        Ok(Self { host_bytes, retained_host_bytes, managed_bytes: stream.device_bytes,
+        // Check the enclosing sum too, even though the caller charges the two
+        // parts separately. A reported bound must not hide arithmetic overflow.
+        let borrowed_program_host_bytes = if storage == IdentityProgramStorage::Borrowed { total_source_bytes } else { 0 };
+        host_bytes.checked_add(borrowed_program_host_bytes).ok_or("identity batch enclosing size overflow")?;
+        Ok(Self { program_storage: storage, borrowed_program_host_bytes,
+            host_bytes, retained_host_bytes, managed_bytes: stream.device_bytes,
             max_allocation_bytes: stream.max_allocation_bytes })
     }
 }
@@ -69,6 +118,27 @@ impl IdentityBatchFootprint {
 /// The plan is not a substitute for an owned runtime or source authorization.
 pub struct IdentityBatchPlan {
     authority: Arc<()>, batch: u64, programs: Vec<(u64, Arc<Program>)>, footprint: IdentityBatchFootprint,
+}
+
+/// A distinct borrowing path; it cannot be converted into a standalone plan.
+pub struct BorrowedIdentityBatchPlan<'program> {
+    plan: IdentityBatchPlan,
+    owners: PhantomData<&'program Arc<Program>>,
+}
+impl<'program> BorrowedIdentityBatchPlan<'program> {
+    pub fn footprint(&self) -> IdentityBatchFootprint { self.plan.footprint() }
+    pub fn execute(self, request: Request) -> Result<PendingBorrowedIdentityBatch<'program>, String> {
+        Ok(PendingBorrowedIdentityBatch { pending: self.plan.execute(request)?, owners: PhantomData })
+    }
+}
+pub struct PendingBorrowedIdentityBatch<'program> {
+    pending: PendingIdentityBatch,
+    owners: PhantomData<&'program Arc<Program>>,
+}
+impl PendingBorrowedIdentityBatch<'_> {
+    pub fn complete_after_retirement(self) -> Result<(Vec<CompletedIdentityPrefix>, IdentityBatchReport), String> {
+        self.pending.complete_after_retirement()
+    }
 }
 impl IdentityBatchPlan {
     pub fn footprint(&self) -> IdentityBatchFootprint { self.footprint }
@@ -117,7 +187,7 @@ impl IdentityBatchPlan {
         let prefixes = session.hash_public_prefix_batch(inputs, &run, self.footprint.host_bytes)?;
         let hash_wall_ns = hashing.elapsed().as_nanos();
         let after = session.stats();
-        let report = IdentityBatchReport { schema: "identity-prefix-batch-v1", batch: self.batch,
+        let report = IdentityBatchReport { schema: "identity-prefix-batch-v2", batch: self.batch,
             streams: prepared.len(), analysis_ns, hash_wall_ns,
             device_ns: after.public_hash_device_ns - before.public_hash_device_ns,
             fields: after.public_hash_fields - before.public_hash_fields,

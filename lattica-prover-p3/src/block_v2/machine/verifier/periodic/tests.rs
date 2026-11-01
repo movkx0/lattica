@@ -112,14 +112,15 @@ fn invalid_geometry_rejects_all_columns_before_fill_or_arithmetic() {
 
 #[test]
 fn generated_column_evaluation_preserves_cpu_program_and_values() {
-    let columns = vec![
+    let mut columns: Vec<Vec<Val>> = vec![
         (0..8).map(|i| Val::from_usize(3 * i + 1)).collect(),
         (0..4).map(|i| Val::from_usize(7 * i + 2)).collect(),
     ];
+    columns.push(columns[0].clone());
     let compile = |generated: bool| {
         let mut b = ScopedProgramBuilder::new(0).unwrap();
-        let zeta = b.ext_constant([Val::from_u64(17), Val::ONE, Val::from_u64(2)]);
-        let mut output = [[Wire(0); 3]; 2];
+        let zeta = core::array::from_fn(|_| b.input());
+        let mut output = [[Wire(0); 3]; 3];
         if generated {
             values_into(
                 &mut b,
@@ -148,8 +149,12 @@ fn generated_column_evaluation_preserves_cpu_program_and_values() {
     assert_eq!(actual, reference);
     assert_eq!(actual_outputs, outputs);
     assert_eq!(
-        actual.evaluate(&[], &[]).unwrap(),
-        reference.evaluate(&[], &[]).unwrap()
+        actual
+            .evaluate(&[], &[Val::from_u64(17), Val::ONE, Val::from_u64(2)])
+            .unwrap(),
+        reference
+            .evaluate(&[], &[Val::from_u64(17), Val::ONE, Val::from_u64(2)])
+            .unwrap()
     );
 }
 

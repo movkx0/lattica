@@ -113,6 +113,9 @@ name = "block-v2-paired-probe"
 path = "src/bin/block_v2_paired_probe.rs"
 required-features = ["block-v2", "stream"]
 
+[build-dependencies]
+sha3 = "=0.10.8"
+
 [dependencies]
 sha3 = "=0.10.8"
 itertools = "0.14"

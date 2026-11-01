@@ -87,14 +87,23 @@ where
 {
     validate_geometry(air, height)?;
     if columns.len() != air.num_periodic_columns()
-        || columns.iter().any(|c| !c.len().is_power_of_two() || c.len() > height)
+        || columns
+            .iter()
+            .any(|c| !c.len().is_power_of_two() || c.len() > height)
     {
         return Err(CompileError::Shape("bounded uni periodic geometry"));
     }
     allowance.check()?;
     let prepared = super::super::symbolic::prepare_uni_bounded(air, Constants::cpu())?;
     verify_prepared(
-        b, inputs, air, height, public, proof, Constants::cpu(), prepared,
+        b,
+        inputs,
+        air,
+        height,
+        public,
+        proof,
+        Constants::cpu(),
+        prepared,
         &super::periodic::Borrowed(columns),
     )
 }
@@ -171,6 +180,58 @@ fn verify_prepared<A: BaseAir<Val>>(
     prepared: (Vec<p3_air::symbolic::SymbolicExpression<Val>>, usize),
     periodic_source: &dyn super::periodic::Source,
 ) -> Result<(), CompileError> {
+    verify_prepared_view(
+        b,
+        inputs,
+        air,
+        height,
+        public,
+        Some(proof),
+        constants,
+        &prepared,
+        periodic_source,
+        None,
+    )
+}
+
+pub(super) fn verify_counted_prepared<A: BaseAir<Val>>(
+    b: &mut ProgramBuilder,
+    inputs: &mut ProofInputs,
+    air: &A,
+    height: usize,
+    public: &[Wire],
+    columns: &[Vec<Val>],
+    prepared: &(Vec<p3_air::symbolic::SymbolicExpression<Val>>, usize),
+    timings: Option<&mut shape::NativeLoweringTimings>,
+) -> Result<(), CompileError> {
+    inputs.require_geometry(b)?;
+    verify_prepared_view(
+        b,
+        inputs,
+        air,
+        height,
+        public,
+        None,
+        Constants::cpu(),
+        prepared,
+        &super::periodic::Borrowed(columns),
+        timings,
+    )
+}
+
+fn verify_prepared_view<A: BaseAir<Val>>(
+    b: &mut ProgramBuilder,
+    inputs: &mut ProofInputs,
+    air: &A,
+    height: usize,
+    public: &[Wire],
+    proof: Option<&Proof<Config>>,
+    constants: Constants<'_>,
+    prepared: &(Vec<p3_air::symbolic::SymbolicExpression<Val>>, usize),
+    periodic_source: &dyn super::periodic::Source,
+    mut timings: Option<&mut shape::NativeLoweringTimings>,
+) -> Result<(), CompileError> {
+    let started = timings.as_ref().map(|_| std::time::Instant::now());
     validate_geometry(air, height)?;
     if periodic_source.count() != air.num_periodic_columns() {
         return Err(CompileError::Shape("periodic source count"));
@@ -178,44 +239,61 @@ fn verify_prepared<A: BaseAir<Val>>(
     let log_height = height.ilog2() as usize;
     let ext_db = log_height + 1;
     let (constraints, log_chunks) = prepared;
+    let log_chunks = *log_chunks;
     if log_chunks > profile::LOG_BLOWUP {
         return Err(CompileError::Shape("quotient degree"));
     }
     let chunks = 1 << (log_chunks + 1);
     let main_next = !air.main_next_row_columns().is_empty();
-    let opened = &proof.opened_values;
-    if public.len() != air.num_public_values()
-        || proof.degree_bits != ext_db
-        || opened.trace_local.len() != air.width()
-        || opened.trace_next.is_some() != main_next
-        || opened
-            .trace_next
-            .as_ref()
-            .is_some_and(|v| v.len() != air.width())
-        || opened.preprocessed_local.is_some()
-        || opened.preprocessed_next.is_some()
-        || opened.quotient_chunks.len() != chunks
-        || opened.quotient_chunks.iter().any(|v| v.len() != 3)
-        || opened.random.as_ref().is_none_or(|v| v.len() != 3)
-        || proof.commitments.random.is_none()
-    {
-        return Err(CompileError::Shape("uni proof shape"));
+    if public.len() != air.num_public_values() {
+        return Err(CompileError::Shape("uni public geometry"));
+    }
+    if let Some(proof) = proof {
+        let opened = &proof.opened_values;
+        if public.len() != air.num_public_values()
+            || proof.degree_bits != ext_db
+            || opened.trace_local.len() != air.width()
+            || opened.trace_next.is_some() != main_next
+            || opened
+                .trace_next
+                .as_ref()
+                .is_some_and(|v| v.len() != air.width())
+            || opened.preprocessed_local.is_some()
+            || opened.preprocessed_next.is_some()
+            || opened.quotient_chunks.len() != chunks
+            || opened.quotient_chunks.iter().any(|v| v.len() != 3)
+            || opened.random.as_ref().is_none_or(|v| v.len() != 3)
+            || proof.commitments.random.is_none()
+        {
+            return Err(CompileError::Shape("uni proof shape"));
+        }
+    } else {
+        inputs.require_geometry(b)?;
     }
     let log_lde = ext_db + profile::LOG_BLOWUP;
-    let trace_cap = inputs.cap(b, &proof.commitments.trace, log_lde)?;
-    let quotient_cap = inputs.cap(b, &proof.commitments.quotient_chunks, log_lde)?;
-    let random_cap = inputs.cap(b, proof.commitments.random.as_ref().unwrap(), log_lde)?;
-    let local = inputs.extensions(b, &opened.trace_local)?;
-    let next = opened
-        .trace_next
-        .as_ref()
-        .map(|v| inputs.extensions(b, v))
-        .transpose()?;
-    let random = inputs.extensions(b, opened.random.as_ref().unwrap())?;
-    let quotient_chunks: Vec<_> = opened
-        .quotient_chunks
-        .iter()
-        .map(|v| inputs.extensions(b, v))
+    let opened = proof.map(|p| &p.opened_values);
+    let trace_cap = inputs.cap_view(b, proof.map(|p| &p.commitments.trace), log_lde)?;
+    let quotient_cap =
+        inputs.cap_view(b, proof.map(|p| &p.commitments.quotient_chunks), log_lde)?;
+    let random_cap = inputs.cap_view(
+        b,
+        proof.and_then(|p| p.commitments.random.as_ref()),
+        log_lde,
+    )?;
+    let local = inputs.extensions_view(b, opened.map(|o| o.trace_local.as_slice()), air.width())?;
+    let next = if main_next {
+        Some(inputs.extensions_view(
+            b,
+            opened.map(|o| o.trace_next.as_ref().unwrap().as_slice()),
+            air.width(),
+        )?)
+    } else {
+        None
+    };
+    let random =
+        inputs.extensions_view(b, opened.map(|o| o.random.as_ref().unwrap().as_slice()), 3)?;
+    let quotient_chunks: Vec<_> = (0..chunks)
+        .map(|i| inputs.extensions_view(b, opened.map(|o| o.quotient_chunks[i].as_slice()), 3))
         .collect::<Result<_, _>>()?;
     let mut transcript = Transcript::new(b);
     for n in [ext_db, log_height, 0] {
@@ -271,22 +349,46 @@ fn verify_prepared<A: BaseAir<Val>>(
             preprocessing: false,
         },
     ];
-    super::pcs::verify(b, inputs, &mut transcript, &rounds, &proof.opening_proof)?;
+    if let Some(t) = timings.as_deref_mut() {
+        t.setup_ns = started.unwrap().elapsed().as_nanos();
+    }
+    let started = timings.as_ref().map(|_| std::time::Instant::now());
+    super::pcs::verify_view(
+        b,
+        inputs,
+        &mut transcript,
+        &rounds,
+        proof.map(|p| &p.opening_proof),
+        timings.as_deref_mut(),
+    )?;
+    if let Some(t) = timings.as_deref_mut() {
+        t.pcs_ns = started.unwrap().elapsed().as_nanos();
+    }
+    let started = timings.as_ref().map(|_| std::time::Instant::now());
     let (first, last, transition, inv_vanishing) =
         expressions::selectors_with_constants(b, zeta, log_height, constants)?;
+    if let Some(t) = timings.as_deref_mut() {
+        t.selectors_ns = started.unwrap().elapsed().as_nanos();
+    }
     b.with_compiler_scratch(
         "evaluation",
         periodic_source.count(),
         [Wire(0); 3],
         |b, periodic| {
-            super::periodic::values_into(
+            let started = timings.as_ref().map(|_| std::time::Instant::now());
+            super::periodic::values_into_profiled(
                 b,
                 periodic_source,
                 zeta,
                 log_height,
                 constants,
                 periodic,
+                timings.as_deref_mut(),
             )?;
+            if let Some(t) = timings.as_deref_mut() {
+                t.periodic_ns = started.unwrap().elapsed().as_nanos();
+            }
+            let started = timings.as_ref().map(|_| std::time::Instant::now());
             let quotient = expressions::quotient_with_constants(
                 b,
                 &quotient_chunks,
@@ -294,6 +396,10 @@ fn verify_prepared<A: BaseAir<Val>>(
                 log_height,
                 constants,
             )?;
+            if let Some(t) = timings.as_deref_mut() {
+                t.quotient_ns = started.unwrap().elapsed().as_nanos();
+            }
+            let started = timings.as_ref().map(|_| std::time::Instant::now());
             let zero = b.ext_constant([Val::ZERO; 3]);
             let zeros = [zero];
             let next = match &next {
@@ -314,13 +420,16 @@ fn verify_prepared<A: BaseAir<Val>>(
             };
             let mut lowerer = Lowerer::new(b, values);
             let mut folded = zero;
-            for constraint in &constraints {
+            for constraint in constraints {
                 let value = lowerer.base(constraint)?;
                 folded = lowerer.b.ext_mul(folded, alpha);
                 folded = lowerer.b.ext_add(folded, value);
             }
             let lhs = lowerer.b.ext_mul(folded, inv_vanishing);
             lowerer.b.ext_assert_equal(lhs, quotient);
+            if let Some(t) = timings.as_deref_mut() {
+                t.constraints_ns = started.unwrap().elapsed().as_nanos();
+            }
             Ok(())
         },
     )
@@ -365,15 +474,28 @@ mod tests {
 
     fn compile_bounded(proof: &Proof<Config>) -> (Program, Vec<Val>) {
         use super::super::super::program::{ConstructionLimits, MAX_WIRES};
-        let mut b = ProgramBuilder::new_with_construction_limits(1, ConstructionLimits {
-            max_requested_program_bytes: 1 << 30,
-            max_wires: MAX_WIRES,
-            max_input_values: 1 << 20,
-        }).unwrap();
+        let mut b = ProgramBuilder::new_with_construction_limits(
+            1,
+            ConstructionLimits {
+                max_requested_program_bytes: 1 << 30,
+                max_wires: MAX_WIRES,
+                max_input_values: 1 << 20,
+            },
+        )
+        .unwrap();
         let public = b.public(0).unwrap();
         let mut inputs = ProofInputs::default();
-        verify_bounded(&mut b, &mut inputs, &Counter, 8, &[public], proof, &[],
-            BoundedSymbolicAllowance::REQUIRED).unwrap();
+        verify_bounded(
+            &mut b,
+            &mut inputs,
+            &Counter,
+            8,
+            &[public],
+            proof,
+            &[],
+            BoundedSymbolicAllowance::REQUIRED,
+        )
+        .unwrap();
         (b.finish(None).unwrap(), inputs.values)
     }
 
@@ -391,7 +513,9 @@ mod tests {
         assert_eq!(manifest, bounded.manifest_fields());
         assert_eq!(values, bounded_values);
         bounded.evaluate(&public, &bounded_values).unwrap();
-        assert!(bounded.evaluate(&[Val::from_u64(38)], &bounded_values).is_err());
+        assert!(bounded
+            .evaluate(&[Val::from_u64(38)], &bounded_values)
+            .is_err());
         drop(bounded);
         proof.opened_values.trace_local[0] += profile::Challenge::ONE;
         let (mutated, mutated_values) = compile_bounded(&proof);
@@ -406,10 +530,19 @@ mod tests {
         assert_eq!(required.retained_graph_bytes, 64 << 20);
         required.check().unwrap();
         for allowance in [
-            BoundedSymbolicAllowance { workspace_bytes: required.workspace_bytes - 1, ..required },
-            BoundedSymbolicAllowance { retained_graph_bytes: required.retained_graph_bytes - 1, ..required },
+            BoundedSymbolicAllowance {
+                workspace_bytes: required.workspace_bytes - 1,
+                ..required
+            },
+            BoundedSymbolicAllowance {
+                retained_graph_bytes: required.retained_graph_bytes - 1,
+                ..required
+            },
         ] {
-            assert_eq!(allowance.check(), Err(CompileError::Shape("bounded uni symbolic allowance")));
+            assert_eq!(
+                allowance.check(),
+                Err(CompileError::Shape("bounded uni symbolic allowance"))
+            );
         }
     }
 

@@ -271,27 +271,38 @@ fn crypto_cores(crypto: &graph_crypto::Plan) -> Result<NativeCores> {
     let mut requests = Vec::with_capacity(crypto.requests().len());
     for request in crypto.requests() {
         let mut segments = Vec::with_capacity(request.segments().len());
-        for segment in request.segments() {
-            let descriptor = match request.descriptor() {
-                RequestDescriptor::Shake(descriptor) => NativeDescriptor::Shake {
-                    descriptor,
-                    first: segment.first_unit,
-                    count: segment.units,
-                },
-                RequestDescriptor::Aes(descriptor) => NativeDescriptor::Aes {
-                    descriptor,
-                    first: segment.first_unit,
-                    count: segment.units,
-                },
-            };
-            let g = descriptor.geometry().map_err(err)?;
-            require(
-                (g.width, g.height) == (segment.width, segment.height),
-                "selected native geometry differs from Request",
-            )?;
-            let bound = native_shape::native_core_bound(descriptor, construction(), AUXILIARY)
+        use native_shape::cohort::{self, Descriptor};
+        for chunk in request.segments().chunks(cohort::MAX) {
+            let mut descriptors = [Descriptor::Native(NativeDescriptor::Sparse(
+                crate::sparse_air::Kind::AlphaPrime39,
+            )); cohort::MAX];
+            for (slot, segment) in descriptors.iter_mut().zip(chunk) {
+                let descriptor = match request.descriptor() {
+                    RequestDescriptor::Shake(descriptor) => NativeDescriptor::Shake {
+                        descriptor,
+                        first: segment.first_unit,
+                        count: segment.units,
+                    },
+                    RequestDescriptor::Aes(descriptor) => NativeDescriptor::Aes {
+                        descriptor,
+                        first: segment.first_unit,
+                        count: segment.units,
+                    },
+                };
+                let g = descriptor.geometry().map_err(err)?;
+                require(
+                    (g.width, g.height) == (segment.width, segment.height),
+                    "selected native geometry differs from Request",
+                )?;
+                *slot = Descriptor::Native(descriptor);
+            }
+            let bounds = cohort::bounds(&descriptors[..chunk.len()], construction(), AUXILIARY)
                 .map_err(err)?;
-            segments.push(bound.counts.operations);
+            segments.extend(
+                bounds[..chunk.len()]
+                    .iter()
+                    .map(|b| b.unwrap().counts.operations),
+            );
         }
         requests.push(segments);
     }
@@ -310,7 +321,10 @@ fn remaining_native_cores(
     auxiliary: &AuxiliaryFactory,
 ) -> Result<NativeCores> {
     let mut auxiliary_cores = Vec::with_capacity(auxiliary.requests().len());
-    for request in auxiliary.requests() {
+    use native_shape::cohort::{self, Descriptor};
+    for requests in auxiliary.requests().chunks(cohort::MAX) {
+        let mut descriptors = [Descriptor::Other(OtherNativeDescriptor::PrivateProof); cohort::MAX];
+        for (slot, request) in requests.iter().enumerate() {
         let descriptor = match request.kind() {
             AuxiliaryKind::Transcript => NativeDescriptor::Transcript(
                 request
@@ -326,52 +340,61 @@ fn remaining_native_cores(
             (g.width, g.height) == (request.geometry().width, request.geometry().height),
             "selected auxiliary geometry mismatch",
         )?;
-        auxiliary_cores.push(
-            native_shape::native_core_bound(descriptor, construction(), AUXILIARY)
-                .map_err(err)?
-                .counts
-                .operations,
-        );
+            descriptors[slot] = Descriptor::Native(descriptor);
+        }
+        let cores = cohort::bounds(&descriptors[..requests.len()], construction(), AUXILIARY).map_err(err)?;
+        for core in cores[..requests.len()].iter().flatten() { auxiliary_cores.push(core.counts.operations); }
     }
     let mut graph_cores = Vec::with_capacity(tree.leaves().len());
-    for leaf in tree.leaves() {
-        let descriptor = match leaf.kind() {
-            LeafKind::Statement => Some(OtherNativeDescriptor::Statement {
-                setup_seed: graph.setup_seed(),
-            }),
-            LeafKind::PrivateProof => Some(OtherNativeDescriptor::PrivateProof),
-            LeafKind::Operations(
-                OperationFamily::Affine { .. }
-                | OperationFamily::Ntt { .. }
-                | OperationFamily::Mul { .. }
-                | OperationFamily::GBound
-                | OperationFamily::Permutation
-                | OperationFamily::LinearMap,
-            ) => {
-                let batch = algebra
-                    .batches()
-                    .iter()
-                    .find(|b| b.operation_indices() == leaf.operation_indices())
-                    .ok_or("missing selected exact algebra batch")?;
-                require(
-                    !matches!(batch.kind(), ComponentKind::External),
-                    "external native algebra core",
-                )?;
-                Some(OtherNativeDescriptor::Algebra {
-                    kind: batch.kind(),
-                    count: batch.operation_indices().len(),
-                })
+    for leaves in tree.leaves().chunks(cohort::MAX) {
+        let mut descriptors = [Descriptor::Other(OtherNativeDescriptor::PrivateProof); cohort::MAX];
+        let mut slots = [None; cohort::MAX];
+        let mut count = 0;
+        for (i, leaf) in leaves.iter().enumerate() {
+            let descriptor = match leaf.kind() {
+                LeafKind::Statement => Some(OtherNativeDescriptor::Statement {
+                    setup_seed: graph.setup_seed(),
+                }),
+                LeafKind::PrivateProof => Some(OtherNativeDescriptor::PrivateProof),
+                LeafKind::Operations(
+                    OperationFamily::Affine { .. }
+                    | OperationFamily::Ntt { .. }
+                    | OperationFamily::Mul { .. }
+                    | OperationFamily::GBound
+                    | OperationFamily::Permutation
+                    | OperationFamily::LinearMap,
+                ) => {
+                    let batch = algebra
+                        .batches()
+                        .iter()
+                        .find(|b| b.operation_indices() == leaf.operation_indices())
+                        .ok_or("missing selected exact algebra batch")?;
+                    require(
+                        !matches!(batch.kind(), ComponentKind::External),
+                        "external native algebra core",
+                    )?;
+                    Some(OtherNativeDescriptor::Algebra {
+                        kind: batch.kind(),
+                        count: batch.operation_indices().len(),
+                    })
+                }
+                _ => None,
+            };
+            if let Some(d) = descriptor {
+                descriptors[count] = Descriptor::Other(d);
+                slots[i] = Some(count);
+                count += 1;
             }
-            _ => None,
+        }
+        let bounds = if count != 0 {
+            cohort::bounds(&descriptors[..count], construction(), AUXILIARY).map_err(err)?
+        } else {
+            [None; cohort::MAX]
         };
-        graph_cores.push(
-            descriptor
-                .map(|d| {
-                    other_native_core_bound(d, construction(), AUXILIARY)
-                        .map(|b| b.counts.operations)
-                        .map_err(err)
-                })
-                .transpose()?,
+        graph_cores.extend(
+            slots[..leaves.len()]
+                .iter()
+                .map(|slot| slot.map(|i| bounds[i].unwrap().counts.operations)),
         );
     }
     cores.auxiliary = auxiliary_cores;

@@ -1,0 +1,313 @@
+{
+  "schema": "ringct-borrowed-preprocessing-implementation-v1",
+  "recorded_utc": "2026-10-31T18:16:38.345068+00:00",
+  "status": "implemented and compile checked; runtime validation remains stopped by user",
+  "scope": "Remove duplicate program storage from owned identity preprocessing and retain source-derived packed compiler bounds.",
+  "supported_integer_widths": {
+    "minimum": 1,
+    "maximum": 24
+  },
+  "campaign_presets": [
+    1,
+    2,
+    4,
+    8,
+    12,
+    16,
+    24
+  ],
+  "defaults_changed": false,
+  "resource_caps_changed": false,
+  "cryptographic_parameters_changed": false,
+  "performance_qualified": false,
+  "memory_accounting": {
+    "borrowed_programs": {
+      "api": "IdentityBatchContext::plan_borrowed",
+      "original_compiler_owners_remain_charged": true,
+      "owner_validation_before_dispatch": true,
+      "borrow_lifetime_held_through_gpu_retirement": true,
+      "tokens_installed_into_original_compiler_slots": true,
+      "standalone_plan_still_charges_program_storage": true,
+      "borrowed_program_host_bytes_is_diagnostic_not_credit": true
+    },
+    "retained_compilers": {
+      "construction_ceiling_bytes_per_compiler": 2147483648,
+      "source_bound_components": [
+        "Arc and Program layout",
+        "operation storage",
+        "active packed row records",
+        "scalar and cubic row indices",
+        "wire references",
+        "selection-hint entries and bits"
+      ],
+      "retained_ceiling": "min(source-derived packed bound, unchanged 2 GiB construction ceiling)",
+      "temporary_construction_charge": "2 GiB minus retained ceiling, additive to existing auxiliary and caller scratch",
+      "actual_capacity_checked_before_scratch_retirement": true,
+      "trace_padding_adds_no_retained_row_records": true,
+      "changed_paths": [
+        "SHAKE leaf compilers",
+        "shared recursive-parent compilers"
+      ],
+      "aes_leaf_output_reservation_unchanged": true
+    },
+    "width_24": {
+      "former_duplicate_declared_program_allowance_bytes": 51539607552,
+      "incremental_prefix_bytes_before_streaming_and_frames": 1006731264,
+      "incremental_prefix_formula": "24 * (32 MiB fingerprint bound + 4096 bytes) + 192 MiB symbolic scratch + typed streaming footprint",
+      "incremental_prefix_approximately_gib": 1,
+      "actual_physical_ram_savings_measured": false,
+      "complete_workflow_peak_measured": false,
+      "fit_on_64_gb_machine_established": false,
+      "scope": "Program owners, compiler inputs and scratch, retained proofs, 8 GiB tree allowance, wrappers and other workflow phases remain separately charged."
+    }
+  },
+  "validation": {
+    "release_all_targets": {
+      "path": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-memory-check-r1.json",
+      "sha256": "cd6510b8036af06e0875a6e211decfc21799dea758bd9c322e4031374b931f54",
+      "profile": "build",
+      "command": [
+        "/home/access/code/lattica/.tools/rust-1.96.0/bin/cargo",
+        "check",
+        "--release",
+        "--locked",
+        "--offline",
+        "--all-targets",
+        "--manifest-path",
+        "research/pq-ringct/Cargo.toml",
+        "--features",
+        "identity-batch-experiment",
+        "-j2"
+      ],
+      "status": "passed",
+      "error": null,
+      "raw_log": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-memory-check-r1.log",
+      "raw_log_sha256": "908b879edec3b5a3fadc061bdd550cf3dbf57a71438a26f51451fc1504f58cb5",
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "service_stop_completed": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "terminal_state": {
+        "LoadState": "loaded",
+        "ActiveState": "active",
+        "SubState": "exited",
+        "MainPID": "0",
+        "ControlPID": "0",
+        "Result": "success",
+        "NRestarts": "0",
+        "ExecMainCode": "1",
+        "ExecMainStatus": "0",
+        "ControlGroup": "",
+        "MemoryPeak": "2976808960",
+        "MemoryHigh": "6442450944",
+        "MemoryMax": "8589934592",
+        "MemorySwapMax": "0"
+      },
+      "wall_seconds": 22.30613029599772
+    },
+    "release_core_and_ringct_test_code_compile_only": {
+      "path": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-memory-core-check-r3.json",
+      "sha256": "5a89249081267333131fb64effdfa555f7a3b75ab8ae663e64cca9c4785e19a9",
+      "profile": "build",
+      "command": [
+        "/home/access/code/lattica/.tools/rust-1.96.0/bin/cargo",
+        "check",
+        "--release",
+        "--locked",
+        "--offline",
+        "--lib",
+        "--tests",
+        "--manifest-path",
+        "research/pq-ringct/Cargo.toml",
+        "-p",
+        "lattica-pq-ringct-research",
+        "-p",
+        "lattica-prover-p3",
+        "--features",
+        "identity-batch-experiment",
+        "-j2"
+      ],
+      "status": "passed",
+      "error": null,
+      "raw_log": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-memory-core-check-r3.log",
+      "raw_log_sha256": "9643b092f5a68a659ddc9d6c1a7a508fc5e66fd594e28ebd5b11263e5a57fcec",
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "service_stop_completed": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "terminal_state": {
+        "LoadState": "loaded",
+        "ActiveState": "active",
+        "SubState": "exited",
+        "MainPID": "0",
+        "ControlPID": "0",
+        "Result": "success",
+        "NRestarts": "0",
+        "ExecMainCode": "1",
+        "ExecMainStatus": "0",
+        "ControlGroup": "",
+        "MemoryPeak": "2116931584",
+        "MemoryHigh": "6442450944",
+        "MemoryMax": "8589934592",
+        "MemorySwapMax": "0"
+      },
+      "wall_seconds": 20.31134829000075
+    },
+    "superseded_core_compile_attempts": [
+      {
+        "path": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-memory-core-check-r1.json",
+        "sha256": "5362fde0147535d1e40acc16ccf787264d1257cb602daceafcfb942357879076",
+        "profile": "build",
+        "command": [
+          "/home/access/code/lattica/.tools/rust-1.96.0/bin/cargo",
+          "check",
+          "--release",
+          "--locked",
+          "--offline",
+          "--lib",
+          "--tests",
+          "--manifest-path",
+          "lattica-prover-p3/Cargo.toml",
+          "--no-default-features",
+          "--features",
+          "gpu-tuning,gpu-bounded-info,block-v2-wide-lanes,ringct-research-quota,stream",
+          "-j2"
+        ],
+        "status": "failed_or_incomplete",
+        "error": "ValueError('command failed: {\"LoadState\": \"loaded\", \"ActiveState\": \"failed\", \"SubState\": \"failed\", \"MainPID\": \"0\", \"ControlPID\": \"0\", \"Result\": \"exit-code\", \"NRestarts\": \"0\", \"ExecMainCode\": \"1\", \"ExecMainStatus\": \"101\", \"ControlGroup\": \"\", \"MemoryPeak\": \"7880704\", \"MemoryHigh\": \"6442450944\", \"MemoryMax\": \"8589934592\", \"MemorySwapMax\": \"0\"}')",
+        "raw_log": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-memory-core-check-r1.log",
+        "raw_log_sha256": "3ea4523c1147a776a1f7e579b6cd89ed568c1a6c10abe1b34fc68c7fc3b31fd7",
+        "source_inputs_unchanged": true,
+        "executable_unchanged": true,
+        "service_stop_completed": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "terminal_state": {
+          "LoadState": "loaded",
+          "ActiveState": "failed",
+          "SubState": "failed",
+          "MainPID": "0",
+          "ControlPID": "0",
+          "Result": "exit-code",
+          "NRestarts": "0",
+          "ExecMainCode": "1",
+          "ExecMainStatus": "101",
+          "ControlGroup": "",
+          "MemoryPeak": "7880704",
+          "MemoryHigh": "6442450944",
+          "MemoryMax": "8589934592",
+          "MemorySwapMax": "0"
+        },
+        "wall_seconds": 2.245743950996257,
+        "reason": "Standalone prover lock resolution requires an uncached optional blake3 package; offline build refused before compilation.",
+        "resolved_by": "prep-memory-core-check-r3 selected both RingCT and prover packages using the existing cached RingCT lock graph."
+      },
+      {
+        "path": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-memory-core-check-r2.json",
+        "sha256": "109fdc5a8b216dca20bc388cb58f276c629fe7a770e4ea07b9b14ef87473acf0",
+        "profile": "build",
+        "command": [
+          "/home/access/code/lattica/.tools/rust-1.96.0/bin/cargo",
+          "check",
+          "--release",
+          "--locked",
+          "--offline",
+          "--lib",
+          "--tests",
+          "--manifest-path",
+          "research/pq-ringct/Cargo.toml",
+          "-p",
+          "lattica-prover-p3",
+          "--features",
+          "lattica-pq-ringct-research/identity-batch-experiment",
+          "-j2"
+        ],
+        "status": "failed_or_incomplete",
+        "error": "ValueError('command failed: {\"LoadState\": \"loaded\", \"ActiveState\": \"failed\", \"SubState\": \"failed\", \"MainPID\": \"0\", \"ControlPID\": \"0\", \"Result\": \"exit-code\", \"NRestarts\": \"0\", \"ExecMainCode\": \"1\", \"ExecMainStatus\": \"101\", \"ControlGroup\": \"\", \"MemoryPeak\": \"3760128\", \"MemoryHigh\": \"6442450944\", \"MemoryMax\": \"8589934592\", \"MemorySwapMax\": \"0\"}')",
+        "raw_log": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-memory-core-check-r2.log",
+        "raw_log_sha256": "e8ba25ea0890bf6630709e9f811ccb71944e489015181c521f81c609f9040c2a",
+        "source_inputs_unchanged": true,
+        "executable_unchanged": true,
+        "service_stop_completed": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "terminal_state": {
+          "LoadState": "loaded",
+          "ActiveState": "failed",
+          "SubState": "failed",
+          "MainPID": "0",
+          "ControlPID": "0",
+          "Result": "exit-code",
+          "NRestarts": "0",
+          "ExecMainCode": "1",
+          "ExecMainStatus": "101",
+          "ControlGroup": "",
+          "MemoryPeak": "3760128",
+          "MemoryHigh": "6442450944",
+          "MemoryMax": "8589934592",
+          "MemorySwapMax": "0"
+        },
+        "wall_seconds": 2.2620131879957626,
+        "reason": "Cargo rejected feature selection for a dependency outside the selected workspace packages.",
+        "resolved_by": "prep-memory-core-check-r3 selected both RingCT and prover packages using the existing cached RingCT lock graph."
+      }
+    ],
+    "python_syntax": {
+      "status": "passed",
+      "scope": "AST parsing only; no module execution or tests",
+      "files": [
+        "research/pq-ringct/tools/full_workflow_case_guard.py",
+        "research/pq-ringct/tools/identity_preprocessing_receipts.py",
+        "research/pq-ringct/tools/opencl_private_spend_validate.py",
+        "research/pq-ringct/tools/opencl_qualify.py",
+        "research/pq-ringct/tools/opencl_workflow_comparison.py",
+        "research/pq-ringct/tools/owned_preprocessing_campaign.py",
+        "research/pq-ringct/tools/owned_workflow_benchmark.py",
+        "research/pq-ringct/tools/test_full_workflow_case_guard.py",
+        "research/pq-ringct/tools/test_identity_preprocessing_receipts.py",
+        "research/pq-ringct/tools/test_opencl_qualify.py",
+        "research/pq-ringct/tools/test_owned_preprocessing_campaign.py",
+        "research/pq-ringct/tools/test_owned_workflow_benchmark.py"
+      ]
+    },
+    "git_diff_check": "passed",
+    "source_manifest_entries": 2993,
+    "source_manifest_sha256": "60dd1fea812ebb23c60c7dcfd0c26f921c331bcc8fbae2b7c0e5ec9075d659de",
+    "source_manifest_digest_encoding": "UTF-8 JSON with sorted keys and compact separators",
+    "sources_still_match_compile_records": true,
+    "new_retained_bound_in_compiled_source_manifest": true,
+    "tests_executed_after_user_stop": false,
+    "gpu_proving_started": false,
+    "fresh_n3_n4_campaign_started": false
+  },
+  "prepared_validation": {
+    "source_matrix_schema": "ringct-identity-source-matrix-v4",
+    "source_matrix_rows": 16,
+    "focused_source_widths": [
+      12,
+      16,
+      24
+    ],
+    "component_screen_schema": "recursive-identity-component-screen-v4",
+    "identity_prefix_report_schema": "identity-prefix-batch-v2",
+    "new_accounting_test_definitions_compiled": true,
+    "runtime_screens_executed": false,
+    "fresh_executable_build_and_same_source_admission_required_before_campaign": true
+  },
+  "receipt_compatibility": {
+    "current_capacity": 24,
+    "current_footprint_reports_borrowed_programs_separately": true,
+    "additional_host_and_device_bytes_bound_to_prefix_totals": true,
+    "legacy_16_and_24_slot_receipts_preserved": true,
+    "old_receipts_cannot_qualify_new_source_builds": true
+  },
+  "supersedes": {
+    "path": "/home/access/code/lattica/docs/evidence/ringct-wide-preprocessing-2026-10-31.json",
+    "sha256": "43b219d0eddc266b74fabc9a63856c127b9a55c3b3a6604b951d63ea94a8d1a3",
+    "scope": "The prior static 104.94 GiB width-24 reservation lower bound used duplicate 2 GiB program charges; it no longer describes this implementation.",
+    "historical_evidence_preserved": true
+  },
+  "remaining_validation": [
+    "Tests remain stopped; no runtime correctness or performance result is asserted for this source revision.",
+    "Fresh width-24 source admission and complete-workflow admission are required to establish fit on this host.",
+    "Prepared source/component/full-workflow campaigns require fresh recorded executables and their existing resource guards."
+  ]
+}

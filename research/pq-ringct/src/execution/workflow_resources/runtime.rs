@@ -416,7 +416,7 @@ impl Drop for WorkflowPhase<'_, '_, '_> {
 
 mod outer_owned;
 pub(crate) use outer_owned::{OwnedOuterScope, OuterOwnedError};
-#[cfg(feature = "identity-batch-experiment")]
+#[cfg(feature = "full-workflow-experiment")]
 pub(crate) use outer_owned::PairedIdentityPeers;
 pub(crate) use outer_owned::forwarding_host_bytes as owned_outer_forwarding_host_bytes;
 impl WorkflowPhase<'_, '_, '_> {

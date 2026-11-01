@@ -1,0 +1,1411 @@
+{
+  "schema": "ringct-preprocessing-implementation-v1",
+  "recorded_utc": "2026-10-31T16:50:39.326374+00:00",
+  "status": "implementation_and_focused_validation_complete",
+  "defaults_changed": false,
+  "performance_qualified": false,
+  "scope": "OpenCL research; source and component evidence is not fresh N3/N4 throughput.",
+  "validation_scope": "Source and component checks only; full campaign left ready to run at user request.",
+  "device_inventory": {
+    "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615",
+    "name": "NVIDIA GeForce RTX 5080",
+    "driver_version": "615.78.08",
+    "memory_total_mib": 16303
+  },
+  "implementation": {
+    "guide": "research/pq-ringct/PREPROCESSING.md",
+    "launcher": "research/pq-ringct/tools/owned_preprocessing_campaign.py",
+    "auditor": "research/pq-ringct/tools/owned_workflow_benchmark.py",
+    "independent_candidates": [
+      "geometry",
+      "batch-1",
+      "batch-2",
+      "batch-4"
+    ],
+    "combined_candidates_require_passing_independent_comparisons": true,
+    "validated_baseline_plan": {
+      "path": "/home/access/code/lattica/.tools/pq-opencl-opt/campaign-plans/prep-impl-baseline-screen.json",
+      "sha256": "9107d1cc9b427c8c8a17f222f559d106ee0d1b9a12bdb3c57c91ae6a248dc77e",
+      "full_cases_launched": false
+    },
+    "complete_timing_gate": {
+      "alternating_pairs": 3,
+      "minimum_median_improvement_percent": 5,
+      "maximum_individual_case_regression_percent": 2
+    },
+    "next_baseline_screen_command": [
+      "/usr/bin/python3",
+      "/home/access/code/lattica/research/pq-ringct/tools/owned_preprocessing_campaign.py",
+      "--configuration",
+      "baseline",
+      "--label",
+      "prep-impl-baseline-screen",
+      "--build-label",
+      "prep-impl-workflow-build-r2",
+      "--device-uuid",
+      "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615",
+      "--seed",
+      "5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b",
+      "--context",
+      "4949494949494949494949494949494949494949494949494949494949494949",
+      "--source-matrix",
+      "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-impl-source-matrix-r1.json",
+      "--execute",
+      "--exclusive-window"
+    ]
+  },
+  "resource_envelope": {
+    "worker_host_bytes": 34359738368,
+    "process_max_bytes": 50465865728,
+    "process_high_bytes": 48318382080,
+    "fresh_available_bytes": 52613349376,
+    "managed_device_bytes": 8589934592,
+    "device_context_reserve_bytes": 4294967296,
+    "swap_bytes": 0,
+    "rayon_threads": 8,
+    "public_hash": "baseline"
+  },
+  "validation": {
+    "release_all_targets_check": {
+      "status": "passed",
+      "features": [
+        "identity-batch-experiment"
+      ],
+      "locked_offline": true,
+      "log_sha256": "83c2c72f56abefb92d2c9b85e5a5f1e827cd8d6bdc8fb02061b224146d492f1f"
+    },
+    "focused_python_tests": {
+      "passed": 121,
+      "limitation": "Three existing historical-admission tests require archived baseline files absent from this checkout; they are outside the passing focused selection."
+    },
+    "identity_cohort_cpu_tests": {
+      "passed": 2,
+      "record_label": "prep-impl-cohort-cpu-r1"
+    },
+    "source_matrix": [
+      {
+        "compiled_source_fingerprint": [
+          70,
+          72,
+          170,
+          81,
+          98,
+          7,
+          249,
+          34,
+          89,
+          79,
+          183,
+          104,
+          221,
+          127,
+          139,
+          142,
+          163,
+          169,
+          141,
+          187,
+          45,
+          166,
+          9,
+          74,
+          32,
+          51,
+          247,
+          222,
+          113,
+          240,
+          106,
+          153
+        ],
+        "complete_workflow_admitted": false,
+        "first_fixture": 0,
+        "fixture_count": 3,
+        "gpu_dispatches": 0,
+        "identity_preprocessing": {
+          "max_streams": 1,
+          "schedule": "serial"
+        },
+        "layout": "singleton",
+        "managed_device_bytes": 8589934592,
+        "peak_compilers": 1,
+        "refusal": null,
+        "requests": 9,
+        "schema": "ringct-identity-source-matrix-v1",
+        "scope": "SHAKE source constructors and declared lifetimes; complete graph/backend admission remains required",
+        "source_claim_peak_host_bytes": 11781850706,
+        "source_geometry_cache": {
+          "entries": 1,
+          "evictions": 0,
+          "failed_computations": 0,
+          "hits": 8,
+          "misses": 1,
+          "planning_ns": 6509059177,
+          "reserved_host_bytes": 1048576
+        },
+        "source_lifetimes_admitted": true,
+        "stark_proofs": 0,
+        "terminal_empty": true,
+        "transactions": 3,
+        "worker_host_bytes": 34359738368
+      },
+      {
+        "compiled_source_fingerprint": [
+          70,
+          72,
+          170,
+          81,
+          98,
+          7,
+          249,
+          34,
+          89,
+          79,
+          183,
+          104,
+          221,
+          127,
+          139,
+          142,
+          163,
+          169,
+          141,
+          187,
+          45,
+          166,
+          9,
+          74,
+          32,
+          51,
+          247,
+          222,
+          113,
+          240,
+          106,
+          153
+        ],
+        "complete_workflow_admitted": false,
+        "first_fixture": 0,
+        "fixture_count": 3,
+        "gpu_dispatches": 0,
+        "identity_preprocessing": {
+          "max_streams": 1,
+          "schedule": "batched-v1"
+        },
+        "layout": "singleton",
+        "managed_device_bytes": 8589934592,
+        "peak_compilers": 1,
+        "refusal": null,
+        "requests": 9,
+        "schema": "ringct-identity-source-matrix-v1",
+        "scope": "SHAKE source constructors and declared lifetimes; complete graph/backend admission remains required",
+        "source_claim_peak_host_bytes": 11815409234,
+        "source_geometry_cache": {
+          "entries": 1,
+          "evictions": 0,
+          "failed_computations": 0,
+          "hits": 8,
+          "misses": 1,
+          "planning_ns": 6394252710,
+          "reserved_host_bytes": 1048576
+        },
+        "source_lifetimes_admitted": true,
+        "stark_proofs": 0,
+        "terminal_empty": true,
+        "transactions": 3,
+        "worker_host_bytes": 34359738368
+      },
+      {
+        "compiled_source_fingerprint": [
+          70,
+          72,
+          170,
+          81,
+          98,
+          7,
+          249,
+          34,
+          89,
+          79,
+          183,
+          104,
+          221,
+          127,
+          139,
+          142,
+          163,
+          169,
+          141,
+          187,
+          45,
+          166,
+          9,
+          74,
+          32,
+          51,
+          247,
+          222,
+          113,
+          240,
+          106,
+          153
+        ],
+        "complete_workflow_admitted": false,
+        "first_fixture": 0,
+        "fixture_count": 3,
+        "gpu_dispatches": 0,
+        "identity_preprocessing": {
+          "max_streams": 2,
+          "schedule": "batched-v1"
+        },
+        "layout": "singleton",
+        "managed_device_bytes": 8589934592,
+        "peak_compilers": 2,
+        "refusal": null,
+        "requests": 9,
+        "schema": "ringct-identity-source-matrix-v1",
+        "scope": "SHAKE source constructors and declared lifetimes; complete graph/backend admission remains required",
+        "source_claim_peak_host_bytes": 13937422673,
+        "source_geometry_cache": {
+          "entries": 1,
+          "evictions": 0,
+          "failed_computations": 0,
+          "hits": 8,
+          "misses": 1,
+          "planning_ns": 6421531931,
+          "reserved_host_bytes": 1048576
+        },
+        "source_lifetimes_admitted": true,
+        "stark_proofs": 0,
+        "terminal_empty": true,
+        "transactions": 3,
+        "worker_host_bytes": 34359738368
+      },
+      {
+        "compiled_source_fingerprint": [
+          70,
+          72,
+          170,
+          81,
+          98,
+          7,
+          249,
+          34,
+          89,
+          79,
+          183,
+          104,
+          221,
+          127,
+          139,
+          142,
+          163,
+          169,
+          141,
+          187,
+          45,
+          166,
+          9,
+          74,
+          32,
+          51,
+          247,
+          222,
+          113,
+          240,
+          106,
+          153
+        ],
+        "complete_workflow_admitted": false,
+        "first_fixture": 0,
+        "fixture_count": 3,
+        "gpu_dispatches": 0,
+        "identity_preprocessing": {
+          "max_streams": 4,
+          "schedule": "batched-v1"
+        },
+        "layout": "singleton",
+        "managed_device_bytes": 8589934592,
+        "peak_compilers": 4,
+        "refusal": null,
+        "requests": 9,
+        "schema": "ringct-identity-source-matrix-v1",
+        "scope": "SHAKE source constructors and declared lifetimes; complete graph/backend admission remains required",
+        "source_claim_peak_host_bytes": 18256929360,
+        "source_geometry_cache": {
+          "entries": 1,
+          "evictions": 0,
+          "failed_computations": 0,
+          "hits": 8,
+          "misses": 1,
+          "planning_ns": 7679215638,
+          "reserved_host_bytes": 1048576
+        },
+        "source_lifetimes_admitted": true,
+        "stark_proofs": 0,
+        "terminal_empty": true,
+        "transactions": 3,
+        "worker_host_bytes": 34359738368
+      },
+      {
+        "compiled_source_fingerprint": [
+          70,
+          72,
+          170,
+          81,
+          98,
+          7,
+          249,
+          34,
+          89,
+          79,
+          183,
+          104,
+          221,
+          127,
+          139,
+          142,
+          163,
+          169,
+          141,
+          187,
+          45,
+          166,
+          9,
+          74,
+          32,
+          51,
+          247,
+          222,
+          113,
+          240,
+          106,
+          153
+        ],
+        "complete_workflow_admitted": false,
+        "first_fixture": 3,
+        "fixture_count": 4,
+        "gpu_dispatches": 0,
+        "identity_preprocessing": {
+          "max_streams": 1,
+          "schedule": "serial"
+        },
+        "layout": "singleton",
+        "managed_device_bytes": 8589934592,
+        "peak_compilers": 1,
+        "refusal": null,
+        "requests": 12,
+        "schema": "ringct-identity-source-matrix-v1",
+        "scope": "SHAKE source constructors and declared lifetimes; complete graph/backend admission remains required",
+        "source_claim_peak_host_bytes": 11781850706,
+        "source_geometry_cache": {
+          "entries": 1,
+          "evictions": 0,
+          "failed_computations": 0,
+          "hits": 11,
+          "misses": 1,
+          "planning_ns": 6511517834,
+          "reserved_host_bytes": 1048576
+        },
+        "source_lifetimes_admitted": true,
+        "stark_proofs": 0,
+        "terminal_empty": true,
+        "transactions": 4,
+        "worker_host_bytes": 34359738368
+      },
+      {
+        "compiled_source_fingerprint": [
+          70,
+          72,
+          170,
+          81,
+          98,
+          7,
+          249,
+          34,
+          89,
+          79,
+          183,
+          104,
+          221,
+          127,
+          139,
+          142,
+          163,
+          169,
+          141,
+          187,
+          45,
+          166,
+          9,
+          74,
+          32,
+          51,
+          247,
+          222,
+          113,
+          240,
+          106,
+          153
+        ],
+        "complete_workflow_admitted": false,
+        "first_fixture": 3,
+        "fixture_count": 4,
+        "gpu_dispatches": 0,
+        "identity_preprocessing": {
+          "max_streams": 1,
+          "schedule": "batched-v1"
+        },
+        "layout": "singleton",
+        "managed_device_bytes": 8589934592,
+        "peak_compilers": 1,
+        "refusal": null,
+        "requests": 12,
+        "schema": "ringct-identity-source-matrix-v1",
+        "scope": "SHAKE source constructors and declared lifetimes; complete graph/backend admission remains required",
+        "source_claim_peak_host_bytes": 11815409234,
+        "source_geometry_cache": {
+          "entries": 1,
+          "evictions": 0,
+          "failed_computations": 0,
+          "hits": 11,
+          "misses": 1,
+          "planning_ns": 6481862970,
+          "reserved_host_bytes": 1048576
+        },
+        "source_lifetimes_admitted": true,
+        "stark_proofs": 0,
+        "terminal_empty": true,
+        "transactions": 4,
+        "worker_host_bytes": 34359738368
+      },
+      {
+        "compiled_source_fingerprint": [
+          70,
+          72,
+          170,
+          81,
+          98,
+          7,
+          249,
+          34,
+          89,
+          79,
+          183,
+          104,
+          221,
+          127,
+          139,
+          142,
+          163,
+          169,
+          141,
+          187,
+          45,
+          166,
+          9,
+          74,
+          32,
+          51,
+          247,
+          222,
+          113,
+          240,
+          106,
+          153
+        ],
+        "complete_workflow_admitted": false,
+        "first_fixture": 3,
+        "fixture_count": 4,
+        "gpu_dispatches": 0,
+        "identity_preprocessing": {
+          "max_streams": 2,
+          "schedule": "batched-v1"
+        },
+        "layout": "singleton",
+        "managed_device_bytes": 8589934592,
+        "peak_compilers": 2,
+        "refusal": null,
+        "requests": 12,
+        "schema": "ringct-identity-source-matrix-v1",
+        "scope": "SHAKE source constructors and declared lifetimes; complete graph/backend admission remains required",
+        "source_claim_peak_host_bytes": 13937422673,
+        "source_geometry_cache": {
+          "entries": 1,
+          "evictions": 0,
+          "failed_computations": 0,
+          "hits": 11,
+          "misses": 1,
+          "planning_ns": 6414790004,
+          "reserved_host_bytes": 1048576
+        },
+        "source_lifetimes_admitted": true,
+        "stark_proofs": 0,
+        "terminal_empty": true,
+        "transactions": 4,
+        "worker_host_bytes": 34359738368
+      },
+      {
+        "compiled_source_fingerprint": [
+          70,
+          72,
+          170,
+          81,
+          98,
+          7,
+          249,
+          34,
+          89,
+          79,
+          183,
+          104,
+          221,
+          127,
+          139,
+          142,
+          163,
+          169,
+          141,
+          187,
+          45,
+          166,
+          9,
+          74,
+          32,
+          51,
+          247,
+          222,
+          113,
+          240,
+          106,
+          153
+        ],
+        "complete_workflow_admitted": false,
+        "first_fixture": 3,
+        "fixture_count": 4,
+        "gpu_dispatches": 0,
+        "identity_preprocessing": {
+          "max_streams": 4,
+          "schedule": "batched-v1"
+        },
+        "layout": "singleton",
+        "managed_device_bytes": 8589934592,
+        "peak_compilers": 4,
+        "refusal": null,
+        "requests": 12,
+        "schema": "ringct-identity-source-matrix-v1",
+        "scope": "SHAKE source constructors and declared lifetimes; complete graph/backend admission remains required",
+        "source_claim_peak_host_bytes": 18256929360,
+        "source_geometry_cache": {
+          "entries": 1,
+          "evictions": 0,
+          "failed_computations": 0,
+          "hits": 11,
+          "misses": 1,
+          "planning_ns": 6431602046,
+          "reserved_host_bytes": 1048576
+        },
+        "source_lifetimes_admitted": true,
+        "stark_proofs": 0,
+        "terminal_empty": true,
+        "transactions": 4,
+        "worker_host_bytes": 34359738368
+      }
+    ],
+    "gpu_component": {
+      "samples": [
+        {
+          "schema": "recursive-identity-component-screen-v2",
+          "scope": "component-only; child fixture generation excluded; no RingCT throughput claim",
+          "repetition": 0,
+          "max_streams": 1,
+          "cohort_sizes": [],
+          "schedule": "serial",
+          "programs": 5,
+          "fresh_recursive_proofs": 5,
+          "active_rows": 584625,
+          "padded_rows": 655360,
+          "prefix_analysis_ns": 0,
+          "prefix_hash_ns": 0,
+          "prefix_device_ns": 0,
+          "setup_ns": 116891524650,
+          "proving_ns": 11721880384,
+          "cpu_verification_ns": 241468546,
+          "component_ns": 129709533958,
+          "identities": [
+            [
+              16455454715649763361,
+              129982310700287161,
+              7799039347687339620,
+              15241526531543018969
+            ],
+            [
+              10981216877659028203,
+              7165143018806992090,
+              15491047821558202312,
+              8654945822279336956
+            ],
+            [
+              5209929574936231574,
+              16352380486751059164,
+              10930995719884502829,
+              14707196991439044216
+            ],
+            [
+              7563964889604568646,
+              1339030142017985684,
+              11638985961058434543,
+              6279615025332097492
+            ],
+            [
+              7990324926696929223,
+              5977029204448644293,
+              4563942510017174530,
+              13519622854968401214
+            ]
+          ]
+        },
+        {
+          "schema": "recursive-identity-component-screen-v2",
+          "scope": "component-only; child fixture generation excluded; no RingCT throughput claim",
+          "repetition": 0,
+          "max_streams": 1,
+          "cohort_sizes": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "schedule": "batched-v1",
+          "programs": 5,
+          "fresh_recursive_proofs": 5,
+          "active_rows": 584625,
+          "padded_rows": 655360,
+          "prefix_analysis_ns": 403471472,
+          "prefix_hash_ns": 113153679371,
+          "prefix_device_ns": 111880450688,
+          "setup_ns": 4813044861,
+          "proving_ns": 11724055066,
+          "cpu_verification_ns": 244628973,
+          "component_ns": 132044846728,
+          "identities": [
+            [
+              16455454715649763361,
+              129982310700287161,
+              7799039347687339620,
+              15241526531543018969
+            ],
+            [
+              10981216877659028203,
+              7165143018806992090,
+              15491047821558202312,
+              8654945822279336956
+            ],
+            [
+              5209929574936231574,
+              16352380486751059164,
+              10930995719884502829,
+              14707196991439044216
+            ],
+            [
+              7563964889604568646,
+              1339030142017985684,
+              11638985961058434543,
+              6279615025332097492
+            ],
+            [
+              7990324926696929223,
+              5977029204448644293,
+              4563942510017174530,
+              13519622854968401214
+            ]
+          ]
+        },
+        {
+          "schema": "recursive-identity-component-screen-v2",
+          "scope": "component-only; child fixture generation excluded; no RingCT throughput claim",
+          "repetition": 0,
+          "max_streams": 2,
+          "cohort_sizes": [
+            2,
+            2,
+            1
+          ],
+          "schedule": "batched-v1",
+          "programs": 5,
+          "fresh_recursive_proofs": 5,
+          "active_rows": 584625,
+          "padded_rows": 655360,
+          "prefix_analysis_ns": 369419956,
+          "prefix_hash_ns": 68186193541,
+          "prefix_device_ns": 67137061248,
+          "setup_ns": 4813609078,
+          "proving_ns": 11718878571,
+          "cpu_verification_ns": 241152466,
+          "component_ns": 86692819163,
+          "identities": [
+            [
+              16455454715649763361,
+              129982310700287161,
+              7799039347687339620,
+              15241526531543018969
+            ],
+            [
+              10981216877659028203,
+              7165143018806992090,
+              15491047821558202312,
+              8654945822279336956
+            ],
+            [
+              5209929574936231574,
+              16352380486751059164,
+              10930995719884502829,
+              14707196991439044216
+            ],
+            [
+              7563964889604568646,
+              1339030142017985684,
+              11638985961058434543,
+              6279615025332097492
+            ],
+            [
+              7990324926696929223,
+              5977029204448644293,
+              4563942510017174530,
+              13519622854968401214
+            ]
+          ]
+        },
+        {
+          "schema": "recursive-identity-component-screen-v2",
+          "scope": "component-only; child fixture generation excluded; no RingCT throughput claim",
+          "repetition": 0,
+          "max_streams": 4,
+          "cohort_sizes": [
+            4,
+            1
+          ],
+          "schedule": "batched-v1",
+          "programs": 5,
+          "fresh_recursive_proofs": 5,
+          "active_rows": 584625,
+          "padded_rows": 655360,
+          "prefix_analysis_ns": 370505882,
+          "prefix_hash_ns": 45558621328,
+          "prefix_device_ns": 44628563104,
+          "setup_ns": 4820074043,
+          "proving_ns": 11735066305,
+          "cpu_verification_ns": 241415852,
+          "component_ns": 63920235364,
+          "identities": [
+            [
+              16455454715649763361,
+              129982310700287161,
+              7799039347687339620,
+              15241526531543018969
+            ],
+            [
+              10981216877659028203,
+              7165143018806992090,
+              15491047821558202312,
+              8654945822279336956
+            ],
+            [
+              5209929574936231574,
+              16352380486751059164,
+              10930995719884502829,
+              14707196991439044216
+            ],
+            [
+              7563964889604568646,
+              1339030142017985684,
+              11638985961058434543,
+              6279615025332097492
+            ],
+            [
+              7990324926696929223,
+              5977029204448644293,
+              4563942510017174530,
+              13519622854968401214
+            ]
+          ]
+        },
+        {
+          "schema": "recursive-identity-component-screen-v2",
+          "scope": "component-only; child fixture generation excluded; no RingCT throughput claim",
+          "repetition": 1,
+          "max_streams": 4,
+          "cohort_sizes": [
+            4,
+            1
+          ],
+          "schedule": "batched-v1",
+          "programs": 5,
+          "fresh_recursive_proofs": 5,
+          "active_rows": 584625,
+          "padded_rows": 655360,
+          "prefix_analysis_ns": 369335410,
+          "prefix_hash_ns": 45623827414,
+          "prefix_device_ns": 44666080736,
+          "setup_ns": 4816420400,
+          "proving_ns": 11766715165,
+          "cpu_verification_ns": 242076039,
+          "component_ns": 64009187502,
+          "identities": [
+            [
+              16455454715649763361,
+              129982310700287161,
+              7799039347687339620,
+              15241526531543018969
+            ],
+            [
+              10981216877659028203,
+              7165143018806992090,
+              15491047821558202312,
+              8654945822279336956
+            ],
+            [
+              5209929574936231574,
+              16352380486751059164,
+              10930995719884502829,
+              14707196991439044216
+            ],
+            [
+              7563964889604568646,
+              1339030142017985684,
+              11638985961058434543,
+              6279615025332097492
+            ],
+            [
+              7990324926696929223,
+              5977029204448644293,
+              4563942510017174530,
+              13519622854968401214
+            ]
+          ]
+        },
+        {
+          "schema": "recursive-identity-component-screen-v2",
+          "scope": "component-only; child fixture generation excluded; no RingCT throughput claim",
+          "repetition": 1,
+          "max_streams": 2,
+          "cohort_sizes": [
+            2,
+            2,
+            1
+          ],
+          "schedule": "batched-v1",
+          "programs": 5,
+          "fresh_recursive_proofs": 5,
+          "active_rows": 584625,
+          "padded_rows": 655360,
+          "prefix_analysis_ns": 369698533,
+          "prefix_hash_ns": 68007406518,
+          "prefix_device_ns": 66950848032,
+          "setup_ns": 4817418760,
+          "proving_ns": 11718300823,
+          "cpu_verification_ns": 242213774,
+          "component_ns": 86520453627,
+          "identities": [
+            [
+              16455454715649763361,
+              129982310700287161,
+              7799039347687339620,
+              15241526531543018969
+            ],
+            [
+              10981216877659028203,
+              7165143018806992090,
+              15491047821558202312,
+              8654945822279336956
+            ],
+            [
+              5209929574936231574,
+              16352380486751059164,
+              10930995719884502829,
+              14707196991439044216
+            ],
+            [
+              7563964889604568646,
+              1339030142017985684,
+              11638985961058434543,
+              6279615025332097492
+            ],
+            [
+              7990324926696929223,
+              5977029204448644293,
+              4563942510017174530,
+              13519622854968401214
+            ]
+          ]
+        },
+        {
+          "schema": "recursive-identity-component-screen-v2",
+          "scope": "component-only; child fixture generation excluded; no RingCT throughput claim",
+          "repetition": 1,
+          "max_streams": 1,
+          "cohort_sizes": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "schedule": "batched-v1",
+          "programs": 5,
+          "fresh_recursive_proofs": 5,
+          "active_rows": 584625,
+          "padded_rows": 655360,
+          "prefix_analysis_ns": 366811259,
+          "prefix_hash_ns": 113264167358,
+          "prefix_device_ns": 111998229568,
+          "setup_ns": 4841244847,
+          "proving_ns": 11760990966,
+          "cpu_verification_ns": 242854226,
+          "component_ns": 132172398558,
+          "identities": [
+            [
+              16455454715649763361,
+              129982310700287161,
+              7799039347687339620,
+              15241526531543018969
+            ],
+            [
+              10981216877659028203,
+              7165143018806992090,
+              15491047821558202312,
+              8654945822279336956
+            ],
+            [
+              5209929574936231574,
+              16352380486751059164,
+              10930995719884502829,
+              14707196991439044216
+            ],
+            [
+              7563964889604568646,
+              1339030142017985684,
+              11638985961058434543,
+              6279615025332097492
+            ],
+            [
+              7990324926696929223,
+              5977029204448644293,
+              4563942510017174530,
+              13519622854968401214
+            ]
+          ]
+        },
+        {
+          "schema": "recursive-identity-component-screen-v2",
+          "scope": "component-only; child fixture generation excluded; no RingCT throughput claim",
+          "repetition": 1,
+          "max_streams": 1,
+          "cohort_sizes": [],
+          "schedule": "serial",
+          "programs": 5,
+          "fresh_recursive_proofs": 5,
+          "active_rows": 584625,
+          "padded_rows": 655360,
+          "prefix_analysis_ns": 0,
+          "prefix_hash_ns": 0,
+          "prefix_device_ns": 0,
+          "setup_ns": 117403981257,
+          "proving_ns": 11717530421,
+          "cpu_verification_ns": 240652429,
+          "component_ns": 130208533801,
+          "identities": [
+            [
+              16455454715649763361,
+              129982310700287161,
+              7799039347687339620,
+              15241526531543018969
+            ],
+            [
+              10981216877659028203,
+              7165143018806992090,
+              15491047821558202312,
+              8654945822279336956
+            ],
+            [
+              5209929574936231574,
+              16352380486751059164,
+              10930995719884502829,
+              14707196991439044216
+            ],
+            [
+              7563964889604568646,
+              1339030142017985684,
+              11638985961058434543,
+              6279615025332097492
+            ],
+            [
+              7990324926696929223,
+              5977029204448644293,
+              4563942510017174530,
+              13519622854968401214
+            ]
+          ]
+        },
+        {
+          "schema": "recursive-identity-component-screen-v2",
+          "scope": "component-only; child fixture generation excluded; no RingCT throughput claim",
+          "repetition": 2,
+          "max_streams": 1,
+          "cohort_sizes": [],
+          "schedule": "serial",
+          "programs": 5,
+          "fresh_recursive_proofs": 5,
+          "active_rows": 584625,
+          "padded_rows": 655360,
+          "prefix_analysis_ns": 0,
+          "prefix_hash_ns": 0,
+          "prefix_device_ns": 0,
+          "setup_ns": 117501023831,
+          "proving_ns": 11745490490,
+          "cpu_verification_ns": 241758190,
+          "component_ns": 130340340586,
+          "identities": [
+            [
+              16455454715649763361,
+              129982310700287161,
+              7799039347687339620,
+              15241526531543018969
+            ],
+            [
+              10981216877659028203,
+              7165143018806992090,
+              15491047821558202312,
+              8654945822279336956
+            ],
+            [
+              5209929574936231574,
+              16352380486751059164,
+              10930995719884502829,
+              14707196991439044216
+            ],
+            [
+              7563964889604568646,
+              1339030142017985684,
+              11638985961058434543,
+              6279615025332097492
+            ],
+            [
+              7990324926696929223,
+              5977029204448644293,
+              4563942510017174530,
+              13519622854968401214
+            ]
+          ]
+        },
+        {
+          "schema": "recursive-identity-component-screen-v2",
+          "scope": "component-only; child fixture generation excluded; no RingCT throughput claim",
+          "repetition": 2,
+          "max_streams": 1,
+          "cohort_sizes": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "schedule": "batched-v1",
+          "programs": 5,
+          "fresh_recursive_proofs": 5,
+          "active_rows": 584625,
+          "padded_rows": 655360,
+          "prefix_analysis_ns": 368260887,
+          "prefix_hash_ns": 113181443462,
+          "prefix_device_ns": 111912554848,
+          "setup_ns": 4862410279,
+          "proving_ns": 11729113817,
+          "cpu_verification_ns": 241801545,
+          "component_ns": 132091748510,
+          "identities": [
+            [
+              16455454715649763361,
+              129982310700287161,
+              7799039347687339620,
+              15241526531543018969
+            ],
+            [
+              10981216877659028203,
+              7165143018806992090,
+              15491047821558202312,
+              8654945822279336956
+            ],
+            [
+              5209929574936231574,
+              16352380486751059164,
+              10930995719884502829,
+              14707196991439044216
+            ],
+            [
+              7563964889604568646,
+              1339030142017985684,
+              11638985961058434543,
+              6279615025332097492
+            ],
+            [
+              7990324926696929223,
+              5977029204448644293,
+              4563942510017174530,
+              13519622854968401214
+            ]
+          ]
+        },
+        {
+          "schema": "recursive-identity-component-screen-v2",
+          "scope": "component-only; child fixture generation excluded; no RingCT throughput claim",
+          "repetition": 2,
+          "max_streams": 2,
+          "cohort_sizes": [
+            2,
+            2,
+            1
+          ],
+          "schedule": "batched-v1",
+          "programs": 5,
+          "fresh_recursive_proofs": 5,
+          "active_rows": 584625,
+          "padded_rows": 655360,
+          "prefix_analysis_ns": 371038218,
+          "prefix_hash_ns": 68233823264,
+          "prefix_device_ns": 67179460224,
+          "setup_ns": 4825302512,
+          "proving_ns": 11817899620,
+          "cpu_verification_ns": 241287386,
+          "component_ns": 86857418115,
+          "identities": [
+            [
+              16455454715649763361,
+              129982310700287161,
+              7799039347687339620,
+              15241526531543018969
+            ],
+            [
+              10981216877659028203,
+              7165143018806992090,
+              15491047821558202312,
+              8654945822279336956
+            ],
+            [
+              5209929574936231574,
+              16352380486751059164,
+              10930995719884502829,
+              14707196991439044216
+            ],
+            [
+              7563964889604568646,
+              1339030142017985684,
+              11638985961058434543,
+              6279615025332097492
+            ],
+            [
+              7990324926696929223,
+              5977029204448644293,
+              4563942510017174530,
+              13519622854968401214
+            ]
+          ]
+        },
+        {
+          "schema": "recursive-identity-component-screen-v2",
+          "scope": "component-only; child fixture generation excluded; no RingCT throughput claim",
+          "repetition": 2,
+          "max_streams": 4,
+          "cohort_sizes": [
+            4,
+            1
+          ],
+          "schedule": "batched-v1",
+          "programs": 5,
+          "fresh_recursive_proofs": 5,
+          "active_rows": 584625,
+          "padded_rows": 655360,
+          "prefix_analysis_ns": 373308909,
+          "prefix_hash_ns": 45720644249,
+          "prefix_device_ns": 44775354624,
+          "setup_ns": 4845242763,
+          "proving_ns": 11814147014,
+          "cpu_verification_ns": 243607842,
+          "component_ns": 64233811328,
+          "identities": [
+            [
+              16455454715649763361,
+              129982310700287161,
+              7799039347687339620,
+              15241526531543018969
+            ],
+            [
+              10981216877659028203,
+              7165143018806992090,
+              15491047821558202312,
+              8654945822279336956
+            ],
+            [
+              5209929574936231574,
+              16352380486751059164,
+              10930995719884502829,
+              14707196991439044216
+            ],
+            [
+              7563964889604568646,
+              1339030142017985684,
+              11638985961058434543,
+              6279615025332097492
+            ],
+            [
+              7990324926696929223,
+              5977029204448644293,
+              4563942510017174530,
+              13519622854968401214
+            ]
+          ]
+        }
+      ],
+      "medians": {
+        "serial/1": {
+          "component_ns": 130208533801,
+          "setup_ns": 117403981257,
+          "prefix_hash_ns": 0,
+          "proving_ns": 11721880384,
+          "cohort_sizes": [],
+          "component_reduction_fraction": 0.0
+        },
+        "batched-v1/1": {
+          "component_ns": 132091748510,
+          "setup_ns": 4841244847,
+          "prefix_hash_ns": 113181443462,
+          "proving_ns": 11729113817,
+          "cohort_sizes": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "component_reduction_fraction": -0.014463066697902871
+        },
+        "batched-v1/2": {
+          "component_ns": 86692819163,
+          "setup_ns": 4817418760,
+          "prefix_hash_ns": 68186193541,
+          "proving_ns": 11718878571,
+          "cohort_sizes": [
+            2,
+            2,
+            1
+          ],
+          "component_reduction_fraction": 0.3342001738880328
+        },
+        "batched-v1/4": {
+          "component_ns": 64009187502,
+          "setup_ns": 4820074043,
+          "prefix_hash_ns": 45623827414,
+          "proving_ns": 11766715165,
+          "cohort_sizes": [
+            4,
+            1
+          ],
+          "component_reduction_fraction": 0.508410196832211
+        }
+      },
+      "fresh_parent_proofs": 60,
+      "verified_changed_public_rejections": 60,
+      "scope": "Five recursive parents, three forward/reverse/forward rounds; child generation excluded."
+    }
+  },
+  "guarded_runs": {
+    "prep-impl-tests-build-r1": {
+      "label": "prep-impl-tests-build-r1",
+      "record": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-impl-tests-build-r1.json",
+      "record_sha256": "fa57c26c77fb45f00e0d2a14099304c6a4d2dd25365e56c28145bf3130fd8394",
+      "raw_log": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-impl-tests-build-r1.log",
+      "raw_log_sha256": "6d4a71d31216edb27092cea929cdadf6b2ef6d6108c07c0829887309466400c8",
+      "source_manifest_sha256": "4c6b4f47d3dceb1d008372fdbe073126bb5a8f7f172c561578135ec7f1479e9e",
+      "started_utc": "2026-10-31T15:36:08.872809+00:00",
+      "finished_utc": "2026-10-31T15:37:23.374611+00:00",
+      "wall_seconds": 74.4996518639964,
+      "process_peak_bytes": 2704199680,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "built_artifact_sha256": {
+        "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-4a2a5e0d820e8f9f": "2b9a1a651b1652f45eee1b900ff610079daa3439975d6ebc4a9f501228535025"
+      }
+    },
+    "prep-impl-workflow-build-r2": {
+      "label": "prep-impl-workflow-build-r2",
+      "record": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-impl-workflow-build-r2.json",
+      "record_sha256": "e719c41e79d52f09e7bc5da4f29e8adfae28d5d611c7fc3c068b4182f098b497",
+      "raw_log": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-impl-workflow-build-r2.log",
+      "raw_log_sha256": "22ae19b4b6403e429ea59db50247872bd70555e476e5e041cfab7e75820c707a",
+      "source_manifest_sha256": "4c6b4f47d3dceb1d008372fdbe073126bb5a8f7f172c561578135ec7f1479e9e",
+      "started_utc": "2026-10-31T15:41:11.666009+00:00",
+      "finished_utc": "2026-10-31T15:41:13.928869+00:00",
+      "wall_seconds": 2.261058136995416,
+      "process_peak_bytes": 27533312,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "built_artifact_sha256": {
+        "/home/access/code/lattica/.tools/target-opencl/release/pq-ringct-full-workflow": "0a3c981bec58c4d85b9a3eb663182138dd33672cb22216dc48efa4f589efb805"
+      }
+    },
+    "prep-impl-cohort-cpu-r1": {
+      "label": "prep-impl-cohort-cpu-r1",
+      "record": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-impl-cohort-cpu-r1.json",
+      "record_sha256": "7300a12353a8fa074461c5b95b1d1a9f6e07a104101b8bc6729210c579089432",
+      "raw_log": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-impl-cohort-cpu-r1.log",
+      "raw_log_sha256": "927ce143f863c2eb0aa2232db6759ca1acffa584322b430774a81fbcffa528c2",
+      "source_manifest_sha256": "4c6b4f47d3dceb1d008372fdbe073126bb5a8f7f172c561578135ec7f1479e9e",
+      "started_utc": "2026-10-31T15:38:31.049563+00:00",
+      "finished_utc": "2026-10-31T15:40:45.763682+00:00",
+      "wall_seconds": 134.71226057199965,
+      "process_peak_bytes": 346066944,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "built_artifact_sha256": {}
+    },
+    "prep-impl-source-matrix-r1": {
+      "label": "prep-impl-source-matrix-r1",
+      "record": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-impl-source-matrix-r1.json",
+      "record_sha256": "b98afd6edcce31bf5438c6f804a6d2f0bbff080d7c49c0f7ccddd70cd2326236",
+      "raw_log": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-impl-source-matrix-r1.log",
+      "raw_log_sha256": "822537ddb2eec80735fd8e4cac3afd75df73915fb06d9a28cb97f718ff93b06d",
+      "source_manifest_sha256": "4c6b4f47d3dceb1d008372fdbe073126bb5a8f7f172c561578135ec7f1479e9e",
+      "started_utc": "2026-10-31T15:41:48.913236+00:00",
+      "finished_utc": "2026-10-31T16:25:12.043040+00:00",
+      "wall_seconds": 2603.127984231003,
+      "process_peak_bytes": 403791872,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "built_artifact_sha256": {}
+    },
+    "prep-impl-component-r1": {
+      "label": "prep-impl-component-r1",
+      "record": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-impl-component-r1.json",
+      "record_sha256": "f7910dacd7a46088fdb72b3d502c31ac50caf5afff0ca5add9e512d856293d3b",
+      "raw_log": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-impl-component-r1.log",
+      "raw_log_sha256": "e6a2f4910de8bf53f1ae7ade0b53222208004ca132f30e05adbbbbcf057f7551",
+      "source_manifest_sha256": "4c6b4f47d3dceb1d008372fdbe073126bb5a8f7f172c561578135ec7f1479e9e",
+      "started_utc": "2026-10-31T16:26:46.521299+00:00",
+      "finished_utc": "2026-10-31T16:49:52.248780+00:00",
+      "wall_seconds": 1385.7237821430026,
+      "process_peak_bytes": 1506930688,
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "built_artifact_sha256": {}
+    }
+  },
+  "remaining": [
+    "Fresh complete N3/N4 screening and three matched alternating pairs per candidate before any end-to-end speedup claim.",
+    "Combined geometry and batching only after both independent timing gates pass."
+  ]
+}

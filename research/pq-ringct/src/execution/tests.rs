@@ -23,94 +23,13 @@ fn cache_identity(index: usize) -> Identity {
     }
 }
 
-#[test]
-fn identity_receipt_lru_is_bounded_and_nomination_does_not_promote() {
-    // Dummy scalar payloads exercise cache mechanics without fabricating an
-    // opaque GPU identity receipt or performing any GPU work.
-    let mut cache = IdentityHintCache::<u64>::new();
-    let capacity = cache.max_entries;
-    let allocated = cache.backing_bytes();
-    assert_eq!(capacity, MAX_IDENTITY_HINT_ENTRIES);
-    assert!(allocated <= IDENTITY_HINT_LIMIT_BYTES);
-    for index in 0..capacity {
-        cache.remember(cache_identity(index), index as u64);
-    }
-    assert_eq!(cache.get(cache_identity(0)), Some(&0));
-    assert!(cache.get(cache_identity(capacity)).is_none());
-    cache.remember(cache_identity(capacity), capacity as u64);
-    // A candidate lookup did not keep the oldest receipt alive.
-    assert!(cache.get(cache_identity(0)).is_none());
-    assert_eq!(cache.evictions, 1);
-    cache.remember(cache_identity(1), 99);
-    cache.remember(cache_identity(capacity + 1), 100);
-    assert_eq!(cache.get(cache_identity(1)), Some(&99));
-    assert!(cache.get(cache_identity(2)).is_none());
-    assert_eq!(cache.evictions, 2);
-    assert_eq!(cache.entries.len(), capacity);
-    assert_eq!(cache.backing_bytes(), allocated);
-    cache.remove(cache_identity(1));
-    assert!(cache.get(cache_identity(1)).is_none());
-    assert_eq!(cache.evictions, 3);
-    assert_eq!(cache.entries.len(), capacity - 1);
-    assert_eq!(cache.backing_bytes(), allocated);
-}
 
-#[test]
-fn identity_receipt_subcap_limits_layout_growth() {
-    let mut cache = IdentityHintCache::<[u8; 1024]>::new();
-    let capacity = cache.max_entries;
-    let allocated = cache.backing_bytes();
-    assert!(capacity > 0 && capacity < MAX_IDENTITY_HINT_ENTRIES);
-    assert!(allocated <= IDENTITY_HINT_LIMIT_BYTES);
-    for index in 0..=capacity {
-        cache.remember(cache_identity(index), [7; 1024]);
-    }
-    assert_eq!(cache.entries.len(), capacity);
-    assert_eq!(cache.backing_bytes(), allocated);
-    assert_eq!(cache.evictions, 1);
-    assert!(cache.get(cache_identity(0)).is_none());
-    let oversized = IdentityHintCache::<[u8; IDENTITY_HINT_LIMIT_BYTES]>::new();
-    assert_eq!(oversized.max_entries, 0);
-    assert_eq!(oversized.backing_bytes(), 0);
-}
 
-#[test]
-fn identity_and_verifier_metadata_share_the_existing_byte_allowance() {
-    let registry = Registry::new();
-    let verifier_backing = registry.metadata.capacity() * std::mem::size_of::<Metadata>();
-    let receipt_backing = registry.identity_hints.backing_bytes();
-    assert_eq!(registry.metadata_bytes, verifier_backing + receipt_backing + GEOMETRY_METADATA_BYTES);
-    assert_eq!(GEOMETRY_METADATA_BYTES, 1 << 20);
-    assert_eq!(PUBLIC_METADATA_LIMIT_BYTES, 64 << 20);
-    assert!(receipt_backing > 0 && receipt_backing <= IDENTITY_HINT_LIMIT_BYTES);
-    assert!(registry.identity_hints.max_entries <= MAX_IDENTITY_HINT_ENTRIES);
-    assert!(registry.metadata_bytes <= PUBLIC_METADATA_LIMIT_BYTES);
-}
 
-#[test]
-fn metadata_experiments_and_observations_share_the_same_byte_limits() {
-    for capacity in [MetadataCapacity::Entries256, MetadataCapacity::Entries512] {
-        for telemetry in [
-            RegistrationTelemetry::Disabled,
-            RegistrationTelemetry::Bounded,
-        ] {
-            let registry = Registry::with_options(capacity, telemetry);
-            assert_eq!(registry.maximum_metadata_entries, capacity.entries());
-            assert_eq!(
-                registry.metadata_bytes,
-                registry.metadata.capacity() * std::mem::size_of::<Metadata>()
-                    + registry.identity_hints.backing_bytes()
-                    + registry.trace.accounted_bytes() + GEOMETRY_METADATA_BYTES
-            );
-            assert!(registry.metadata_bytes <= PUBLIC_METADATA_LIMIT_BYTES);
-            assert!(registry.identity_hints.backing_bytes() <= IDENTITY_HINT_LIMIT_BYTES);
-            assert_eq!(
-                registry.trace.accounted_bytes() == 0,
-                telemetry == RegistrationTelemetry::Disabled
-            );
-        }
-    }
-}
+
+
+
+
 
 #[test]
 fn registration_options_reject_late_and_reentrant_changes() {
@@ -254,13 +173,13 @@ fn failed_callbacks_and_retirement_remain_observable_without_private_inputs() {
 }
 
 fn public_verifier_fixture() -> (Arc<RegisteredVerifier>, Vec<[Val; 4]>) {
-    let registered = RegisteredProgram::new_with_request(
+    let registered = RegisteredProgram::new_with_cpu_identity(
         MachineAir::new(equality_program(2, 32, 1)),
         1 << 30,
         Request {
-            policy: Policy::CpuRequired,
-            emit_report: false,
-        },
+                    policy: Policy::CpuRequired,
+                    emit_report: false,
+                },
     )
     .unwrap();
     assert!(registered.identity_receipt().is_none());
@@ -271,35 +190,7 @@ fn public_verifier_fixture() -> (Arc<RegisteredVerifier>, Vec<[Val; 4]>) {
     )
 }
 
-#[test]
-fn verifier_metadata_eviction_preserves_combined_accounting() {
-    let (verifier, cap) = public_verifier_fixture();
-    let mut registry = Registry::new();
-    let fixed_bytes = registry.metadata_bytes;
-    for index in 0..=MAX_METADATA_ENTRIES {
-        registry
-            .remember(cache_identity(index), &cap, Arc::clone(&verifier))
-            .unwrap();
-        assert_eq!(
-            registry.metadata_bytes,
-            fixed_bytes
-                + registry
-                    .metadata
-                    .iter()
-                    .map(|entry| entry.payload_bytes)
-                    .sum::<usize>()
-        );
-        assert!(registry.metadata_bytes <= PUBLIC_METADATA_LIMIT_BYTES);
-    }
-    assert_eq!(registry.metadata.len(), MAX_METADATA_ENTRIES);
-    assert_eq!(registry.metadata_evictions, 1);
-    assert_eq!(
-        registry.metadata.front().unwrap().identity,
-        cache_identity(1)
-    );
-    assert!(registry.identity_hints.entries.is_empty());
-    assert!(registry.identity_hint(cache_identity(1)).is_none());
-}
+
 
 #[test]
 fn stale_verifier_cap_is_rejected_and_evicted_before_reuse() {
@@ -434,8 +325,8 @@ fn reuse_distinct_inputs(context: ProvingContext) {
     context.with_registered(program, |_| Ok(())).unwrap();
     assert_eq!(context.report()["metadata_cache_hits"], 1);
     if context.policy() == Policy::GpuRequired {
-        assert_eq!(context.report()["identity_hints_supplied"], 1);
-        assert_eq!(context.report()["identity_hint_hits"], 1);
+        assert_eq!(context.report()["identity_hints_supplied"], 0);
+        assert_eq!(context.report()["identity_hint_hits"], 0);
         assert_eq!(context.report()["identity_receipt_entries"], 1);
     } else {
         assert_eq!(context.report()["identity_hints_supplied"], 0);

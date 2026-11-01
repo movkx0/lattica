@@ -85,7 +85,10 @@ impl<'a, 'backend> Lowerer<'a, 'backend> {
     }
     pub fn base(&mut self, e: &SymbolicExpression<Val>) -> Result<Extension, CompileError> {
         if let Some(error) = self.b.resource_failure() {
-            return Err(CompileError::from_builder_admission(error, "expression compiler host allowance"));
+            return Err(CompileError::from_builder_admission(
+                error,
+                "expression compiler host allowance",
+            ));
         }
         let key = e as *const _ as usize;
         if let Some(&value) = self.base_cache.get(&key) {
@@ -154,7 +157,10 @@ impl<'a, 'backend> Lowerer<'a, 'backend> {
         e: &SymbolicExpressionExt<Val, Challenge>,
     ) -> Result<Extension, CompileError> {
         if let Some(error) = self.b.resource_failure() {
-            return Err(CompileError::from_builder_admission(error, "expression compiler host allowance"));
+            return Err(CompileError::from_builder_admission(
+                error,
+                "expression compiler host allowance",
+            ));
         }
         let key = e as *const _ as usize;
         if let Some(&value) = self.extension_cache.get(&key) {
@@ -287,6 +293,17 @@ pub(super) fn periodic_value(
     log_height: usize,
     constants: Constants<'_>,
 ) -> Result<Extension, CompileError> {
+    periodic_value_profiled(b, column, zeta, log_height, constants, None)
+}
+
+pub(super) fn periodic_value_profiled(
+    b: &mut ProgramBuilder,
+    column: &[Val],
+    zeta: Extension,
+    log_height: usize,
+    constants: Constants<'_>,
+    mut timings: Option<&mut super::uni::shape::NativeLoweringTimings>,
+) -> Result<Extension, CompileError> {
     let n = column.len();
     if log_height > 32 || !n.is_power_of_two() || n as u64 > 1u64 << log_height {
         return Err(CompileError::Shape("periodic column height"));
@@ -294,11 +311,18 @@ pub(super) fn periodic_value(
     // CPU-only compilation optimization. Device compiler arithmetic retains
     // its separately qualified path. The AIR column and interpolant are exact;
     // only the recursive program used to evaluate that interpolant changes.
+    let started = timings.as_ref().map(|_| std::time::Instant::now());
     let column = if let Constants::Cpu(run) = constants {
         let column = periodic_polynomial::minimal_period(column);
         if let Some(value) = periodic_polynomial::sparse_value(b, column, zeta, log_height, run)? {
             if let Some(error) = b.resource_failure() {
-                return Err(CompileError::from_builder_admission(error, "periodic compiler allowance"));
+                return Err(CompileError::from_builder_admission(
+                    error,
+                    "periodic compiler allowance",
+                ));
+            }
+            if let Some(t) = timings.as_deref_mut() {
+                t.periodic_specialization_ns += started.unwrap().elapsed().as_nanos();
             }
             return Ok(value);
         }
@@ -306,10 +330,18 @@ pub(super) fn periodic_value(
     } else {
         column
     };
+    if let Some(t) = timings.as_deref_mut() {
+        t.periodic_specialization_ns += started.unwrap().elapsed().as_nanos();
+    }
     let n = column.len();
     let value =
         b.with_compiler_scratch("periodic-coefficients", n, Val::ZERO, |b, coefficients| {
+            let started = timings.as_ref().map(|_| std::time::Instant::now());
             constants.periodic_into(column, log_height, coefficients)?;
+            if let Some(t) = timings.as_deref_mut() {
+                t.periodic_interpolation_ns += started.unwrap().elapsed().as_nanos();
+            }
+            let started = timings.as_ref().map(|_| std::time::Instant::now());
             let point = b.ext_pow(zeta, (1 << log_height) / n as u64);
             let mut value = b.ext_constant([Val::ZERO; 3]);
             for &coefficient in coefficients.iter().rev() {
@@ -317,10 +349,16 @@ pub(super) fn periodic_value(
                 let term = b.ext_constant([coefficient, Val::ZERO, Val::ZERO]);
                 value = b.ext_add(value, term);
             }
+            if let Some(t) = timings.as_deref_mut() {
+                t.periodic_emission_ns += started.unwrap().elapsed().as_nanos();
+            }
             Ok(value)
         })?;
     if let Some(error) = b.resource_failure() {
-        return Err(CompileError::from_builder_admission(error, "periodic compiler allowance"));
+        return Err(CompileError::from_builder_admission(
+            error,
+            "periodic compiler allowance",
+        ));
     }
     Ok(value)
 }

@@ -82,7 +82,7 @@ pub(crate) fn execute_constructed_case<const N: usize>(
         }
     }
     let peak = ledger.snapshot().peak;
-    Ok(CompletedCaseSummary { source_geometry_cache: None, transactions: N, native_proofs, recursive_proofs,
+    Ok(CompletedCaseSummary { metadata_wall: None, source_geometry_cache: None, metadata_planning: None, native_metadata_cache: None, transactions: N, native_proofs, recursive_proofs,
         completed_phases: closed.steps().len(), generation_and_planning_ns, proving_and_verification_ns,
         final_cpu_verification_ns: report.cpu_verification_ns, complete_workflow_ns: None,
         ledger_peak_host_bytes: peak.host, ledger_peak_device_bytes: peak.device,

@@ -1,6 +1,7 @@
 //! Native compiler wrappers preserve the complete original-bearing refusal.
 //! The supplied producer is checked against the exact inventory member and ordinal.
 use super::*;
+use crate::component_tree::native_shape::cohort::{self, ResolvedBound};
 use crate::{
     graph_tree::native_sources::NativeSourceBlueprint,
     spend_pipeline::full_workflow::{
@@ -25,7 +26,7 @@ macro_rules! compiler_constructor {
     ($method:ident, $family:ident, $native:ident, $blueprint:ident, $compiler:ident, $result:ident) => {
         pub(crate) fn $method<'metadata, 'a>(&mut self, inventory: &SourceMetadataPlanningPlan<'metadata>,
             member: MetadataMember<'_, 'metadata>, source_ordinal: usize,
-            native: &'a $native<'a>, blueprint: &'a $blueprint<'a, 'a>)
+            native: &'a $native<'a>, blueprint: &'a $blueprint<'a, 'a>, resolved: ResolvedBound)
             -> Result<table::$result<'a>, WorkflowError>
         {
             self.begin_metadata_constructor(inventory, member, ProducerFamily::$family, source_ordinal, 1)?;
@@ -43,7 +44,7 @@ macro_rules! compiler_constructor {
             let original = self.original.split(required)?;
             // The concrete compiler additionally authenticates the blueprint
             // against the same prepared graph, context, family and native source.
-            let result = $compiler::new(native, blueprint, original, &self.scratch, self.capability.ledger());
+            let result = $compiler::new(native, blueprint, original, &self.scratch, self.capability.ledger(), resolved);
             if result.is_ok() { self.finish_metadata_constructor_success(); }
             Ok(result)
         }
@@ -51,10 +52,32 @@ macro_rules! compiler_constructor {
 }
 
 impl WorkflowPlanning<'_> {
+    /// Resolve grouped numerical bounds under the live original scratch. This
+    /// neither advances constructor cursors nor issues metadata/dispatch claims.
+    pub(crate) fn resolve_native_metadata(&self, inventory: &SourceMetadataPlanningPlan<'_>,
+        requests: &[cohort::Request<'_>]) -> Result<[Option<ResolvedBound>; cohort::MAX], WorkflowError> {
+        use crate::component_tree::native_shape::cohort;
+        use lattica_prover_p3::block_v2::machine::program::{ConstructionLimits, MAX_WIRES};
+        self.check_metadata(inventory)?;
+        if !self.scratch.belongs_to(self.capability.ledger()) { return Err(WorkflowError::Identity); }
+        if requests.is_empty() || requests.len() > cohort::MAX { return Err(WorkflowError::Planning); }
+        let limits = ConstructionLimits { max_requested_program_bytes:2 << 30,
+            max_wires:MAX_WIRES, max_input_values:1 << 20 };
+        let mut peak = 0;
+        for request in requests {
+            let storage = request.descriptor.storage(limits).map_err(|_| WorkflowError::Planning)?;
+            if storage.auxiliary_peak_bytes > request.auxiliary { return Err(WorkflowError::Planning); }
+            peak = peak.max(storage.total_requested_bytes);
+        }
+        self.check_native_constructor_scratch(inventory,
+            Requirements::single(Category::PhaseScratch, Bytes { host:peak as u64, device:0 }))?;
+        cohort::resolve_bounds(requests, limits).map_err(|_| WorkflowError::Planning)
+    }
+
     pub(crate) fn derive_metadata_source_compiler<'metadata, 'a>(&mut self,
         inventory: &SourceMetadataPlanningPlan<'metadata>, member: MetadataMember<'_, 'metadata>,
         source_ordinal: usize, native: &'a SourceNativeOperationPlan<'a>,
-        blueprint: &'a NativeSourceBlueprint<'a, 'a>)
+        blueprint: &'a NativeSourceBlueprint<'a, 'a>, resolved: ResolvedBound)
         -> Result<graph_table::SourceCompilerPlanResult<'a>, WorkflowError>
     {
         self.begin_metadata_constructor(inventory, member, ProducerFamily::Source, source_ordinal, 1)?;
@@ -69,7 +92,7 @@ impl WorkflowPlanning<'_> {
         let required = SourceNativeCompilePlan::metadata_requirements().map_err(|_| WorkflowError::Planning)?;
         let original = self.original.split(required)?;
         let result = SourceNativeCompilePlan::new(native, blueprint, original,
-            &self.scratch, self.capability.ledger());
+            &self.scratch, self.capability.ledger(), resolved);
         if result.is_ok() { self.finish_metadata_constructor_success(); }
         Ok(result)
     }

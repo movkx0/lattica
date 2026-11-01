@@ -17,9 +17,9 @@ use lattica_prover_p3::{
 use std::sync::Arc;
 
 mod scope;
-#[cfg(feature = "identity-batch-experiment")]
+#[cfg(feature = "full-workflow-experiment")]
 mod identity;
-#[cfg(feature = "identity-batch-experiment")]
+#[cfg(feature = "full-workflow-experiment")]
 pub(crate) use identity::PairedIdentityPeers;
 mod aes;
 #[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
@@ -52,10 +52,10 @@ pub(crate) enum OuterOwnedError {
 
 #[derive(Default, serde::Serialize)]
 struct EpochTelemetry {
-    #[cfg(feature = "identity-batch-experiment")]
+    #[cfg(feature = "full-workflow-experiment")]
     #[serde(skip_serializing_if = "identity::PrefixEpoch::is_empty")]
     identity_prefix: identity::PrefixEpoch,
-    #[cfg(feature = "identity-batch-experiment")]
+    #[cfg(feature = "full-workflow-experiment")]
     #[serde(skip_serializing_if = "Option::is_none")]
     identity_prefix_use: Option<identity::PrefixUse>,
     startup: Option<StartupTiming>,
@@ -106,7 +106,7 @@ pub(crate) fn forwarding_host_bytes() -> Result<u64, OuterOwnedError> {
     }
     #[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
     let bytes = bytes.checked_add(graph_forwarding_host_bytes()?).ok_or(OuterOwnedError::Partition)?;
-    #[cfg(feature = "identity-batch-experiment")]
+    #[cfg(feature = "full-workflow-experiment")]
     let bytes = bytes.checked_add(identity::forwarding_bytes()?).ok_or(OuterOwnedError::Partition)?;
     u64::try_from(bytes).map_err(|_| OuterOwnedError::Partition)
 }
@@ -249,15 +249,17 @@ unsafe fn attempt_pair<'plan, 'request>(
         let mut scope = OwnedOuterScope::new(access, program, bound.admission(),
             &session, &ledger, output, failure)?;
         let request = Request { policy: Policy::GpuRequired, emit_report: false };
-        #[cfg(feature = "identity-batch-experiment")]
+        #[cfg(feature = "full-workflow-experiment")]
         let (registered, report) = identity::register(operation, program, bound.admission().host_budget_bytes(), request,
             &mut telemetry.identity_prefix_use)?;
-        #[cfg(not(feature = "identity-batch-experiment"))]
-        let (registered, report) = RegisteredProgram::new_with_request_and_identity_hint_and_report(
-            MachineAir::from_shared_program(Arc::clone(program)),
-            bound.admission().host_budget_bytes(), request, None,
-        ).map_err(|_error| OuterOwnedError::Setup)?;
-        scope.record_report(&report, CoverageScope::Preprocessing)?;
+        #[cfg(not(feature = "full-workflow-experiment"))]
+        let (registered, report) = RegisteredProgram::new_with_cpu_identity_and_report(
+MachineAir::from_shared_program(Arc::clone(program)),
+bound.admission().host_budget_bytes(),
+request,
+).map_err(|_error| OuterOwnedError::Setup)?;
+        scope.record_report(&report.preprocessing, CoverageScope::Preprocessing)?;
+        scope.record_report(&report.identity, CoverageScope::Operation)?;
         drop(report);
         *produced.get_mut() = Some(bound.prove_registered(&mut scope, registered)
             .map_err(OuterOwnedError::Operation)?);
@@ -291,23 +293,23 @@ impl WorkflowPhase<'_, '_, '_> {
         packet: PreissuedPairedOuter<'plan, 'request>,
     ) -> Result<Retained<PairedNode<'request>>, PhaseFailure<OuterOwnedError>> {
         self.prove_owned_outer_cohort(operation, packet,
-            #[cfg(feature = "identity-batch-experiment")]
+            #[cfg(feature = "full-workflow-experiment")]
             &mut PairedIdentityPeers::default())
     }
 
     pub(crate) fn prove_owned_outer_cohort<'plan, 'request>(
         mut self, operation: PairedOuterOperation<'plan, 'request>,
         packet: PreissuedPairedOuter<'plan, 'request>,
-        #[cfg(feature = "identity-batch-experiment")] peers: &mut PairedIdentityPeers<'request>,
+        #[cfg(feature = "full-workflow-experiment")] peers: &mut PairedIdentityPeers<'request>,
     ) -> Result<Retained<PairedNode<'request>>, PhaseFailure<OuterOwnedError>> {
         if self.step.binding != operation.binding() || packet.binding() != operation.binding()
             || !self.admission.retired_context.belongs_to(self.admission.context)
         {
             return Err(PhaseFailure::Admission(WorkflowError::Identity));
         }
-        let mut expected = [operation.input_slot(); 16];
+        let mut expected = [operation.input_slot(); lattica_prover_p3::block_v2::machine::backend::identity_cpu::MAX_IDENTITY_STREAMS];
         let mut expected_count = 1;
-        #[cfg(feature = "identity-batch-experiment")]
+        #[cfg(feature = "full-workflow-experiment")]
         for peer in peers.owners.iter().flatten() {
             expected[expected_count] = peer.slot_id();
             expected_count += 1;
@@ -324,7 +326,7 @@ impl WorkflowPhase<'_, '_, '_> {
         let failure_claim = RetirementGuard::new(
             self.failure.take().expect("preissued failure"), &retirement);
         let operation = RetirementGuard::new(operation, &retirement);
-        #[cfg(feature = "identity-batch-experiment")]
+        #[cfg(feature = "full-workflow-experiment")]
         let peers_guard = RetirementGuard::new(core::mem::take(peers), &retirement);
         let binding = self.step.binding;
         let mut telemetry = EpochTelemetry::default();
@@ -335,12 +337,12 @@ impl WorkflowPhase<'_, '_, '_> {
             };
             // Only the complete closed workflow admits this concrete method.
             // The enclosing runner maintains the exclusive process contract.
-            #[cfg(feature = "identity-batch-experiment")]
+            #[cfg(feature = "full-workflow-experiment")]
             let prefix = unsafe { identity::prepare(&access,
                 self.admission.phase.as_mut().expect("active closed workflow"),
                 self.admission.retired_context.source(), operation.get(), peers_guard.get(),
                 self.step.backend, &mut telemetry.identity_prefix, &retirement) };
-            #[cfg(not(feature = "identity-batch-experiment"))]
+            #[cfg(not(feature = "full-workflow-experiment"))]
             let prefix: Result<(), OuterOwnedError> = Ok(());
             prefix.and_then(|()| unsafe { attempt_pair(
                 &access, self.admission.phase.as_mut().expect("active closed workflow"),
@@ -362,7 +364,7 @@ impl WorkflowPhase<'_, '_, '_> {
             return Err(PhaseFailure::Admission(WorkflowError::Poisoned));
         }
         drop(operation);
-        #[cfg(feature = "identity-batch-experiment")]
+        #[cfg(feature = "full-workflow-experiment")]
         { *peers = peers_guard.into_original(); }
         telemetry.cpu_verification_ns = result.as_ref().ok().map(|payload| payload.report().cpu_verification_ns);
         let result = match telemetry.emit(&binding) {

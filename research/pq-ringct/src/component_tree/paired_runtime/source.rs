@@ -21,7 +21,7 @@ use lattica_prover_p3::block_v2::machine::{
     program::{ConstructionLimits, MAX_WIRES},
     verifier::{
         batch::shape::{self, OperationCounts, PlanningStorage, RegisteredChildShape},
-        uni::shape::NativeCoreCounts,
+        uni::shape::NativeCoreMetadata as NativeCoreCounts,
     },
     OuterSourceShape,
 };
@@ -95,6 +95,15 @@ pub(crate) struct ComponentSourceFacts {
 }
 
 impl ComponentSourceFacts {
+    /// Source-derived packed storage, checked against actual capacities while
+    /// the complete construction allowance is still live. Compiler tables and
+    /// packing overlap belong to the single active compile phase, not each
+    /// retained sibling. The existing 2 GiB compiler ceiling remains unchanged.
+    pub(crate) fn retained_program_host_bytes(self) -> Result<usize> {
+        self.operations.retained_program_host_ceiling(self.public_values,
+            self.maximum_wires, self.maximum_hint_words)
+            .map(|bytes| bytes.min(PROGRAM_BYTES)).map_err(|_| PairedFailure::Overflow)
+    }
     fn new(operations: OperationCounts, wires: usize, inputs: usize, hints: usize,
            input_values_are_exact: bool) -> Result<Self> {
         let active = operations.active_rows(PUBLICS).map_err(|_| PairedFailure::Overflow)?;
@@ -127,6 +136,10 @@ impl ComponentSourceFacts {
             || program.witness_values() > self.maximum_input_values
             || (self.input_values_are_exact && program.witness_values() != self.maximum_input_values)
             || node.witness.len() != program.witness_values()
+            || program.retained_host_bytes().map_err(|_| PairedFailure::Capacity)?
+                > self.retained_program_host_bytes()?
+            || shape::selection_hint_words(program).map_err(|_| PairedFailure::Overflow)?
+                > self.maximum_hint_words
             || actual.scalar > self.operations.scalar || actual.cubic > self.operations.cubic
             || actual.poseidon > self.operations.poseidon {
             return Err(PairedFailure::SourceDrift);
@@ -206,14 +219,17 @@ impl GroupBlueprint {
 
     /// Caller retains the exact preflight original for the complete call.
     pub(crate) fn inspect(&self) -> Result<ComponentSourceFacts> {
+        use crate::component_tree::native_shape::cohort;
+        let first = self.descriptors[0].ok_or(PairedFailure::Source)?;
+        let descriptors = [cohort::Descriptor::Native(first),
+            cohort::Descriptor::Native(self.descriptors[1].unwrap_or(first))];
+        let auxiliary = self.storage.iter().flatten().map(|s| s.auxiliary_peak_bytes).max().ok_or(PairedFailure::Source)?;
+        let bounds = cohort::bounds(&descriptors[..self.members], construction(), auxiliary).map_err(|_| PairedFailure::Source)?;
         let mut cores: [Option<NativeCoreCounts>; 2] = [None, None];
-        for (index, slot) in cores.iter_mut().enumerate().take(self.members) {
-            let storage = self.storage[index].ok_or(PairedFailure::Source)?;
-            let result = native_shape::native_core_bound(
-                self.descriptors[index].ok_or(PairedFailure::Source)?, construction(),
-                storage.auxiliary_peak_bytes).map_err(|_| PairedFailure::Source)?;
-            if result.storage != storage { return Err(PairedFailure::SourceDrift); }
-            *slot = Some(result.counts);
+        for i in 0..self.members {
+            let result = bounds[i].ok_or(PairedFailure::Source)?;
+            if result.storage != self.storage[i].ok_or(PairedFailure::Source)? { return Err(PairedFailure::SourceDrift); }
+            cores[i] = Some(result.counts);
         }
         let framing = framing::shake_wrapper(self.members).map_err(|_| PairedFailure::Source)?;
         if framing.cubic != 0 { return Err(PairedFailure::SourceDrift); }
@@ -267,7 +283,7 @@ pub(crate) fn parent_source() -> Result<ComponentSourceFacts> {
 
 /// The compiled owner keeps Program and ProofInputs charged while the outer
 /// backend borrows them. Scratch is returned only after the compiler finishes.
-pub(crate) fn compiler_requirements(members: Option<usize>) -> Result<(Requirements, Requirements)> {
+pub(crate) fn compiler_requirements(source: ComponentSourceFacts, members: Option<usize>) -> Result<(Requirements, Requirements)> {
     let (input, auxiliary) = if let Some(members) = members {
         let source = ShakeGroupCompileFootprint::for_group(members, construction())
             .map_err(|_| PairedFailure::Source)?;
@@ -280,11 +296,35 @@ pub(crate) fn compiler_requirements(members: Option<usize>) -> Result<(Requireme
     };
     if auxiliary > AUXILIARY_BYTES { return Err(PairedFailure::Capacity); }
     let owners = bytes::<super::PairedCompiled<'static>>(8)?;
+    let retained = source.retained_program_host_bytes()?;
+    let construction_extra = PROGRAM_BYTES.checked_sub(retained).ok_or(PairedFailure::Capacity)?;
     let output = combine(&[
-        requirement(Category::SymbolicCompiler, add(PROGRAM_BYTES, owners)?)?,
+        requirement(Category::SymbolicCompiler, add(retained, owners)?)?,
         requirement(Category::CompilerInputs, add(input, bytes::<crate::component_tree::Val>(2 * PUBLICS)?)?)?,
     ])?;
-    // Keep the full auxiliary bound additive to inputs, without overlap credit.
-    let scratch = requirement(Category::PhaseScratch, add(auxiliary, super::caller_bytes()?)?)?;
+    // The output plus this temporary still covers the full 2 GiB construction
+    // ceiling. It retires only after check_compiled accepted immutable backing.
+    // Keep auxiliary storage additive to input storage as before.
+    let scratch = requirement(Category::PhaseScratch,
+        add(construction_extra, add(auxiliary, super::caller_bytes()?)?)?)?;
     Ok((output, scratch))
+}
+
+#[cfg(all(test, not(debug_assertions)))]
+mod retained_tests {
+    use super::*;
+
+    #[test]
+    fn packed_retention_keeps_full_compiler_allowance_until_completion() {
+        let facts = ComponentSourceFacts::new(
+            OperationCounts { scalar: 100, cubic: 5, poseidon: 2 }, 256, 10, 16, true).unwrap();
+        let retained = facts.retained_program_host_bytes().unwrap();
+        assert!(retained < PROGRAM_BYTES);
+        let auxiliary = ShakeGroupCompileFootprint::for_group(1, construction()).unwrap().auxiliary_peak_bytes;
+        let (output, scratch) = compiler_requirements(facts, Some(1)).unwrap();
+        let owners = bytes::<super::super::PairedCompiled<'static>>(8).unwrap();
+        assert_eq!(output.get(Category::SymbolicCompiler).host, (retained + owners) as u64);
+        assert_eq!(output.get(Category::SymbolicCompiler).host + scratch.get(Category::PhaseScratch).host,
+            (PROGRAM_BYTES + owners + auxiliary + super::super::caller_bytes().unwrap()) as u64);
+    }
 }

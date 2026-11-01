@@ -357,7 +357,8 @@ impl Census {
         ])?;
         let auxiliary_heap = add(vector::<AuxiliaryRequest>(auxiliary_count)?, auxiliary_payloads)?;
         let source_heap = vector::<[i64; D]>(crate::proof_air::POLYNOMIALS)?;
-        let retained = sum([tree_heap, algebra_heap, crypto_heap, auxiliary_heap, source_heap])?;
+        let retained = sum([tree_heap, algebra_heap, crypto_heap, auxiliary_heap, source_heap,
+            crate::graph_tree::metadata::GraphMetadata::retained_bytes()])?;
 
         let registration_temporary = sum([
             // The initial RegisteredGraphShape is dropped before tree creation;
@@ -562,6 +563,7 @@ impl<'graph> SourcePreparationOperation<'_, 'graph> {
                     .map_err(|_| "producer source preparation failed".to_owned())?;
                 Ok(PreparedWorkflowSources {
                     graph: self.plan.graph, native, tree, context, algebra, crypto, source, auxiliary, branch,
+                    metadata: std::sync::OnceLock::new(),
                 })
             }).map_err(|_| SourcePreparationError::Preparation)?;
             // The report's complete backing stays under the source phase's
@@ -585,8 +587,15 @@ pub(crate) struct PreparedWorkflowSources<'graph> {
     source: SourceFactory<'graph>,
     auxiliary: AuxiliaryFactory,
     branch: producer_branch::Factory<'graph>,
+    metadata: std::sync::OnceLock<Box<core::result::Result<crate::graph_tree::metadata::GraphMetadata, crate::graph_tree::fixed_sources::FixedSourceFailure>>>,
 }
 impl<'graph> PreparedWorkflowSources<'graph> {
+    /// The box and every fixed cache slot are funded by this owner's original
+    /// source-preparation retained claim, before any lazy analysis can run.
+    pub(crate) fn metadata(&self) -> core::result::Result<&crate::graph_tree::metadata::GraphMetadata, crate::graph_tree::fixed_sources::FixedSourceFailure> {
+        self.metadata.get_or_init(|| Box::new(crate::graph_tree::metadata::GraphMetadata::new(self.plan(), self.graph())))
+            .as_ref().as_ref().map_err(|error| *error)
+    }
     pub(crate) fn plan(&self) -> &graph_tree::Plan { &self.tree }
     pub(crate) fn context(&self) -> &GraphContext { &self.context }
     pub(crate) fn crypto(&self) -> &graph_crypto::Plan { &self.crypto }

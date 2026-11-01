@@ -1,0 +1,281 @@
+{
+  "schema": "ringct-wide-preprocessing-implementation-v1",
+  "recorded_utc": "2026-10-31T17:48:09.592623+00:00",
+  "status": "source implementation and compile checks complete; runtime validation stopped by user",
+  "scope": "Integer identity widths 1..24, explicit campaign presets, and static full-width-24 host-budget assessment",
+  "supported_integer_widths": {
+    "minimum": 1,
+    "maximum": 24
+  },
+  "campaign_presets": [
+    1,
+    2,
+    4,
+    8,
+    12,
+    16,
+    24
+  ],
+  "defaults_changed": false,
+  "resource_caps_changed": false,
+  "performance_qualified": false,
+  "validation": {
+    "python_syntax": {
+      "scope": "Python AST parsing only; no tests or module execution",
+      "files": [
+        "research/pq-ringct/tools/full_workflow_case_guard.py",
+        "research/pq-ringct/tools/identity_preprocessing_receipts.py",
+        "research/pq-ringct/tools/opencl_private_spend_validate.py",
+        "research/pq-ringct/tools/opencl_qualify.py",
+        "research/pq-ringct/tools/opencl_workflow_comparison.py",
+        "research/pq-ringct/tools/owned_preprocessing_campaign.py",
+        "research/pq-ringct/tools/owned_workflow_benchmark.py",
+        "research/pq-ringct/tools/test_full_workflow_case_guard.py",
+        "research/pq-ringct/tools/test_identity_preprocessing_receipts.py",
+        "research/pq-ringct/tools/test_opencl_qualify.py",
+        "research/pq-ringct/tools/test_owned_preprocessing_campaign.py",
+        "research/pq-ringct/tools/test_owned_workflow_benchmark.py"
+      ],
+      "status": "passed"
+    },
+    "release_all_targets": {
+      "path": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-wide-check-r1.json",
+      "sha256": "9e7552ef1c52b2149b7837f0172844f4be5278696098ad19c2850cf8534c39fc",
+      "profile": "build",
+      "command": [
+        "/home/access/code/lattica/.tools/rust-1.96.0/bin/cargo",
+        "check",
+        "--release",
+        "--locked",
+        "--offline",
+        "--all-targets",
+        "--manifest-path",
+        "research/pq-ringct/Cargo.toml",
+        "--features",
+        "identity-batch-experiment",
+        "-j2"
+      ],
+      "status": "passed",
+      "error": null,
+      "raw_log": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-wide-check-r1.log",
+      "raw_log_sha256": "82939432ce82fbeaf727fa33cb709d2bdb6acbf8a46716dbdaadc338ce6a1402",
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "service_stop_completed": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "terminal_state": {
+        "LoadState": "loaded",
+        "ActiveState": "active",
+        "SubState": "exited",
+        "MainPID": "0",
+        "ControlPID": "0",
+        "Result": "success",
+        "NRestarts": "0",
+        "ExecMainCode": "1",
+        "ExecMainStatus": "0",
+        "ControlGroup": "",
+        "MemoryPeak": "2940268544",
+        "MemoryHigh": "6442450944",
+        "MemoryMax": "8589934592",
+        "MemorySwapMax": "0"
+      }
+    },
+    "source_manifest_entries": 2992,
+    "source_manifest_sha256": "3f06a09ecc13eb0662c1037045c3db8b74b121e7b7df7859e46e67f886dc42f2",
+    "sources_still_match_compile_record": true,
+    "tests_executed_after_user_stop": false,
+    "cancelled_source_screen": {
+      "path": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-w8-source-matrix-r1.json",
+      "sha256": "b9486b43f4f235c6581ae243fcec86b034ed738bb3aacba5dfc6c08ffa5a5e9e",
+      "profile": "research-compile-large",
+      "command": [
+        "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-4a2a5e0d820e8f9f",
+        "graph_crypto::prover::paired::tests::full_workflow::identity_matrix::full_workflow_identity_source_admission_matrix",
+        "--exact",
+        "--ignored",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "status": "failed_or_incomplete",
+      "error": "ValueError('command failed: {\"LoadState\": \"loaded\", \"ActiveState\": \"active\", \"SubState\": \"exited\", \"MainPID\": \"0\", \"ControlPID\": \"0\", \"Result\": \"success\", \"NRestarts\": \"0\", \"ExecMainCode\": \"2\", \"ExecMainStatus\": \"15\", \"ControlGroup\": \"\", \"MemoryPeak\": \"350040064\", \"MemoryHigh\": \"32212254720\", \"MemoryMax\": \"34359738368\", \"MemorySwapMax\": \"0\"}')",
+      "raw_log": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-w8-source-matrix-r1.log",
+      "raw_log_sha256": "4c6280a4fe0119b94e6ed397e81282e40dc204c864e20dfdf4f428712cca0bf9",
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "service_stop_completed": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "terminal_state": {
+        "LoadState": "loaded",
+        "ActiveState": "active",
+        "SubState": "exited",
+        "MainPID": "0",
+        "ControlPID": "0",
+        "Result": "success",
+        "NRestarts": "0",
+        "ExecMainCode": "2",
+        "ExecMainStatus": "15",
+        "ControlGroup": "",
+        "MemoryPeak": "350040064",
+        "MemoryHigh": "32212254720",
+        "MemoryMax": "34359738368",
+        "MemorySwapMax": "0"
+      }
+    },
+    "fresh_n3_n4_campaign_started": false,
+    "historical_component_evidence": {
+      "path": "/home/access/code/lattica/docs/evidence/ringct-preprocessing-implementation-2026-10-31.json",
+      "sha256": "f2cc5ad066dbb4ebf0bd356e90876955289d1daf1283827be1d4c64db8ca8c32",
+      "scope": "Previously completed serial/width-1/2/4 component checks only; different source manifest"
+    }
+  },
+  "prepared_validation": {
+    "complete_source_matrix_schema": "ringct-identity-source-matrix-v3",
+    "complete_source_matrix_rows": 16,
+    "focused_source_widths": [
+      12,
+      16,
+      24
+    ],
+    "focused_source_cases": [
+      3,
+      4
+    ],
+    "component_screens": [
+      {
+        "programs": 9,
+        "widths": [
+          4,
+          8
+        ],
+        "cohorts": [
+          [
+            4,
+            4,
+            1
+          ],
+          [
+            8,
+            1
+          ]
+        ]
+      },
+      {
+        "programs": 17,
+        "widths": [
+          8,
+          12,
+          16
+        ],
+        "cohorts": [
+          [
+            8,
+            8,
+            1
+          ],
+          [
+            12,
+            5
+          ],
+          [
+            16,
+            1
+          ]
+        ]
+      },
+      {
+        "programs": 25,
+        "widths": [
+          16,
+          24
+        ],
+        "cohorts": [
+          [
+            16,
+            9
+          ],
+          [
+            24,
+            1
+          ]
+        ]
+      }
+    ],
+    "fixture_pool_host_ceiling_bytes": 17179869184,
+    "component_backend_host_ceiling_bytes": 8589934592,
+    "runtime_screens_executed": false
+  },
+  "receipt_compatibility": {
+    "current_capacity": 24,
+    "current_discriminator": {
+      "job_capacity": 24
+    },
+    "legacy_capacity_without_discriminator": 16,
+    "requires_exact_capacity_and_null_tail": true
+  },
+  "hash_schedule": {
+    "full_rounds_before": 4,
+    "partial_rounds": 22,
+    "full_rounds_after": 4,
+    "field_words_per_absorbed_block": 4,
+    "rounds_per_permutation": 30,
+    "prefix_batches_per_request": "ceil(eligible_leaf_programs / selected_width)",
+    "example_48_prefix_batches": {
+      "1": 48,
+      "2": 24,
+      "4": 12,
+      "8": 6,
+      "12": 4,
+      "16": 3,
+      "24": 2
+    },
+    "full_workflow_batch_total_measured": false
+  },
+  "host_budget_assessment": {
+    "machine_memory_snapshot_bytes": {
+      "MemTotal": 67328430080,
+      "MemAvailable": 61636747264,
+      "SwapTotal": 67328012288,
+      "SwapFree": 67327770624
+    },
+    "existing_expanded_40_profile": {
+      "worker_bytes": 42949672960,
+      "process_max_bytes": 59055800320,
+      "process_high_bytes": 56908316672,
+      "required_available_bytes": 61203283968
+    },
+    "full_24_cohort_reservation_lower_bound": {
+      "retained_program_bounds_bytes": 51539607552,
+      "prefix_operation_lower_bytes": 52546338816,
+      "retained_tree_bytes": 8589934592,
+      "total_lower_bytes": 112675880960,
+      "total_lower_gib": 104.93759155273438,
+      "excludes": [
+        "compiler input storage",
+        "stream and wrapper buffers",
+        "other retained proofs and planning metadata",
+        "other workflow scratch",
+        "process and OS headroom"
+      ],
+      "interpretation": "Static additive reservation lower bound, not observed allocation. Existing compiler slots and the separate prefix operation both include the borrowed program bound."
+    },
+    "existing_pcs_operation_host_cap_bytes": 25769803776,
+    "existing_identity_context_host_cap_bytes": 34359738368,
+    "caps_extended": false,
+    "reason": "A larger cap alone cannot admit a full 24-prefix RingCT cohort within this 64 GB machine under current additive accounting.",
+    "next_memory_work": "Derive tighter per-program source bounds and account for borrowed compiler storage through its original owners before reconsidering a wider process profile.",
+    "scope_note": "A small-program width-24 component screen or a partial actual cohort is different from a full RingCT width-24 cohort and may fit existing limits.",
+    "sources": [
+      "research/pq-ringct/src/component_tree/paired_runtime/source.rs:284",
+      "research/pq-ringct/src/spend_pipeline/full_workflow/closed_plan.rs:493",
+      "research/pq-ringct/src/graph_crypto/prover/paired/outer.rs:71",
+      "lattica-prover-p3/src/block_v2/machine/backend/identity_batch/gpu.rs:57",
+      "research/pq-ringct/src/execution/phase_lifecycle/outer_partition.rs:31",
+      "research/pq-ringct/tools/host_memory_profiles.py:4"
+    ]
+  },
+  "remaining": [
+    "Fresh release executables must be built and recorded before running the prepared source/component screens.",
+    "No wider-preset source admission, GPU component timing, or full fresh N3/N4 throughput claim is made.",
+    "Tests remain stopped; the full campaign still requires same-source admission and existing guard checks."
+  ]
+}

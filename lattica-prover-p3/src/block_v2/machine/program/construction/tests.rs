@@ -331,3 +331,69 @@ fn construction_requirement_survives_clone_and_padding_without_changing_identity
     assert_eq!(padded.construction_host_bytes(), required);
     assert_eq!(padded, reference.pad_to(256).unwrap());
 }
+
+#[test]
+fn vacant_probes_survive_moves_and_recheck_growth_clear_and_other_tables() {
+    let mut first = Map::new();
+    let mut memory = budget(1 << 20);
+    for i in 0..7 {
+        first.insert(Collision(i), i, &mut memory);
+    }
+    let vacant = first.probe(Collision(7)).err().unwrap();
+    first.insert_vacant(vacant, 70, &mut memory); // growth
+    assert_eq!(first.get(&Collision(7)), Some(&70));
+    let vacant = first.probe(Collision(9)).err().unwrap();
+    first.insert(Collision(8), 80, &mut memory); // invalidates saved empty slot
+    first.insert_vacant(vacant, 90, &mut memory);
+    let vacant = first.probe(Collision(10)).err().unwrap();
+    first.clear(&mut memory);
+    first.insert_vacant(vacant, 100, &mut memory);
+    let vacant = first.probe(Collision(11)).err().unwrap();
+    let mut moved = first;
+    moved.insert_vacant(vacant, 110, &mut memory);
+    assert_eq!(moved.get(&Collision(10)), Some(&100));
+    assert_eq!(moved.get(&Collision(11)), Some(&110));
+    let vacant = moved.probe(Collision(12)).err().unwrap();
+    let mut other = Map::new();
+    for i in 20..28 {
+        other.insert(Collision(i), i, &mut memory);
+    }
+    other.insert_vacant(vacant, 120, &mut memory);
+    assert_eq!(other.get(&Collision(12)), Some(&120));
+    assert_eq!(moved.get(&Collision(12)), None);
+    let vacant = moved.probe(Collision(13)).err().unwrap();
+    memory.reject();
+    moved.insert_vacant(vacant, 130, &mut memory);
+    assert_eq!(moved.get(&Collision(13)), None);
+}
+
+#[test]
+fn vacant_insert_uses_one_hash_probe_without_growth() {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    #[derive(Clone, Copy)]
+    struct Key<'a>(u64, &'a AtomicUsize);
+    impl PartialEq for Key<'_> {
+        fn eq(&self, other: &Self) -> bool {
+            self.0 == other.0
+        }
+    }
+    impl Eq for Key<'_> {}
+    impl Hash for Key<'_> {
+        fn hash<H: std::hash::Hasher>(&self, h: &mut H) {
+            self.1.fetch_add(1, Ordering::Relaxed);
+            self.0.hash(h);
+        }
+    }
+    let calls = AtomicUsize::new(0);
+    let mut table = Map::new();
+    let mut memory = budget(1 << 20);
+    for i in 0..8 {
+        table.insert(Key(i, &calls), i, &mut memory);
+    }
+    calls.store(0, Ordering::Relaxed);
+    let vacant = table.probe(Key(9, &calls)).err().unwrap();
+    table.insert_vacant(vacant, 99, &mut memory);
+    assert_eq!(calls.load(Ordering::Relaxed), 1);
+    assert_eq!(table.get(&Key(9, &calls)), Some(&99));
+    assert!(!memory.failed);
+}

@@ -64,7 +64,9 @@ pub(in crate::component_tree::owned_shake) struct PreparedOuter<'compiled, 'owne
 pub(in crate::component_tree::owned_shake) fn fixed_producer_report_host_bytes() -> Result<usize, Error> {
     let mut host = FixedProofReportStorage::fixed()
         .map_err(|_| Error::Report)?
-        .required_host_bytes();
+        .required_host_bytes()
+        .checked_mul(2)
+        .ok_or(Error::Report)?;
     for (count, bytes) in [
         // Original, forwarding entry, inner producer and moved argument.
         (4, size_of::<PreparedOuter<'static, 'static, 'static>>()),
@@ -292,18 +294,19 @@ impl<'compiled, 'owner, 'request> PreparedOuter<'compiled, 'owner, 'request> {
         };
         let node = &self.compiled.compiled;
         let (registered, report) =
-            RegisteredProgram::new_with_request_and_identity_hint_and_report(
+            RegisteredProgram::new_with_cpu_identity_and_report(
                 MachineAir::from_shared_program(Arc::clone(&node.program)),
                 self.backend.host_budget_bytes(),
                 request,
-                None,
             )
             .map_err(|_| Error::Setup)?;
-        validate_report(&report, CoverageScope::Preprocessing)?;
+        validate_report(&report.preprocessing, CoverageScope::Preprocessing)?;
+        validate_report(&report.identity, CoverageScope::Operation)?;
         if emit_receipts {
-            emit_receipt(&report)?;
+            emit_receipt(&report.preprocessing)?;
+            emit_receipt(&report.identity)?;
         }
-        let setup_elapsed_ns = report.elapsed_ns;
+        let setup_elapsed_ns = report.preprocessing.elapsed_ns;
         drop(report);
         // Independent metadata and copied cap are constructed only after their
         // exact output/verification reservation, and before registration moves.

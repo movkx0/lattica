@@ -56,6 +56,7 @@ pub(super) fn run<'view, 'case, 'graph: 'view, const N: usize>(
     stage: &mut DriverStage,
 ) -> Result<CompletedCaseSummary> {
     stage.layer("final_stage");
+    super::super::metadata_timing::phase(super::super::metadata_timing::Phase::Final);
     let mut planning = PlanningGuard::new(planning);
     planning.get()?.validate_metadata_driver(metadata, case)?;
     if !matches!(N, 3 | 4) || metadata.members().len() != N {
@@ -158,6 +159,7 @@ pub(super) fn run<'view, 'case, 'graph: 'view, const N: usize>(
     // seals, proves, verifies, retires and completes the case while all actual
     // owning locals in every scope are still alive. Artifact and mutation
     // qualification remain separately reported by that continuation.
+    super::super::metadata_timing::finish();
     *stage = DriverStage::Call("execute_constructed_case");
     let outcome = super::super::execution::execute_constructed_case(planning.into_inner()?, metadata,
         startup, batch, case, complete_slot, &runtimes, native_cache, outer_cache, stage);

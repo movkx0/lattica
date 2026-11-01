@@ -64,6 +64,12 @@ pub struct PlanningStorage {
 }
 
 impl PlanningStorage {
+    /// Numeric workers borrow one prepared symbolic graph and create no proof
+    /// template or dummy input values. Returned wire arrays and all fixed helper
+    /// frames retain their original source-derived bounds.
+    pub(super) fn counting_worker_auxiliary_bytes(self) -> Result<usize, CompileError> {
+        add(self.returned_wire_bytes, self.helper_bytes)
+    }
     /// Makes no allocation on success or error. All children are checked before
     /// any template or compiler is constructed, including later child shapes.
     pub fn for_children(
@@ -247,6 +253,9 @@ fn helpers() -> Result<usize, CompileError> {
     // shared (not cloned-backing) symbolic windows, and has no periodic table.
     let n = 4 * LANES + MAX_PUBLIC_VALUES;
     let mut bytes = exact::<E>(4 * (6 * n + 2))?;
+    // Fixed numeric scheduler/results/joins and scope statistics. Concurrent
+    // workers separately charge their full auxiliary bound and thread stacks.
+    bytes = add(bytes, super::metadata_planning::COORDINATOR_BYTES)?;
     // Full additional hint-census and envelope transport frames. The result
     // fields grow when the source bound changes; no move/inlining credit.
     for part in [

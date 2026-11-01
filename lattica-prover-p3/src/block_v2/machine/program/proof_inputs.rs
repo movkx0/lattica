@@ -4,7 +4,7 @@
 use super::{ScopedProgramBuilder as ProgramBuilder, Val, Wire};
 use crate::block_v2::machine::{circuit::Extension, merkle::Digest, verifier::CompileError};
 use crate::block_v2::profile::{Challenge, Config};
-use p3_field::BasedVectorSpace;
+use p3_field::{BasedVectorSpace, PrimeCharacteristicRing};
 
 #[derive(Default)]
 pub struct ProofInputs {
@@ -23,10 +23,33 @@ fn reject(b: &mut ProgramBuilder<'_>) -> CompileError {
 }
 
 impl ProofInputs {
+    /// Numeric planners retain input cardinality, never dummy witness values.
+    /// Geometry inputs below also require the builder's non-proving sink.
+    pub(in super::super) fn counting() -> Self {
+        Self::default()
+    }
+    pub(in super::super) fn len(&self, b: &ProgramBuilder<'_>) -> usize {
+        if b.is_counting() {
+            b.witnesses
+        } else {
+            self.values.len()
+        }
+    }
+    pub(in super::super) fn require_geometry(
+        &self,
+        b: &ProgramBuilder<'_>,
+    ) -> Result<(), CompileError> {
+        if !b.is_counting() || !self.values.is_empty() {
+            return Err(CompileError::Shape(
+                "geometry inputs require numeric compiler",
+            ));
+        }
+        Ok(())
+    }
     pub(in super::super) fn report(&self, b: &ProgramBuilder<'_>) {
         if b.memory.limit.is_some() {
             eprintln!("bounded_proof_inputs values={} capacity_values={} capacity_bytes={} input_limit={} rejected={}",
-                self.values.len(), self.values.capacity(), self.values.capacity() * std::mem::size_of::<Val>(),
+                self.len(b), self.values.capacity(), self.values.capacity() * std::mem::size_of::<Val>(),
                 b.memory.input_limit, b.memory.failed);
         }
     }
@@ -41,8 +64,7 @@ impl ProofInputs {
                 .checked_add(fields)
                 .is_none_or(|n| n > b.memory.wire_limit)
             || self
-                .values
-                .len()
+                .len(b)
                 .checked_add(fields)
                 .is_none_or(|n| n > b.memory.input_limit)
         {
@@ -85,8 +107,14 @@ impl ProofInputs {
             return Wire(0);
         }
         let wire = b.input();
-        if b.resource_failure().is_none() && self.reserve_value(b).is_ok() {
-            self.values.push(value);
+        if b.resource_failure().is_none() {
+            if b.is_counting() {
+                if !self.values.is_empty() {
+                    reject(b);
+                }
+            } else if self.reserve_value(b).is_ok() {
+                self.values.push(value);
+            }
         }
         wire
     }
@@ -156,6 +184,72 @@ impl ProofInputs {
         self.collect(b, value.roots().len(), 4, |inputs, b, i| {
             inputs.digest(b, &value.roots()[i])
         })
+    }
+
+    pub(in super::super) fn bases_geometry(
+        &mut self,
+        b: &mut ProgramBuilder<'_>,
+        count: usize,
+    ) -> Result<Vec<Wire>, CompileError> {
+        self.require_geometry(b)?;
+        self.collect(b, count, 1, |inputs, b, _| inputs.base(b, Val::ZERO))
+    }
+    pub(in super::super) fn extensions_geometry(
+        &mut self,
+        b: &mut ProgramBuilder<'_>,
+        count: usize,
+    ) -> Result<Vec<Extension>, CompileError> {
+        self.require_geometry(b)?;
+        self.collect(b, count, 3, |inputs, b, _| {
+            inputs.extension(b, Challenge::ZERO)
+        })
+    }
+    pub(in super::super) fn cap_geometry(
+        &mut self,
+        b: &mut ProgramBuilder<'_>,
+        log_height: usize,
+    ) -> Result<Vec<Digest>, CompileError> {
+        self.require_geometry(b)?;
+        self.collect(
+            b,
+            1 << log_height.min(crate::block_v2::profile::CAP_HEIGHT),
+            4,
+            |inputs, b, _| inputs.digest(b, &[Val::ZERO; 4]),
+        )
+    }
+
+    pub(in super::super) fn cap_view(
+        &mut self,
+        b: &mut ProgramBuilder<'_>,
+        value: Option<&p3_batch_stark::Commitment<Config>>,
+        log_height: usize,
+    ) -> Result<Vec<Digest>, CompileError> {
+        match value {
+            Some(value) => self.cap(b, value, log_height),
+            None => self.cap_geometry(b, log_height),
+        }
+    }
+    pub(in super::super) fn extensions_view(
+        &mut self,
+        b: &mut ProgramBuilder<'_>,
+        value: Option<&[Challenge]>,
+        count: usize,
+    ) -> Result<Vec<Extension>, CompileError> {
+        match value {
+            Some(value) => self.extensions(b, value),
+            None => self.extensions_geometry(b, count),
+        }
+    }
+    pub(in super::super) fn bases_view(
+        &mut self,
+        b: &mut ProgramBuilder<'_>,
+        value: Option<&[Val]>,
+        count: usize,
+    ) -> Result<Vec<Wire>, CompileError> {
+        match value {
+            Some(value) => self.bases(b, value),
+            None => self.bases_geometry(b, count),
+        }
     }
 }
 

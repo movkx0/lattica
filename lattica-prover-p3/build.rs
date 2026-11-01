@@ -1,6 +1,10 @@
 use std::{env, path::PathBuf, process::Command};
+mod metadata_sources;
 
 fn main() {
+    if env::var_os("CARGO_FEATURE_BLOCK_V2").is_some() {
+        metadata_sources::write_digest();
+    }
     println!("cargo:rerun-if-changed=src/cpu_sme2/goldilocks.c");
     if env::var_os("CARGO_FEATURE_CPU_SME2").is_none()
         || env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("macos")

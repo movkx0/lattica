@@ -62,12 +62,15 @@ class CompleteCaseIntegrationTests(unittest.TestCase):
                       final_qualification=qualification,
                       artifacts_qualified=True, mutations_qualified=True)
         events, report = enrich(events, report)
+        from test_cpu_identity_receipts import add_finalizations
+        events, totals = add_finalizations(events)
+        report['owned_observations']['identity_preprocessing'] = totals
         envelope = dict(schema=guard.SCHEMA, case=f'n{count}', layout=layout,
                         setup_seed=seed, context=context, proof_policy='fresh-only',
-                        proving_policy='gpu-required', report=report)
+                        proving_policy='gpu-required', report=report, identity_cpu={'requested_workers': 1, 'max_streams': 1})
         plan = {guard.KEY: dict(schema=guard.SCHEMA, case=f'n{count}', layout=layout,
                                 setup_seed=seed, context=context,
-                                output_directory=str(directory), screening_only=True),
+                                output_directory=str(directory), screening_only=True, identity_cpu={'requested_workers': 1, 'max_streams': 1}),
                 'observation_before_validation_ns': complete_ns + 1_000_000}
         return events, envelope, plan, path, packet
 

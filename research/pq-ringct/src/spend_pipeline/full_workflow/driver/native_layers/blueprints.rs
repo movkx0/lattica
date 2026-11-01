@@ -36,8 +36,7 @@ pub(crate) fn fill_blueprint_layer<'case, 'a>(
                 { return Err(WorkflowError::Identity); }
                 let slot = tables.source.get(ordinal).map_err(|_| WorkflowError::Identity)?;
                 stage.action(DriverAction::Derive);
-                let result = NativeSourceBlueprint::new(prepared.plan(), prepared.graph(),
-                    prepared.context(), prepared.source_factory(), kind);
+                let result = NativeSourceBlueprint::new_for_prepared(prepared, kind);
                 stage.action(DriverAction::Install);
                 install(slot, result)?;
             }

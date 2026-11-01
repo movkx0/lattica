@@ -1,0 +1,871 @@
+{
+  "schema": "ringct-compiler-lookup-v1",
+  "recorded_utc": "2026-10-31T19:12:05.582387+00:00",
+  "scope": "OpenCL public compiler constants; not complete RingCT workflow throughput",
+  "complete_workflow_measured": false,
+  "device": {
+    "name": "NVIDIA GeForce RTX 5080",
+    "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615",
+    "driver": "615.78.08"
+  },
+  "implementation": {
+    "constant_table_words": 130,
+    "constant_table_bytes": 1040,
+    "local_table_bytes_per_workgroup": 512,
+    "workgroup_lanes": 32,
+    "managed_scratch_allowance_changed": false,
+    "public_identity_hash_changed": false,
+    "tables_contain_only_public_constants": true
+  },
+  "validation": {
+    "inverse_root_domains": 33,
+    "selector_domains": 192,
+    "quotient_domains": 183,
+    "total_gpu_cpu_comparisons": 408,
+    "invalid_inputs_rejected_before_dispatch": true,
+    "workspace_retired_after_each_call": true,
+    "fresh_gpu_proofs_cpu_verified": 2,
+    "changed_public_inputs_rejected": 2,
+    "identity_and_preprocessing_caps_preserved_in_prefix_test": true
+  },
+  "bank_layout": {
+    "method": "Address analysis of separate u32 limb planes with 32 four-byte banks",
+    "selector_max_distinct_addresses_per_bank_per_warp": 1,
+    "quotient_max_distinct_addresses_per_bank_per_warp": 1,
+    "repeated_addresses_use_broadcast": true,
+    "hardware_bank_conflict_counters_measured": false,
+    "reference": "https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#shared-memory-and-memory-banks"
+  },
+  "timing_method": "One warmup pair and seven alternating arithmetic-reference/lookup pairs; 32 calls per sample. Both use 32-lane groups. Device timestamps exclude host allocation and transfers; wall times include the full constant API call. No timing assertions.",
+  "source_files_sha256": {
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/compiler_constants.rs": "7568ce39e504f4dc2097e35325110e7b56622821e235a7ed2e9308d2e53e0fba",
+    "lattica-prover-p3/scripts/generate-compiler-constant-tables.py": "4d60cd9b9e0b349f605cd822535a0fa5dc832c5bb7be4bd64b9ecafffe85b6fe",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/compiler_constants/lookup.cl": "2c4e21d933a7f4ec809421c7312b06d59b51f6dec0c5d735872a30e03bb0f019",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/compiler_constants/tables.cl": "c4ab62363c84a4b57ccf1f2e40a730e2c86e963001412f6fc5fc60c6fbe8e5c1",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/compiler_constants/reference.cl": "77812050729093408cafa2384d8e8cc7779c5684300516d6d7cf71daf7c1f772",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/compiler_constants/tests.rs": "06bfc372d619a329873b40b958bf8365ad6ea68ffada7bfef17ab3704186dcac"
+  },
+  "component_timings": [
+    {
+      "complete_ringct_workflow": false,
+      "height": 17,
+      "operation": 0,
+      "repeats": 32,
+      "samples": [
+        {
+          "device_ns": 184160,
+          "pair": 1,
+          "reference": false,
+          "wall_ns": 4842256
+        },
+        {
+          "device_ns": 319488,
+          "pair": 1,
+          "reference": true,
+          "wall_ns": 4960819
+        },
+        {
+          "device_ns": 327104,
+          "pair": 2,
+          "reference": true,
+          "wall_ns": 4982769
+        },
+        {
+          "device_ns": 194272,
+          "pair": 2,
+          "reference": false,
+          "wall_ns": 4847797
+        },
+        {
+          "device_ns": 181696,
+          "pair": 3,
+          "reference": false,
+          "wall_ns": 4867326
+        },
+        {
+          "device_ns": 324704,
+          "pair": 3,
+          "reference": true,
+          "wall_ns": 4982149
+        },
+        {
+          "device_ns": 318368,
+          "pair": 4,
+          "reference": true,
+          "wall_ns": 4986400
+        },
+        {
+          "device_ns": 180992,
+          "pair": 4,
+          "reference": false,
+          "wall_ns": 4872287
+        },
+        {
+          "device_ns": 175168,
+          "pair": 5,
+          "reference": false,
+          "wall_ns": 4861276
+        },
+        {
+          "device_ns": 317568,
+          "pair": 5,
+          "reference": true,
+          "wall_ns": 4984899
+        },
+        {
+          "device_ns": 327840,
+          "pair": 6,
+          "reference": true,
+          "wall_ns": 4973449
+        },
+        {
+          "device_ns": 178848,
+          "pair": 6,
+          "reference": false,
+          "wall_ns": 4837966
+        },
+        {
+          "device_ns": 177984,
+          "pair": 7,
+          "reference": false,
+          "wall_ns": 4825826
+        },
+        {
+          "device_ns": 318368,
+          "pair": 7,
+          "reference": true,
+          "wall_ns": 4984049
+        }
+      ],
+      "schema": "compiler-lookup-component-v1",
+      "size": 1,
+      "median_per_call": {
+        "reference": {
+          "device_ns": 9984.0,
+          "wall_ns": 155711.53125
+        },
+        "lookup": {
+          "device_ns": 5656.0,
+          "wall_ns": 151493.65625
+        }
+      },
+      "device_speedup": 1.7652050919377653,
+      "wall_reduction_fraction": 0.027087749803372363
+    },
+    {
+      "complete_ringct_workflow": false,
+      "height": 17,
+      "operation": 1,
+      "repeats": 32,
+      "samples": [
+        {
+          "device_ns": 196672,
+          "pair": 1,
+          "reference": false,
+          "wall_ns": 4870766
+        },
+        {
+          "device_ns": 369760,
+          "pair": 1,
+          "reference": true,
+          "wall_ns": 5024260
+        },
+        {
+          "device_ns": 373984,
+          "pair": 2,
+          "reference": true,
+          "wall_ns": 5046601
+        },
+        {
+          "device_ns": 209568,
+          "pair": 2,
+          "reference": false,
+          "wall_ns": 4894357
+        },
+        {
+          "device_ns": 207456,
+          "pair": 3,
+          "reference": false,
+          "wall_ns": 5041141
+        },
+        {
+          "device_ns": 373280,
+          "pair": 3,
+          "reference": true,
+          "wall_ns": 5042070
+        },
+        {
+          "device_ns": 372064,
+          "pair": 4,
+          "reference": true,
+          "wall_ns": 5054931
+        },
+        {
+          "device_ns": 203648,
+          "pair": 4,
+          "reference": false,
+          "wall_ns": 4874497
+        },
+        {
+          "device_ns": 197632,
+          "pair": 5,
+          "reference": false,
+          "wall_ns": 4858916
+        },
+        {
+          "device_ns": 374656,
+          "pair": 5,
+          "reference": true,
+          "wall_ns": 5051951
+        },
+        {
+          "device_ns": 376000,
+          "pair": 6,
+          "reference": true,
+          "wall_ns": 5047491
+        },
+        {
+          "device_ns": 203520,
+          "pair": 6,
+          "reference": false,
+          "wall_ns": 4912207
+        },
+        {
+          "device_ns": 202464,
+          "pair": 7,
+          "reference": false,
+          "wall_ns": 4862137
+        },
+        {
+          "device_ns": 372864,
+          "pair": 7,
+          "reference": true,
+          "wall_ns": 5049011
+        }
+      ],
+      "schema": "compiler-lookup-component-v1",
+      "size": 8,
+      "median_per_call": {
+        "reference": {
+          "device_ns": 11665.0,
+          "wall_ns": 157734.09375
+        },
+        "lookup": {
+          "device_ns": 6360.0,
+          "wall_ns": 152328.03125
+        }
+      },
+      "device_speedup": 1.8341194968553458,
+      "wall_reduction_fraction": 0.034273265668031905
+    },
+    {
+      "complete_ringct_workflow": false,
+      "height": 17,
+      "operation": 1,
+      "repeats": 32,
+      "samples": [
+        {
+          "device_ns": 202272,
+          "pair": 1,
+          "reference": false,
+          "wall_ns": 4862896
+        },
+        {
+          "device_ns": 440480,
+          "pair": 1,
+          "reference": true,
+          "wall_ns": 5107242
+        },
+        {
+          "device_ns": 440992,
+          "pair": 2,
+          "reference": true,
+          "wall_ns": 5111932
+        },
+        {
+          "device_ns": 208672,
+          "pair": 2,
+          "reference": false,
+          "wall_ns": 4879457
+        },
+        {
+          "device_ns": 205920,
+          "pair": 3,
+          "reference": false,
+          "wall_ns": 4881487
+        },
+        {
+          "device_ns": 443456,
+          "pair": 3,
+          "reference": true,
+          "wall_ns": 5150263
+        },
+        {
+          "device_ns": 441472,
+          "pair": 4,
+          "reference": true,
+          "wall_ns": 5123902
+        },
+        {
+          "device_ns": 204704,
+          "pair": 4,
+          "reference": false,
+          "wall_ns": 4854897
+        },
+        {
+          "device_ns": 201024,
+          "pair": 5,
+          "reference": false,
+          "wall_ns": 4859506
+        },
+        {
+          "device_ns": 438240,
+          "pair": 5,
+          "reference": true,
+          "wall_ns": 5104022
+        },
+        {
+          "device_ns": 440352,
+          "pair": 6,
+          "reference": true,
+          "wall_ns": 5097242
+        },
+        {
+          "device_ns": 201504,
+          "pair": 6,
+          "reference": false,
+          "wall_ns": 4858616
+        },
+        {
+          "device_ns": 202144,
+          "pair": 7,
+          "reference": false,
+          "wall_ns": 4899608
+        },
+        {
+          "device_ns": 442112,
+          "pair": 7,
+          "reference": true,
+          "wall_ns": 5146862
+        }
+      ],
+      "schema": "compiler-lookup-component-v1",
+      "size": 32,
+      "median_per_call": {
+        "reference": {
+          "device_ns": 13781.0,
+          "wall_ns": 159747.875
+        },
+        "lookup": {
+          "device_ns": 6321.0,
+          "wall_ns": 151965.5
+        }
+      },
+      "device_speedup": 2.1801930074355322,
+      "wall_reduction_fraction": 0.048716610471344346
+    },
+    {
+      "complete_ringct_workflow": false,
+      "height": 17,
+      "operation": 1,
+      "repeats": 32,
+      "samples": [
+        {
+          "device_ns": 206368,
+          "pair": 1,
+          "reference": false,
+          "wall_ns": 4864516
+        },
+        {
+          "device_ns": 472064,
+          "pair": 1,
+          "reference": true,
+          "wall_ns": 5144173
+        },
+        {
+          "device_ns": 469536,
+          "pair": 2,
+          "reference": true,
+          "wall_ns": 5135543
+        },
+        {
+          "device_ns": 208128,
+          "pair": 2,
+          "reference": false,
+          "wall_ns": 4896207
+        },
+        {
+          "device_ns": 203360,
+          "pair": 3,
+          "reference": false,
+          "wall_ns": 4862377
+        },
+        {
+          "device_ns": 477280,
+          "pair": 3,
+          "reference": true,
+          "wall_ns": 5140902
+        },
+        {
+          "device_ns": 464352,
+          "pair": 4,
+          "reference": true,
+          "wall_ns": 5121382
+        },
+        {
+          "device_ns": 197760,
+          "pair": 4,
+          "reference": false,
+          "wall_ns": 4849877
+        },
+        {
+          "device_ns": 206144,
+          "pair": 5,
+          "reference": false,
+          "wall_ns": 4878127
+        },
+        {
+          "device_ns": 470144,
+          "pair": 5,
+          "reference": true,
+          "wall_ns": 5199124
+        },
+        {
+          "device_ns": 466528,
+          "pair": 6,
+          "reference": true,
+          "wall_ns": 5150702
+        },
+        {
+          "device_ns": 202080,
+          "pair": 6,
+          "reference": false,
+          "wall_ns": 4874337
+        },
+        {
+          "device_ns": 199104,
+          "pair": 7,
+          "reference": false,
+          "wall_ns": 4885817
+        },
+        {
+          "device_ns": 474112,
+          "pair": 7,
+          "reference": true,
+          "wall_ns": 5136163
+        }
+      ],
+      "schema": "compiler-lookup-component-v1",
+      "size": 64,
+      "median_per_call": {
+        "reference": {
+          "device_ns": 14692.0,
+          "wall_ns": 160653.1875
+        },
+        "lookup": {
+          "device_ns": 6355.0,
+          "wall_ns": 152323.03125
+        }
+      },
+      "device_speedup": 2.311880409126672,
+      "wall_reduction_fraction": 0.05185179565764919
+    },
+    {
+      "complete_ringct_workflow": false,
+      "height": 17,
+      "operation": 3,
+      "repeats": 32,
+      "samples": [
+        {
+          "device_ns": 224128,
+          "pair": 1,
+          "reference": false,
+          "wall_ns": 4897517
+        },
+        {
+          "device_ns": 655552,
+          "pair": 1,
+          "reference": true,
+          "wall_ns": 5330087
+        },
+        {
+          "device_ns": 655488,
+          "pair": 2,
+          "reference": true,
+          "wall_ns": 5310516
+        },
+        {
+          "device_ns": 225024,
+          "pair": 2,
+          "reference": false,
+          "wall_ns": 4892607
+        },
+        {
+          "device_ns": 220064,
+          "pair": 3,
+          "reference": false,
+          "wall_ns": 4872927
+        },
+        {
+          "device_ns": 659264,
+          "pair": 3,
+          "reference": true,
+          "wall_ns": 5363468
+        },
+        {
+          "device_ns": 649888,
+          "pair": 4,
+          "reference": true,
+          "wall_ns": 5309516
+        },
+        {
+          "device_ns": 221952,
+          "pair": 4,
+          "reference": false,
+          "wall_ns": 4890047
+        },
+        {
+          "device_ns": 220320,
+          "pair": 5,
+          "reference": false,
+          "wall_ns": 4890757
+        },
+        {
+          "device_ns": 655840,
+          "pair": 5,
+          "reference": true,
+          "wall_ns": 5312797
+        },
+        {
+          "device_ns": 656768,
+          "pair": 6,
+          "reference": true,
+          "wall_ns": 5300566
+        },
+        {
+          "device_ns": 225280,
+          "pair": 6,
+          "reference": false,
+          "wall_ns": 4875427
+        },
+        {
+          "device_ns": 225952,
+          "pair": 7,
+          "reference": false,
+          "wall_ns": 4922938
+        },
+        {
+          "device_ns": 650208,
+          "pair": 7,
+          "reference": true,
+          "wall_ns": 5353417
+        }
+      ],
+      "schema": "compiler-lookup-component-v1",
+      "size": 4,
+      "median_per_call": {
+        "reference": {
+          "device_ns": 20486.0,
+          "wall_ns": 166024.90625
+        },
+        "lookup": {
+          "device_ns": 7004.0,
+          "wall_ns": 152836.15625
+        }
+      },
+      "device_speedup": 2.924900057110223,
+      "wall_reduction_fraction": 0.07943838245654788
+    },
+    {
+      "complete_ringct_workflow": false,
+      "height": 17,
+      "operation": 3,
+      "repeats": 32,
+      "samples": [
+        {
+          "device_ns": 231488,
+          "pair": 1,
+          "reference": false,
+          "wall_ns": 4893007
+        },
+        {
+          "device_ns": 665760,
+          "pair": 1,
+          "reference": true,
+          "wall_ns": 5336757
+        },
+        {
+          "device_ns": 672128,
+          "pair": 2,
+          "reference": true,
+          "wall_ns": 5428559
+        },
+        {
+          "device_ns": 236800,
+          "pair": 2,
+          "reference": false,
+          "wall_ns": 4957929
+        },
+        {
+          "device_ns": 236768,
+          "pair": 3,
+          "reference": false,
+          "wall_ns": 4918377
+        },
+        {
+          "device_ns": 665728,
+          "pair": 3,
+          "reference": true,
+          "wall_ns": 5353678
+        },
+        {
+          "device_ns": 661408,
+          "pair": 4,
+          "reference": true,
+          "wall_ns": 5327966
+        },
+        {
+          "device_ns": 242656,
+          "pair": 4,
+          "reference": false,
+          "wall_ns": 4921778
+        },
+        {
+          "device_ns": 233952,
+          "pair": 5,
+          "reference": false,
+          "wall_ns": 4899698
+        },
+        {
+          "device_ns": 677664,
+          "pair": 5,
+          "reference": true,
+          "wall_ns": 5402728
+        },
+        {
+          "device_ns": 673664,
+          "pair": 6,
+          "reference": true,
+          "wall_ns": 5376408
+        },
+        {
+          "device_ns": 233728,
+          "pair": 6,
+          "reference": false,
+          "wall_ns": 4907398
+        },
+        {
+          "device_ns": 234592,
+          "pair": 7,
+          "reference": false,
+          "wall_ns": 4905497
+        },
+        {
+          "device_ns": 663904,
+          "pair": 7,
+          "reference": true,
+          "wall_ns": 5373338
+        }
+      ],
+      "schema": "compiler-lookup-component-v1",
+      "size": 16,
+      "median_per_call": {
+        "reference": {
+          "device_ns": 20805.0,
+          "wall_ns": 167916.8125
+        },
+        "lookup": {
+          "device_ns": 7331.0,
+          "wall_ns": 153356.1875
+        }
+      },
+      "device_speedup": 2.837948438139408,
+      "wall_reduction_fraction": 0.08671332419438349
+    },
+    {
+      "complete_ringct_workflow": false,
+      "height": 17,
+      "operation": 3,
+      "repeats": 32,
+      "samples": [
+        {
+          "device_ns": 240480,
+          "pair": 1,
+          "reference": false,
+          "wall_ns": 4976719
+        },
+        {
+          "device_ns": 540320,
+          "pair": 1,
+          "reference": true,
+          "wall_ns": 5243405
+        },
+        {
+          "device_ns": 518336,
+          "pair": 2,
+          "reference": true,
+          "wall_ns": 5243635
+        },
+        {
+          "device_ns": 235904,
+          "pair": 2,
+          "reference": false,
+          "wall_ns": 4950659
+        },
+        {
+          "device_ns": 242240,
+          "pair": 3,
+          "reference": false,
+          "wall_ns": 4930448
+        },
+        {
+          "device_ns": 528000,
+          "pair": 3,
+          "reference": true,
+          "wall_ns": 5251945
+        },
+        {
+          "device_ns": 522880,
+          "pair": 4,
+          "reference": true,
+          "wall_ns": 5265505
+        },
+        {
+          "device_ns": 233696,
+          "pair": 4,
+          "reference": false,
+          "wall_ns": 4987320
+        },
+        {
+          "device_ns": 233792,
+          "pair": 5,
+          "reference": false,
+          "wall_ns": 5635593
+        },
+        {
+          "device_ns": 524384,
+          "pair": 5,
+          "reference": true,
+          "wall_ns": 5567142
+        },
+        {
+          "device_ns": 513664,
+          "pair": 6,
+          "reference": true,
+          "wall_ns": 5340687
+        },
+        {
+          "device_ns": 234144,
+          "pair": 6,
+          "reference": false,
+          "wall_ns": 5036161
+        },
+        {
+          "device_ns": 229376,
+          "pair": 7,
+          "reference": false,
+          "wall_ns": 5041470
+        },
+        {
+          "device_ns": 517792,
+          "pair": 7,
+          "reference": true,
+          "wall_ns": 5325327
+        }
+      ],
+      "schema": "compiler-lookup-component-v1",
+      "size": 32,
+      "median_per_call": {
+        "reference": {
+          "device_ns": 16340.0,
+          "wall_ns": 164547.03125
+        },
+        "lookup": {
+          "device_ns": 7317.0,
+          "wall_ns": 155853.75
+        }
+      },
+      "device_speedup": 2.233155664889982,
+      "wall_reduction_fraction": 0.05283158975254987
+    }
+  ],
+  "guarded_runs": {
+    "prep-lut-core-build-r2": {
+      "record": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-lut-core-build-r2.json",
+      "record_sha256": "eee253a549f4e888ce9b1169f740ca9787eeb8e8fcebeca68b68b3b539dbfa6c",
+      "log": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-lut-core-build-r2.log",
+      "log_sha256": "df0fd152d8187bd619fa80ca116af1cf288b98f0a366b708a95e1eba2b746d76",
+      "status": "passed",
+      "wall_seconds": 355.4799690419968,
+      "executable_unchanged": true,
+      "built_artifact_sha256": {
+        "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_prover_p3-c8d9d54b3c2da9c8": "dc56a160ff536d5844c7dd1480e7b6014b7b969ed834e63bcf768231c628c8da"
+      },
+      "source_inputs_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "started_utc": "2026-10-31T18:59:32.779111+00:00",
+      "finished_utc": "2026-10-31T19:05:28.261486+00:00",
+      "source_inputs_sha256": "0f23d2b12b701cf42831ab65f2648a4253d8d7a6dd5874c7f31ba7416498b542"
+    },
+    "prep-lut-tables-cpu-r1": {
+      "record": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-lut-tables-cpu-r1.json",
+      "record_sha256": "42dc038f074984cc19eb0f89e22def6e9252484be1051ca83aeea58fdff6d115",
+      "log": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-lut-tables-cpu-r1.log",
+      "log_sha256": "dc5da986e3d667ade22e8a623faa8b3ace90158baa3740da7bab2609dd767790",
+      "status": "passed",
+      "wall_seconds": 0.22892188200057717,
+      "executable_unchanged": true,
+      "built_artifact_sha256": {},
+      "source_inputs_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "started_utc": "2026-10-31T19:05:45.310027+00:00",
+      "finished_utc": "2026-10-31T19:05:45.540774+00:00",
+      "source_inputs_sha256": "0f23d2b12b701cf42831ab65f2648a4253d8d7a6dd5874c7f31ba7416498b542"
+    },
+    "prep-lut-gpu-r1": {
+      "record": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-lut-gpu-r1.json",
+      "record_sha256": "6c68ae9c3ea3a97a8df199a433a4b6c1b1a48697a96efe95f4be628a8adfc4f9",
+      "log": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-lut-gpu-r1.log",
+      "log_sha256": "1d0544f714480d053e6c4ca6676cfc35c471b1d57fb84de3eac3b06a0a3438b9",
+      "status": "passed",
+      "wall_seconds": 32.345581770001445,
+      "executable_unchanged": true,
+      "built_artifact_sha256": {},
+      "source_inputs_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "started_utc": "2026-10-31T19:05:52.646691+00:00",
+      "finished_utc": "2026-10-31T19:06:24.994071+00:00",
+      "source_inputs_sha256": "0f23d2b12b701cf42831ab65f2648a4253d8d7a6dd5874c7f31ba7416498b542"
+    },
+    "prep-lut-timing-r1": {
+      "record": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-lut-timing-r1.json",
+      "record_sha256": "527aa33b78868f64b39eef0435ef39be89bb749987ebf17e2785e158edf201d8",
+      "log": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-lut-timing-r1.log",
+      "log_sha256": "c27ef4d75eab360cd7a676072fa8be6a97aafdf4120e910d67c28895d3160e67",
+      "status": "passed",
+      "wall_seconds": 2.2304849569991347,
+      "executable_unchanged": true,
+      "built_artifact_sha256": {},
+      "source_inputs_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "started_utc": "2026-10-31T19:11:09.086665+00:00",
+      "finished_utc": "2026-10-31T19:11:11.318998+00:00",
+      "source_inputs_sha256": "0f23d2b12b701cf42831ab65f2648a4253d8d7a6dd5874c7f31ba7416498b542"
+    },
+    "prep-lut-proof-r1": {
+      "record": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-lut-proof-r1.json",
+      "record_sha256": "3bbd6ef67efa0890d5ae3abba9dc18d4571caf883952ca9b2f3fe509689cae01",
+      "log": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-lut-proof-r1.log",
+      "log_sha256": "dd1fc88f3294991721db3cdcce0e7bdb3f26e511dafeb7923fb9f93736226b2d",
+      "status": "passed",
+      "wall_seconds": 2.239420363002864,
+      "executable_unchanged": true,
+      "built_artifact_sha256": {},
+      "source_inputs_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "started_utc": "2026-10-31T19:11:27.050501+00:00",
+      "finished_utc": "2026-10-31T19:11:29.291753+00:00",
+      "source_inputs_sha256": "0f23d2b12b701cf42831ab65f2648a4253d8d7a6dd5874c7f31ba7416498b542"
+    }
+  }
+}

@@ -59,7 +59,8 @@ impl<'a> SourceNativeCompilePlan<'a> {
     /// Refusal returns the unconsumed metadata original to its issuer.
     pub(crate) fn new(native: &'a SourceNativeOperationPlan<'a>,
         blueprint: &'a NativeSourceBlueprint<'a, 'a>, original: Reservation,
-        planning: &Reservation, ledger: &Ledger)
+        planning: &Reservation, ledger: &Ledger,
+        resolved: crate::component_tree::native_shape::cohort::ResolvedBound)
         -> core::result::Result<Self, (SourceNativeCompileFailure, Reservation)>
     {
         let mut original = Some(original);
@@ -83,7 +84,7 @@ impl<'a> SourceNativeCompilePlan<'a> {
                 || !crate::host_memory_profile::HostMemoryProfile::valid_worker_ceiling(ledger.snapshot().allowance.host)
                 || ledger.snapshot().allowance.device > 8 << 30
             { return Err(SourceNativeCompileFailure::Authority); }
-            let compiler = blueprint.inspect(planning, ledger).map_err(SourceNativeCompileFailure::Compile)?;
+            let compiler = blueprint.inspect_resolved(planning, ledger, resolved).map_err(SourceNativeCompileFailure::Compile)?;
             let (output, compiler_scratch) = blueprint.compiler_requirements();
             let scratch = combine(&[compiler_scratch, Self::frame_requirements()?,
                 crate::execution::workflow_resources::source_native_compile_issuer_scratch_requirements()
@@ -116,6 +117,7 @@ impl<'a> SourceNativeCompilePlan<'a> {
     }
     fn frame_bytes() -> Result<usize> {
         [size_of::<Self>(), size_of::<Result<Self>>(),
+            size_of::<crate::component_tree::native_shape::cohort::ResolvedBound>(),
             size_of::<core::result::Result<Self, (SourceNativeCompileFailure, Reservation)>>(),
             size_of::<SourceNativeCompileOperation<'static, 'static>>(),
             size_of::<NativeSourceBlueprint<'static, 'static>>(),

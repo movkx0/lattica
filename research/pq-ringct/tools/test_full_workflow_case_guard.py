@@ -42,8 +42,10 @@ class CompleteCaseGuardTests(unittest.TestCase):
         selected = guard.configure(self.args, self.argv + ['--planning-cache', 'geometry-v1'],
                                    self.environment.copy(), self.root, self.state)
         plan = {guard.KEY: selected}
+        missing = copy.deepcopy(self.envelope)
+        missing['report'].pop('source_geometry_cache')
         with self.assertRaises(ValueError):
-            guard.validate_envelope(self.envelope, plan)
+            guard.validate_envelope(missing, plan)
         envelope = copy.deepcopy(self.envelope)
         envelope['report']['source_geometry_cache'] = dict(
             hits=10, misses=2, evictions=0, failed_computations=0,
@@ -55,8 +57,13 @@ class CompleteCaseGuardTests(unittest.TestCase):
             bad['report']['source_geometry_cache'][field] = value
             with self.assertRaises(ValueError):
                 guard.validate_envelope(bad, plan)
+        off = {guard.KEY: guard.configure(self.args, self.argv + ['--planning-cache', 'off'],
+                    self.environment.copy(), self.root, self.state)}
         with self.assertRaises(ValueError):
-            guard.validate_envelope(envelope, self.plan)
+            guard.validate_envelope(envelope, off)
+        envelope['report']['source_geometry_cache'] = None
+        envelope['report']['native_metadata_cache'] = None
+        guard.validate_envelope(envelope, off)
 
     def setUp(self):
         self.root = Path('/tmp/ringct-guard-test-source')
@@ -92,6 +99,56 @@ class CompleteCaseGuardTests(unittest.TestCase):
                                          complete_workflow_ns=350, ledger_peak_host_bytes=1000,
                                          ledger_peak_device_bytes=1000, cache_statistics=statistics,
                                          artifacts_qualified=True, mutations_qualified=True))
+
+        self.envelope['identity_cpu'] = self.plan[guard.KEY]['identity_cpu'].copy()
+        self.envelope['metadata_cpu'] = self.plan[guard.KEY]['metadata_cpu'].copy()
+        self.envelope['report']['source_geometry_cache'] = dict(hits=10, misses=2, evictions=0,
+            failed_computations=0, planning_ns=1, entries=2, reserved_host_bytes=1 << 20)
+        self.envelope['report']['metadata_planning'] = dict(
+            worker_ceiling=self.envelope['metadata_cpu']['max_workers'], peak_active_workers=1,
+            largest_cohort=1, envelopes=2, heights_completed=36, jobs_started=36, cohorts=36,
+            budget_reductions=0, failed_envelopes=0, admitted_host_bytes_peak=1 << 30,
+            wall_ns=10, worker_elapsed_ns=10, symbolic_preparations=2,
+            shared_symbolic_bytes_peak=128 << 20, worker_auxiliary_bytes_peak=1 << 20)
+        self.envelope['report']['native_metadata_cache'] = dict(hits=2, misses=3, entries=3, evictions=0,
+            failed_computations=0, planning_ns=1, reserved_host_bytes=1 << 20)
+        self.envelope['report']['owned_observations'] = {'identity_preprocessing': {'finalizations': 10}}
+
+    def test_metadata_defaults_override_and_invalid_reports(self):
+        self.assertEqual(self.plan[guard.KEY]['planning_cache'], 'geometry-v1')
+        self.assertIsNone(self.plan[guard.KEY]['metadata_cpu']['requested_workers'])
+        one = {guard.KEY: guard.configure(self.args, self.argv + ['--metadata-cpu-workers', '1'],
+                   self.environment.copy(), self.root, self.state)}
+        envelope = copy.deepcopy(self.envelope)
+        envelope['metadata_cpu'] = one[guard.KEY]['metadata_cpu']
+        envelope['report']['metadata_planning']['worker_ceiling'] = 1
+        guard.validate_envelope(envelope, one)
+        for key, value in [('peak_active_workers', 2), ('failed_envelopes', 1),
+                           ('admitted_host_bytes_peak', (32 << 30) + 1), ('jobs_started', 1),
+                           ('worker_ceiling', True)]:
+            bad = copy.deepcopy(envelope)
+            bad['report']['metadata_planning'][key] = value
+            with self.assertRaises(ValueError):
+                guard.validate_envelope(bad, one)
+        for value in ('0', '17', 'gpu'):
+            with self.assertRaises(ValueError):
+                guard.configure(self.args, self.argv + ['--metadata-cpu-workers', value],
+                                self.environment.copy(), self.root, self.state)
+
+    def test_qualified_tables_can_replace_all_registered_compiler_jobs(self):
+        envelope = copy.deepcopy(self.envelope)
+        stats = envelope['report']['metadata_planning']
+        for key in stats:
+            if key != 'worker_ceiling': stats[key] = 0
+        envelope['report']['source_geometry_cache']['table_hits'] = 2
+        guard.validate_envelope(envelope, self.plan)
+        for key, value in [('table_hits', 0), ('table_hits', 3), ('table_hits', True)]:
+            bad = copy.deepcopy(envelope)
+            bad['report']['source_geometry_cache'][key] = value
+            with self.assertRaises(ValueError): guard.validate_envelope(bad, self.plan)
+        bad = copy.deepcopy(envelope)
+        bad['report']['metadata_planning']['jobs_started'] = 1
+        with self.assertRaises(ValueError): guard.validate_envelope(bad, self.plan)
 
     def configure(self):
         return guard.configure(self.args, self.argv, self.environment.copy(), self.root, self.state)
@@ -140,19 +197,22 @@ class CompleteCaseGuardTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.configure()
 
-    def test_identity_schedule_is_explicit_bounded_and_receipt_bound(self):
-        self.argv += ['--identity-preprocessing', 'batched-v1', '--identity-max-streams', '2']
+    def test_identity_cpu_ceiling_and_retired_gpu_options(self):
+        self.argv += ['--identity-cpu-workers', '2']
         selected = self.configure()
-        self.assertEqual(selected['identity_preprocessing'], {'schedule': 'batched-v1', 'max_streams': 2})
+        self.assertEqual(selected['identity_cpu'], {'requested_workers': 2, 'max_streams': 2})
         with self.assertRaises(ValueError):
             guard.validate_envelope(self.envelope, {guard.KEY: selected})
-        for value in ('0', '3', '02', '17'):
+        for value in range(1, 17):
+            self.argv[-1] = str(value)
+            self.assertEqual(self.configure()['identity_cpu']['requested_workers'], value)
+        for value in ('0', '02', '17', 'batched-v1'):
             self.argv[-1] = value
-            with self.assertRaises(ValueError):
-                self.configure()
-        self.envelope['identity_preprocessing'] = {'schedule': 'serial', 'max_streams': True}
-        with self.assertRaises(ValueError):
-            guard.validate_envelope(self.envelope, self.plan)
+            with self.assertRaises(ValueError): self.configure()
+        self.argv[-2:] = ['--identity-preprocessing', 'serial']
+        with self.assertRaises(ValueError): self.configure()
+        self.envelope['identity_cpu']['max_streams'] = True
+        with self.assertRaises(ValueError): guard.validate_envelope(self.envelope, self.plan)
 
     def test_case_layout_seed_and_context_are_bound(self):
         for key, wrong in [('case', 'n4'), ('layout', 'paired-v1'),

@@ -155,6 +155,11 @@ impl OwnedWorkflowObservations {
                     if program_rows.is_some() { return Err(ObservationError::Rows); }
                     totals.machine_preprocessing = totals.machine_preprocessing.add(report.elapsed_ns)?;
                 }
+                CoverageScope::Operation => {
+                    if program_rows.is_some() { return Err(ObservationError::Rows); }
+                    totals.identity_preprocessing.finalizations = totals.identity_preprocessing.finalizations.checked_add(1).ok_or(ObservationError::Overflow)?;
+                    totals.identity_preprocessing.finalization_ns = totals.identity_preprocessing.finalization_ns.checked_add(report.elapsed_ns).ok_or(ObservationError::Overflow)?;
+                }
                 CoverageScope::RegisteredProof => {
                     let (active, padded) = program_rows.ok_or(ObservationError::Rows)?;
                     let rows = ProofRows::recursive(active, padded)?;

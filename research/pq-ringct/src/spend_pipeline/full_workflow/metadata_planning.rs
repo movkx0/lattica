@@ -89,6 +89,7 @@ pub(crate) struct SourceMetadataPlanningPlan<'a> {
     tables: Requirements,
     scratch: Requirements,
     planning: Requirements,
+    positions: std::sync::OnceLock<positions::SourcePositions>,
 }
 
 /// Issued only by the captured source plan. The member owner, original ordinal
@@ -124,11 +125,13 @@ impl<'a> SourceMetadataPlanningPlan<'a> {
         let inspection = SourceClosurePlanningPlan::inspect(scope, members, ledger, bootstrap)?;
         let mut result = Self { scope, members, ledger: ledger.clone(), counts: ProducerCounts::default(),
             inspection, constructors: Requirements::default(), tables: Requirements::default(),
-            scratch: Self::inspection_requirements()?, planning: Requirements::default() };
+            scratch: Self::inspection_requirements()?, planning: Requirements::default(),
+            positions: std::sync::OnceLock::new() };
         *stage = MetadataPlanningStage::SourceInspection;
         result.inspect_sources(stage)?;
         *stage = MetadataPlanningStage::Tables;
-        result.tables = tables::requirements(result.counts, members.len())?;
+        result.tables = sum(tables::requirements(result.counts, members.len())?,
+            result.position_requirements()?)?;
         // The actual returned descriptor and member-array/frame census persist
         // independently of temporary construction storage after installation.
         *stage = MetadataPlanningStage::RetainedPlan;

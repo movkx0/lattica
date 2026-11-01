@@ -244,22 +244,26 @@ fn byte_proof(limits: Limits) -> Result<Value, String> {
     // Use the public trace constructor; Program::evaluate is crate-private.
     drop(air.trace(&public, &witness).map_err(err)?);
     let registered =
-        RegisteredProgram::new_with_request(air, limits.host_bytes, strict()).map_err(err)?;
-    let started = Instant::now();
-    let mut proof = registered
-        .prove_with_request(&public, &witness, strict())
-        .map_err(err)?;
-    let proving_seconds = started.elapsed().as_secs_f64();
-    let verifier = registered.verifier();
-    drop(registered);
-    verifier.verify(&proof, &public)?;
-    mutation::check_byte(&verifier, &mut proof, &public)?;
-    verifier.verify(&proof, &public)?;
-    Ok(
-        json!({"scope": "PQ byte decomposition/XOR and production-modulus reduction diagnostic",
-        "recursive_component": false, "rows": rows, "proving_seconds": proving_seconds,
-        "native_child_backend": null, "proof_json_bytes": serde_json::to_vec(&proof).map_err(err)?.len()}),
-    )
+        RegisteredProgram::new_with_cpu_identity(
+            air,
+            limits.host_bytes,
+            strict(),
+            ).map_err(err)?;
+                let started = Instant::now();
+                let mut proof = registered
+                    .prove_with_request(&public, &witness, strict())
+                    .map_err(err)?;
+                let proving_seconds = started.elapsed().as_secs_f64();
+                let verifier = registered.verifier();
+                drop(registered);
+                verifier.verify(&proof, &public)?;
+                mutation::check_byte(&verifier, &mut proof, &public)?;
+                verifier.verify(&proof, &public)?;
+                Ok(
+                    json!({"scope": "PQ byte decomposition/XOR and production-modulus reduction diagnostic",
+                    "recursive_component": false, "rows": rows, "proving_seconds": proving_seconds,
+                    "native_child_backend": null, "proof_json_bytes": serde_json::to_vec(&proof).map_err(err)?.len()}),
+            )
 }
 
 /// Executes only after the caller has independently admitted the complete job.

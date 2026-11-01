@@ -9,6 +9,7 @@ use p3_symmetric::Permutation;
 mod compiler_memo;
 mod compiler_scratch;
 mod construction;
+mod counting;
 pub(super) use compiler_memo::CompilerMemo;
 mod host_evaluation;
 mod manifest;
@@ -401,6 +402,7 @@ pub struct ScopedProgramBuilder<'a> {
     witnesses: usize,
     wires: usize,
     operations: Vec<Op>,
+    counter: Option<counting::Counter>,
     constants: ConstructionMap<u64, Wire>,
     known: ConstructionMap<Wire, Val>,
     expressions: ConstructionMap<(u8, Wire, Wire), Wire>,
@@ -455,6 +457,7 @@ impl<'a> ScopedProgramBuilder<'a> {
             witnesses: 0,
             wires: publics,
             operations: vec![],
+            counter: None,
             constants: ConstructionMap::new(),
             known: ConstructionMap::new(),
             expressions: ConstructionMap::new(),
@@ -483,10 +486,20 @@ impl<'a> ScopedProgramBuilder<'a> {
         w
     }
     fn push_operation(&mut self, op: Op) {
-        self.memory.push(&mut self.operations, op);
+        if self.counter.is_some() {
+            self.count_operation(&op);
+        } else {
+            self.memory.push(&mut self.operations, op);
+        }
     }
     pub(crate) fn resource_failure(&self) -> Option<ExecutionError> {
         self.memory.failed.then_some(ExecutionError::TooLarge)
+    }
+    pub(crate) fn program_byte_limit_exceeded(&self) -> bool {
+        self.memory.byte_limit_exceeded
+    }
+    pub(crate) fn is_counting(&self) -> bool {
+        self.counter.is_some()
     }
     pub fn input(&mut self) -> Wire {
         if self.memory.failed || self.witnesses >= self.memory.input_limit {
@@ -507,12 +520,13 @@ impl<'a> ScopedProgramBuilder<'a> {
             return Wire(0);
         }
         let key = value.as_canonical_u64();
-        if let Some(w) = self.constants.get(&key) {
-            return *w;
-        }
+        let vacant = match self.constants.probe(key) {
+            Ok(value) => return value,
+            Err(vacant) => vacant,
+        };
         let out = self.allocate();
         self.push_operation(Op::Constant { value, out });
-        self.constants.insert(key, out, &mut self.memory);
+        self.constants.insert_vacant(vacant, out, &mut self.memory);
         self.known.insert(out, value, &mut self.memory);
         out
     }
@@ -521,7 +535,10 @@ impl<'a> ScopedProgramBuilder<'a> {
         ConstructionCounters {
             wires: self.wires,
             witnesses: self.witnesses,
-            operations: self.operations.len(),
+            operations: self
+                .counter
+                .as_ref()
+                .map_or(self.operations.len(), |c| c.operations()),
             wire_limit: self.memory.wire_limit,
             input_limit: self.memory.input_limit,
             requested_bytes_peak: self.memory.peak,
@@ -540,7 +557,9 @@ impl<'a> ScopedProgramBuilder<'a> {
         if self.memory.failed {
             return Wire(0);
         }
-        if let (Some(&x), Some(&y)) = (self.known.get(&a), self.known.get(&b)) {
+        let av = self.known.get(&a).copied();
+        let bv = self.known.get(&b).copied();
+        if let (Some(x), Some(y)) = (av, bv) {
             let value = self
                 .folding
                 .fold(
@@ -551,26 +570,30 @@ impl<'a> ScopedProgramBuilder<'a> {
                 .unwrap();
             return self.constant(value[0]);
         }
-        if self.known.get(&a) == Some(&Val::ZERO) {
+        if av == Some(Val::ZERO) {
             return b;
         }
-        if self.known.get(&b) == Some(&Val::ZERO) {
+        if bv == Some(Val::ZERO) {
             return a;
         }
         let key = (0, a.min(b), a.max(b));
-        if let Some(&w) = self.expressions.get(&key) {
-            return w;
-        }
+        let vacant = match self.expressions.probe(key) {
+            Ok(value) => return value,
+            Err(vacant) => vacant,
+        };
         let out = self.allocate();
         self.push_operation(Op::Add { a, b, out });
-        self.expressions.insert(key, out, &mut self.memory);
+        self.expressions
+            .insert_vacant(vacant, out, &mut self.memory);
         out
     }
     pub fn mul(&mut self, a: Wire, b: Wire) -> Wire {
         if self.memory.failed {
             return Wire(0);
         }
-        if let (Some(&x), Some(&y)) = (self.known.get(&a), self.known.get(&b)) {
+        let av = self.known.get(&a).copied();
+        let bv = self.known.get(&b).copied();
+        if let (Some(x), Some(y)) = (av, bv) {
             let value = self
                 .folding
                 .fold(
@@ -581,22 +604,24 @@ impl<'a> ScopedProgramBuilder<'a> {
                 .unwrap();
             return self.constant(value[0]);
         }
-        if self.known.get(&a) == Some(&Val::ONE) {
+        if av == Some(Val::ONE) {
             return b;
         }
-        if self.known.get(&b) == Some(&Val::ONE) {
+        if bv == Some(Val::ONE) {
             return a;
         }
-        if self.known.get(&a) == Some(&Val::ZERO) || self.known.get(&b) == Some(&Val::ZERO) {
+        if av == Some(Val::ZERO) || bv == Some(Val::ZERO) {
             return self.constant(Val::ZERO);
         }
         let key = (1, a.min(b), a.max(b));
-        if let Some(&w) = self.expressions.get(&key) {
-            return w;
-        }
+        let vacant = match self.expressions.probe(key) {
+            Ok(value) => return value,
+            Err(vacant) => vacant,
+        };
         let out = self.allocate();
         self.push_operation(Op::Mul { a, b, out });
-        self.expressions.insert(key, out, &mut self.memory);
+        self.expressions
+            .insert_vacant(vacant, out, &mut self.memory);
         out
     }
     pub fn inverse(&mut self, a: Wire) -> Wire {
@@ -613,22 +638,25 @@ impl<'a> ScopedProgramBuilder<'a> {
             }
         }
         let key = (2, a, a);
-        if let Some(&w) = self.expressions.get(&key) {
-            return w;
-        }
+        let vacant = match self.expressions.probe(key) {
+            Ok(value) => return value,
+            Err(vacant) => vacant,
+        };
         let out = self.allocate();
         self.push_operation(Op::Inverse { a, out });
-        self.expressions.insert(key, out, &mut self.memory);
+        self.expressions
+            .insert_vacant(vacant, out, &mut self.memory);
         out
     }
     pub fn select(&mut self, bit: Wire, a: Wire, b: Wire) -> Wire {
         if self.memory.failed {
             return Wire(0);
         }
-        if self.known.get(&bit) == Some(&Val::ZERO) {
+        let known = self.known.get(&bit).copied();
+        if known == Some(Val::ZERO) {
             return a;
         }
-        if self.known.get(&bit) == Some(&Val::ONE) {
+        if known == Some(Val::ONE) {
             return b;
         }
         if a == b {
@@ -636,13 +664,14 @@ impl<'a> ScopedProgramBuilder<'a> {
             return a;
         }
         let key = (bit, a, b);
-        if let Some(&out) = self.selections.get(&key) {
-            return out;
-        }
+        let vacant = match self.selections.probe(key) {
+            Ok(value) => return value,
+            Err(vacant) => vacant,
+        };
         let out = self.allocate();
         self.push_operation(Op::Select { bit, a, b, out });
         self.booleans.insert(bit, &mut self.memory); // Select itself enforces booleanity.
-        self.selections.insert(key, out, &mut self.memory);
+        self.selections.insert_vacant(vacant, out, &mut self.memory);
         out
     }
     pub(crate) fn cubic_mul(&mut self, a: [Wire; 3], b: [Wire; 3]) -> [Wire; 3] {
@@ -664,12 +693,14 @@ impl<'a> ScopedProgramBuilder<'a> {
                 .map(|v| self.constant(v));
         }
         let key = (0, a.min(b), a.max(b));
-        if let Some(&out) = self.cubic_expressions.get(&key) {
-            return out;
-        }
+        let vacant = match self.cubic_expressions.probe(key) {
+            Ok(value) => return value,
+            Err(vacant) => vacant,
+        };
         let out = core::array::from_fn(|_| self.allocate());
         self.push_operation(Op::CubicMul { a, b, out });
-        self.cubic_expressions.insert(key, out, &mut self.memory);
+        self.cubic_expressions
+            .insert_vacant(vacant, out, &mut self.memory);
         out
     }
     fn known_cubic(&self, a: [Wire; 3]) -> Option<[Val; 3]> {
@@ -692,12 +723,14 @@ impl<'a> ScopedProgramBuilder<'a> {
             }
         }
         let key = (1, a, a);
-        if let Some(&out) = self.cubic_expressions.get(&key) {
-            return out;
-        }
+        let vacant = match self.cubic_expressions.probe(key) {
+            Ok(value) => return value,
+            Err(vacant) => vacant,
+        };
         let out = core::array::from_fn(|_| self.allocate());
         self.push_operation(Op::CubicInverse { a, out });
-        self.cubic_expressions.insert(key, out, &mut self.memory);
+        self.cubic_expressions
+            .insert_vacant(vacant, out, &mut self.memory);
         out
     }
     pub fn assert_equal(&mut self, a: Wire, b: Wire) {
@@ -735,9 +768,10 @@ impl<'a> ScopedProgramBuilder<'a> {
         if self.memory.failed {
             return [Wire(0); 8];
         }
-        if let Some(&output) = self.permutations.get(&input) {
-            return output;
-        }
+        let vacant = match self.permutations.probe(input) {
+            Ok(value) => return value,
+            Err(vacant) => vacant,
+        };
         let output = core::array::from_fn(|_| self.allocate());
         self.push_operation(Op::Poseidon {
             // Overflow must stay invalid until finish() checks references;
@@ -745,7 +779,8 @@ impl<'a> ScopedProgramBuilder<'a> {
             input: input.map(|w| u32::try_from(w.0).unwrap_or(u32::MAX)),
             output: output.map(|w| u32::try_from(w.0).unwrap_or(u32::MAX)),
         });
-        self.permutations.insert(input, output, &mut self.memory);
+        self.permutations
+            .insert_vacant(vacant, output, &mut self.memory);
         output
     }
     fn admit_hint_storage(&mut self, entries: usize, bits: usize) -> bool {
@@ -775,6 +810,9 @@ impl<'a> ScopedProgramBuilder<'a> {
         bits: &[Wire],
         mut entry: impl FnMut(usize) -> Wire,
     ) -> Wire {
+        if self.counter.is_some() {
+            return self.count_hint(count, bits, entry);
+        }
         if !self.admit_hint_storage(count, bits.len()) {
             return Wire(0);
         }
@@ -837,6 +875,9 @@ impl<'a> ScopedProgramBuilder<'a> {
     }
 
     pub fn finish(mut self, fixed_height: Option<usize>) -> Result<Program, ExecutionError> {
+        if self.counter.is_some() {
+            return Err(ExecutionError::ProvingPolicy);
+        }
         if let Some(error) = self.resource_failure() {
             self.memory.report("rejected");
             return Err(error);

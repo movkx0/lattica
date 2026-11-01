@@ -1,0 +1,1072 @@
+{
+  "schema": "ringct-width32-run-v1",
+  "recorded_utc": "2026-10-31T20:20:05.196619+00:00",
+  "width": 32,
+  "supported_integer_widths": {
+    "minimum": 1,
+    "maximum": 32
+  },
+  "presets": [
+    1,
+    2,
+    4,
+    8,
+    12,
+    16,
+    24,
+    32
+  ],
+  "defaults_changed": false,
+  "resource_caps_changed": false,
+  "cryptographic_parameters_changed": false,
+  "performance_qualified": false,
+  "validated_source_root": "/home/access/code/lattica/.tools/width32-run-source",
+  "concurrent_original_checkout_edits_included": false,
+  "validation": {
+    "focused_python_checks": {
+      "passed": 52,
+      "failed": 0,
+      "command": "python3 -B -m unittest test_full_workflow_case_guard test_identity_preprocessing_receipts test_owned_preprocessing_campaign test_owned_workflow_benchmark",
+      "cwd": "/home/access/code/lattica/research/pq-ringct/tools"
+    },
+    "workflow_build": {
+      "path": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-w32-workflow-build-r2.json",
+      "sha256": "ebe5e6230c13a839fa4d0c44c7a399e68d0f4a73a8ed6dab2b5849080d1051c6",
+      "status": "passed",
+      "profile": "build",
+      "command": [
+        "/home/access/code/lattica/.tools/rust-1.96.0/bin/cargo",
+        "build",
+        "--release",
+        "--locked",
+        "--offline",
+        "--manifest-path",
+        "research/pq-ringct/Cargo.toml",
+        "--features",
+        "identity-batch-experiment",
+        "--bin",
+        "pq-ringct-full-workflow",
+        "-j2"
+      ],
+      "error": null,
+      "wall_seconds": 72.5366026940028,
+      "raw_log": "/home/access/code/lattica/.tools/width32-run-source/.tools/pq-opencl-opt/runs/prep-w32-workflow-build-r2.log",
+      "raw_log_sha256": "716bab47604810b5673dd3b73617a244ec7fc53c59572001774e48319d91b706",
+      "terminal_state": {
+        "LoadState": "loaded",
+        "ActiveState": "active",
+        "SubState": "exited",
+        "MainPID": "0",
+        "ControlPID": "0",
+        "Result": "success",
+        "NRestarts": "0",
+        "ExecMainCode": "1",
+        "ExecMainStatus": "0",
+        "ControlGroup": "",
+        "MemoryPeak": "2254983168",
+        "MemoryHigh": "6442450944",
+        "MemoryMax": "8589934592",
+        "MemorySwapMax": "0"
+      },
+      "source_inputs_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "built_artifact_sha256": {
+        "/home/access/code/lattica/.tools/width32-run-source/.tools/target-opencl/release/pq-ringct-full-workflow": "b9738752400fda1f28d026a7efdbd4b763bae873657caad91200370dd7959235"
+      }
+    },
+    "test_build": {
+      "path": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-w32-tests-build-r5.json",
+      "sha256": "7dee91fb5e2519fb1129de63dc894dc05a32e567b3b9f519d557488379e188eb",
+      "status": "passed",
+      "profile": "build",
+      "command": [
+        "/home/access/code/lattica/.tools/rust-1.96.0/bin/cargo",
+        "test",
+        "--release",
+        "--locked",
+        "--offline",
+        "--no-run",
+        "--lib",
+        "--manifest-path",
+        "research/pq-ringct/Cargo.toml",
+        "--features",
+        "identity-batch-experiment",
+        "-j2"
+      ],
+      "error": null,
+      "wall_seconds": 164.82647064000048,
+      "raw_log": "/home/access/code/lattica/.tools/width32-run-source/.tools/pq-opencl-opt/runs/prep-w32-tests-build-r5.log",
+      "raw_log_sha256": "c5f0066a40c33a9452de8c76f25404a317166906f729579c35d1edc6b189e755",
+      "terminal_state": {
+        "LoadState": "loaded",
+        "ActiveState": "active",
+        "SubState": "exited",
+        "MainPID": "0",
+        "ControlPID": "0",
+        "Result": "success",
+        "NRestarts": "0",
+        "ExecMainCode": "1",
+        "ExecMainStatus": "0",
+        "ControlGroup": "",
+        "MemoryPeak": "3056553984",
+        "MemoryHigh": "6442450944",
+        "MemoryMax": "8589934592",
+        "MemorySwapMax": "0"
+      },
+      "source_inputs_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "built_artifact_sha256": {
+        "/home/access/code/lattica/.tools/width32-run-source/.tools/target-opencl/release/deps/lattica_pq_ringct_research-6c1ab3ba7c7eed5c": "016fbbd231c131263951f1d643a2fec3b0d86243d9fe33e5efb0ba2629101042"
+      }
+    },
+    "fresh_generation_source_check": {
+      "path": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-w32-generation-source-r1.json",
+      "sha256": "21bce058c81180441b292a401c2b64269f84bb3e38ee36e3987c7174439fe3a7",
+      "status": "passed",
+      "profile": "research-compile",
+      "command": [
+        "/home/access/code/lattica/.tools/width32-run-source/.tools/target-opencl/release/deps/lattica_pq_ringct_research-6c1ab3ba7c7eed5c",
+        "spend_pipeline::full_workflow::fresh_generation::fresh_generation_source_plans_fit_standard_profile",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "error": null,
+      "wall_seconds": 2.2503385439995327,
+      "raw_log": "/home/access/code/lattica/.tools/width32-run-source/.tools/pq-opencl-opt/runs/prep-w32-generation-source-r1.log",
+      "raw_log_sha256": "7bbb6f7bd7b10a23487180f718b5e39e86757678c7317195fb0482ae2ad5577e",
+      "terminal_state": {
+        "LoadState": "loaded",
+        "ActiveState": "active",
+        "SubState": "exited",
+        "MainPID": "0",
+        "ControlPID": "0",
+        "Result": "success",
+        "NRestarts": "0",
+        "ExecMainCode": "1",
+        "ExecMainStatus": "0",
+        "ControlGroup": "",
+        "MemoryPeak": "2097152",
+        "MemoryHigh": "15032385536",
+        "MemoryMax": "17179869184",
+        "MemorySwapMax": "0"
+      },
+      "source_inputs_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "built_artifact_sha256": {}
+    },
+    "width32_gpu_smoke": {
+      "path": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-w32-gpu-smoke-r3.json",
+      "sha256": "c3d39393fb1c4ba08b5ecb424b9b922d741e3aa562f809bd50003197cd5c96c3",
+      "status": "passed",
+      "profile": "smoke",
+      "command": [
+        "/home/access/code/lattica/.tools/width32-run-source/.tools/target-opencl/release/deps/lattica_pq_ringct_research-6c1ab3ba7c7eed5c",
+        "identity_preprocessing_screen::gpu_identity_width_thirty_two_smoke",
+        "--exact",
+        "--ignored",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "error": null,
+      "wall_seconds": 12.282859679995454,
+      "raw_log": "/home/access/code/lattica/.tools/width32-run-source/.tools/pq-opencl-opt/runs/prep-w32-gpu-smoke-r3.log",
+      "raw_log_sha256": "035cc26e0c15ea8b210852dc2f4eb79ee7e4127e5be8b4210f1d25628e2313c3",
+      "terminal_state": {
+        "LoadState": "loaded",
+        "ActiveState": "active",
+        "SubState": "exited",
+        "MainPID": "0",
+        "ControlPID": "0",
+        "Result": "success",
+        "NRestarts": "0",
+        "ExecMainCode": "1",
+        "ExecMainStatus": "0",
+        "ControlGroup": "",
+        "MemoryPeak": "426930176",
+        "MemoryHigh": "15032385536",
+        "MemoryMax": "17179869184",
+        "MemorySwapMax": "0"
+      },
+      "source_inputs_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "built_artifact_sha256": {}
+    },
+    "width32_gpu_smoke_result": {
+      "changed_public_rejected": 32,
+      "device_ns": 89386912,
+      "footprint": {
+        "borrowed_program_host_bytes": 17152,
+        "host_bytes": 1276364256,
+        "managed_bytes": 1050624,
+        "max_allocation_bytes": 1048576,
+        "program_storage": "borrowed",
+        "retained_host_bytes": 1073872896
+      },
+      "fresh_proofs_verified": 32,
+      "hash_wall_ns": 99172847,
+      "programs": 32,
+      "schema": "identity-width32-smoke-v1",
+      "scope": "32-prefix small-program GPU batch; not a full RingCT workflow"
+    },
+    "width32_source_screen": {
+      "path": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-w32-source-r2.json",
+      "sha256": "77608ec60e90005fb600932b9e0ba524ba854d938906d1190e47d34fdd744d4a",
+      "status": "passed",
+      "profile": "research-compile-large",
+      "command": [
+        "/home/access/code/lattica/.tools/width32-run-source/.tools/target-opencl/release/deps/lattica_pq_ringct_research-6c1ab3ba7c7eed5c",
+        "graph_crypto::prover::paired::tests::full_workflow::identity_matrix::full_workflow_identity_width_thirty_two_source_admission",
+        "--exact",
+        "--ignored",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "error": null,
+      "wall_seconds": 666.5202679669965,
+      "raw_log": "/home/access/code/lattica/.tools/width32-run-source/.tools/pq-opencl-opt/runs/prep-w32-source-r2.log",
+      "raw_log_sha256": "c4352f329915204bbf51c814c19a9045176d3979e5c3eb2ed619b75fd1856bd1",
+      "terminal_state": {
+        "LoadState": "loaded",
+        "ActiveState": "active",
+        "SubState": "exited",
+        "MainPID": "0",
+        "ControlPID": "0",
+        "Result": "success",
+        "NRestarts": "0",
+        "ExecMainCode": "1",
+        "ExecMainStatus": "0",
+        "ControlGroup": "",
+        "MemoryPeak": "373321728",
+        "MemoryHigh": "32212254720",
+        "MemoryMax": "34359738368",
+        "MemorySwapMax": "0"
+      },
+      "source_inputs_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "built_artifact_sha256": {}
+    },
+    "width32_source_rows": [
+      {
+        "compiled_source_fingerprint": [
+          73,
+          141,
+          242,
+          71,
+          31,
+          144,
+          14,
+          230,
+          91,
+          101,
+          138,
+          210,
+          249,
+          195,
+          73,
+          163,
+          192,
+          102,
+          201,
+          107,
+          165,
+          68,
+          133,
+          226,
+          28,
+          237,
+          45,
+          152,
+          99,
+          155,
+          43,
+          239
+        ],
+        "compiler_construction_ceiling_bytes": 2147483648,
+        "complete_workflow_admitted": false,
+        "first_fixture": 0,
+        "fixture_count": 3,
+        "gpu_dispatches": 0,
+        "identity_preprocessing": {
+          "max_streams": 32,
+          "schedule": "batched-v1"
+        },
+        "layout": "singleton",
+        "managed_device_bytes": 8589934592,
+        "peak_compilers": 32,
+        "peak_prefix_borrowed_program_host_bytes": 4213756712,
+        "peak_prefix_incremental_host_bytes": 1276364256,
+        "peak_retained_compiler_host_bytes": 4243807672,
+        "refusal": null,
+        "requests": 9,
+        "schema": "ringct-identity-source-matrix-v4",
+        "scope": "SHAKE source constructors and declared lifetimes; complete graph/backend admission remains required",
+        "source_claim_peak_host_bytes": 17077749785,
+        "source_geometry_cache": {
+          "entries": 1,
+          "evictions": 0,
+          "failed_computations": 0,
+          "hits": 8,
+          "misses": 1,
+          "planning_ns": 6741181424,
+          "reserved_host_bytes": 1048576
+        },
+        "source_lifetimes_admitted": true,
+        "stark_proofs": 0,
+        "terminal_empty": true,
+        "transactions": 3,
+        "worker_host_bytes": 34359738368
+      },
+      {
+        "compiled_source_fingerprint": [
+          73,
+          141,
+          242,
+          71,
+          31,
+          144,
+          14,
+          230,
+          91,
+          101,
+          138,
+          210,
+          249,
+          195,
+          73,
+          163,
+          192,
+          102,
+          201,
+          107,
+          165,
+          68,
+          133,
+          226,
+          28,
+          237,
+          45,
+          152,
+          99,
+          155,
+          43,
+          239
+        ],
+        "compiler_construction_ceiling_bytes": 2147483648,
+        "complete_workflow_admitted": false,
+        "first_fixture": 3,
+        "fixture_count": 4,
+        "gpu_dispatches": 0,
+        "identity_preprocessing": {
+          "max_streams": 32,
+          "schedule": "batched-v1"
+        },
+        "layout": "singleton",
+        "managed_device_bytes": 8589934592,
+        "peak_compilers": 32,
+        "peak_prefix_borrowed_program_host_bytes": 4213756712,
+        "peak_prefix_incremental_host_bytes": 1276364256,
+        "peak_retained_compiler_host_bytes": 4243807672,
+        "refusal": null,
+        "requests": 12,
+        "schema": "ringct-identity-source-matrix-v4",
+        "scope": "SHAKE source constructors and declared lifetimes; complete graph/backend admission remains required",
+        "source_claim_peak_host_bytes": 17077749785,
+        "source_geometry_cache": {
+          "entries": 1,
+          "evictions": 0,
+          "failed_computations": 0,
+          "hits": 11,
+          "misses": 1,
+          "planning_ns": 6594050308,
+          "reserved_host_bytes": 1048576
+        },
+        "source_lifetimes_admitted": true,
+        "stark_proofs": 0,
+        "terminal_empty": true,
+        "transactions": 4,
+        "worker_host_bytes": 34359738368
+      }
+    ],
+    "sources_still_match_builds": true,
+    "source_manifest_entries": 2993,
+    "source_manifest_sha256": "ff19d8df86208ef17da82a1a05655a7455aef564c57e5b70617cdeb55bbc16f4",
+    "source_workflow_build_audit": {
+      "path": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-w32-source-audit-r2.json",
+      "sha256": "6a2ef50bf64ab77295c202e8f2e0af353b6d1684366db7f33426c9508e5ae774",
+      "result": {
+        "record": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-w32-source-r2.json",
+        "sha256": "77608ec60e90005fb600932b9e0ba524ba854d938906d1190e47d34fdd744d4a",
+        "selected_rows": [
+          {
+            "compiled_source_fingerprint": [
+              73,
+              141,
+              242,
+              71,
+              31,
+              144,
+              14,
+              230,
+              91,
+              101,
+              138,
+              210,
+              249,
+              195,
+              73,
+              163,
+              192,
+              102,
+              201,
+              107,
+              165,
+              68,
+              133,
+              226,
+              28,
+              237,
+              45,
+              152,
+              99,
+              155,
+              43,
+              239
+            ],
+            "compiler_construction_ceiling_bytes": 2147483648,
+            "complete_workflow_admitted": false,
+            "first_fixture": 0,
+            "fixture_count": 3,
+            "gpu_dispatches": 0,
+            "identity_preprocessing": {
+              "max_streams": 32,
+              "schedule": "batched-v1"
+            },
+            "layout": "singleton",
+            "managed_device_bytes": 8589934592,
+            "peak_compilers": 32,
+            "peak_prefix_borrowed_program_host_bytes": 4213756712,
+            "peak_prefix_incremental_host_bytes": 1276364256,
+            "peak_retained_compiler_host_bytes": 4243807672,
+            "refusal": null,
+            "requests": 9,
+            "schema": "ringct-identity-source-matrix-v4",
+            "scope": "SHAKE source constructors and declared lifetimes; complete graph/backend admission remains required",
+            "source_claim_peak_host_bytes": 17077749785,
+            "source_geometry_cache": {
+              "entries": 1,
+              "evictions": 0,
+              "failed_computations": 0,
+              "hits": 8,
+              "misses": 1,
+              "planning_ns": 6741181424,
+              "reserved_host_bytes": 1048576
+            },
+            "source_lifetimes_admitted": true,
+            "stark_proofs": 0,
+            "terminal_empty": true,
+            "transactions": 3,
+            "worker_host_bytes": 34359738368
+          },
+          {
+            "compiled_source_fingerprint": [
+              73,
+              141,
+              242,
+              71,
+              31,
+              144,
+              14,
+              230,
+              91,
+              101,
+              138,
+              210,
+              249,
+              195,
+              73,
+              163,
+              192,
+              102,
+              201,
+              107,
+              165,
+              68,
+              133,
+              226,
+              28,
+              237,
+              45,
+              152,
+              99,
+              155,
+              43,
+              239
+            ],
+            "compiler_construction_ceiling_bytes": 2147483648,
+            "complete_workflow_admitted": false,
+            "first_fixture": 3,
+            "fixture_count": 4,
+            "gpu_dispatches": 0,
+            "identity_preprocessing": {
+              "max_streams": 32,
+              "schedule": "batched-v1"
+            },
+            "layout": "singleton",
+            "managed_device_bytes": 8589934592,
+            "peak_compilers": 32,
+            "peak_prefix_borrowed_program_host_bytes": 4213756712,
+            "peak_prefix_incremental_host_bytes": 1276364256,
+            "peak_retained_compiler_host_bytes": 4243807672,
+            "refusal": null,
+            "requests": 12,
+            "schema": "ringct-identity-source-matrix-v4",
+            "scope": "SHAKE source constructors and declared lifetimes; complete graph/backend admission remains required",
+            "source_claim_peak_host_bytes": 17077749785,
+            "source_geometry_cache": {
+              "entries": 1,
+              "evictions": 0,
+              "failed_computations": 0,
+              "hits": 11,
+              "misses": 1,
+              "planning_ns": 6594050308,
+              "reserved_host_bytes": 1048576
+            },
+            "source_lifetimes_admitted": true,
+            "stark_proofs": 0,
+            "terminal_empty": true,
+            "transactions": 4,
+            "worker_host_bytes": 34359738368
+          }
+        ],
+        "complete_workflow_admitted": false
+      }
+    }
+  },
+  "scope": {
+    "smoke": "One full 32-prefix batch of small programs; every token consumed by a fresh GPU proof, CPU verified, with changed-public rejection.",
+    "source": "N3/N4 SHAKE source constructors and declared lifetimes. Excludes full graph retained pool and GPU/PCS backend reservations.",
+    "memory": "Additional prefix reservation is separate from original program storage. No physical VRAM peak or full-workflow speedup is inferred from the smoke test."
+  },
+  "full_n3": {
+    "path": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-w32-n3-r3.json",
+    "sha256": "0e71d733935e406e558b0aaa477b33840a1a88f237d9e148bbecfa8a8e521968",
+    "status": "failed_or_incomplete",
+    "profile": "full",
+    "command": [
+      "/home/access/code/lattica/.tools/width32-run-source/.tools/target-opencl/release/pq-ringct-full-workflow",
+      "--case",
+      "n3",
+      "--layout",
+      "singleton",
+      "--seed",
+      "5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b",
+      "--context",
+      "4949494949494949494949494949494949494949494949494949494949494949",
+      "--identity-preprocessing",
+      "batched-v1",
+      "--identity-max-streams",
+      "32",
+      "--planning-cache",
+      "off",
+      "--host-profile",
+      "standard"
+    ],
+    "error": "ValueError('command failed: {\"LoadState\": \"loaded\", \"ActiveState\": \"failed\", \"SubState\": \"failed\", \"MainPID\": \"0\", \"ControlPID\": \"0\", \"Result\": \"exit-code\", \"NRestarts\": \"0\", \"ExecMainCode\": \"1\", \"ExecMainStatus\": \"1\", \"ControlGroup\": \"\", \"MemoryPeak\": \"1952145408\", \"MemoryHigh\": \"48318382080\", \"MemoryMax\": \"50465865728\", \"MemorySwapMax\": \"0\"}')",
+    "wall_seconds": 3042.4866443860083,
+    "raw_log": "/home/access/code/lattica/.tools/width32-run-source/.tools/pq-opencl-opt/runs/prep-w32-n3-r3.log",
+    "raw_log_sha256": "c80dda69e4b8b1c88af7ad06673bcdf8e3094169c46b8e66aedb9835876e499d",
+    "terminal_state": {
+      "LoadState": "loaded",
+      "ActiveState": "failed",
+      "SubState": "failed",
+      "MainPID": "0",
+      "ControlPID": "0",
+      "Result": "exit-code",
+      "NRestarts": "0",
+      "ExecMainCode": "1",
+      "ExecMainStatus": "1",
+      "ControlGroup": "",
+      "MemoryPeak": "1952145408",
+      "MemoryHigh": "48318382080",
+      "MemoryMax": "50465865728",
+      "MemorySwapMax": "0"
+    },
+    "source_inputs_unchanged": true,
+    "all_subprocesses_terminal_and_reaped": true,
+    "host_memory_profile": {
+      "name": "standard",
+      "worker_host_bytes": 34359738368,
+      "memory_max_bytes": 50465865728,
+      "memory_high_bytes": 48318382080,
+      "fresh_memavailable_required_bytes": 52613349376
+    },
+    "native_generation_reports": [
+      {
+        "session_id": 1,
+        "ordinal": 0,
+        "elapsed_ns": 429931643921,
+        "witness_completed_calls": 835,
+        "witness_device_calls": 835,
+        "witness_device_ns": 317512084256,
+        "managed_bytes": 3151744,
+        "prelude_steps": 63,
+        "accepted_attempt_steps": 67108800,
+        "source_fingerprint": [
+          4,
+          90,
+          60,
+          175,
+          10,
+          114,
+          43,
+          241,
+          141,
+          141,
+          125,
+          142,
+          42,
+          41,
+          166,
+          1,
+          26,
+          52,
+          17,
+          143,
+          184,
+          125,
+          192,
+          190,
+          167,
+          172,
+          15,
+          80,
+          200,
+          162,
+          176,
+          108
+        ],
+        "kernel_source_sha256": "6c0ca18e5a54bee1e26a4ba7aa6fb516ec7a972c1c4c1e2a03ed307d038ed054"
+      },
+      {
+        "session_id": 1,
+        "ordinal": 1,
+        "elapsed_ns": 25670498544,
+        "witness_completed_calls": 71,
+        "witness_device_calls": 71,
+        "witness_device_ns": 25666306304,
+        "managed_bytes": 3151744,
+        "prelude_steps": 63,
+        "accepted_attempt_steps": 67108800,
+        "source_fingerprint": [
+          4,
+          90,
+          60,
+          175,
+          10,
+          114,
+          43,
+          241,
+          141,
+          141,
+          125,
+          142,
+          42,
+          41,
+          166,
+          1,
+          26,
+          52,
+          17,
+          143,
+          184,
+          125,
+          192,
+          190,
+          167,
+          172,
+          15,
+          80,
+          200,
+          162,
+          176,
+          108
+        ],
+        "kernel_source_sha256": "6c0ca18e5a54bee1e26a4ba7aa6fb516ec7a972c1c4c1e2a03ed307d038ed054"
+      },
+      {
+        "session_id": 1,
+        "ordinal": 2,
+        "elapsed_ns": 97125204372,
+        "witness_completed_calls": 257,
+        "witness_device_calls": 257,
+        "witness_device_ns": 97110855264,
+        "managed_bytes": 3151744,
+        "prelude_steps": 63,
+        "accepted_attempt_steps": 67108800,
+        "source_fingerprint": [
+          4,
+          90,
+          60,
+          175,
+          10,
+          114,
+          43,
+          241,
+          141,
+          141,
+          125,
+          142,
+          42,
+          41,
+          166,
+          1,
+          26,
+          52,
+          17,
+          143,
+          184,
+          125,
+          192,
+          190,
+          167,
+          172,
+          15,
+          80,
+          200,
+          162,
+          176,
+          108
+        ],
+        "kernel_source_sha256": "6c0ca18e5a54bee1e26a4ba7aa6fb516ec7a972c1c4c1e2a03ed307d038ed054"
+      }
+    ],
+    "completed_case_reports": [],
+    "resource_samples": {
+      "path": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-w32-n3-r3-resource-samples.jsonl",
+      "sha256": "e609407396cebf1a07b7091a7fba1b11bc06c6ce346fa878070f8a9eae5f9576",
+      "sample_count": 53,
+      "successful_gpu_samples": 47,
+      "maximum_sampled_card_used_mib": 2615,
+      "scope": "Periodic card-wide samples, including other applications; not an exact prover VRAM peak."
+    }
+  },
+  "authorized_temporary_cleanup": {
+    "path": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-w32-baballonia-cleanup-r1.json",
+    "sha256": "7fffab67c2649f1db132be359948d553a4e7739bd574ac36ff0e9132cb2e671a",
+    "result": {
+      "authorized_by_user": true,
+      "status": "completed",
+      "targets": [
+        {
+          "path": "/tmp/baballonia-SessionOptions.cs",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-beyond-bootstrap.md",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-beyond-findings.md",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-beyond-research",
+          "type": "directory"
+        },
+        {
+          "path": "/tmp/baballonia-beyond-squared-tree.json",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-beyond-squared.rs",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-bsb-cams.go",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-cpu-only-tests.log",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-cublas-package.json",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-cublas.whl",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-cuda",
+          "type": "directory"
+        },
+        {
+          "path": "/tmp/baballonia-cuda-artifacts.json",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-cuda-cache",
+          "type": "directory"
+        },
+        {
+          "path": "/tmp/baballonia-cuda-runtime-package.json",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-cuda-runtime.whl",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-cuda-tests.log",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-cudnn-package.json",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-cudnn.whl",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-cufft-package.json",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-cufft.whl",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-curand-package.json",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-curand.whl",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-depotdownloader-release.json",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-depotdownloader.zip",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-dotnet",
+          "type": "directory"
+        },
+        {
+          "path": "/tmp/baballonia-dotnet-home",
+          "type": "directory"
+        },
+        {
+          "path": "/tmp/baballonia-dotnet-releases.json",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-dotnet-sdk.tar.gz",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-focused-tests.log",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-inference-checks",
+          "type": "directory"
+        },
+        {
+          "path": "/tmp/baballonia-inference-tests.log",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-monado-compositor.c",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-monado-direct.c",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-nuget",
+          "type": "directory"
+        },
+        {
+          "path": "/tmp/baballonia-nvrtc-package.json",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-nvrtc.whl",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-openvr-driver.h",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-openvr-readme.md",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-openvr.h",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-pr247.json",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-publish-cuda",
+          "type": "directory"
+        },
+        {
+          "path": "/tmp/baballonia-publish.log",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-trainer-main.py",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-trainer-release.json",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-trainer-tree.json",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-trainer-workflow.yml",
+          "type": "file"
+        },
+        {
+          "path": "/tmp/baballonia-xoxdwm-tree.json",
+          "type": "file"
+        }
+      ],
+      "finished_utc": "2026-10-31T18:46:22.500720+00:00",
+      "tmp_bytes_released": 11258925056,
+      "memory_bytes_after": {
+        "MemTotal": 67328430080,
+        "MemAvailable": 61664129024,
+        "Shmem": 43868160
+      }
+    }
+  },
+  "source_isolation": {
+    "path": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-w32-source-isolation-r1.json",
+    "sha256": "a02abb5bfc056dadee2afc01114d894e573a4d1a80fef9de2582b82fd944f793",
+    "result": {
+      "source_record": "prep-w32-tests-build-r4",
+      "snapshot_root": "/home/access/code/lattica/.tools/width32-run-source",
+      "manifest_entries": 2993,
+      "restored_from_head": [
+        "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/compiler_constants.rs"
+      ],
+      "concurrent_original_edits_preserved": true,
+      "shared_guard_lock_and_evidence": "/home/access/code/lattica/.tools/pq-opencl-opt",
+      "shared_guard_lock": "/home/access/code/lattica/.tools/pq-opencl-opt/validation.lock",
+      "shared_logs_and_records": "/home/access/code/lattica/.tools/pq-opencl-opt/runs",
+      "isolated_artifact_directory": "/home/access/code/lattica/.tools/width32-run-source/.tools/pq-opencl-opt/artifacts"
+    }
+  },
+  "prior_full_run_attempt": {
+    "path": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-w32-n3-r2.json",
+    "sha256": "7418fe4604921c4f5ec0722666110f9f33756d7b924d19e83455da13f2d314e9",
+    "status": "failed_or_incomplete",
+    "profile": "full",
+    "command": [
+      "/home/access/code/lattica/.tools/target-opencl/release/pq-ringct-full-workflow",
+      "--case",
+      "n3",
+      "--layout",
+      "singleton",
+      "--seed",
+      "5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b",
+      "--context",
+      "4949494949494949494949494949494949494949494949494949494949494949",
+      "--identity-preprocessing",
+      "batched-v1",
+      "--identity-max-streams",
+      "32",
+      "--planning-cache",
+      "off",
+      "--host-profile",
+      "standard"
+    ],
+    "error": "ValueError('command failed: {\"LoadState\": \"loaded\", \"ActiveState\": \"failed\", \"SubState\": \"failed\", \"MainPID\": \"0\", \"ControlPID\": \"0\", \"Result\": \"exit-code\", \"NRestarts\": \"0\", \"ExecMainCode\": \"1\", \"ExecMainStatus\": \"1\", \"ControlGroup\": \"\", \"MemoryPeak\": \"2359296\", \"MemoryHigh\": \"48318382080\", \"MemoryMax\": \"50465865728\", \"MemorySwapMax\": \"0\"}')",
+    "wall_seconds": 0.23962212599872146,
+    "raw_log": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-w32-n3-r2.log",
+    "raw_log_sha256": "4b272a18488a5bb2c8ed00ae12d08c02cd0923c73bc79523d3cc2bb7d974b8d4",
+    "terminal_state": {
+      "LoadState": "loaded",
+      "ActiveState": "failed",
+      "SubState": "failed",
+      "MainPID": "0",
+      "ControlPID": "0",
+      "Result": "exit-code",
+      "NRestarts": "0",
+      "ExecMainCode": "1",
+      "ExecMainStatus": "1",
+      "ControlGroup": "",
+      "MemoryPeak": "2359296",
+      "MemoryHigh": "48318382080",
+      "MemoryMax": "50465865728",
+      "MemorySwapMax": "0"
+    },
+    "source_inputs_unchanged": true,
+    "all_subprocesses_terminal_and_reaped": true
+  },
+  "native_source_lock_fix": {
+    "file": "lattica-prover-p3/src/block_v2/gpu_hash/engine/device/native_private_spend/source/pins.rs",
+    "reviewed_device_source_sha3_256": "d728a9d4a5bcec4e54e41aaaf251cffd26b381bdf7bb675a9b6e2aa61109a348",
+    "reason": "Stale imported facade pin refused native generation before GPU startup. Reviewed session/context/matrix ownership against the existing source census; the other ten pins are unchanged.",
+    "pin_checks_disabled": false
+  },
+  "standard_profile_admission": {
+    "path": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-w32-n3-standard-admission-r1.json",
+    "sha256": "cdf0af520a8d3452c75748fd9b0a54f73b79b1262e11f25c98f962eca458b072",
+    "result": {
+      "gate": "CombinedAdmission",
+      "stage": "derive_metadata_complete",
+      "diagnostic": {
+        "allowance": {
+          "host": 34359738368,
+          "device": 8589934592
+        },
+        "projected_retained": {
+          "host": 3802557018,
+          "device": 0
+        },
+        "pool": {
+          "host": 9450710838,
+          "device": 0
+        },
+        "fixed_scratch": {
+          "host": 26770667632,
+          "device": 8589934592
+        },
+        "active": {
+          "host": 36221396814,
+          "device": 8589934592
+        },
+        "required": {
+          "host": 40023953832,
+          "device": 8589934592
+        },
+        "shortfall": {
+          "host": 5664215464,
+          "device": 0
+        }
+      },
+      "raw_refusal": "fresh workflow refused: Workflow { stage: Call(\"derive_metadata_complete\"), cause: CompleteSource { stage: Memory { action: \"close_memory\", details: CloseMemoryStage { gate: CombinedAdmission, closed_ordinal: None, allowance: Some(Bytes { host: 34359738368, device: 8589934592 }), observed_retained: Some(Bytes { host: 6781196930, device: 67109616 }), released_planning_scratch: Some(Bytes { host: 2978639912, device: 0 }), transferred_startup: Some(Bytes { host: 0, device: 67109616 }), projected_retained: Some(Bytes { host: 3802557018, device: 0 }), pool: Some(Bytes { host: 9450710838, device: 0 }), pool_bookkeeping: Some(Bytes { host: 18344, device: 0 }), pool_compiler: Some(Bytes { host: 6229814524, device: 0 }), retained_compiler: Some(Bytes { host: 755867232, device: 0 }), compiler_scratch: Some(Bytes { host: 284692200, device: 0 }), fixed_scratch: Some(Bytes { host: 26770667632, device: 8589934592 }), current_scratch: Some(Bytes { host: 26770667632, device: 8589934592 }), requested_backend: None, active: Some(Bytes { host: 36221396814, device: 8589934592 }), required: Some(Bytes { host: 40023953832, device: 8589934592 }), shortfall: Some(Bytes { host: 5664215464, device: 0 }) } }, cause: Resource } }",
+      "operation_limits_changed": false,
+      "retry_host_profile": "expanded-40",
+      "retry_plan": "prep-w32-n3-plan-r4.json",
+      "required_gib": 37.27521172910929
+    }
+  }
+}
