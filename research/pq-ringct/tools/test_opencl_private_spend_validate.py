@@ -27,6 +27,21 @@ def arguments(**changes):
 
 
 class CorrectnessPolicyTests(unittest.TestCase):
+    def test_callgraph_requires_exact_native_cpu_catalogue_and_reports_sampling_event(self):
+        command = ['/tmp/lattica_pq_ringct_research-profile',
+                   'component_tree::native_shape::profiling::tests::scaling::native_cpu_scaling_16',
+                   '--exact', '--ignored', '--test-threads=1', '--nocapture']
+        options = dict(profile='research-compile-large', expect_tests=True, build_label='native-build',
+                       command=command, cpu_scaling_profile='native', cpu_scaling_workers=16,
+                       cpu_scaling_callgraph=True)
+        plan = runner.build_plan(arguments(**options))
+        self.assertEqual(plan['cpu_scaling_profile']['events'], ['cycles:u'])
+        self.assertEqual(plan['environment']['LATTICA_PROVING_POLICY'], 'cpu-required')
+        for changed in [dict(cpu_scaling_profile=None), dict(cpu_scaling_profile='registered'),
+                        dict(command=command[:1] + ['recursive_proof'] + command[2:])]:
+            with self.assertRaises(ValueError):
+                runner.build_plan(arguments(**{**options, **changed}))
+
     def test_cargo_test_artifacts_must_be_emitted_even_if_stale_file_exists(self):
         build = dict(command=['/tmp/cargo', 'test', '--release', '--lib', '--no-run'])
         with tempfile.TemporaryDirectory() as directory:

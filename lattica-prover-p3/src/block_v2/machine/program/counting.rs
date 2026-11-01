@@ -197,6 +197,7 @@ use std::{
 struct WorkspaceState {
     generation: u64,
     cap: usize,
+    dynamic: bool,
     leased: bool,
     cached: Option<ScopedProgramBuilder<'static>>,
     reuses: u64,
@@ -206,18 +207,30 @@ thread_local! {
     static GENERATION: Cell<u64> = const { Cell::new(0) };
 }
 /// Recycles only numeric compiler interning tables within one CPU worker phase.
-/// The caller must reserve `cap` for this entire scope, including idle periods.
+/// Fixed workspaces reserve `cap` for the entire scope. Dynamic workspaces
+/// require an active-job grant before compilation and an exact retained-byte
+/// charge while idle. The enclosing scheduler owns both reservations.
 /// No instructions, witness values, proof material or numeric results are cached.
 pub struct CountingWorkspace {
     _thread: PhantomData<Rc<()>>,
 }
 impl CountingWorkspace {
     pub fn begin(cap: usize) -> Result<Self, ExecutionError> {
+        if cap == 0 {
+            return Err(ExecutionError::ProvingPolicy);
+        }
+        Self::create(cap, false)
+    }
+    /// Starts with no compiler buffers and no active allocation permission.
+    pub fn begin_dynamic() -> Result<Self, ExecutionError> {
+        Self::create(0, true)
+    }
+    fn create(cap: usize, dynamic: bool) -> Result<Self, ExecutionError> {
         WORKSPACE.with(|slot| {
             let mut slot = slot
                 .try_borrow_mut()
                 .map_err(|_| ExecutionError::ProvingPolicy)?;
-            if cap == 0 || slot.is_some() {
+            if slot.is_some() {
                 return Err(ExecutionError::ProvingPolicy);
             }
             let generation = GENERATION.with(|g| {
@@ -228,6 +241,7 @@ impl CountingWorkspace {
             *slot = Some(WorkspaceState {
                 generation,
                 cap,
+                dynamic,
                 leased: false,
                 cached: None,
                 reuses: 0,
@@ -240,6 +254,81 @@ impl CountingWorkspace {
     pub fn reuses(&self) -> u64 {
         WORKSPACE.with(|slot| slot.borrow().as_ref().map_or(0, |s| s.reuses))
     }
+    pub fn retained_bytes(&self) -> Result<usize, ExecutionError> {
+        WORKSPACE.with(|slot| {
+            let state = slot
+                .try_borrow()
+                .map_err(|_| ExecutionError::ProvingPolicy)?;
+            let state = state.as_ref().ok_or(ExecutionError::ProvingPolicy)?;
+            if state.leased {
+                return Err(ExecutionError::ProvingPolicy);
+            }
+            state
+                .cached
+                .as_ref()
+                .map_or(Ok(0), ScopedProgramBuilder::retained_counting_bytes)
+        })
+    }
+    /// Caller charges max(cap, previously reported retained bytes) before this
+    /// call. Shrinking occurs before any new compiler allocation can be made.
+    pub fn activate(&self, cap: usize) -> Result<usize, ExecutionError> {
+        WORKSPACE.with(|slot| {
+            let mut slot = slot
+                .try_borrow_mut()
+                .map_err(|_| ExecutionError::ProvingPolicy)?;
+            let state = slot.as_mut().ok_or(ExecutionError::ProvingPolicy)?;
+            if !state.dynamic || state.leased || state.cap != 0 || cap == 0 {
+                return Err(ExecutionError::ProvingPolicy);
+            }
+            let released = if let Some(cached) = state.cached.as_mut() {
+                let before = cached.retained_counting_bytes()?;
+                before - cached.trim_counting_maps(cap)?
+            } else {
+                0
+            };
+            state.cap = cap;
+            Ok(released)
+        })
+    }
+    /// Revokes growth permission and reports the exact requested map backing.
+    /// A failed or abandoned builder cannot release this accounting authority.
+    pub fn deactivate(&self) -> Result<usize, ExecutionError> {
+        WORKSPACE.with(|slot| {
+            let mut slot = slot
+                .try_borrow_mut()
+                .map_err(|_| ExecutionError::ProvingPolicy)?;
+            let state = slot.as_mut().ok_or(ExecutionError::ProvingPolicy)?;
+            if !state.dynamic || state.leased || state.cap == 0 {
+                return Err(ExecutionError::ProvingPolicy);
+            }
+            let retained = state
+                .cached
+                .as_ref()
+                .map_or(Ok(0), ScopedProgramBuilder::retained_counting_bytes)?;
+            if retained > state.cap {
+                return Err(ExecutionError::TooLarge);
+            }
+            state.cap = 0;
+            Ok(retained)
+        })
+    }
+    /// Runs on the owning idle worker. Credit is returned only after the maps
+    /// have actually been dropped; no RSS observation authorizes admission.
+    pub fn trim_idle(&self, limit: usize) -> Result<usize, ExecutionError> {
+        WORKSPACE.with(|slot| {
+            let mut slot = slot
+                .try_borrow_mut()
+                .map_err(|_| ExecutionError::ProvingPolicy)?;
+            let state = slot.as_mut().ok_or(ExecutionError::ProvingPolicy)?;
+            if !state.dynamic || state.leased || state.cap != 0 {
+                return Err(ExecutionError::ProvingPolicy);
+            }
+            state
+                .cached
+                .as_mut()
+                .map_or(Ok(0), |cached| cached.trim_counting_maps(limit))
+        })
+    }
 }
 impl Drop for CountingWorkspace {
     fn drop(&mut self) {
@@ -249,6 +338,59 @@ impl Drop for CountingWorkspace {
     }
 }
 impl ScopedProgramBuilder<'static> {
+    fn retained_counting_bytes(&self) -> Result<usize, ExecutionError> {
+        [
+            self.constants.retained_bytes(),
+            self.known.retained_bytes(),
+            self.expressions.retained_bytes(),
+            self.booleans.retained_bytes(),
+            self.cubic_expressions.retained_bytes(),
+            self.selections.retained_bytes(),
+            self.permutations.retained_bytes(),
+        ]
+        .into_iter()
+        .try_fold(0usize, |sum, bytes| {
+            sum.checked_add(bytes.ok_or(ExecutionError::TooLarge)?)
+                .ok_or(ExecutionError::TooLarge)
+        })
+    }
+    fn trim_counting_maps(&mut self, limit: usize) -> Result<usize, ExecutionError> {
+        let mut total = self.retained_counting_bytes()?;
+        while total > limit {
+            let sizes = [
+                self.constants.retained_bytes(),
+                self.known.retained_bytes(),
+                self.expressions.retained_bytes(),
+                self.booleans.retained_bytes(),
+                self.cubic_expressions.retained_bytes(),
+                self.selections.retained_bytes(),
+                self.permutations.retained_bytes(),
+            ];
+            let index = sizes
+                .iter()
+                .enumerate()
+                .max_by_key(|(_, bytes)| **bytes)
+                .unwrap()
+                .0;
+            let released = match index {
+                0 => self.constants.release_retained(),
+                1 => self.known.release_retained(),
+                2 => self.expressions.release_retained(),
+                3 => self.booleans.release_retained(),
+                4 => self.cubic_expressions.release_retained(),
+                5 => self.selections.release_retained(),
+                _ => self.permutations.release_retained(),
+            }
+            .ok_or(ExecutionError::TooLarge)?;
+            if released == 0 {
+                return Err(ExecutionError::TooLarge);
+            }
+            total = total
+                .checked_sub(released)
+                .ok_or(ExecutionError::TooLarge)?;
+        }
+        Ok(total)
+    }
     pub(in super::super) fn new_counting(
         publics: usize,
         limits: ConstructionLimits,

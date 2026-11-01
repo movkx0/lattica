@@ -10,6 +10,7 @@ mod compiler_memo;
 mod compiler_scratch;
 mod construction;
 mod counting;
+mod lanes;
 pub(super) use compiler_memo::CompilerMemo;
 pub use counting::CountingWorkspace;
 mod host_evaluation;
@@ -18,7 +19,8 @@ mod ports;
 pub(crate) use manifest::ManifestCursor;
 mod proof_inputs;
 mod storage;
-use construction::{Budget as ConstructionBudget, Map as ConstructionMap, Set as ConstructionSet};
+use construction::{Budget as ConstructionBudget, Map as ConstructionMap};
+use construction::packed::{Map as CompactMap, Set as ConstructionSet};
 use ports::WirePorts;
 pub use proof_inputs::ProofInputs;
 
@@ -405,13 +407,13 @@ pub struct ScopedProgramBuilder<'a> {
     operations: Vec<Op>,
     counter: Option<counting::Counter>,
     counting_workspace: Option<u64>,
-    constants: ConstructionMap<u64, Wire>,
-    known: ConstructionMap<Wire, Val>,
-    expressions: ConstructionMap<(u8, Wire, Wire), Wire>,
+    constants: CompactMap<u64, Wire>,
+    known: CompactMap<Wire, Val>,
+    expressions: CompactMap<(u8, Wire, Wire), Wire>,
     booleans: ConstructionSet,
-    cubic_expressions: ConstructionMap<(u8, [Wire; 3], [Wire; 3]), [Wire; 3]>,
-    selections: ConstructionMap<(Wire, Wire, Wire), Wire>,
-    permutations: ConstructionMap<[Wire; 8], [Wire; 8]>,
+    cubic_expressions: CompactMap<(u8, [Wire; 3], [Wire; 3]), [Wire; 3]>,
+    selections: CompactMap<(Wire, Wire, Wire), Wire>,
+    permutations: CompactMap<[Wire; 8], [Wire; 8]>,
 }
 
 impl<'a> ScopedProgramBuilder<'a> {
@@ -461,13 +463,13 @@ impl<'a> ScopedProgramBuilder<'a> {
             operations: vec![],
             counter: None,
             counting_workspace: None,
-            constants: ConstructionMap::new(),
-            known: ConstructionMap::new(),
-            expressions: ConstructionMap::new(),
+            constants: CompactMap::new(),
+            known: CompactMap::new(),
+            expressions: CompactMap::new(),
             booleans: ConstructionSet::new(),
-            cubic_expressions: ConstructionMap::new(),
-            selections: ConstructionMap::new(),
-            permutations: ConstructionMap::new(),
+            cubic_expressions: CompactMap::new(),
+            selections: CompactMap::new(),
+            permutations: CompactMap::new(),
         })
     }
     pub fn public(&self, index: usize) -> Result<Wire, ExecutionError> {
@@ -553,15 +555,22 @@ impl<'a> ScopedProgramBuilder<'a> {
     /// this map, so callers may specialize fixed arithmetic without inspecting
     /// secret witness values or changing program shape based on them.
     pub fn known_constant(&self, wire: Wire) -> Option<Val> {
-        self.known.get(&wire).copied()
+        self.known.get(&wire)
     }
 
     pub fn add(&mut self, a: Wire, b: Wire) -> Wire {
         if self.memory.failed {
             return Wire(0);
         }
-        let av = self.known.get(&a).copied();
-        let bv = self.known.get(&b).copied();
+        let av = self.known.get(&a);
+        let bv = self.known.get(&b);
+        self.add_known(a, b, av, bv)
+    }
+    #[inline]
+    fn add_known(&mut self, a: Wire, b: Wire, av: Option<Val>, bv: Option<Val>) -> Wire {
+        if self.memory.failed {
+            return Wire(0);
+        }
         if let (Some(x), Some(y)) = (av, bv) {
             let value = self
                 .folding
@@ -594,8 +603,15 @@ impl<'a> ScopedProgramBuilder<'a> {
         if self.memory.failed {
             return Wire(0);
         }
-        let av = self.known.get(&a).copied();
-        let bv = self.known.get(&b).copied();
+        let av = self.known.get(&a);
+        let bv = self.known.get(&b);
+        self.mul_known(a, b, av, bv)
+    }
+    #[inline]
+    fn mul_known(&mut self, a: Wire, b: Wire, av: Option<Val>, bv: Option<Val>) -> Wire {
+        if self.memory.failed {
+            return Wire(0);
+        }
         if let (Some(x), Some(y)) = (av, bv) {
             let value = self
                 .folding
@@ -631,7 +647,7 @@ impl<'a> ScopedProgramBuilder<'a> {
         if self.memory.failed {
             return Wire(0);
         }
-        if let Some(&x) = self.known.get(&a) {
+        if let Some(x) = self.known.get(&a) {
             if let Some(inv) = self.folding.fold(
                 FoldOperation::Inverse,
                 [x, Val::ZERO, Val::ZERO],
@@ -655,7 +671,14 @@ impl<'a> ScopedProgramBuilder<'a> {
         if self.memory.failed {
             return Wire(0);
         }
-        let known = self.known.get(&bit).copied();
+        let known = self.known.get(&bit);
+        self.select_known(bit, a, b, known)
+    }
+    #[inline]
+    fn select_known(&mut self, bit: Wire, a: Wire, b: Wire, known: Option<Val>) -> Wire {
+        if self.memory.failed {
+            return Wire(0);
+        }
         if known == Some(Val::ZERO) {
             return a;
         }
@@ -682,10 +705,10 @@ impl<'a> ScopedProgramBuilder<'a> {
             return [Wire(0); 3];
         }
         // Preserve cheaper scalar multiplication when either operand is in the base field.
-        if self.known.get(&a[1]) == Some(&Val::ZERO) && self.known.get(&a[2]) == Some(&Val::ZERO) {
+        if self.known.get(&a[1]) == Some(Val::ZERO) && self.known.get(&a[2]) == Some(Val::ZERO) {
             return b.map(|w| self.mul(a[0], w));
         }
-        if self.known.get(&b[1]) == Some(&Val::ZERO) && self.known.get(&b[2]) == Some(&Val::ZERO) {
+        if self.known.get(&b[1]) == Some(Val::ZERO) && self.known.get(&b[2]) == Some(Val::ZERO) {
             return a.map(|w| self.mul(b[0], w));
         }
         if let (Some(av), Some(bv)) = (self.known_cubic(a), self.known_cubic(b)) {
@@ -708,9 +731,9 @@ impl<'a> ScopedProgramBuilder<'a> {
     }
     fn known_cubic(&self, a: [Wire; 3]) -> Option<[Val; 3]> {
         Some([
-            *self.known.get(&a[0])?,
-            *self.known.get(&a[1])?,
-            *self.known.get(&a[2])?,
+            self.known.get(&a[0])?,
+            self.known.get(&a[1])?,
+            self.known.get(&a[2])?,
         ])
     }
     pub(crate) fn cubic_inverse(&mut self, a: [Wire; 3]) -> [Wire; 3] {
@@ -752,7 +775,7 @@ impl<'a> ScopedProgramBuilder<'a> {
         if self
             .known
             .get(&a)
-            .is_some_and(|&v| v == Val::ZERO || v == Val::ONE)
+            .is_some_and(|v| v == Val::ZERO || v == Val::ONE)
             || !self.booleans.insert(a, &mut self.memory)
         {
             return;

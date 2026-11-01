@@ -7,8 +7,8 @@ use crate::{
 
 pub(super) fn planning_frames() -> Result<usize> {
     let total = [endpoints::SOURCE_STORE_CONSTRUCTION_FRAME_BYTES,
-        bytes::<[crate::component_tree::native_shape::cohort::Request<'static>; 16]>(8)?,
-        bytes::<[Option<crate::component_tree::native_shape::NativeCoreBound>; 16]>(8)?,
+        bytes::<[crate::component_tree::native_shape::cohort::Request<'static>; crate::component_tree::native_shape::cohort::MAX]>(8)?,
+        bytes::<[Option<crate::component_tree::native_shape::NativeCoreBound>; crate::component_tree::native_shape::cohort::MAX]>(8)?,
         bytes::<source::AesBlueprint>(8)?, bytes::<OwnedAesNodeSource>(8)?,
         bytes::<OwnedAesStep>(8)?, bytes::<OwnedAesSlotRequirements>(8)?,
         bytes::<[Option<usize>; usize::BITS as usize]>(4)?,

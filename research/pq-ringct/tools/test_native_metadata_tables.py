@@ -19,7 +19,8 @@ class NativeTablesTests(unittest.TestCase):
                          jobs_started=39,peak_workers=min(workers,4),periodic_preparations=1,
                          admitted_host_bytes_peak=2 << 30)
             cohorts.append(dict(workers=workers,elapsed_ns=100,counts_equal=True,gpu_used=False,
-                                original_host_bytes_peak=2 << 30,cache=stats))
+                original_host_bytes_peak=2 << 30,phase_host_bytes_peak=2 << 30,
+                ledger_all_claims_released=True,cache=stats))
         identity = dict(source=[1]*32,profile=[2]*32,available=False)
         return rows,summary,cohorts,identity
     def content(self, rows, summary, cohorts, identity):
@@ -29,10 +30,16 @@ class NativeTablesTests(unittest.TestCase):
         fixture=self.receipt()
         accepted=validate(self.content(*fixture))
         self.assertEqual(len(accepted['cohorts']),5)
+        extended=copy.deepcopy(fixture)
+        extended[2][-1]['phase_host_bytes_peak']=3 << 30
+        extended[2][-1]['cache']['admitted_host_bytes_peak']=3 << 30
+        validate(self.content(*extended))
         for mutate in [lambda r,s,c,i:c[0]['cache'].update(peak_workers=2),
                        lambda r,s,c,i:c[0]['cache'].update(admitted_host_bytes_peak=3 << 30),
                        lambda r,s,c,i:c[0]['cache'].update(table_hits=1),
                        lambda r,s,c,i:c[0].update(counts_equal=False),
+                       lambda r,s,c,i:c[0].update(ledger_all_claims_released=False),
+                       lambda r,s,c,i:c[0].update(phase_host_bytes_peak=(3 << 30)+1),
                        lambda r,s,c,i:r[0].update(descriptor_key=r[1]['descriptor_key']),
                        lambda r,s,c,i:i.update(available=True),
                        lambda r,s,c,i:i.update(source=[1])]:

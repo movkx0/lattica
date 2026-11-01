@@ -71,7 +71,7 @@ fn interning_preserves_colliding_keys_and_replacements_across_growth() {
 
 #[test]
 fn table_growth_admits_old_and_new_slots_before_allocating() {
-    let slot = size_of::<Option<(u64, u64)>>();
+    let slot = size_of::<Option<(u64, u64)>>() + 1;
     for limit in [24 * slot - 1, 24 * slot] {
         let mut memory = budget(limit);
         let mut table = Map::<u64, u64>::new();
@@ -102,7 +102,7 @@ fn table_growth_admits_old_and_new_slots_before_allocating() {
 
 #[test]
 fn separate_tables_share_one_growth_allowance() {
-    let slot = size_of::<Option<(u64, u64)>>();
+    let slot = size_of::<Option<(u64, u64)>>() + 1;
     let mut memory = budget(32 * slot - 1);
     let mut first = Map::<u64, u64>::new();
     let mut second = Map::<u64, u64>::new();
@@ -396,4 +396,34 @@ fn vacant_insert_uses_one_hash_probe_without_growth() {
     assert_eq!(calls.load(Ordering::Relaxed), 1);
     assert_eq!(table.get(&Key(9, &calls)), Some(&99));
     assert!(!memory.failed);
+}
+
+#[test]
+fn control_reset_never_resurrects_stale_colliding_payloads() {
+    let mut memory = budget(1 << 20);
+    let mut table = Map::new();
+    for i in 0..64 {
+        table.insert(Collision(i), i, &mut memory);
+    }
+    let vacant = table.probe(Collision(128)).err().unwrap();
+    let backing = table.reset_retained().unwrap();
+    assert_eq!(backing, memory.live);
+    assert!(table.control.iter().all(|&b| b == 0));
+    // The initialized payload is intentionally retained; only control bytes
+    // decide occupancy, including when later growth rehashes the table.
+    assert!(table.slots.iter().any(Option::is_some));
+    table.insert_vacant(vacant, 128, &mut memory);
+    for i in 129..512 {
+        table.insert(Collision(i), i, &mut memory);
+    }
+    for i in 0..128 {
+        assert_eq!(table.get(&Collision(i)), None);
+    }
+    for i in 128..512 {
+        assert_eq!(table.get(&Collision(i)), Some(&i));
+    }
+    assert_eq!(memory.live, table.retained_bytes().unwrap());
+    let held = memory.live;
+    assert_eq!(table.clear(&mut memory), held);
+    assert_eq!(memory.live, 0);
 }

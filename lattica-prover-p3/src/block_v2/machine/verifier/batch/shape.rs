@@ -29,7 +29,7 @@ pub use envelope_cache::{
     HEIGHT_ENVELOPE_CACHE_RESERVED_BYTES,
 };
 pub use metadata_planning::{
-    metadata_cpu_worker_ceiling,
+    metadata_cpu_worker_ceiling, native_metadata_cpu_worker_ceiling,
     MetadataCpuOptions, MetadataPlanningScope, MetadataPlanningStatistics, MAX_METADATA_WORKERS,
     METADATA_PLANNING_SCOPE_RESERVED_BYTES,
 };

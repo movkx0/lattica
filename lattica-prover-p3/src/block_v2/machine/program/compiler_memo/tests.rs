@@ -33,7 +33,7 @@ fn values() -> Evaluation<'static> {
 
 #[test]
 fn expression_memos_admit_shared_growth_and_release_exact_storage() {
-    let slot = size_of::<Option<(usize, Extension)>>();
+    let slot = (size_of::<Option<(usize, Extension)>>() + 1);
     for limit in [32 * slot - 1, 32 * slot] {
         let mut b = ProgramBuilder::new(0).unwrap();
         b.memory.limit = Some(limit);
@@ -103,7 +103,7 @@ fn lowerer_releases_memos_on_success_error_and_unwind() {
 
 #[test]
 fn lowerer_quota_failure_is_latched_and_blocks_cached_results() {
-    let slot = size_of::<Option<(usize, Extension)>>();
+    let slot = (size_of::<Option<(usize, Extension)>>() + 1);
     for limit in [8 * slot - 1, 16 * slot - 1] {
         let mut b = ProgramBuilder::new(3).unwrap();
         b.memory.limit = Some(limit);

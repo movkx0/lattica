@@ -75,6 +75,8 @@ pub struct MetadataPlanningStatistics {
     pub wall_ns: u128,
     pub worker_elapsed_ns: u128,
     pub threads_spawned: u64,
+    pub pinned_workers: u64,
+    pub affinity_failures: u64,
     pub queue_refills: u64,
     pub workspace_reuses: u64,
     pub coordinator_wait_ns: u128,
@@ -150,6 +152,11 @@ fn busy() -> CompileError {
 pub fn metadata_cpu_worker_ceiling() -> usize {
     STATE.with(|slot| slot.borrow().as_ref().map_or(1, |s| s.options.max_workers))
 }
+/// Automatic native compilation uses the measured throughput ceiling. Explicit
+/// worker requests remain ceilings of their own, subject to live memory admission.
+pub fn native_metadata_cpu_worker_ceiling() -> usize {
+    metadata_cpu_worker_ceiling()
+}
 fn overflow() -> CompileError {
     CompileError::ResourceAdmission("metadata planning counter overflow")
 }
@@ -159,7 +166,7 @@ fn record(s: MetadataPlanningStatistics) -> Result<(), CompileError> {
         let Some(state) = state.as_mut() else { return Ok(()); };
         let t = &mut state.statistics;
         macro_rules! add { ($($field:ident),+) => { $(t.$field = t.$field.checked_add(s.$field).ok_or_else(overflow)?;)+ }; }
-        add!(envelopes, symbolic_preparations, heights_completed, jobs_started, cohorts, budget_reductions, failed_envelopes, wall_ns, worker_elapsed_ns, threads_spawned, queue_refills, workspace_reuses, coordinator_wait_ns);
+        add!(envelopes, symbolic_preparations, heights_completed, jobs_started, cohorts, budget_reductions, failed_envelopes, wall_ns, worker_elapsed_ns, threads_spawned, pinned_workers, affinity_failures, queue_refills, workspace_reuses, coordinator_wait_ns);
         t.peak_active_workers = t.peak_active_workers.max(s.peak_active_workers);
         t.shared_symbolic_bytes_peak = t.shared_symbolic_bytes_peak.max(s.shared_symbolic_bytes_peak);
         t.worker_auxiliary_bytes_peak = t.worker_auxiliary_bytes_peak.max(s.worker_auxiliary_bytes_peak);
@@ -414,6 +421,8 @@ fn run_jobs(
         .map_err(|_| CompileError::Shape("metadata worker pool failed"))?;
         statistics.jobs_started += pool.jobs_started as u64;
         statistics.threads_spawned += pool.threads_spawned as u64;
+        statistics.pinned_workers += pool.pinned_workers as u64;
+        statistics.affinity_failures += pool.affinity_failures as u64;
         statistics.peak_active_workers =
             statistics.peak_active_workers.max(pool.peak_active_workers);
         statistics.worker_elapsed_ns += pool.worker_elapsed_ns;

@@ -29,7 +29,9 @@ fn order(n: usize, step: usize) -> usize {
 }
 
 fn cheaper_than_dense(n: usize, deviations: usize, parts: usize) -> bool {
-    let proposed = deviations.saturating_mul(2).saturating_mul(LANES + EXT_LANES)
+    let proposed = deviations
+        .saturating_mul(2)
+        .saturating_mul(LANES + EXT_LANES)
         .saturating_add(parts.saturating_mul(400 * EXT_LANES + 5 * LANES))
         .saturating_add((n.ilog2() as usize + 1) * LANES);
     proposed < (n - 1).saturating_mul(LANES + EXT_LANES)
@@ -273,7 +275,10 @@ pub(super) fn value(
         )?;
         sum = b.ext_add(sum, indicator);
         if let Some(error) = b.resource_failure() {
-            return Err(CompileError::from_builder_admission(error, "periodic progression allowance"));
+            return Err(CompileError::from_builder_admission(
+                error,
+                "periodic progression allowance",
+            ));
         }
     }
     let deviation = b.constant(plan.deviation);

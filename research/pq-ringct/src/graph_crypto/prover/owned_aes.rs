@@ -189,7 +189,7 @@ impl<'request> OwnedAesRequestPlan<'request> {
                 }
                 // The original scratch above covers the largest source planner.
                 // Consume returned numbers directly, also without a cache scope.
-                cores = cohort::bounds_exact(&requests[..count], source::construction())
+                cores = cohort::bounds_exact_in_ledger(&requests[..count], source::construction(), scratch, ledger)
                     .map_err(|_| PairedFailure::Source)?;
             }
             let leaf_source = blueprint.inspect_bound(cores[index % cohort::MAX].take()

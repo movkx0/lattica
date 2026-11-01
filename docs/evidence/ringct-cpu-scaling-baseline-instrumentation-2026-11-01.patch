@@ -1,0 +1,497 @@
+diff --git a/lattica-prover-p3/src/block_v2/machine/cpu_queue/diagnostics.rs b/lattica-prover-p3/src/block_v2/machine/cpu_queue/diagnostics.rs
+new file mode 100644
+--- /dev/null
++++ b/lattica-prover-p3/src/block_v2/machine/cpu_queue/diagnostics.rs
+@@ -0,0 +1,78 @@
++//! Optional CPU-only measurement. The guard enables this only for exact tests.
++//! Fixed thread/helper reservations cover the bounded /proc reads and reports.
++#[cfg(target_os = "linux")]
++mod platform {
++    use std::io::Read;
++
++    #[derive(Clone, Copy)]
++    struct Usage { user_ns: u64, system_ns: u64, voluntary: u64, involuntary: u64 }
++    fn usage() -> Option<Usage> {
++        let mut value = std::mem::MaybeUninit::<libc::rusage>::uninit();
++        if unsafe { libc::getrusage(libc::RUSAGE_THREAD, value.as_mut_ptr()) } != 0 { return None; }
++        let r = unsafe { value.assume_init() };
++        let ns = |t: libc::timeval| t.tv_sec as u64 * 1_000_000_000 + t.tv_usec as u64 * 1_000;
++        Some(Usage { user_ns:ns(r.ru_utime), system_ns:ns(r.ru_stime),
++            voluntary:r.ru_nvcsw as u64, involuntary:r.ru_nivcsw as u64 })
++    }
++    fn migrations() -> Option<u64> {
++        let mut text = String::new();
++        std::fs::File::open("/proc/thread-self/sched").ok()?.take(16 << 10).read_to_string(&mut text).ok()?;
++        text.lines().find_map(|line| {
++            let (key, value) = line.split_once(':')?;
++            (key.trim() == "se.nr_migrations").then(|| value.trim().parse().ok()).flatten()
++        })
++    }
++    pub struct Thread {
++        before: Usage,
++        migrations: Option<u64>,
++        tid: i64,
++        cpu: i32,
++    }
++    impl Thread {
++        pub fn begin() -> Option<Self> {
++            if std::env::var("LATTICA_CPU_SCALING_PROFILE").as_deref() != Ok("1") { return None; }
++            Some(Self { before:usage()?, migrations:migrations(),
++                tid:unsafe { libc::syscall(libc::SYS_gettid) } as i64,
++                cpu:unsafe { libc::sched_getcpu() } })
++        }
++        pub fn job(&self) -> Option<Job> { Some(Job { before:usage()?, tid:self.tid }) }
++    }
++    impl Drop for Thread {
++        fn drop(&mut self) {
++            if let Some(after) = usage() {
++                eprintln!("CPU_SCALING_THREAD {}", serde_json::json!({
++                    "tid":self.tid, "start_cpu":self.cpu, "end_cpu":unsafe { libc::sched_getcpu() },
++                    "user_ns":after.user_ns-self.before.user_ns,
++                    "system_ns":after.system_ns-self.before.system_ns,
++                    "voluntary_switches":after.voluntary-self.before.voluntary,
++                    "involuntary_switches":after.involuntary-self.before.involuntary,
++                    "migrations":self.migrations.zip(migrations()).and_then(|(a,b)| b.checked_sub(a)),
++                }));
++            }
++        }
++    }
++    pub struct Job { before: Usage, tid:i64 }
++    impl Job {
++        pub fn finish(self, slot:usize, elapsed_ns:u128) {
++            if let Some(after) = usage() {
++                eprintln!("CPU_SCALING_JOB {}", serde_json::json!({
++                    "tid":self.tid, "slot":slot, "elapsed_ns":elapsed_ns,
++                    "user_ns":after.user_ns-self.before.user_ns,
++                    "system_ns":after.system_ns-self.before.system_ns,
++                }));
++            }
++        }
++    }
++}
++
++#[cfg(not(target_os = "linux"))]
++mod platform {
++    pub struct Thread;
++    pub struct Job;
++    impl Thread {
++        pub fn begin() -> Option<Self> { None }
++        pub fn job(&self) -> Option<Job> { None }
++    }
++    impl Job { pub fn finish(self, _:usize, _:u128) {} }
++}
++pub(super) use platform::Thread;
+diff --git a/lattica-prover-p3/src/block_v2/machine/cpu_queue.rs b/lattica-prover-p3/src/block_v2/machine/cpu_queue.rs
+--- a/lattica-prover-p3/src/block_v2/machine/cpu_queue.rs
++++ b/lattica-prover-p3/src/block_v2/machine/cpu_queue.rs
+@@ -4,6 +4,7 @@
+ //! submitted job is joined on errors, panics and partial thread-spawn failures.
+ use std::sync::{Condvar, Mutex, MutexGuard};
+ use std::time::Instant;
++mod diagnostics;
+ 
+ pub const MAX_WORKERS: usize = 16;
+ pub const STACK_BYTES: usize = 2 << 20;
+@@ -173,6 +174,7 @@
+                 .name("ringct-cpu-queue".into())
+                 .stack_size(STACK_BYTES)
+                 .spawn_scoped(scope, move || {
++                    let diagnostic = diagnostics::Thread::begin();
+                     let mut scratch =
+                         match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                             initialize(slot)
+@@ -207,6 +209,7 @@
+                                     .unwrap_or_else(|e| e.into_inner());
+                             }
+                         };
++                        let measured_job = diagnostic.as_ref().and_then(|d| d.job());
+                         let started = Instant::now();
+                         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                             work(&mut scratch, job)
+@@ -215,6 +218,7 @@
+                         // The work closure has returned/unwound and dropped its
+                         // input owners before the coordinator can reclaim credit.
+                         let elapsed_ns = started.elapsed().as_nanos();
++                        if let Some(job) = measured_job { job.finish(slot, elapsed_ns); }
+                         let mut state = shared.lock();
+                         state.active -= 1;
+                         state.statistics.worker_elapsed_ns += elapsed_ns;
+diff --git a/lattica-prover-p3/src/block_v2/machine/verifier/batch/shape/metadata_planning/tests/scaling.rs b/lattica-prover-p3/src/block_v2/machine/verifier/batch/shape/metadata_planning/tests/scaling.rs
+new file mode 100644
+--- /dev/null
++++ b/lattica-prover-p3/src/block_v2/machine/verifier/batch/shape/metadata_planning/tests/scaling.rs
+@@ -0,0 +1,40 @@
++use super::*;
++
++fn comparison(workers: usize) {
++    assert_eq!(std::env::var("LATTICA_CPU_SCALING_PROFILE").as_deref(), Ok("1"));
++    let planner = MetadataPlanningScope::begin(MetadataCpuOptions::workers(workers).unwrap()).unwrap();
++    let cache = HeightEnvelopeCacheScope::begin([1; 32]).unwrap();
++    let started = Instant::now();
++    let values = [25, 28, 38, 46]
++        .map(|public| verifier_height_envelope(public, 1 << 20, limits(), 512 << 20).unwrap());
++    let elapsed_ns = started.elapsed().as_nanos();
++    for value in values {
++        assert_eq!(value.heights_enumerated, 18);
++        assert_eq!([
++            value.operations.scalar, value.operations.cubic, value.operations.poseidon,
++            value.wire_upper_bound, value.input_values_upper_bound, value.selection_hint_words_upper_bound,
++        ], super::super::super::precomputed::reference_maxima(value.public_values));
++    }
++    let stats = planner.statistics();
++    assert_eq!(stats.heights_completed, 72);
++    assert_eq!(stats.failed_envelopes, 0);
++    assert_eq!(cache.statistics().table_hits, 0);
++    assert!(stats.peak_active_workers <= workers);
++    let original = values.iter().map(|v| v.planning_storage.total_requested_bytes).max().unwrap();
++    assert!(stats.admitted_host_bytes_peak <= original);
++    eprintln!("CPU_SCALING_RESULT {}", serde_json::json!({
++        "kind":"registered", "workers":workers, "cases":72, "elapsed_ns":elapsed_ns,
++        "counts_equal":true, "gpu_used":false, "planning":stats,
++        "original_host_bytes":original, "cache":cache.statistics(),
++    }));
++}
++
++#[test]
++#[ignore = "CPU-only perf comparison; serialized scaling guard required"]
++fn registered_cpu_scaling_4() { comparison(4); }
++#[test]
++#[ignore = "CPU-only perf comparison; serialized scaling guard required"]
++fn registered_cpu_scaling_8() { comparison(8); }
++#[test]
++#[ignore = "CPU-only perf comparison; serialized scaling guard required"]
++fn registered_cpu_scaling_16() { comparison(16); }
+diff --git a/lattica-prover-p3/src/block_v2/machine/verifier/batch/shape/metadata_planning/tests.rs b/lattica-prover-p3/src/block_v2/machine/verifier/batch/shape/metadata_planning/tests.rs
+--- a/lattica-prover-p3/src/block_v2/machine/verifier/batch/shape/metadata_planning/tests.rs
++++ b/lattica-prover-p3/src/block_v2/machine/verifier/batch/shape/metadata_planning/tests.rs
+@@ -325,3 +325,5 @@
+     assert_eq!(stats.jobs_started, 4);
+     assert_eq!(stats.workspace_reuses, 0);
+ }
++
++mod scaling;
+diff --git a/lattica-prover-p3/src/block_v2/machine/verifier/batch/shape/precomputed.rs b/lattica-prover-p3/src/block_v2/machine/verifier/batch/shape/precomputed.rs
+--- a/lattica-prover-p3/src/block_v2/machine/verifier/batch/shape/precomputed.rs
++++ b/lattica-prover-p3/src/block_v2/machine/verifier/batch/shape/precomputed.rs
+@@ -21,6 +21,15 @@
+     public_values: usize,
+     log_height: usize,
+     values: [usize; 9],
++}
++
++/// Test oracle only: numeric maxima from the previously qualified catalogue.
++/// This never grants table lookup, construction, or proof authority.
++#[cfg(test)]
++pub(super) fn reference_maxima(public: usize) -> [usize; 6] {
++    let rows: Vec<_> = data::ROWS.iter().filter(|r| r.public_values == public).collect();
++    assert_eq!(rows.len(), 18);
++    core::array::from_fn(|i| rows.iter().map(|r| r.values[i]).max().unwrap())
+ }
+ pub(super) const RESERVED_BYTES: usize = 72 * core::mem::size_of::<Row>() + 4096;
+ fn signature() -> [usize; 12] {
+diff --git a/research/pq-ringct/src/component_tree/native_shape/cohort.rs b/research/pq-ringct/src/component_tree/native_shape/cohort.rs
+--- a/research/pq-ringct/src/component_tree/native_shape/cohort.rs
++++ b/research/pq-ringct/src/component_tree/native_shape/cohort.rs
+@@ -237,6 +237,14 @@
+         },
+     );
+     stats.wall_ns = started.elapsed().as_nanos();
++    #[cfg(test)]
++    if std::env::var("LATTICA_CPU_SCALING_PROFILE").as_deref() == Ok("1") {
++        eprintln!("CPU_SCALING_JOBS {}", serde_json::json!({
++            "kind":"native", "job_ns":&stats.job_ns[..descriptors.len()],
++            "compiler_peak_bytes":results[..descriptors.len()].iter().map(|r| r.map(|b| b.counts.planner_requested_program_bytes_peak)).collect::<Vec<_>>(),
++            "original_host_bytes":original, "statistics":stats,
++        }));
++    }
+     stats.failed_cohorts = u64::from(result.is_err());
+     cache::record_cohort(stats)?;
+     // All workers have joined and their temporary owners have died. Errors
+diff --git a/research/pq-ringct/src/component_tree/native_shape/precomputed.rs b/research/pq-ringct/src/component_tree/native_shape/precomputed.rs
+--- a/research/pq-ringct/src/component_tree/native_shape/precomputed.rs
++++ b/research/pq-ringct/src/component_tree/native_shape/precomputed.rs
+@@ -14,6 +14,12 @@
+     pub key: [u8; 32],
+     pub geometry: [usize; 5],
+     pub values: [usize; 8],
++}
++
++/// Comparison fixture only; it bypasses no runtime source or admission check.
++#[cfg(test)]
++pub(super) fn reference_values(key: [u8; 32]) -> [usize; 8] {
++    data::ROWS.iter().find(|r| r.key == key).expect("qualified descriptor fixture").values
+ }
+ mod data;
+ pub(super) fn content_digest() -> [u8; 32] {
+diff --git a/research/pq-ringct/src/component_tree/native_shape/profiling/tests/scaling.rs b/research/pq-ringct/src/component_tree/native_shape/profiling/tests/scaling.rs
+new file mode 100644
+--- /dev/null
++++ b/research/pq-ringct/src/component_tree/native_shape/profiling/tests/scaling.rs
+@@ -0,0 +1,42 @@
++use super::*;
++
++fn comparison(workers: usize) {
++    use lattica_prover_p3::block_v2::machine::verifier::batch::shape::{MetadataCpuOptions, MetadataPlanningScope};
++    assert_eq!(std::env::var("LATTICA_CPU_SCALING_PROFILE").as_deref(), Ok("1"));
++    let _planner = MetadataPlanningScope::begin(MetadataCpuOptions::workers(workers).unwrap()).unwrap();
++    let cache = cache::Scope::begin(crate::graph_proofs::compiled_source_fingerprint()).unwrap();
++    let cases = catalogue();
++    assert_eq!(cases.len(), 159);
++    let mut original = 0;
++    let started = Instant::now();
++    for group in cases.chunks(native_shape::cohort::MAX) {
++        let descriptors: Vec<_> = group.iter().map(Case::descriptor).collect();
++        let result = native_shape::cohort::bounds(&descriptors, limits(), 512 << 20).unwrap();
++        for (case, bound) in group.iter().zip(result) {
++            let bound = bound.unwrap();
++            original = original.max(bound.storage.total_requested_bytes);
++            let expected = native_shape::precomputed::reference_values(case.descriptor().key());
++            assert_eq!(values(bound)[..7], expected[..7], "{}", case.name);
++        }
++    }
++    let elapsed_ns = started.elapsed().as_nanos();
++    let stats = cache.statistics();
++    assert_eq!(stats.entries, 159);
++    assert_eq!(stats.table_hits, 0);
++    assert_eq!(stats.failed_computations, 0);
++    assert!(stats.peak_workers <= workers && stats.admitted_host_bytes_peak <= original);
++    eprintln!("CPU_SCALING_RESULT {}", serde_json::json!({
++        "kind":"native", "workers":workers, "cases":159, "elapsed_ns":elapsed_ns,
++        "counts_equal":true, "gpu_used":false, "cache":stats, "original_host_bytes":original,
++    }));
++}
++
++#[test]
++#[ignore = "CPU-only perf comparison; serialized scaling guard required"]
++fn native_cpu_scaling_4() { comparison(4); }
++#[test]
++#[ignore = "CPU-only perf comparison; serialized scaling guard required"]
++fn native_cpu_scaling_8() { comparison(8); }
++#[test]
++#[ignore = "CPU-only perf comparison; serialized scaling guard required"]
++fn native_cpu_scaling_16() { comparison(16); }
+diff --git a/research/pq-ringct/src/component_tree/native_shape/profiling/tests.rs b/research/pq-ringct/src/component_tree/native_shape/profiling/tests.rs
+--- a/research/pq-ringct/src/component_tree/native_shape/profiling/tests.rs
++++ b/research/pq-ringct/src/component_tree/native_shape/profiling/tests.rs
+@@ -483,3 +483,5 @@
+         );
+     }
+ }
++
++mod scaling;
+diff --git a/research/pq-ringct/tools/cpu_scaling_profile.py b/research/pq-ringct/tools/cpu_scaling_profile.py
+new file mode 100644
+--- /dev/null
++++ b/research/pq-ringct/tools/cpu_scaling_profile.py
+@@ -0,0 +1,75 @@
++"""Exact CPU-only metadata selectors and Linux perf counter reconciliation."""
++import json
++from pathlib import Path
++
++EVENTS = ('cycles:u', 'instructions:u', 'cache-references:u', 'cache-misses:u',
++          'task-clock:u')
++PREFIXES = {
++    'registered': 'block_v2::machine::verifier::batch::shape::metadata_planning::tests::scaling::',
++    'native': 'component_tree::native_shape::profiling::tests::scaling::',
++}
++
++
++def require(value, message):
++    if not value:
++        raise ValueError(message)
++
++
++def selection(kind, workers, argv):
++    require(kind in PREFIXES and workers in (4, 8, 16), 'invalid CPU scaling selection')
++    selector = PREFIXES[kind] + f'{kind}_cpu_scaling_{workers}'
++    require(len(argv) == 6 and argv[1] == selector
++            and set(argv[2:]) == {'--exact', '--ignored', '--test-threads=1', '--nocapture'},
++            'CPU scaling requires the exact metadata-only test')
++    name = 'lattica_prover_p3-' if kind == 'registered' else 'lattica_pq_ringct_research-'
++    require(Path(argv[0]).name.startswith(name), 'wrong CPU scaling test executable')
++    return {'kind': kind, 'workers': workers, 'events': list(EVENTS),
++            'transactions_or_proofs': False, 'gpu_used': False}
++
++
++def command(argv):
++    return ['/usr/bin/perf', 'stat', '--no-big-num', '-x', ';',
++            '-e', ','.join(EVENTS), '--', *argv]
++
++
++def validate(content, selected):
++    rows = [json.loads(line.split('CPU_SCALING_RESULT ', 1)[1])
++            for line in content.splitlines() if line.startswith('CPU_SCALING_RESULT ')]
++    require(len(rows) == 1, 'CPU scaling must emit one result')
++    row = rows[0]
++    require(row.get('kind') == selected['kind'] and row.get('workers') == selected['workers']
++            and row.get('counts_equal') is True and row.get('gpu_used') is False,
++            'CPU scaling scope or mathematical parity differs')
++    require(row.get('cases') == (72 if selected['kind'] == 'registered' else 159),
++            'CPU scaling catalogue is incomplete')
++    require(type(row.get('elapsed_ns')) is int and row['elapsed_ns'] > 0,
++            'missing CPU scaling duration')
++    counters = {}
++    for line in content.splitlines():
++        fields = line.strip().split(';')
++        if len(fields) < 5 or fields[2] not in EVENTS:
++            continue
++        require(fields[2] not in counters, 'duplicate perf event')
++        value, running, percent = float(fields[0]), float(fields[3]), float(fields[4])
++        require(value >= 0 and running > 0 and 0 < percent <= 100.01, 'invalid perf counter')
++        counters[fields[2]] = {'value': value, 'unit': fields[1],
++                              'running_ns': running, 'running_percent': percent}
++    require(set(counters) == set(EVENTS), 'missing or unsupported perf counters')
++    threads = [json.loads(line.split('CPU_SCALING_THREAD ', 1)[1])
++               for line in content.splitlines() if line.startswith('CPU_SCALING_THREAD ')]
++    jobs = [json.loads(line.split('CPU_SCALING_JOB ', 1)[1])
++            for line in content.splitlines() if line.startswith('CPU_SCALING_JOB ')]
++    stats = row['planning'] if selected['kind'] == 'registered' else row['cache']
++    require(len(threads) == stats['threads_spawned'] and len(jobs) == stats['jobs_started'],
++            'incomplete per-worker or per-job scheduling samples')
++    totals = {}
++    for key in ('voluntary_switches', 'involuntary_switches', 'migrations', 'user_ns', 'system_ns'):
++        require(all(type(t.get(key)) is int and t[key] >= 0 for t in threads),
++                'unavailable or invalid OS worker counter: ' + key)
++        totals[key] = sum(t[key] for t in threads)
++    require(all(type(j.get('elapsed_ns')) is int and j['elapsed_ns'] > 0 for j in jobs),
++            'invalid per-job duration')
++    return {'result': row, 'counters': counters, 'worker_scheduling': totals,
++            'threads': threads, 'jobs': jobs,
++            'scheduling_scope': 'worker lifetimes via getrusage(RUSAGE_THREAD) and /proc/thread-self/sched',
++            'counter_scope': 'whole metadata-only test process including startup and teardown'}
+diff --git a/research/pq-ringct/tools/opencl_private_spend_validate.py b/research/pq-ringct/tools/opencl_private_spend_validate.py
+--- a/research/pq-ringct/tools/opencl_private_spend_validate.py
++++ b/research/pq-ringct/tools/opencl_private_spend_validate.py
+@@ -885,6 +885,17 @@
+     identity_qualification = getattr(args, 'identity_cpu_qualification', False)
+     metadata_qualification = getattr(args, 'metadata_cpu_qualification', False)
+     native_metadata_profile = getattr(args, 'native_metadata_profile', False)
++    scaling = getattr(args, 'cpu_scaling_profile', None)
++    scaling_selection = None
++    if scaling:
++        from cpu_scaling_profile import selection
++        require(args.profile == 'research-compile-large' and args.expect_tests and args.build_label
++                and not native_metadata_profile and not metadata_qualification
++                and not identity_qualification and not complete_case,
++                'CPU scaling requires the dedicated CPU-only profile')
++        scaling_selection = selection(scaling, getattr(args, 'cpu_scaling_workers', None), argv)
++    else:
++        require(getattr(args, 'cpu_scaling_workers', None) is None, 'CPU scaling width without profile')
+     if native_metadata_profile:
+         require(args.profile == 'research-compile-large' and args.expect_tests and args.build_label
+                 and not complete_case and not identity_qualification and not metadata_qualification,
+@@ -905,8 +916,8 @@
+         require(len(argv) == 6 and argv[1] == 'identity_preprocessing_screen::cpu_recursive_identity_worker_qualification'
+                 and set(argv[2:]) == {'--exact', '--ignored', '--test-threads=1', '--nocapture'},
+                 'wrong CPU identity qualification selector')
+-    identity_cpus = identity_physical_cpus() if complete_case or identity_qualification or metadata_qualification or native_metadata_profile else None
+-    if identity_qualification or metadata_qualification or native_metadata_profile:
++    identity_cpus = identity_physical_cpus() if complete_case or identity_qualification or metadata_qualification or native_metadata_profile or scaling else None
++    if identity_qualification or metadata_qualification or native_metadata_profile or scaling:
+         require(len(identity_cpus) == 16, '16-worker qualification requires sixteen physical cores')
+     host_profile = selected_host_profile(getattr(args, 'host_profile', 'standard'))
+     require(host_profile['name'] == 'standard' or (args.profile == 'full' and complete_case),
+@@ -921,7 +932,7 @@
+     require(sum((bool(complete_case), bool(getattr(args, 'note_owned_proof', False)),
+                  bool(getattr(args, 'note_workflow_cpu', False)),
+                  getattr(args, 'owned_runtime_test', None) is not None,
+-                 bool(direct_ring_screen), bool(metadata_qualification), bool(identity_qualification), bool(native_metadata_profile),
++                 bool(direct_ring_screen), bool(metadata_qualification), bool(identity_qualification), bool(native_metadata_profile), bool(scaling),
+                  bool(getattr(args, 'direct_ring_aggregate', False)),
+                  bool(getattr(args, 'owned_source_shape_test', False)),
+                  bool(getattr(args, 'active_hashx_preflight', False)),
+@@ -1008,6 +1019,8 @@
+     device_uuid = getattr(args, 'device_uuid', None)
+     if metadata_qualification:
+         environment['LATTICA_METADATA_CPU_QUALIFICATION'] = '1'
++    if scaling:
++        environment['LATTICA_CPU_SCALING_PROFILE'] = '1'
+     if device_uuid is not None:
+         require(args.profile not in CPU_PROFILES, 'physical GPU pin requires a GPU profile')
+         require(type(device_uuid) is str and re.fullmatch(
+@@ -1143,6 +1156,7 @@
+             'cpu_quota': '1600%' if identity_cpus is not None else str(threads * 100) + '%',
+             'identity_physical_cpus': identity_cpus, 'identity_cpu_qualification': identity_qualification,
+             'metadata_cpu_qualification': metadata_qualification, 'native_metadata_profile': native_metadata_profile,
++            'cpu_scaling_profile': scaling_selection,
+             'runtime_seconds': args.seconds,
+             'comparison_baseline': False, 'performance_qualified': False,
+             'benchmark': benchmark, 'correctness_label': correctness_label,
+@@ -1173,7 +1187,7 @@
+ 
+ 
+ def executable_provenance(plan, sources, runs):
+-    executable = Path(plan['command'][0])
++    executable = Path(plan.get('profiled_command', plan['command'])[0])
+     require(executable.is_file() and os.access(executable, os.X_OK), 'executable is absent')
+     identity = {'path': str(executable), 'resolved_path': str(executable.resolve()),
+                 'sha256': sha(executable)}
+@@ -1805,6 +1819,9 @@
+     if plan.get('identity_cpu_qualification'):
+         from cpu_identity_qualification import validate
+         plan['identity_cpu_qualification_acceptance'] = validate(content)
++    if plan.get('cpu_scaling_profile'):
++        from cpu_scaling_profile import validate
++        plan['cpu_scaling_acceptance'] = validate(content, plan['cpu_scaling_profile'])
+     if plan.get('native_metadata_profile'):
+         from native_metadata_profile import validate
+         plan['native_metadata_profile_acceptance'] = validate(content)
+@@ -2090,8 +2107,10 @@
+             except Exception as cleanup:
+                 error = (error or '') + '; cleanup: ' + repr(cleanup)
+             try:
+-                require(sha(plan['command'][0]) == executable['sha256'],
++                require(sha(plan.get('profiled_command', plan['command'])[0]) == executable['sha256'],
+                         'executed binary changed during correctness job')
++                if plan.get('profiled_command'):
++                    require(sha('/usr/bin/perf') == plan['perf_sha256'], 'perf executable changed')
+                 plan['executable_unchanged'] = True
+                 unchanged = source_manifest() == before
+                 plan['source_inputs_unchanged'] = unchanged
+@@ -2131,6 +2150,8 @@
+     parser.add_argument('--expect-direct-result', action='store_true')
+     parser.add_argument('--identity-cpu-qualification', action='store_true')
+     parser.add_argument('--native-metadata-profile', action='store_true')
++    parser.add_argument('--cpu-scaling-profile', choices=('registered', 'native'))
++    parser.add_argument('--cpu-scaling-workers', type=int, choices=(4, 8, 16))
+     parser.add_argument('--metadata-cpu-qualification', action='store_true')
+     parser.add_argument('--full-workflow-case', action='store_true',
+                         help='qualify exactly one fresh N3 or N4 complete RingCT case')
+@@ -2187,6 +2208,11 @@
+     parser.add_argument('command', nargs=argparse.REMAINDER)
+     args = parser.parse_args()
+     plan = build_plan(args)
++    if plan.get('cpu_scaling_profile'):
++        from cpu_scaling_profile import command as perf_command
++        plan['profiled_command'] = plan['command']
++        plan['perf_sha256'] = sha('/usr/bin/perf')
++        plan['command'] = perf_command(plan['profiled_command'])
+     if not args.execute:
+         print(json.dumps(plan, indent=2))
+         return 0
+diff --git a/research/pq-ringct/tools/test_cpu_scaling_profile.py b/research/pq-ringct/tools/test_cpu_scaling_profile.py
+new file mode 100644
+--- /dev/null
++++ b/research/pq-ringct/tools/test_cpu_scaling_profile.py
+@@ -0,0 +1,21 @@
++import json
++import unittest
++import cpu_scaling_profile as p
++
++class CpuScalingTests(unittest.TestCase):
++    def test_exact_cpu_only_selector(self):
++        argv=['/tmp/lattica_pq_ringct_research-abc',p.PREFIXES['native']+'native_cpu_scaling_16','--exact','--ignored','--test-threads=1','--nocapture']
++        self.assertEqual(p.selection('native',16,argv)['workers'],16)
++        for changed in [argv[:1]+['recursive_proof']+argv[2:],argv+['--skip','something']]:
++            with self.assertRaises(ValueError):p.selection('native',16,changed)
++        with self.assertRaises(ValueError):p.selection('native',32,argv)
++
++    def test_complete_perf_counters_and_scope(self):
++        row={'kind':'native','workers':16,'cases':159,'elapsed_ns':1,'counts_equal':True,'gpu_used':False,'cache':{'threads_spawned':0,'jobs_started':0}}
++        text='CPU_SCALING_RESULT '+json.dumps(row)+'\n'
++        events=''.join('1;;'+e+';100;100.00;\n' for e in p.EVENTS)
++        self.assertEqual(len(p.validate(text+events,row)['counters']),5)
++        for bad in [text, text+events+events, text+events.replace('1;;cycles:u','<not supported>;;cycles:u')]:
++            with self.assertRaises(ValueError):p.validate(bad,row)
++
++if __name__=='__main__':unittest.main()

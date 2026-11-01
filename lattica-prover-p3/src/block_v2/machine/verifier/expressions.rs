@@ -346,8 +346,9 @@ pub(super) fn periodic_value_profiled(
             let mut value = b.ext_constant([Val::ZERO; 3]);
             for &coefficient in coefficients.iter().rev() {
                 value = b.ext_mul(value, point);
-                let term = b.ext_constant([coefficient, Val::ZERO, Val::ZERO]);
-                value = b.ext_add(value, term);
+                // A base-field coefficient changes only the first limb. Avoid
+                // interning two zeros and rediscovering two add-zero identities.
+                value[0] = b.add_constant(value[0], coefficient);
             }
             if let Some(t) = timings.as_deref_mut() {
                 t.periodic_emission_ns += started.unwrap().elapsed().as_nanos();

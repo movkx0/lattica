@@ -5,6 +5,7 @@ use super::{Constants, ExecutionError, Op, Program, Row, Wire, MAX_WIRES};
 use std::collections::hash_map::RandomState;
 use std::hash::{BuildHasher, Hash};
 use std::mem::size_of;
+pub(super) mod packed;
 
 pub(super) fn packing_bytes(
     operations: &Vec<Op>,
@@ -208,11 +209,15 @@ static NEXT_MAP: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::ne
 pub(super) struct Vacant<K> {
     key: K,
     slot: usize,
+    tag: u8,
     identity: u64,
     generation: u64,
 }
 pub(super) struct Map<K, V> {
     slots: Vec<Option<(K, V)>>,
+    // Zero is vacant; an occupied byte contains seven high hash bits. Keep
+    // payloads initialized so reset can clear only these dense bytes safely.
+    control: Vec<u8>,
     entries: usize,
     hash: RandomState,
     identity: u64,
@@ -223,6 +228,7 @@ impl<K: Copy + Eq + Hash, V: Copy> Map<K, V> {
     pub(super) fn new() -> Self {
         Self {
             slots: Vec::new(),
+            control: Vec::new(),
             entries: 0,
             hash: RandomState::new(),
             identity: NEXT_MAP
@@ -236,14 +242,25 @@ impl<K: Copy + Eq + Hash, V: Copy> Map<K, V> {
         }
     }
 
-    fn index(&self, key: &K) -> usize {
+    fn index(&self, key: &K) -> (usize, u8) {
+        let hash = self.hash.hash_one(key);
+        let tag = ((hash >> 57) as u8) | 0x80;
+        if self.slots.is_empty() {
+            return (0, tag);
+        }
         let mask = self.slots.len() - 1;
-        let mut index = self.hash.hash_one(key) as usize & mask;
+        let mut index = hash as usize & mask;
         loop {
-            match &self.slots[index] {
-                Some((stored, _)) if stored != key => index = (index + 1) & mask,
-                _ => return index,
+            let control = self.control[index];
+            if control == 0
+                || (control == tag
+                    && self.slots[index]
+                        .as_ref()
+                        .is_some_and(|(stored, _)| stored == key))
+            {
+                return (index, tag);
             }
+            index = (index + 1) & mask;
         }
     }
 
@@ -251,21 +268,19 @@ impl<K: Copy + Eq + Hash, V: Copy> Map<K, V> {
         if self.slots.is_empty() {
             return None;
         }
-        self.slots[self.index(key)].as_ref().map(|(_, value)| value)
+        let (index, _) = self.index(key);
+        (self.control[index] != 0).then(|| &self.slots[index].as_ref().unwrap().1)
     }
 
     pub(super) fn probe(&self, key: K) -> Result<V, Vacant<K>> {
-        let slot = if self.slots.is_empty() {
-            0
-        } else {
-            self.index(&key)
-        };
-        if let Some(Some((_, value))) = self.slots.get(slot) {
-            return Ok(*value);
+        let (slot, tag) = self.index(&key);
+        if self.control.get(slot).is_some_and(|&control| control != 0) {
+            return Ok(self.slots[slot].unwrap().1);
         }
         Err(Vacant {
             key,
             slot,
+            tag,
             identity: self.identity,
             generation: self.generation,
         })
@@ -291,14 +306,18 @@ impl<K: Copy + Eq + Hash, V: Copy> Map<K, V> {
             return None;
         };
         self.slots[vacant.slot] = Some((vacant.key, value));
+        self.control[vacant.slot] = vacant.tag;
         self.entries += 1;
         self.generation = next;
         None
     }
 
     pub(super) fn clear(&mut self, budget: &mut Budget) -> usize {
-        let bytes = self.slots.capacity() * size_of::<Option<(K, V)>>();
+        let bytes = self
+            .retained_bytes()
+            .expect("admitted compiler map backing");
         drop(std::mem::take(&mut self.slots));
+        drop(std::mem::take(&mut self.control));
         self.entries = 0;
         self.generation = self.generation.checked_add(1).unwrap_or_else(|| {
             budget.reject();
@@ -312,11 +331,16 @@ impl<K: Copy + Eq + Hash, V: Copy> Map<K, V> {
     /// builder must charge the complete capacity before using it.
     pub(super) fn reset_retained(&mut self) -> Option<usize> {
         self.generation = self.generation.checked_add(1)?;
-        self.slots.fill(None);
+        self.control.fill(0);
         self.entries = 0;
+        self.retained_bytes()
+    }
+
+    pub(super) fn retained_bytes(&self) -> Option<usize> {
         self.slots
             .capacity()
             .checked_mul(size_of::<Option<(K, V)>>())
+            .and_then(|n| n.checked_add(self.control.capacity()))
     }
 
     pub(super) fn insert(&mut self, key: K, value: V, budget: &mut Budget) -> Option<V> {
@@ -327,9 +351,10 @@ impl<K: Copy + Eq + Hash, V: Copy> Map<K, V> {
         // the table. Full-key equality and randomized hashing are unchanged.
         let mut slot = None;
         if !self.slots.is_empty() {
-            let index = self.index(&key);
-            slot = Some(index);
-            if let Some((_, previous)) = self.slots[index] {
+            let (index, tag) = self.index(&key);
+            slot = Some((index, tag));
+            if self.control[index] != 0 {
+                let previous = self.slots[index].unwrap().1;
                 self.slots[index] = Some((key, value));
                 return Some(previous);
             }
@@ -339,7 +364,7 @@ impl<K: Copy + Eq + Hash, V: Copy> Map<K, V> {
                 budget.reject();
                 return None;
             };
-            let Some(bytes) = capacity.checked_mul(size_of::<Option<(K, V)>>()) else {
+            let Some(bytes) = capacity.checked_mul(size_of::<Option<(K, V)>>() + 1) else {
                 budget.reject();
                 return None;
             };
@@ -347,28 +372,43 @@ impl<K: Copy + Eq + Hash, V: Copy> Map<K, V> {
                 return None;
             }
             let mut next = Vec::new();
-            if next.try_reserve_exact(capacity).is_err() {
+            let mut control = Vec::new();
+            if next.try_reserve_exact(capacity).is_err()
+                || control.try_reserve_exact(capacity).is_err()
+            {
+                drop(next);
+                drop(control);
                 budget.release(bytes);
                 budget.reject();
                 return None;
             }
             next.resize(capacity, None);
+            control.resize(capacity, 0);
+            let old_bytes = self
+                .retained_bytes()
+                .expect("admitted compiler map backing");
             let old = std::mem::replace(&mut self.slots, next);
-            for &(stored, value) in old.iter().flatten() {
-                let index = self.index(&stored);
-                self.slots[index] = Some((stored, value));
+            let old_control = std::mem::replace(&mut self.control, control);
+            for (entry, &occupied) in old.iter().zip(&old_control) {
+                if occupied != 0 {
+                    let (stored, value) = entry.unwrap();
+                    let (index, tag) = self.index(&stored);
+                    self.slots[index] = Some((stored, value));
+                    self.control[index] = tag;
+                }
             }
-            let old_bytes = old.capacity() * size_of::<Option<(K, V)>>();
             drop(old);
+            drop(old_control);
             budget.release(old_bytes);
             slot = None;
         }
-        let index = slot.unwrap_or_else(|| self.index(&key));
+        let (index, tag) = slot.unwrap_or_else(|| self.index(&key));
         let Some(next) = self.generation.checked_add(1) else {
             budget.reject();
             return None;
         };
         self.slots[index] = Some((key, value));
+        self.control[index] = tag;
         self.entries += 1;
         self.generation = next;
         None

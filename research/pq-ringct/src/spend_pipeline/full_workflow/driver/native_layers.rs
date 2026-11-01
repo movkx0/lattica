@@ -322,8 +322,8 @@ fn run_layer<'workflow>(planning: &mut WorkflowPlanning<'workflow>,
 pub(crate) fn requirements() -> Result<Requirements> {
     let bytes = [
         stage_frame_bytes(),
-        size_of::<[crate::component_tree::native_shape::cohort::Request<'static>; 16]>(),
-        size_of::<[Option<crate::component_tree::native_shape::cohort::ResolvedBound>; 16]>(),
+        size_of::<[crate::component_tree::native_shape::cohort::Request<'static>; crate::component_tree::native_shape::cohort::MAX]>(),
+        size_of::<[Option<crate::component_tree::native_shape::cohort::ResolvedBound>; crate::component_tree::native_shape::cohort::MAX]>(),
         size_of::<NativePlanTables<'static, 'static, 'static>>(),
         size_of::<BlueprintTables<'static, 'static, 'static>>(),
         size_of::<CompilerPlanTables<'static, 'static, 'static>>(),

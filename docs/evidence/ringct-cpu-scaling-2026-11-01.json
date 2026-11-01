@@ -1,0 +1,2066 @@
+{
+  "schema": "ringct-cpu-scaling-perf-v1",
+  "created_utc": "2026-11-01T17:39:29.803697+00:00",
+  "scope": "Cold numeric metadata planning only; no transactions, proofs, or GPU execution.",
+  "base_commit": "7cfa7ceb65e567daea68602a83621057303c86a5",
+  "integration": {
+    "base_commit": "7cfa7ceb65e567daea68602a83621057303c86a5",
+    "main_commit_at_integration": "7cfa7ceb65e567daea68602a83621057303c86a5",
+    "paths": [
+      "lattica-prover-p3/src/block_v2/machine/cpu_queue.rs",
+      "lattica-prover-p3/src/block_v2/machine/cpu_queue/diagnostics.rs",
+      "lattica-prover-p3/src/block_v2/machine/cpu_queue/placement.rs",
+      "lattica-prover-p3/src/block_v2/machine/cpu_queue/tests.rs",
+      "lattica-prover-p3/src/block_v2/machine/program.rs",
+      "lattica-prover-p3/src/block_v2/machine/program/construction.rs",
+      "lattica-prover-p3/src/block_v2/machine/program/construction/packed.rs",
+      "lattica-prover-p3/src/block_v2/machine/program/construction/packed/tests.rs",
+      "lattica-prover-p3/src/block_v2/machine/verifier/batch/shape.rs",
+      "lattica-prover-p3/src/block_v2/machine/verifier/batch/shape/metadata_planning.rs",
+      "lattica-prover-p3/src/block_v2/machine/verifier/batch/shape/metadata_planning/tests.rs",
+      "lattica-prover-p3/src/block_v2/machine/verifier/batch/shape/metadata_planning/tests/scaling.rs",
+      "lattica-prover-p3/src/block_v2/machine/verifier/batch/shape/precomputed.rs",
+      "lattica-prover-p3/src/block_v2/machine/verifier/batch/shape/precomputed/data.rs",
+      "research/pq-ringct/PREPROCESSING.md",
+      "research/pq-ringct/src/component_tree/native_shape/cache.rs",
+      "research/pq-ringct/src/component_tree/native_shape/cohort.rs",
+      "research/pq-ringct/src/component_tree/native_shape/cohort/tests.rs",
+      "research/pq-ringct/src/component_tree/native_shape/precomputed.rs",
+      "research/pq-ringct/src/component_tree/native_shape/precomputed/data.rs",
+      "research/pq-ringct/src/component_tree/native_shape/profiling/tests.rs",
+      "research/pq-ringct/src/component_tree/native_shape/profiling/tests/scaling.rs",
+      "research/pq-ringct/src/graph_crypto/prover/owned_aes/memory.rs",
+      "research/pq-ringct/src/spend_pipeline/full_workflow/driver/native_layers.rs",
+      "research/pq-ringct/tools/cpu_scaling_profile.py",
+      "research/pq-ringct/tools/opencl_private_spend_validate.py",
+      "research/pq-ringct/tools/test_cpu_scaling_profile.py"
+    ],
+    "source_files": 3046,
+    "source_matches_validated_build": true,
+    "source_manifest_sha256": "92a85e922a4294de60c4b953e45687c5f1d340fa9cd7c2d8fb5c93a0aaaeaaa0",
+    "validation_labels": [
+      "cpu-scaling-final-core-build-r2",
+      "cpu-scaling-final-native-build-r2",
+      "cpu-scaling-final-core-tests-r2",
+      "cpu-scaling-final-native-tests-r2",
+      "cpu-scaling-final-metadata-qualification-r2",
+      "cpu-scaling-final-native-qualification-r2"
+    ]
+  },
+  "implementation": {
+    "compiler_storage": "Checked u32 wire references only in compiler interning maps; randomized hashing, full-key equality, original allocation accounting and public wire encoding retained. Unrepresentable inputs bypass interning for unchanged operation validation.",
+    "pool_lifetime": "Up to 64 ready requests share a joined pool with at most 16 workers. Worker scratch remains reserved and retires before the original reservation ends. Caller frame arrays use the same shared bound.",
+    "placement": "Spread allowed physical cores across L3 groups and initialize scratch after pinning; failures retain allowed inherited affinity and are counted.",
+    "concurrency": "Automatic native ceiling 8; automatic registered ceiling up to 16 physical cores; explicit ceilings up to 16 retain memory admission.",
+    "notifications": "Per-slot worker condition variables and a separate coordinator completion signal; wake every worker only during shutdown or failure."
+  },
+  "method": {
+    "host": "AMD Ryzen 9 5900XT, 16 physical cores, 32 logical CPUs, 64 GiB nominal RAM",
+    "perf_version": "7.3-1",
+    "perf_events": [
+      "cycles:u",
+      "instructions:u",
+      "cache-references:u",
+      "cache-misses:u",
+      "task-clock:u"
+    ],
+    "perf_scope": "Whole metadata-only test process, including startup and teardown; wall timings separately cover the cold workload.",
+    "scheduling_scope": "Worker lifetime getrusage(RUSAGE_THREAD) and /proc/thread-self/sched; includes initial pinning migrations.",
+    "scheduling_reason": "User-only perf scheduling events returned misleading zeros under perf_event_paranoid=2; OS per-thread counters were used instead.",
+    "samples_per_worker_count": 3,
+    "worker_counts": [
+      4,
+      8,
+      16
+    ],
+    "placement_samples": 2,
+    "final_source_confirmation_samples_per_worker_count": 1,
+    "tables": "Disabled for scaling; every mathematical result compared with the registered or native catalogue.",
+    "cpu_quota": "1600%",
+    "physical_cpu_affinity": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "process_memory_max_bytes": 34359738368,
+    "recursive_proofs_generated": 0,
+    "transactions_generated": 0,
+    "gpu_used": false,
+    "baseline_instrumentation_patch": "docs/evidence/ringct-cpu-scaling-baseline-instrumentation-2026-11-01.patch",
+    "baseline_reconstruction_matches_recorded_sources": true
+  },
+  "performance_changes": [
+    {
+      "kind": "registered",
+      "workers": 4,
+      "before_seconds": 3.49733699,
+      "after_seconds": 2.548204423,
+      "speedup": 1.3724711245428993,
+      "time_reduction_percent": 27.138722110962487
+    },
+    {
+      "kind": "registered",
+      "workers": 8,
+      "before_seconds": 3.020954696,
+      "after_seconds": 1.947753616,
+      "speedup": 1.5509942690821323,
+      "time_reduction_percent": 35.52522920721086
+    },
+    {
+      "kind": "registered",
+      "workers": 16,
+      "before_seconds": 2.882171453,
+      "after_seconds": 1.629471177,
+      "speedup": 1.7687771920619864,
+      "time_reduction_percent": 43.463766692161464
+    },
+    {
+      "kind": "native",
+      "workers": 4,
+      "before_seconds": 17.033082053,
+      "after_seconds": 13.873609987,
+      "speedup": 1.2277325129480015,
+      "time_reduction_percent": 18.54903332332348
+    },
+    {
+      "kind": "native",
+      "workers": 8,
+      "before_seconds": 14.640655511,
+      "after_seconds": 8.51331243,
+      "speedup": 1.7197366631826998,
+      "time_reduction_percent": 41.85156242762715
+    },
+    {
+      "kind": "native",
+      "workers": 16,
+      "before_seconds": 15.292540709,
+      "after_seconds": 13.549622099,
+      "speedup": 1.1286322671780369,
+      "time_reduction_percent": 11.397181430906734
+    }
+  ],
+  "comparisons": {
+    "baseline": [
+      {
+        "kind": "registered",
+        "workers": 4,
+        "samples": 3,
+        "median": {
+          "seconds": 3.49733699,
+          "instructions_per_cycle": 1.3929464874736912,
+          "cache_misses_per_1000_instructions": 4.294482265476293,
+          "cpu_seconds": 13.046209999999999,
+          "migrations": 127,
+          "context_switches": 350,
+          "reserved_bytes_peak": 2522146248,
+          "actual_peak_workers": 4,
+          "threads_spawned": 16,
+          "workspace_reuses": 56
+        },
+        "seconds_range": [
+          3.487092715,
+          3.511117835
+        ],
+        "runs": [
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-baseline-registered-w4-s1.json",
+            "sha256": "e06405c2468e12052d8f5a098c91810dfd8ef196a08f8aba7c6ca6c8453f22be",
+            "source_manifest_sha256": "49c47800ca33b8d4c8b1578e660a7bcb8cd23b422b6389aba7809ff07a48a0d9",
+            "metrics": {
+              "seconds": 3.49733699,
+              "instructions_per_cycle": 1.3929464874736912,
+              "cache_misses_per_1000_instructions": 4.304672810331239,
+              "cpu_seconds": 13.046209999999999,
+              "migrations": 127,
+              "context_switches": 351,
+              "reserved_bytes_peak": 2522146248,
+              "actual_peak_workers": 4,
+              "threads_spawned": 16,
+              "workspace_reuses": 56
+            }
+          },
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-baseline-registered-w4-s2.json",
+            "sha256": "700b695030a47c4a91978f84c1d6af43f96b959d3ad78e195c7ef4cc07382a3a",
+            "source_manifest_sha256": "49c47800ca33b8d4c8b1578e660a7bcb8cd23b422b6389aba7809ff07a48a0d9",
+            "metrics": {
+              "seconds": 3.487092715,
+              "instructions_per_cycle": 1.4028144816115011,
+              "cache_misses_per_1000_instructions": 4.289504565212738,
+              "cpu_seconds": 12.966629999999999,
+              "migrations": 75,
+              "context_switches": 321,
+              "reserved_bytes_peak": 2522146248,
+              "actual_peak_workers": 4,
+              "threads_spawned": 16,
+              "workspace_reuses": 56
+            }
+          },
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-baseline-registered-w4-s3.json",
+            "sha256": "424f5cb0445e2a2945886d8b9c442c409b94fc2d6642468cfec4f5df63de2331",
+            "source_manifest_sha256": "49c47800ca33b8d4c8b1578e660a7bcb8cd23b422b6389aba7809ff07a48a0d9",
+            "metrics": {
+              "seconds": 3.511117835,
+              "instructions_per_cycle": 1.3871807820170992,
+              "cache_misses_per_1000_instructions": 4.294482265476293,
+              "cpu_seconds": 13.14471,
+              "migrations": 134,
+              "context_switches": 350,
+              "reserved_bytes_peak": 2522146248,
+              "actual_peak_workers": 4,
+              "threads_spawned": 16,
+              "workspace_reuses": 56
+            }
+          }
+        ]
+      },
+      {
+        "kind": "registered",
+        "workers": 8,
+        "samples": 3,
+        "median": {
+          "seconds": 3.020954696,
+          "instructions_per_cycle": 0.9373232571228034,
+          "cache_misses_per_1000_instructions": 5.951868444560165,
+          "cpu_seconds": 21.8875,
+          "migrations": 246,
+          "context_switches": 716,
+          "reserved_bytes_peak": 2522146248,
+          "actual_peak_workers": 8,
+          "threads_spawned": 32,
+          "workspace_reuses": 40
+        },
+        "seconds_range": [
+          2.719713916,
+          3.034555113
+        ],
+        "runs": [
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-baseline-registered-w8-s1.json",
+            "sha256": "8ae2fb705c98a80165bbc028221702feed6f5489b610d79b8d73d5daa21f47ac",
+            "source_manifest_sha256": "49c47800ca33b8d4c8b1578e660a7bcb8cd23b422b6389aba7809ff07a48a0d9",
+            "metrics": {
+              "seconds": 2.719713916,
+              "instructions_per_cycle": 1.0578263334471836,
+              "cache_misses_per_1000_instructions": 6.018870323891647,
+              "cpu_seconds": 19.818740000000002,
+              "migrations": 242,
+              "context_switches": 716,
+              "reserved_bytes_peak": 2522146248,
+              "actual_peak_workers": 8,
+              "threads_spawned": 32,
+              "workspace_reuses": 40
+            }
+          },
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-baseline-registered-w8-s2.json",
+            "sha256": "30fb162ddfa3366daafb57c825b82f67201dff66b776e15470180429f9aa50a2",
+            "source_manifest_sha256": "49c47800ca33b8d4c8b1578e660a7bcb8cd23b422b6389aba7809ff07a48a0d9",
+            "metrics": {
+              "seconds": 3.034555113,
+              "instructions_per_cycle": 0.9363252376024453,
+              "cache_misses_per_1000_instructions": 5.951868444560165,
+              "cpu_seconds": 21.8875,
+              "migrations": 322,
+              "context_switches": 1004,
+              "reserved_bytes_peak": 2522146248,
+              "actual_peak_workers": 8,
+              "threads_spawned": 32,
+              "workspace_reuses": 40
+            }
+          },
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-baseline-registered-w8-s3.json",
+            "sha256": "39bcdd6f5fb74a9a846c8836f0cc3a8560179f6b21d451f56ba34744e3359070",
+            "source_manifest_sha256": "49c47800ca33b8d4c8b1578e660a7bcb8cd23b422b6389aba7809ff07a48a0d9",
+            "metrics": {
+              "seconds": 3.020954696,
+              "instructions_per_cycle": 0.9373232571228034,
+              "cache_misses_per_1000_instructions": 5.890894126319996,
+              "cpu_seconds": 21.930580000000003,
+              "migrations": 246,
+              "context_switches": 627,
+              "reserved_bytes_peak": 2522146248,
+              "actual_peak_workers": 8,
+              "threads_spawned": 32,
+              "workspace_reuses": 40
+            }
+          }
+        ]
+      },
+      {
+        "kind": "registered",
+        "workers": 16,
+        "samples": 3,
+        "median": {
+          "seconds": 2.882171453,
+          "instructions_per_cycle": 0.657109932805418,
+          "cache_misses_per_1000_instructions": 8.306286416095425,
+          "cpu_seconds": 36.426379999999995,
+          "migrations": 936,
+          "context_switches": 1957,
+          "reserved_bytes_peak": 2522146240,
+          "actual_peak_workers": 16,
+          "threads_spawned": 64,
+          "workspace_reuses": 8
+        },
+        "seconds_range": [
+          2.87619758,
+          2.885588684
+        ],
+        "runs": [
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-baseline-registered-w16-s1.json",
+            "sha256": "b61a8f7a476f91355cce7b620fce78b83b64bf3f359d922390892356c81b08d4",
+            "source_manifest_sha256": "49c47800ca33b8d4c8b1578e660a7bcb8cd23b422b6389aba7809ff07a48a0d9",
+            "metrics": {
+              "seconds": 2.885588684,
+              "instructions_per_cycle": 0.6821423985061751,
+              "cache_misses_per_1000_instructions": 8.306286416095425,
+              "cpu_seconds": 35.09198000000001,
+              "migrations": 919,
+              "context_switches": 2503,
+              "reserved_bytes_peak": 2522146240,
+              "actual_peak_workers": 16,
+              "threads_spawned": 64,
+              "workspace_reuses": 8
+            }
+          },
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-baseline-registered-w16-s2.json",
+            "sha256": "87d78c019170336c30e8477e2a3df3238dab64d10451fb0771417c937b1d16c0",
+            "source_manifest_sha256": "49c47800ca33b8d4c8b1578e660a7bcb8cd23b422b6389aba7809ff07a48a0d9",
+            "metrics": {
+              "seconds": 2.882171453,
+              "instructions_per_cycle": 0.657109932805418,
+              "cache_misses_per_1000_instructions": 8.310153422479232,
+              "cpu_seconds": 36.426379999999995,
+              "migrations": 936,
+              "context_switches": 1957,
+              "reserved_bytes_peak": 2522146240,
+              "actual_peak_workers": 16,
+              "threads_spawned": 64,
+              "workspace_reuses": 8
+            }
+          },
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-baseline-registered-w16-s3.json",
+            "sha256": "8aa152fe731797118a8370992551f5e45e5ff2e78ec424c21d8380c98960b56c",
+            "source_manifest_sha256": "49c47800ca33b8d4c8b1578e660a7bcb8cd23b422b6389aba7809ff07a48a0d9",
+            "metrics": {
+              "seconds": 2.87619758,
+              "instructions_per_cycle": 0.6556377336592402,
+              "cache_misses_per_1000_instructions": 8.297260122542014,
+              "cpu_seconds": 36.66847,
+              "migrations": 1053,
+              "context_switches": 1845,
+              "reserved_bytes_peak": 2522146240,
+              "actual_peak_workers": 16,
+              "threads_spawned": 64,
+              "workspace_reuses": 8
+            }
+          }
+        ]
+      },
+      {
+        "kind": "native",
+        "workers": 4,
+        "samples": 3,
+        "median": {
+          "seconds": 17.033082053,
+          "instructions_per_cycle": 1.140998568718691,
+          "cache_misses_per_1000_instructions": 5.445512904241491,
+          "cpu_seconds": 65.27516,
+          "migrations": 590,
+          "context_switches": 1966,
+          "reserved_bytes_peak": 1583385208,
+          "actual_peak_workers": 4,
+          "threads_spawned": 40,
+          "workspace_reuses": 119
+        },
+        "seconds_range": [
+          16.569050613,
+          17.301405308
+        ],
+        "runs": [
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-baseline-native-w4-s1.json",
+            "sha256": "1e55c10123fb49077f74639f84d987b33af4c91a2af0f98ad7c5acf04107efd3",
+            "source_manifest_sha256": "49c47800ca33b8d4c8b1578e660a7bcb8cd23b422b6389aba7809ff07a48a0d9",
+            "metrics": {
+              "seconds": 17.033082053,
+              "instructions_per_cycle": 1.140998568718691,
+              "cache_misses_per_1000_instructions": 5.445512904241491,
+              "cpu_seconds": 65.27516,
+              "migrations": 539,
+              "context_switches": 1749,
+              "reserved_bytes_peak": 1583385208,
+              "actual_peak_workers": 4,
+              "threads_spawned": 40,
+              "workspace_reuses": 119
+            }
+          },
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-baseline-native-w4-s2.json",
+            "sha256": "b2b57c8b3992b1e22923215c77ee18503d9efd15c4391eb17e644329f3157089",
+            "source_manifest_sha256": "49c47800ca33b8d4c8b1578e660a7bcb8cd23b422b6389aba7809ff07a48a0d9",
+            "metrics": {
+              "seconds": 17.301405308,
+              "instructions_per_cycle": 1.1312183409661682,
+              "cache_misses_per_1000_instructions": 5.459408458943913,
+              "cpu_seconds": 66.23723,
+              "migrations": 592,
+              "context_switches": 2047,
+              "reserved_bytes_peak": 1583385208,
+              "actual_peak_workers": 4,
+              "threads_spawned": 40,
+              "workspace_reuses": 119
+            }
+          },
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-baseline-native-w4-s3.json",
+            "sha256": "756359209579e5accebf2bcac7ef9d7449c39ecfe30c667a2fb1dbcdfb2fd458",
+            "source_manifest_sha256": "49c47800ca33b8d4c8b1578e660a7bcb8cd23b422b6389aba7809ff07a48a0d9",
+            "metrics": {
+              "seconds": 16.569050613,
+              "instructions_per_cycle": 1.1964074394621582,
+              "cache_misses_per_1000_instructions": 5.408176917937516,
+              "cpu_seconds": 63.105669999999996,
+              "migrations": 590,
+              "context_switches": 1966,
+              "reserved_bytes_peak": 1583385208,
+              "actual_peak_workers": 4,
+              "threads_spawned": 40,
+              "workspace_reuses": 119
+            }
+          }
+        ]
+      },
+      {
+        "kind": "native",
+        "workers": 8,
+        "samples": 3,
+        "median": {
+          "seconds": 14.640655511,
+          "instructions_per_cycle": 0.9535483841257729,
+          "cache_misses_per_1000_instructions": 6.863851504865749,
+          "cpu_seconds": 87.01935,
+          "migrations": 887,
+          "context_switches": 3342,
+          "reserved_bytes_peak": 2558396368,
+          "actual_peak_workers": 8,
+          "threads_spawned": 79,
+          "workspace_reuses": 83
+        },
+        "seconds_range": [
+          14.491332234,
+          14.649057149
+        ],
+        "runs": [
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-baseline-native-w8-s1.json",
+            "sha256": "e2f8b5ce265aa024e50bd0c6fceb31d14dce570458f33732a06ecc6b4e7400d6",
+            "source_manifest_sha256": "49c47800ca33b8d4c8b1578e660a7bcb8cd23b422b6389aba7809ff07a48a0d9",
+            "metrics": {
+              "seconds": 14.649057149,
+              "instructions_per_cycle": 0.949879330206161,
+              "cache_misses_per_1000_instructions": 6.873212268055332,
+              "cpu_seconds": 87.1597,
+              "migrations": 887,
+              "context_switches": 3435,
+              "reserved_bytes_peak": 2558396368,
+              "actual_peak_workers": 8,
+              "threads_spawned": 79,
+              "workspace_reuses": 83
+            }
+          },
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-baseline-native-w8-s2.json",
+            "sha256": "cf8b135920c28907fc39c6fc9b27d9a0d9b40397982557498b9309bad60c5a9d",
+            "source_manifest_sha256": "49c47800ca33b8d4c8b1578e660a7bcb8cd23b422b6389aba7809ff07a48a0d9",
+            "metrics": {
+              "seconds": 14.491332234,
+              "instructions_per_cycle": 0.9622926037561735,
+              "cache_misses_per_1000_instructions": 6.863851504865749,
+              "cpu_seconds": 86.33038,
+              "migrations": 902,
+              "context_switches": 3342,
+              "reserved_bytes_peak": 2558396368,
+              "actual_peak_workers": 8,
+              "threads_spawned": 79,
+              "workspace_reuses": 83
+            }
+          },
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-baseline-native-w8-s3.json",
+            "sha256": "2546d8350ed24357df0bda1f5301a179298adbafa636cfb4da7ab7e3664baadb",
+            "source_manifest_sha256": "49c47800ca33b8d4c8b1578e660a7bcb8cd23b422b6389aba7809ff07a48a0d9",
+            "metrics": {
+              "seconds": 14.640655511,
+              "instructions_per_cycle": 0.9535483841257729,
+              "cache_misses_per_1000_instructions": 6.822539526600527,
+              "cpu_seconds": 87.01935,
+              "migrations": 884,
+              "context_switches": 2976,
+              "reserved_bytes_peak": 2558614376,
+              "actual_peak_workers": 8,
+              "threads_spawned": 79,
+              "workspace_reuses": 83
+            }
+          }
+        ]
+      },
+      {
+        "kind": "native",
+        "workers": 16,
+        "samples": 3,
+        "median": {
+          "seconds": 15.292540709,
+          "instructions_per_cycle": 0.9784034551461752,
+          "cache_misses_per_1000_instructions": 6.9596793288447305,
+          "cpu_seconds": 85.60147,
+          "migrations": 2195,
+          "context_switches": 8552,
+          "reserved_bytes_peak": 2558396368,
+          "actual_peak_workers": 13,
+          "threads_spawned": 122,
+          "workspace_reuses": 74
+        },
+        "seconds_range": [
+          14.913974301,
+          15.366625741
+        ],
+        "runs": [
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-baseline-native-w16-s1.json",
+            "sha256": "654d235365b31e561090f74a15fea9289543e593aac0d2a1cce08ed31fb73cb9",
+            "source_manifest_sha256": "49c47800ca33b8d4c8b1578e660a7bcb8cd23b422b6389aba7809ff07a48a0d9",
+            "metrics": {
+              "seconds": 15.292540709,
+              "instructions_per_cycle": 0.9827048502139969,
+              "cache_misses_per_1000_instructions": 6.9596793288447305,
+              "cpu_seconds": 85.29059,
+              "migrations": 2247,
+              "context_switches": 8552,
+              "reserved_bytes_peak": 2558396368,
+              "actual_peak_workers": 13,
+              "threads_spawned": 122,
+              "workspace_reuses": 74
+            }
+          },
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-baseline-native-w16-s2.json",
+            "sha256": "8e03a9fa4f4c443ebcaab302f35597dbf4a6b2e28f5bccc4d55ed041a2d6ba6c",
+            "source_manifest_sha256": "49c47800ca33b8d4c8b1578e660a7bcb8cd23b422b6389aba7809ff07a48a0d9",
+            "metrics": {
+              "seconds": 14.913974301,
+              "instructions_per_cycle": 0.9773985259459218,
+              "cache_misses_per_1000_instructions": 6.970554135296852,
+              "cpu_seconds": 86.50571000000001,
+              "migrations": 2195,
+              "context_switches": 5455,
+              "reserved_bytes_peak": 2558614376,
+              "actual_peak_workers": 13,
+              "threads_spawned": 122,
+              "workspace_reuses": 73
+            }
+          },
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-baseline-native-w16-s3.json",
+            "sha256": "b8753babee134f8e2be763e6d2738b03002ba745f0280b5858dda5ea682d1028",
+            "source_manifest_sha256": "49c47800ca33b8d4c8b1578e660a7bcb8cd23b422b6389aba7809ff07a48a0d9",
+            "metrics": {
+              "seconds": 15.366625741,
+              "instructions_per_cycle": 0.9784034551461752,
+              "cache_misses_per_1000_instructions": 6.926942890102811,
+              "cpu_seconds": 85.60147,
+              "migrations": 2066,
+              "context_switches": 8715,
+              "reserved_bytes_peak": 2558396368,
+              "actual_peak_workers": 13,
+              "threads_spawned": 122,
+              "workspace_reuses": 74
+            }
+          }
+        ]
+      }
+    ],
+    "candidate": [
+      {
+        "kind": "registered",
+        "workers": 4,
+        "samples": 3,
+        "median": {
+          "seconds": 2.548204423,
+          "instructions_per_cycle": 1.6268460528366007,
+          "cache_misses_per_1000_instructions": 2.897346305244367,
+          "cpu_seconds": 9.54376,
+          "migrations": 19,
+          "context_switches": 241,
+          "reserved_bytes_peak": 2522146248,
+          "actual_peak_workers": 4,
+          "threads_spawned": 16,
+          "workspace_reuses": 56
+        },
+        "seconds_range": [
+          2.543502285,
+          2.58988649
+        ],
+        "runs": [
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-registered-w4-s1.json",
+            "sha256": "48dd707f870947ec5adb7d742894e7108a2e28ef2a1b87cb45781682394a5dee",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 2.543502285,
+              "instructions_per_cycle": 1.6268460528366007,
+              "cache_misses_per_1000_instructions": 2.898124704449522,
+              "cpu_seconds": 9.54376,
+              "migrations": 19,
+              "context_switches": 242,
+              "reserved_bytes_peak": 2522146248,
+              "actual_peak_workers": 4,
+              "threads_spawned": 16,
+              "workspace_reuses": 56
+            }
+          },
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-registered-w4-s2.json",
+            "sha256": "44a0dd400fba75d0b306437e26ab91db5825313888033d93f54567f634388dba",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 2.58988649,
+              "instructions_per_cycle": 1.6234457006606973,
+              "cache_misses_per_1000_instructions": 2.8725544748123353,
+              "cpu_seconds": 9.591040000000001,
+              "migrations": 18,
+              "context_switches": 197,
+              "reserved_bytes_peak": 2522146248,
+              "actual_peak_workers": 4,
+              "threads_spawned": 16,
+              "workspace_reuses": 56
+            }
+          },
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-registered-w4-s3.json",
+            "sha256": "92fa74418ae1b504aed89504963eb0145c45960e860f1de3e2110fb48d6f7768",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 2.548204423,
+              "instructions_per_cycle": 1.6323218931596284,
+              "cache_misses_per_1000_instructions": 2.897346305244367,
+              "cpu_seconds": 9.52258,
+              "migrations": 23,
+              "context_switches": 241,
+              "reserved_bytes_peak": 2522146248,
+              "actual_peak_workers": 4,
+              "threads_spawned": 16,
+              "workspace_reuses": 56
+            }
+          }
+        ]
+      },
+      {
+        "kind": "registered",
+        "workers": 8,
+        "samples": 3,
+        "median": {
+          "seconds": 1.947753616,
+          "instructions_per_cycle": 1.3338229086707807,
+          "cache_misses_per_1000_instructions": 3.7391350878903515,
+          "cpu_seconds": 13.45018,
+          "migrations": 35,
+          "context_switches": 352,
+          "reserved_bytes_peak": 2522146248,
+          "actual_peak_workers": 8,
+          "threads_spawned": 32,
+          "workspace_reuses": 40
+        },
+        "seconds_range": [
+          1.922760826,
+          1.987120672
+        ],
+        "runs": [
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-registered-w8-s1.json",
+            "sha256": "3fdafc9d7af4f29714efd61992519f8145e3320c4c6e767ab6a7c4857d5e0217",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 1.947753616,
+              "instructions_per_cycle": 1.3338229086707807,
+              "cache_misses_per_1000_instructions": 3.7391350878903515,
+              "cpu_seconds": 13.45018,
+              "migrations": 35,
+              "context_switches": 352,
+              "reserved_bytes_peak": 2522146248,
+              "actual_peak_workers": 8,
+              "threads_spawned": 32,
+              "workspace_reuses": 40
+            }
+          },
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-registered-w8-s2.json",
+            "sha256": "7ac53a685b47afc7b710655700e98d7255e9279bd7044ee911ea361e629eab90",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 1.922760826,
+              "instructions_per_cycle": 1.3416828072048728,
+              "cache_misses_per_1000_instructions": 3.7473143543531893,
+              "cpu_seconds": 13.3643,
+              "migrations": 34,
+              "context_switches": 343,
+              "reserved_bytes_peak": 2522146248,
+              "actual_peak_workers": 8,
+              "threads_spawned": 32,
+              "workspace_reuses": 40
+            }
+          },
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-registered-w8-s3.json",
+            "sha256": "e9036d3df4617296f12e9ba9cba02f789e23fa568c62c75e3150b45ca9f36f55",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 1.987120672,
+              "instructions_per_cycle": 1.3326961019175199,
+              "cache_misses_per_1000_instructions": 3.716505302952636,
+              "cpu_seconds": 13.55502,
+              "migrations": 35,
+              "context_switches": 465,
+              "reserved_bytes_peak": 2522146248,
+              "actual_peak_workers": 8,
+              "threads_spawned": 32,
+              "workspace_reuses": 40
+            }
+          }
+        ]
+      },
+      {
+        "kind": "registered",
+        "workers": 16,
+        "samples": 3,
+        "median": {
+          "seconds": 1.629471177,
+          "instructions_per_cycle": 1.0174971317520118,
+          "cache_misses_per_1000_instructions": 5.074808356507446,
+          "cpu_seconds": 20.147779999999997,
+          "migrations": 67,
+          "context_switches": 618,
+          "reserved_bytes_peak": 2522146240,
+          "actual_peak_workers": 16,
+          "threads_spawned": 64,
+          "workspace_reuses": 8
+        },
+        "seconds_range": [
+          1.620712971,
+          1.65321837
+        ],
+        "runs": [
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-registered-w16-s1.json",
+            "sha256": "2aed72f025962ce3963f1ae169face9417aea01a7785e9017e7db59933206df8",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 1.620712971,
+              "instructions_per_cycle": 1.0145484676781773,
+              "cache_misses_per_1000_instructions": 5.077976541619822,
+              "cpu_seconds": 20.147779999999997,
+              "migrations": 67,
+              "context_switches": 546,
+              "reserved_bytes_peak": 2522146240,
+              "actual_peak_workers": 16,
+              "threads_spawned": 64,
+              "workspace_reuses": 8
+            }
+          },
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-registered-w16-s2.json",
+            "sha256": "26265ff6263949fb9485b56ebf429b9f443a3b18aa89aadd8c91b5c86422d2cd",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 1.629471177,
+              "instructions_per_cycle": 1.0247753206620656,
+              "cache_misses_per_1000_instructions": 5.057354404206586,
+              "cpu_seconds": 20.06156,
+              "migrations": 69,
+              "context_switches": 618,
+              "reserved_bytes_peak": 2522146240,
+              "actual_peak_workers": 16,
+              "threads_spawned": 64,
+              "workspace_reuses": 8
+            }
+          },
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-registered-w16-s3.json",
+            "sha256": "7e2bb0d3bf491bd1c77ffbc8207857c827135fcce217fa78077cbb491a20991d",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 1.65321837,
+              "instructions_per_cycle": 1.0174971317520118,
+              "cache_misses_per_1000_instructions": 5.074808356507446,
+              "cpu_seconds": 20.16646,
+              "migrations": 67,
+              "context_switches": 645,
+              "reserved_bytes_peak": 2522146240,
+              "actual_peak_workers": 16,
+              "threads_spawned": 64,
+              "workspace_reuses": 8
+            }
+          }
+        ]
+      },
+      {
+        "kind": "native",
+        "workers": 4,
+        "samples": 3,
+        "median": {
+          "seconds": 13.873609987,
+          "instructions_per_cycle": 1.1680238023437615,
+          "cache_misses_per_1000_instructions": 3.774102907097863,
+          "cpu_seconds": 54.321239999999996,
+          "migrations": 10,
+          "context_switches": 1658,
+          "reserved_bytes_peak": 1046514296,
+          "actual_peak_workers": 4,
+          "threads_spawned": 12,
+          "workspace_reuses": 147
+        },
+        "seconds_range": [
+          13.261163787,
+          14.229382635
+        ],
+        "runs": [
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-native-w4-s1.json",
+            "sha256": "8a221fae05d8a40b043e629acd01d3fecc35cb4d9af266694fc2309f77fcdb36",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 14.229382635,
+              "instructions_per_cycle": 1.137737720392245,
+              "cache_misses_per_1000_instructions": 3.8060313844494544,
+              "cpu_seconds": 55.855410000000006,
+              "migrations": 11,
+              "context_switches": 1869,
+              "reserved_bytes_peak": 1046514296,
+              "actual_peak_workers": 4,
+              "threads_spawned": 12,
+              "workspace_reuses": 147
+            }
+          },
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-native-w4-s2.json",
+            "sha256": "12ed602273c8d84101a90e6814f62ec75adcfcc85e2b0f3a1c403c29eed97926",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 13.873609987,
+              "instructions_per_cycle": 1.1680238023437615,
+              "cache_misses_per_1000_instructions": 3.774102907097863,
+              "cpu_seconds": 54.321239999999996,
+              "migrations": 10,
+              "context_switches": 1445,
+              "reserved_bytes_peak": 1046514296,
+              "actual_peak_workers": 4,
+              "threads_spawned": 12,
+              "workspace_reuses": 147
+            }
+          },
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-native-w4-s3.json",
+            "sha256": "f065869c657cb1d25a2fb98222b3b936f615bdd711e50049d17a86b57e14137d",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 13.261163787,
+              "instructions_per_cycle": 1.209646664101045,
+              "cache_misses_per_1000_instructions": 3.7540270474160726,
+              "cpu_seconds": 52.08824,
+              "migrations": 10,
+              "context_switches": 1658,
+              "reserved_bytes_peak": 1046514296,
+              "actual_peak_workers": 4,
+              "threads_spawned": 12,
+              "workspace_reuses": 147
+            }
+          }
+        ]
+      },
+      {
+        "kind": "native",
+        "workers": 8,
+        "samples": 3,
+        "median": {
+          "seconds": 8.51331243,
+          "instructions_per_cycle": 1.04868881229614,
+          "cache_misses_per_1000_instructions": 4.618883721061771,
+          "cpu_seconds": 64.75263,
+          "migrations": 25,
+          "context_switches": 2708,
+          "reserved_bytes_peak": 1706003360,
+          "actual_peak_workers": 8,
+          "threads_spawned": 24,
+          "workspace_reuses": 135
+        },
+        "seconds_range": [
+          8.435162174,
+          10.064238643
+        ],
+        "runs": [
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-native-w8-s1.json",
+            "sha256": "f6208cca9d4982e67bf4489c8b5def14587bc3de7a56eedfd27dc7625fafeaaa",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 10.064238643,
+              "instructions_per_cycle": 0.9062585582567407,
+              "cache_misses_per_1000_instructions": 4.67104751202312,
+              "cpu_seconds": 76.28043,
+              "migrations": 23,
+              "context_switches": 3026,
+              "reserved_bytes_peak": 1706003360,
+              "actual_peak_workers": 8,
+              "threads_spawned": 24,
+              "workspace_reuses": 135
+            }
+          },
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-native-w8-s2.json",
+            "sha256": "127685006aad983b3b6b42eb6b2eb35871eb0746fb9cd91f875046af52cead51",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 8.435162174,
+              "instructions_per_cycle": 1.0613311382400998,
+              "cache_misses_per_1000_instructions": 4.59741213142884,
+              "cpu_seconds": 63.83734,
+              "migrations": 31,
+              "context_switches": 2032,
+              "reserved_bytes_peak": 1706003360,
+              "actual_peak_workers": 8,
+              "threads_spawned": 24,
+              "workspace_reuses": 135
+            }
+          },
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-native-w8-s3.json",
+            "sha256": "582805b5eb591fd660fef530fae671eb216a0d29f42ce6d8586b77fb42203477",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 8.51331243,
+              "instructions_per_cycle": 1.04868881229614,
+              "cache_misses_per_1000_instructions": 4.618883721061771,
+              "cpu_seconds": 64.75263,
+              "migrations": 25,
+              "context_switches": 2708,
+              "reserved_bytes_peak": 1706003360,
+              "actual_peak_workers": 8,
+              "threads_spawned": 24,
+              "workspace_reuses": 135
+            }
+          }
+        ]
+      },
+      {
+        "kind": "native",
+        "workers": 16,
+        "samples": 3,
+        "median": {
+          "seconds": 13.549622099,
+          "instructions_per_cycle": 1.08084333985731,
+          "cache_misses_per_1000_instructions": 4.893154105529073,
+          "cpu_seconds": 62.86199,
+          "migrations": 55,
+          "context_switches": 8397,
+          "reserved_bytes_peak": 2558648488,
+          "actual_peak_workers": 16,
+          "threads_spawned": 48,
+          "workspace_reuses": 130
+        },
+        "seconds_range": [
+          13.389872112,
+          13.731022027
+        ],
+        "runs": [
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-native-w16-s1.json",
+            "sha256": "c9ab748decd2f149d77a181c2fdd60b0d71574330fdcc537de015bd564064678",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 13.549622099,
+              "instructions_per_cycle": 1.015165132051162,
+              "cache_misses_per_1000_instructions": 4.905619787275934,
+              "cpu_seconds": 67.09332,
+              "migrations": 55,
+              "context_switches": 15531,
+              "reserved_bytes_peak": 2558648488,
+              "actual_peak_workers": 16,
+              "threads_spawned": 48,
+              "workspace_reuses": 131
+            }
+          },
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-native-w16-s2.json",
+            "sha256": "48201899c7a26dbde666b99ab7cbc91d06b0fd51dee70d2ffb61b76c2224b642",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 13.731022027,
+              "instructions_per_cycle": 1.08084333985731,
+              "cache_misses_per_1000_instructions": 4.893154105529073,
+              "cpu_seconds": 62.86199,
+              "migrations": 58,
+              "context_switches": 8397,
+              "reserved_bytes_peak": 2558648488,
+              "actual_peak_workers": 16,
+              "threads_spawned": 48,
+              "workspace_reuses": 130
+            }
+          },
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-native-w16-s3.json",
+            "sha256": "8024bfcfdeecb3d4ecb53fa1326e6f19f1f04aa9edbd93f4fcd0cf0258402740",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 13.389872112,
+              "instructions_per_cycle": 1.1112684191530975,
+              "cache_misses_per_1000_instructions": 4.890263442130338,
+              "cpu_seconds": 60.6965,
+              "migrations": 51,
+              "context_switches": 7252,
+              "reserved_bytes_peak": 2558648488,
+              "actual_peak_workers": 16,
+              "threads_spawned": 48,
+              "workspace_reuses": 130
+            }
+          }
+        ]
+      }
+    ],
+    "candidate-packed": [
+      {
+        "kind": "registered",
+        "workers": 8,
+        "samples": 2,
+        "median": {
+          "seconds": 2.2273455,
+          "instructions_per_cycle": 1.1433924981834345,
+          "cache_misses_per_1000_instructions": 3.796244691637149,
+          "cpu_seconds": 15.379605,
+          "migrations": 35.5,
+          "context_switches": 596.5,
+          "reserved_bytes_peak": 2522146248.0,
+          "actual_peak_workers": 8.0,
+          "threads_spawned": 32.0,
+          "workspace_reuses": 40.0
+        },
+        "seconds_range": [
+          2.131053209,
+          2.323637791
+        ],
+        "runs": [
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-packed-registered-w8-s1.json",
+            "sha256": "69775cfa686802f6df9359432010ba09b88cac4da9e39887b278b9b4b629ff0b",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 2.131053209,
+              "instructions_per_cycle": 1.164223730296642,
+              "cache_misses_per_1000_instructions": 3.7788191491848138,
+              "cpu_seconds": 14.9939,
+              "migrations": 39,
+              "context_switches": 427,
+              "reserved_bytes_peak": 2522146248,
+              "actual_peak_workers": 8,
+              "threads_spawned": 32,
+              "workspace_reuses": 40
+            }
+          },
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-packed-registered-w8-s2.json",
+            "sha256": "f28dfb380330faeb757026860b1fb5545a49ccae39330928ae6362511ce6f9a8",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 2.323637791,
+              "instructions_per_cycle": 1.1225612660702267,
+              "cache_misses_per_1000_instructions": 3.8136702340894844,
+              "cpu_seconds": 15.76531,
+              "migrations": 32,
+              "context_switches": 766,
+              "reserved_bytes_peak": 2522146248,
+              "actual_peak_workers": 8,
+              "threads_spawned": 32,
+              "workspace_reuses": 40
+            }
+          }
+        ]
+      },
+      {
+        "kind": "registered",
+        "workers": 16,
+        "samples": 2,
+        "median": {
+          "seconds": 1.6877915520000002,
+          "instructions_per_cycle": 1.022003402491491,
+          "cache_misses_per_1000_instructions": 5.041388175407511,
+          "cpu_seconds": 20.04623,
+          "migrations": 75.0,
+          "context_switches": 657.5,
+          "reserved_bytes_peak": 2522146240.0,
+          "actual_peak_workers": 16.0,
+          "threads_spawned": 64.0,
+          "workspace_reuses": 8.0
+        },
+        "seconds_range": [
+          1.686884293,
+          1.688698811
+        ],
+        "runs": [
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-packed-registered-w16-s1.json",
+            "sha256": "ba9ee87043751d1435125caf7c4f83bf60973bda2cd4aeaf6e3eb7f4cbfd8c52",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 1.686884293,
+              "instructions_per_cycle": 1.0251767549382584,
+              "cache_misses_per_1000_instructions": 5.047250880547152,
+              "cpu_seconds": 19.968880000000002,
+              "migrations": 72,
+              "context_switches": 629,
+              "reserved_bytes_peak": 2522146240,
+              "actual_peak_workers": 16,
+              "threads_spawned": 64,
+              "workspace_reuses": 8
+            }
+          },
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-packed-registered-w16-s2.json",
+            "sha256": "81c76b7a13c239db10cdd7ef6c7babcd90178c741e1d1b848c1aa91894ec8f4a",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 1.688698811,
+              "instructions_per_cycle": 1.0188300500447238,
+              "cache_misses_per_1000_instructions": 5.035525470267871,
+              "cpu_seconds": 20.12358,
+              "migrations": 78,
+              "context_switches": 686,
+              "reserved_bytes_peak": 2522146240,
+              "actual_peak_workers": 16,
+              "threads_spawned": 64,
+              "workspace_reuses": 8
+            }
+          }
+        ]
+      },
+      {
+        "kind": "native",
+        "workers": 8,
+        "samples": 2,
+        "median": {
+          "seconds": 9.578308672999999,
+          "instructions_per_cycle": 0.92377117573414,
+          "cache_misses_per_1000_instructions": 4.5867071228273195,
+          "cpu_seconds": 71.4526,
+          "migrations": 26.0,
+          "context_switches": 2200.0,
+          "reserved_bytes_peak": 1706003360.0,
+          "actual_peak_workers": 8.0,
+          "threads_spawned": 24.0,
+          "workspace_reuses": 135.0
+        },
+        "seconds_range": [
+          9.469532674,
+          9.687084672
+        ],
+        "runs": [
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-packed-native-w8-s1.json",
+            "sha256": "929e6e7372d5e42e767ea893d4e79eb9caa712cb302d7cb03a27cb0f6ca0d4eb",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 9.469532674,
+              "instructions_per_cycle": 0.9344430097528521,
+              "cache_misses_per_1000_instructions": 4.596297896490768,
+              "cpu_seconds": 70.42784,
+              "migrations": 24,
+              "context_switches": 2476,
+              "reserved_bytes_peak": 1706003360,
+              "actual_peak_workers": 8,
+              "threads_spawned": 24,
+              "workspace_reuses": 135
+            }
+          },
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-packed-native-w8-s2.json",
+            "sha256": "93532f2bd1fbf1f066f3266945c6023d1130160da48c219c5daed5f48b2f2fa4",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 9.687084672,
+              "instructions_per_cycle": 0.913099341715428,
+              "cache_misses_per_1000_instructions": 4.577116349163871,
+              "cpu_seconds": 72.47736,
+              "migrations": 28,
+              "context_switches": 1924,
+              "reserved_bytes_peak": 1706003360,
+              "actual_peak_workers": 8,
+              "threads_spawned": 24,
+              "workspace_reuses": 135
+            }
+          }
+        ]
+      },
+      {
+        "kind": "native",
+        "workers": 16,
+        "samples": 2,
+        "median": {
+          "seconds": 13.6201822315,
+          "instructions_per_cycle": 1.0443561411596072,
+          "cache_misses_per_1000_instructions": 4.832983429180205,
+          "cpu_seconds": 63.382059999999996,
+          "migrations": 54.0,
+          "context_switches": 5984.0,
+          "reserved_bytes_peak": 2558648488.0,
+          "actual_peak_workers": 16.0,
+          "threads_spawned": 48.0,
+          "workspace_reuses": 131.0
+        },
+        "seconds_range": [
+          13.352144248,
+          13.888220215
+        ],
+        "runs": [
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-packed-native-w16-s1.json",
+            "sha256": "a70f69a5953c1c5a89c852604e474263ca5c7e18bd2e7226fea61afd2dc8f2e2",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 13.888220215,
+              "instructions_per_cycle": 1.0364457888310812,
+              "cache_misses_per_1000_instructions": 4.8469883257190265,
+              "cpu_seconds": 63.870599999999996,
+              "migrations": 53,
+              "context_switches": 4262,
+              "reserved_bytes_peak": 2558648488,
+              "actual_peak_workers": 16,
+              "threads_spawned": 48,
+              "workspace_reuses": 131
+            }
+          },
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-packed-native-w16-s2.json",
+            "sha256": "821b016783058f1b57d83000cf70687c4e241a76468a6e11cb36d6bd3e33b832",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 13.352144248,
+              "instructions_per_cycle": 1.0522664934881332,
+              "cache_misses_per_1000_instructions": 4.818978532641382,
+              "cpu_seconds": 62.893519999999995,
+              "migrations": 55,
+              "context_switches": 7706,
+              "reserved_bytes_peak": 2558648488,
+              "actual_peak_workers": 16,
+              "threads_spawned": 48,
+              "workspace_reuses": 131
+            }
+          }
+        ]
+      }
+    ],
+    "candidate-scheduler": [
+      {
+        "kind": "registered",
+        "workers": 8,
+        "samples": 2,
+        "median": {
+          "seconds": 1.9330035190000001,
+          "instructions_per_cycle": 1.3337743501624602,
+          "cache_misses_per_1000_instructions": 3.728679864350968,
+          "cpu_seconds": 13.448920000000001,
+          "migrations": 141.0,
+          "context_switches": 421.5,
+          "reserved_bytes_peak": 2522146248.0,
+          "actual_peak_workers": 8.0,
+          "threads_spawned": 32.0,
+          "workspace_reuses": 40.0
+        },
+        "seconds_range": [
+          1.916761445,
+          1.949245593
+        ],
+        "runs": [
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-scheduler-registered-w8-s1.json",
+            "sha256": "2b49a179a9412797f5de303dbdde2b5d49a64152917439a4e227a7bcd73e35e5",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 1.949245593,
+              "instructions_per_cycle": 1.3365973637122233,
+              "cache_misses_per_1000_instructions": 3.725912056316198,
+              "cpu_seconds": 13.44678,
+              "migrations": 153,
+              "context_switches": 436,
+              "reserved_bytes_peak": 2522146248,
+              "actual_peak_workers": 8,
+              "threads_spawned": 32,
+              "workspace_reuses": 40
+            }
+          },
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-scheduler-registered-w8-s2.json",
+            "sha256": "bf39048ffd1c7f299e6508ccbd1970c1f3fd501f1204dd85217eefa6856a1f80",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 1.916761445,
+              "instructions_per_cycle": 1.330951336612697,
+              "cache_misses_per_1000_instructions": 3.7314476723857384,
+              "cpu_seconds": 13.45106,
+              "migrations": 129,
+              "context_switches": 407,
+              "reserved_bytes_peak": 2522146248,
+              "actual_peak_workers": 8,
+              "threads_spawned": 32,
+              "workspace_reuses": 40
+            }
+          }
+        ]
+      },
+      {
+        "kind": "registered",
+        "workers": 16,
+        "samples": 2,
+        "median": {
+          "seconds": 1.8263519515,
+          "instructions_per_cycle": 1.0229610428579057,
+          "cache_misses_per_1000_instructions": 5.065911182053551,
+          "cpu_seconds": 20.011255,
+          "migrations": 343.5,
+          "context_switches": 2045.0,
+          "reserved_bytes_peak": 2522146240.0,
+          "actual_peak_workers": 16.0,
+          "threads_spawned": 64.0,
+          "workspace_reuses": 8.0
+        },
+        "seconds_range": [
+          1.681290233,
+          1.97141367
+        ],
+        "runs": [
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-scheduler-registered-w16-s1.json",
+            "sha256": "a0e3c5015c4f92d2dabe721b9d5967221b81ebc791089f7d3a929ebc4d0b313e",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 1.681290233,
+              "instructions_per_cycle": 1.0251174023771208,
+              "cache_misses_per_1000_instructions": 5.061223157174772,
+              "cpu_seconds": 19.99199,
+              "migrations": 300,
+              "context_switches": 855,
+              "reserved_bytes_peak": 2522146240,
+              "actual_peak_workers": 16,
+              "threads_spawned": 64,
+              "workspace_reuses": 8
+            }
+          },
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-scheduler-registered-w16-s2.json",
+            "sha256": "a3c11bc9fc6aeb3dac39632633ef865ad40e8be65b67f4dc58ae079ebcd48aac",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 1.97141367,
+              "instructions_per_cycle": 1.0208046833386906,
+              "cache_misses_per_1000_instructions": 5.0705992069323305,
+              "cpu_seconds": 20.03052,
+              "migrations": 387,
+              "context_switches": 3235,
+              "reserved_bytes_peak": 2522146240,
+              "actual_peak_workers": 16,
+              "threads_spawned": 64,
+              "workspace_reuses": 8
+            }
+          }
+        ]
+      },
+      {
+        "kind": "native",
+        "workers": 8,
+        "samples": 2,
+        "median": {
+          "seconds": 9.064247955999999,
+          "instructions_per_cycle": 0.9677811564468332,
+          "cache_misses_per_1000_instructions": 4.5860681370575325,
+          "cpu_seconds": 68.81881,
+          "migrations": 434.5,
+          "context_switches": 2408.5,
+          "reserved_bytes_peak": 1706003360.0,
+          "actual_peak_workers": 8.0,
+          "threads_spawned": 24.0,
+          "workspace_reuses": 135.0
+        },
+        "seconds_range": [
+          8.776270958,
+          9.352224954
+        ],
+        "runs": [
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-scheduler-native-w8-s1.json",
+            "sha256": "229169663d461a443171cdc00d2acc1345d5458d26b3ac1008ad6427e794df7b",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 9.352224954,
+              "instructions_per_cycle": 0.9241871126769965,
+              "cache_misses_per_1000_instructions": 4.59527610383455,
+              "cpu_seconds": 71.21233000000001,
+              "migrations": 335,
+              "context_switches": 1961,
+              "reserved_bytes_peak": 1706003360,
+              "actual_peak_workers": 8,
+              "threads_spawned": 24,
+              "workspace_reuses": 135
+            }
+          },
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-scheduler-native-w8-s2.json",
+            "sha256": "3cfd3bd76f81c26e3e40ae1ad76810cc640e62200969cb27ec8cef5050ee576b",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 8.776270958,
+              "instructions_per_cycle": 1.0113752002166698,
+              "cache_misses_per_1000_instructions": 4.576860170280515,
+              "cpu_seconds": 66.42528999999999,
+              "migrations": 534,
+              "context_switches": 2856,
+              "reserved_bytes_peak": 1706003360,
+              "actual_peak_workers": 8,
+              "threads_spawned": 24,
+              "workspace_reuses": 135
+            }
+          }
+        ]
+      },
+      {
+        "kind": "native",
+        "workers": 16,
+        "samples": 2,
+        "median": {
+          "seconds": 13.986196911499999,
+          "instructions_per_cycle": 0.9876326860297209,
+          "cache_misses_per_1000_instructions": 4.91010385794389,
+          "cpu_seconds": 68.05566,
+          "migrations": 1088.0,
+          "context_switches": 7064.5,
+          "reserved_bytes_peak": 2558648488.0,
+          "actual_peak_workers": 16.0,
+          "threads_spawned": 48.0,
+          "workspace_reuses": 130.5
+        },
+        "seconds_range": [
+          13.360879802,
+          14.611514021
+        ],
+        "runs": [
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-scheduler-native-w16-s1.json",
+            "sha256": "7918797c04ef51f41e5048845e6e5a96b6be34da3d40feb8dea2889f8774ea0b",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 13.360879802,
+              "instructions_per_cycle": 1.0442965954226573,
+              "cache_misses_per_1000_instructions": 4.863758477906373,
+              "cpu_seconds": 63.26041,
+              "migrations": 828,
+              "context_switches": 7064,
+              "reserved_bytes_peak": 2558648488,
+              "actual_peak_workers": 16,
+              "threads_spawned": 48,
+              "workspace_reuses": 131
+            }
+          },
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-candidate-scheduler-native-w16-s2.json",
+            "sha256": "8aaeaaabca31d257302d4a1f91750d37dd95a0059d68df5842714fc78042256d",
+            "source_manifest_sha256": "99b5b0afd30ec19f920ff2ad8635671ee4a24dbbe3a0e2d59b6f105c25911a79",
+            "metrics": {
+              "seconds": 14.611514021,
+              "instructions_per_cycle": 0.9309687766367845,
+              "cache_misses_per_1000_instructions": 4.956449237981407,
+              "cpu_seconds": 72.85091,
+              "migrations": 1348,
+              "context_switches": 7065,
+              "reserved_bytes_peak": 2558648488,
+              "actual_peak_workers": 16,
+              "threads_spawned": 48,
+              "workspace_reuses": 130
+            }
+          }
+        ]
+      }
+    ],
+    "final": [
+      {
+        "kind": "registered",
+        "workers": 4,
+        "samples": 1,
+        "median": {
+          "seconds": 2.633056702,
+          "instructions_per_cycle": 1.583201529356379,
+          "cache_misses_per_1000_instructions": 2.934492373702633,
+          "cpu_seconds": 9.80213,
+          "migrations": 12,
+          "context_switches": 241,
+          "reserved_bytes_peak": 2522146248,
+          "actual_peak_workers": 4,
+          "threads_spawned": 16,
+          "workspace_reuses": 56
+        },
+        "seconds_range": [
+          2.633056702,
+          2.633056702
+        ],
+        "runs": [
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-final-registered-w4-s1.json",
+            "sha256": "14f5f624a26769830290d84b0512dbe8da52cef93e8495201187ce9f993d523f",
+            "source_manifest_sha256": "92a85e922a4294de60c4b953e45687c5f1d340fa9cd7c2d8fb5c93a0aaaeaaa0",
+            "metrics": {
+              "seconds": 2.633056702,
+              "instructions_per_cycle": 1.583201529356379,
+              "cache_misses_per_1000_instructions": 2.934492373702633,
+              "cpu_seconds": 9.80213,
+              "migrations": 12,
+              "context_switches": 241,
+              "reserved_bytes_peak": 2522146248,
+              "actual_peak_workers": 4,
+              "threads_spawned": 16,
+              "workspace_reuses": 56
+            }
+          }
+        ]
+      },
+      {
+        "kind": "registered",
+        "workers": 8,
+        "samples": 1,
+        "median": {
+          "seconds": 1.942621866,
+          "instructions_per_cycle": 1.3365466455069397,
+          "cache_misses_per_1000_instructions": 3.783632721635787,
+          "cpu_seconds": 13.39814,
+          "migrations": 35,
+          "context_switches": 370,
+          "reserved_bytes_peak": 2522146248,
+          "actual_peak_workers": 8,
+          "threads_spawned": 32,
+          "workspace_reuses": 40
+        },
+        "seconds_range": [
+          1.942621866,
+          1.942621866
+        ],
+        "runs": [
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-final-registered-w8-s1.json",
+            "sha256": "54e04f9bd2573392a19ad29268fc104ddc918eedfbf9eb55d5ede843426e6278",
+            "source_manifest_sha256": "92a85e922a4294de60c4b953e45687c5f1d340fa9cd7c2d8fb5c93a0aaaeaaa0",
+            "metrics": {
+              "seconds": 1.942621866,
+              "instructions_per_cycle": 1.3365466455069397,
+              "cache_misses_per_1000_instructions": 3.783632721635787,
+              "cpu_seconds": 13.39814,
+              "migrations": 35,
+              "context_switches": 370,
+              "reserved_bytes_peak": 2522146248,
+              "actual_peak_workers": 8,
+              "threads_spawned": 32,
+              "workspace_reuses": 40
+            }
+          }
+        ]
+      },
+      {
+        "kind": "registered",
+        "workers": 16,
+        "samples": 1,
+        "median": {
+          "seconds": 1.641624285,
+          "instructions_per_cycle": 1.0206430921713021,
+          "cache_misses_per_1000_instructions": 5.142944123336815,
+          "cpu_seconds": 20.064049999999998,
+          "migrations": 70,
+          "context_switches": 564,
+          "reserved_bytes_peak": 2522146240,
+          "actual_peak_workers": 16,
+          "threads_spawned": 64,
+          "workspace_reuses": 8
+        },
+        "seconds_range": [
+          1.641624285,
+          1.641624285
+        ],
+        "runs": [
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-final-registered-w16-s1.json",
+            "sha256": "7d210bf99c70f024683bb2b26f86fffbeb1523a814f88278d9b084cd5361988c",
+            "source_manifest_sha256": "92a85e922a4294de60c4b953e45687c5f1d340fa9cd7c2d8fb5c93a0aaaeaaa0",
+            "metrics": {
+              "seconds": 1.641624285,
+              "instructions_per_cycle": 1.0206430921713021,
+              "cache_misses_per_1000_instructions": 5.142944123336815,
+              "cpu_seconds": 20.064049999999998,
+              "migrations": 70,
+              "context_switches": 564,
+              "reserved_bytes_peak": 2522146240,
+              "actual_peak_workers": 16,
+              "threads_spawned": 64,
+              "workspace_reuses": 8
+            }
+          }
+        ]
+      },
+      {
+        "kind": "native",
+        "workers": 4,
+        "samples": 1,
+        "median": {
+          "seconds": 13.298173674,
+          "instructions_per_cycle": 1.208679467375059,
+          "cache_misses_per_1000_instructions": 3.692519511410571,
+          "cpu_seconds": 51.99982,
+          "migrations": 16,
+          "context_switches": 1427,
+          "reserved_bytes_peak": 1046514296,
+          "actual_peak_workers": 4,
+          "threads_spawned": 12,
+          "workspace_reuses": 147
+        },
+        "seconds_range": [
+          13.298173674,
+          13.298173674
+        ],
+        "runs": [
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-final-native-w4-s1.json",
+            "sha256": "22f37a8f55e18279c444575c47c5900a70d5bd999c64e783aa92cc2087f66f45",
+            "source_manifest_sha256": "92a85e922a4294de60c4b953e45687c5f1d340fa9cd7c2d8fb5c93a0aaaeaaa0",
+            "metrics": {
+              "seconds": 13.298173674,
+              "instructions_per_cycle": 1.208679467375059,
+              "cache_misses_per_1000_instructions": 3.692519511410571,
+              "cpu_seconds": 51.99982,
+              "migrations": 16,
+              "context_switches": 1427,
+              "reserved_bytes_peak": 1046514296,
+              "actual_peak_workers": 4,
+              "threads_spawned": 12,
+              "workspace_reuses": 147
+            }
+          }
+        ]
+      },
+      {
+        "kind": "native",
+        "workers": 8,
+        "samples": 1,
+        "median": {
+          "seconds": 8.426339127,
+          "instructions_per_cycle": 1.0631161189348453,
+          "cache_misses_per_1000_instructions": 4.520868877386887,
+          "cpu_seconds": 63.62187,
+          "migrations": 26,
+          "context_switches": 2288,
+          "reserved_bytes_peak": 1706003360,
+          "actual_peak_workers": 8,
+          "threads_spawned": 24,
+          "workspace_reuses": 135
+        },
+        "seconds_range": [
+          8.426339127,
+          8.426339127
+        ],
+        "runs": [
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-final-native-w8-s1.json",
+            "sha256": "a8213c5febd7626ea3d607e1c9ffd0b73cfb598b5479de5e79f0b86f8ef3e4e9",
+            "source_manifest_sha256": "92a85e922a4294de60c4b953e45687c5f1d340fa9cd7c2d8fb5c93a0aaaeaaa0",
+            "metrics": {
+              "seconds": 8.426339127,
+              "instructions_per_cycle": 1.0631161189348453,
+              "cache_misses_per_1000_instructions": 4.520868877386887,
+              "cpu_seconds": 63.62187,
+              "migrations": 26,
+              "context_switches": 2288,
+              "reserved_bytes_peak": 1706003360,
+              "actual_peak_workers": 8,
+              "threads_spawned": 24,
+              "workspace_reuses": 135
+            }
+          }
+        ]
+      },
+      {
+        "kind": "native",
+        "workers": 16,
+        "samples": 1,
+        "median": {
+          "seconds": 12.284932388,
+          "instructions_per_cycle": 1.1494216576187606,
+          "cache_misses_per_1000_instructions": 4.6844708465057785,
+          "cpu_seconds": 58.54504,
+          "migrations": 59,
+          "context_switches": 7995,
+          "reserved_bytes_peak": 2558648488,
+          "actual_peak_workers": 16,
+          "threads_spawned": 48,
+          "workspace_reuses": 130
+        },
+        "seconds_range": [
+          12.284932388,
+          12.284932388
+        ],
+        "runs": [
+          {
+            "record": ".tools/pq-opencl-opt/runs/cpu-scaling-final-native-w16-s1.json",
+            "sha256": "bcd95ffe3713d8e5b41f655ab4520e0d47b1a4b872f2e68c9cb662ed9b1d0cf5",
+            "source_manifest_sha256": "92a85e922a4294de60c4b953e45687c5f1d340fa9cd7c2d8fb5c93a0aaaeaaa0",
+            "metrics": {
+              "seconds": 12.284932388,
+              "instructions_per_cycle": 1.1494216576187606,
+              "cache_misses_per_1000_instructions": 4.6844708465057785,
+              "cpu_seconds": 58.54504,
+              "migrations": 59,
+              "context_switches": 7995,
+              "reserved_bytes_peak": 2558648488,
+              "actual_peak_workers": 16,
+              "threads_spawned": 48,
+              "workspace_reuses": 130
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "native_16_worker_memory": {
+    "active_16_workers_observed": true,
+    "windows_from_one_complete_run": [
+      {
+        "jobs": 64,
+        "original_host_bytes": 2560764280,
+        "reserved_peak_bytes": 2177178274,
+        "threads_spawned": 16,
+        "peak_active_workers": 16
+      },
+      {
+        "jobs": 64,
+        "original_host_bytes": 2558557784,
+        "reserved_peak_bytes": 2558540968,
+        "threads_spawned": 16,
+        "peak_active_workers": 9
+      },
+      {
+        "jobs": 31,
+        "original_host_bytes": 2558665784,
+        "reserved_peak_bytes": 2558648488,
+        "threads_spawned": 16,
+        "peak_active_workers": 4
+      }
+    ],
+    "limits_raised": false,
+    "interpretation": "The ceiling admits 16 active workers for lighter jobs; heavier windows remain memory-limited. Reservations are allocation bounds, not simultaneous RSS. Eight workers were faster for the full native catalogue."
+  },
+  "validation": [
+    {
+      "record": ".tools/pq-opencl-opt/runs/cpu-scaling-final-core-build-r2.json",
+      "sha256": "b0f2b75a9fc45f7e71324018e57cb6f192669e3519b15dc9a1845088d1e29cea",
+      "raw_log": ".tools/pq-opencl-opt/runs/cpu-scaling-final-core-build-r2.log",
+      "raw_log_sha256": "1720b9276a8cc7f52e67a91730e87c0d8cb4b902ba5513ccb1ef3682d89255ba",
+      "status": "passed",
+      "tests": [],
+      "source_manifest_sha256": "92a85e922a4294de60c4b953e45687c5f1d340fa9cd7c2d8fb5c93a0aaaeaaa0"
+    },
+    {
+      "record": ".tools/pq-opencl-opt/runs/cpu-scaling-final-native-build-r2.json",
+      "sha256": "24751292be0c5e699044251db018dee18ee20aaccadb5771389103b3ec6e9c2d",
+      "raw_log": ".tools/pq-opencl-opt/runs/cpu-scaling-final-native-build-r2.log",
+      "raw_log_sha256": "aaee7f3387bebe106c9cf3ab159503431ca5de007c470158bd0caa196de27696",
+      "status": "passed",
+      "tests": [],
+      "source_manifest_sha256": "92a85e922a4294de60c4b953e45687c5f1d340fa9cd7c2d8fb5c93a0aaaeaaa0"
+    },
+    {
+      "record": ".tools/pq-opencl-opt/runs/cpu-scaling-final-core-tests-r2.json",
+      "sha256": "c9d12c977f45d19b0e5795a5dd0c77d3258c5ebfe0f66161479050102bccaa84",
+      "raw_log": ".tools/pq-opencl-opt/runs/cpu-scaling-final-core-tests-r2.log",
+      "raw_log_sha256": "fcff128f7fb6aaa64defebf36c8d7891afaa585c99439689aeeed16309046bbd",
+      "status": "passed",
+      "tests": [
+        {
+          "passed": 72,
+          "failed": 0,
+          "ignored": 5
+        }
+      ],
+      "source_manifest_sha256": "92a85e922a4294de60c4b953e45687c5f1d340fa9cd7c2d8fb5c93a0aaaeaaa0"
+    },
+    {
+      "record": ".tools/pq-opencl-opt/runs/cpu-scaling-final-native-tests-r2.json",
+      "sha256": "7b0b446e2f3576b597bad9112dc23d028a1513727fd1204f154c5c037a382c2a",
+      "raw_log": ".tools/pq-opencl-opt/runs/cpu-scaling-final-native-tests-r2.log",
+      "raw_log_sha256": "ddd1f104504920aaa8d3b7c480a2f9fb982831d1a10eb53fb3c7f4922f825db1",
+      "status": "passed",
+      "tests": [
+        {
+          "passed": 21,
+          "failed": 0,
+          "ignored": 11
+        }
+      ],
+      "source_manifest_sha256": "92a85e922a4294de60c4b953e45687c5f1d340fa9cd7c2d8fb5c93a0aaaeaaa0"
+    },
+    {
+      "record": ".tools/pq-opencl-opt/runs/cpu-scaling-final-metadata-qualification-r2.json",
+      "sha256": "6282bfef928f029e427487b09d0fd514e892d5adfd96b965fdfffef3703919b1",
+      "raw_log": ".tools/pq-opencl-opt/runs/cpu-scaling-final-metadata-qualification-r2.log",
+      "raw_log_sha256": "25ca12090e4d94247d479cc04749c7719ead654cebc107ac508d0063aeee9d54",
+      "status": "passed",
+      "tests": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "source_manifest_sha256": "92a85e922a4294de60c4b953e45687c5f1d340fa9cd7c2d8fb5c93a0aaaeaaa0"
+    },
+    {
+      "record": ".tools/pq-opencl-opt/runs/cpu-scaling-final-native-qualification-r2.json",
+      "sha256": "ab727df9660dee55164322ba8941bf167996d7ad9fbfd3acc5349c92bd9ed8d9",
+      "raw_log": ".tools/pq-opencl-opt/runs/cpu-scaling-final-native-qualification-r2.log",
+      "raw_log_sha256": "d50c7b8bdf18f3834cf1a8c7936edb98d832c2a5b8a669dc0377ced65b803a2e",
+      "status": "passed",
+      "tests": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "source_manifest_sha256": "92a85e922a4294de60c4b953e45687c5f1d340fa9cd7c2d8fb5c93a0aaaeaaa0"
+    }
+  ],
+  "python_tests": {
+    "passed": 75,
+    "failed": 0
+  },
+  "qualified_tables": {
+    "registered": {
+      "receipt": {
+        "record": ".tools/pq-opencl-opt/runs/cpu-scaling-final-metadata-qualification-r2.json",
+        "sha256": "6282bfef928f029e427487b09d0fd514e892d5adfd96b965fdfffef3703919b1",
+        "raw_log": ".tools/pq-opencl-opt/runs/cpu-scaling-final-metadata-qualification-r2.log",
+        "raw_log_sha256": "25ca12090e4d94247d479cc04749c7719ead654cebc107ac508d0063aeee9d54",
+        "status": "passed",
+        "tests": [
+          {
+            "passed": 1,
+            "failed": 0,
+            "ignored": 0
+          }
+        ],
+        "source_manifest_sha256": "92a85e922a4294de60c4b953e45687c5f1d340fa9cd7c2d8fb5c93a0aaaeaaa0"
+      },
+      "rows": 72,
+      "counting_parity": {
+        "all_counts_equal": true,
+        "counted_ns": 9084824080,
+        "counted_peak_bytes": 62212120,
+        "gpu_used": false,
+        "materialized_ns": 15072557042,
+        "materialized_peak_bytes": 296383608,
+        "shapes": 72
+      },
+      "populated_table_parity": {
+        "cache": {
+          "entries": 4,
+          "evictions": 0,
+          "failed_computations": 0,
+          "hits": 0,
+          "misses": 4,
+          "planning_ns": 5250,
+          "reserved_host_bytes": 1048576,
+          "table_hits": 4
+        },
+        "counts_equal": true,
+        "elapsed_ns": 5710,
+        "envelopes": 4,
+        "gpu_used": false,
+        "planning": {
+          "admitted_host_bytes_peak": 0,
+          "affinity_failures": 0,
+          "budget_reductions": 0,
+          "cohorts": 0,
+          "coordinator_wait_ns": 0,
+          "envelopes": 0,
+          "failed_envelopes": 0,
+          "heights_completed": 0,
+          "jobs_started": 0,
+          "largest_cohort": 0,
+          "peak_active_workers": 0,
+          "pinned_workers": 0,
+          "queue_refills": 0,
+          "shared_symbolic_bytes_peak": 0,
+          "symbolic_preparations": 0,
+          "threads_spawned": 0,
+          "wall_ns": 0,
+          "worker_auxiliary_bytes_peak": 0,
+          "worker_ceiling": 16,
+          "worker_elapsed_ns": 0,
+          "workspace_reuses": 0
+        },
+        "shapes": 72
+      }
+    },
+    "native": {
+      "receipt": {
+        "record": ".tools/pq-opencl-opt/runs/cpu-scaling-final-native-qualification-r2.json",
+        "sha256": "ab727df9660dee55164322ba8941bf167996d7ad9fbfd3acc5349c92bd9ed8d9",
+        "raw_log": ".tools/pq-opencl-opt/runs/cpu-scaling-final-native-qualification-r2.log",
+        "raw_log_sha256": "d50c7b8bdf18f3834cf1a8c7936edb98d832c2a5b8a669dc0377ced65b803a2e",
+        "status": "passed",
+        "tests": [
+          {
+            "passed": 1,
+            "failed": 0,
+            "ignored": 0
+          }
+        ],
+        "source_manifest_sha256": "92a85e922a4294de60c4b953e45687c5f1d340fa9cd7c2d8fb5c93a0aaaeaaa0"
+      },
+      "rows": 159,
+      "populated_table_parity": {
+        "cache": {
+          "admitted_host_bytes_peak": 0,
+          "affinity_failures": 0,
+          "budget_reductions": 0,
+          "cohorts": 0,
+          "coordinator_wait_ns": 0,
+          "entries": 159,
+          "evictions": 0,
+          "failed_computations": 0,
+          "hits": 0,
+          "jobs_started": 0,
+          "misses": 159,
+          "peak_workers": 0,
+          "periodic_preparations": 0,
+          "pinned_workers": 0,
+          "planning_ns": 205923,
+          "preparation_ns": 0,
+          "queue_refills": 0,
+          "reserved_host_bytes": 1048576,
+          "retained_worker_bytes_peak": 0,
+          "table_hits": 159,
+          "threads_spawned": 0,
+          "workspace_reuses": 0
+        },
+        "cases": 159,
+        "counts_equal": true,
+        "elapsed_ns": 385846,
+        "gpu_used": false,
+        "phases": {
+          "finalization_ns": 0,
+          "key_ns": 95091,
+          "lookup_ns": 94511,
+          "lowering_ns": 0,
+          "periodic_ns": 0,
+          "preflight_ns": 26521,
+          "symbolic_ns": 0
+        }
+      },
+      "identity": {
+        "available": true,
+        "profile": [
+          76,
+          65,
+          84,
+          84,
+          73,
+          67,
+          65,
+          45,
+          66,
+          76,
+          79,
+          67,
+          75,
+          45,
+          86,
+          50,
+          45,
+          67,
+          65,
+          78,
+          68,
+          73,
+          68,
+          65,
+          84,
+          69,
+          45,
+          48,
+          48,
+          48,
+          48,
+          49
+        ],
+        "source": [
+          114,
+          165,
+          250,
+          75,
+          231,
+          65,
+          150,
+          108,
+          193,
+          96,
+          51,
+          180,
+          51,
+          8,
+          168,
+          31,
+          2,
+          65,
+          244,
+          28,
+          216,
+          15,
+          121,
+          182,
+          62,
+          202,
+          52,
+          62,
+          249,
+          249,
+          215,
+          93
+        ]
+      }
+    }
+  },
+  "limitations": [
+    "These measurements do not establish end-to-end transaction or recursive-prover speedup.",
+    "Generic cache counters do not isolate bandwidth saturation or a particular cache level.",
+    "Placement and concurrency defaults were measured on this host; other hardware may differ.",
+    "Candidate performance source preceded the InvalidWire error-type fix and caller frame census correction; final source was rebuilt, requalified, and checked again with the final comparison receipts."
+  ]
+}

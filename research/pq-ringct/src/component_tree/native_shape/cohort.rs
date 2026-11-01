@@ -5,10 +5,31 @@ use super::{
     unchanged::{self, OtherNativeDescriptor},
     *,
 };
-use lattica_prover_p3::block_v2::machine::verifier::batch::shape::metadata_cpu_worker_ceiling;
+use lattica_prover_p3::block_v2::machine::verifier::batch::shape::native_metadata_cpu_worker_ceiling;
 use lattica_prover_p3::block_v2::machine::{cpu_queue, program::CountingWorkspace};
 
-pub(crate) const MAX: usize = 16;
+/// Ready jobs share one joined pool; execution remains capped at sixteen workers.
+pub(crate) const MAX: usize = 64;
+mod phase;
+mod scheduler;
+use scheduler::run_accounted;
+// Cover caller/callee copies of every control array in the existing coordinator
+// allowance. Prepared graph and compiler heaps have separate live reservations.
+const _: () = assert!(
+    8 * (std::mem::size_of::<[Request<'static>; MAX]>()
+        + std::mem::size_of::<[Descriptor<'static>; MAX]>()
+        + std::mem::size_of::<[Option<NativePlanningStorage>; MAX]>()
+        + std::mem::size_of::<[Option<ResolvedBound>; MAX]>()
+        + std::mem::size_of::<[Option<NativeCoreBound>; MAX]>()
+        + std::mem::size_of::<[Option<cache::Pending>; MAX]>()
+        + std::mem::size_of::<Statistics>()
+        + std::mem::size_of::<[std::sync::atomic::AtomicUsize; cpu_queue::MAX_WORKERS]>()
+        + std::mem::size_of::<scheduler::State>()
+        + std::mem::size_of::<phase::Permit<'static>>()
+        + MAX * 256)
+        + cpu_queue::control_bytes::<scheduler::Job, Result<scheduler::Output, CompileError>>()
+        <= COORDINATOR
+);
 const COORDINATOR: usize = 1 << 20;
 const STACK: usize = cpu_queue::STACK_BYTES;
 const THREAD: usize = STACK + (1 << 20);
@@ -55,7 +76,7 @@ impl Descriptor<'_> {
         }
     }
 }
-#[derive(Clone, Copy, Default, Debug, serde::Serialize)]
+#[derive(Clone, Copy, Debug, serde::Serialize)]
 pub(super) struct Statistics {
     pub cohorts: u64,
     pub jobs_started: u64,
@@ -65,8 +86,16 @@ pub(super) struct Statistics {
     pub admitted_host_bytes_peak: usize,
     pub wall_ns: u128,
     pub threads_spawned: u64,
+    pub pinned_workers: u64,
+    pub affinity_failures: u64,
     pub queue_refills: u64,
     pub workspace_reuses: u64,
+    pub maintenance_jobs: u64,
+    pub completions_drained: u64,
+    pub admission_stalls: u64,
+    pub trimmed_compiler_bytes: u64,
+    pub idle_compiler_bytes_peak: usize,
+    pub phase_extra_bytes_peak: usize,
     pub preparation_ns: u128,
     pub coordinator_wait_ns: u128,
     pub retained_worker_bytes_peak: usize,
@@ -74,6 +103,36 @@ pub(super) struct Statistics {
     #[serde(skip)]
     job_ns: [u128; MAX],
 }
+impl Default for Statistics {
+    fn default() -> Self {
+        Self {
+            cohorts: 0,
+            jobs_started: 0,
+            peak_workers: 0,
+            periodic_preparations: 0,
+            budget_reductions: 0,
+            admitted_host_bytes_peak: 0,
+            wall_ns: 0,
+            threads_spawned: 0,
+            pinned_workers: 0,
+            affinity_failures: 0,
+            queue_refills: 0,
+            workspace_reuses: 0,
+            maintenance_jobs: 0,
+            completions_drained: 0,
+            admission_stalls: 0,
+            trimmed_compiler_bytes: 0,
+            idle_compiler_bytes_peak: 0,
+            phase_extra_bytes_peak: 0,
+            preparation_ns: 0,
+            coordinator_wait_ns: 0,
+            retained_worker_bytes_peak: 0,
+            failed_cohorts: 0,
+            job_ns: [0; MAX],
+        }
+    }
+}
+
 fn worker_bytes(s: NativePlanningStorage) -> Result<usize, CompileError> {
     // Numeric compilation allocates neither a proof template nor dummy inputs.
     [
@@ -140,10 +199,38 @@ pub(crate) fn bounds_exact(
 ) -> Result<[Option<NativeCoreBound>; MAX], CompileError> {
     Ok(resolve_bounds(requests, limits)?.map(|bound| bound.map(|bound| bound.core)))
 }
+pub(crate) fn bounds_exact_in_ledger(
+    requests: &[Request<'_>],
+    limits: ConstructionLimits,
+    original: &crate::execution::retained_resources::Reservation,
+    ledger: &crate::execution::retained_resources::Ledger,
+) -> Result<[Option<NativeCoreBound>; MAX], CompileError> {
+    Ok(
+        resolve_bounds_in_ledger(requests, limits, original, ledger)?
+            .map(|bound| bound.map(|bound| bound.core)),
+    )
+}
+/// An authenticated caller may fund a bounded supplement from its existing
+/// ledger. Individual compiler limits and descriptor cache identities stay fixed.
+pub(crate) fn resolve_bounds_in_ledger(
+    requests: &[Request<'_>],
+    limits: ConstructionLimits,
+    original: &crate::execution::retained_resources::Reservation,
+    ledger: &crate::execution::retained_resources::Ledger,
+) -> Result<[Option<ResolvedBound>; MAX], CompileError> {
+    resolve(requests, limits, Some(phase::Backing { original, ledger }))
+}
 /// Preserve each original caller's auxiliary allowance in the cache key.
 pub(crate) fn resolve_bounds(
     requests: &[Request<'_>],
     limits: ConstructionLimits,
+) -> Result<[Option<ResolvedBound>; MAX], CompileError> {
+    resolve(requests, limits, None)
+}
+fn resolve(
+    requests: &[Request<'_>],
+    limits: ConstructionLimits,
+    backing: Option<phase::Backing<'_>>,
 ) -> Result<[Option<ResolvedBound>; MAX], CompileError> {
     if requests.is_empty() || requests.len() > MAX {
         return Err(CompileError::Shape("native cohort length"));
@@ -178,6 +265,9 @@ pub(crate) fn resolve_bounds(
             .enumerate()
             .position(|(j, k)| *k == keys[i] && requests[j].auxiliary == requests[i].auxiliary);
     }
+    if let Some(backing) = &backing {
+        backing.validate(original)?;
+    }
     for (i, &d) in descriptors.iter().enumerate() {
         if duplicate[i].is_none() {
             let p = d.select(limits, requests[i].auxiliary, storage[i].unwrap())?;
@@ -186,6 +276,17 @@ pub(crate) fn resolve_bounds(
         }
     }
     let mut stats = Statistics::default();
+    let misses = results[..descriptors.len()]
+        .iter()
+        .zip(&duplicate)
+        .filter(|(result, duplicate)| result.is_none() && duplicate.is_none())
+        .count();
+    let phase = backing
+        .as_ref()
+        .map(|backing| backing.admit(original, misses, native_metadata_cpu_worker_ceiling()))
+        .transpose()?;
+    let budget = phase.as_ref().map_or(original, |phase| phase.budget());
+    stats.phase_extra_bytes_peak = budget - original;
     // AES's periodic schedule is independent of domain, counters and segments
     // (AesLaneAir::schedule). Its constraints DO depend on these fields and are
     // always prepared separately. Share only this audited immutable table.
@@ -222,9 +323,9 @@ pub(crate) fn resolve_bounds(
         &duplicate,
         descriptors.len(),
         limits,
-        original,
+        budget,
         shared_bytes,
-        metadata_cpu_worker_ceiling(),
+        native_metadata_cpu_worker_ceiling(),
         &mut results,
         &mut stats,
         |i| descriptors[i].prepare(storage[i].unwrap(), columns.as_deref()),
@@ -237,6 +338,17 @@ pub(crate) fn resolve_bounds(
         },
     );
     stats.wall_ns = started.elapsed().as_nanos();
+    #[cfg(test)]
+    if std::env::var("LATTICA_CPU_SCALING_PROFILE").as_deref() == Ok("1") {
+        eprintln!(
+            "CPU_SCALING_JOBS {}",
+            serde_json::json!({
+                "kind":"native", "job_ns":&stats.job_ns[..descriptors.len()],
+                "compiler_peak_bytes":results[..descriptors.len()].iter().map(|r| r.map(|b| b.counts.planner_requested_program_bytes_peak)).collect::<Vec<_>>(),
+                "original_host_bytes":original, "phase_host_bytes":budget, "statistics":stats,
+            })
+        );
+    }
     stats.failed_cohorts = u64::from(result.is_err());
     cache::record_cohort(stats)?;
     // All workers have joined and their temporary owners have died. Errors
@@ -273,13 +385,13 @@ fn work(storage: NativePlanningStorage) -> u128 {
 fn initial_cap(storage: NativePlanningStorage, limits: ConstructionLimits) -> usize {
     let g = storage.geometry;
     let mib = if g.width <= 320 && g.public_values <= 8 {
-        64
+        48
     } else if g.width >= 600 && g.maximum_period >= 32768 {
-        256
-    } else if g.maximum_period >= 65536 && g.public_values > 300 {
-        192
-    } else {
         128
+    } else if g.maximum_period >= 65536 && g.public_values > 300 {
+        112
+    } else {
+        80
     };
     (mib << 20).min(limits.max_requested_program_bytes)
 }
@@ -294,7 +406,7 @@ fn run<P: Send>(
     ceiling: usize,
     results: &mut [Option<NativeCoreBound>; MAX],
     stats: &mut Statistics,
-    prepare: impl Fn(usize) -> Result<P, CompileError>,
+    prepare: impl Fn(usize) -> Result<P, CompileError> + Sync,
     compile: impl Fn(usize, &P, usize) -> Result<NativeCoreBound, CompileError> + Sync,
 ) -> Result<(), CompileError> {
     run_accounted(
@@ -311,249 +423,6 @@ fn run<P: Send>(
         |i, _| worker_bytes(storage[i].unwrap()),
         compile,
     )
-}
-fn run_accounted<P: Send>(
-    storage: &[Option<NativePlanningStorage>; MAX],
-    duplicates: &[Option<usize>; MAX],
-    count: usize,
-    limits: ConstructionLimits,
-    original: usize,
-    shared: usize,
-    ceiling: usize,
-    results: &mut [Option<NativeCoreBound>; MAX],
-    stats: &mut Statistics,
-    prepare: impl Fn(usize) -> Result<P, CompileError>,
-    retained: impl Fn(usize, &P) -> Result<usize, CompileError>,
-    compile: impl Fn(usize, &P, usize) -> Result<NativeCoreBound, CompileError> + Sync,
-) -> Result<(), CompileError> {
-    let mut desired = [0; MAX];
-    for i in 0..count {
-        desired[i] = initial_cap(storage[i].unwrap(), limits);
-    }
-    loop {
-        let mut indices = [0; MAX];
-        let mut ready = 0;
-        for i in 0..count {
-            if results[i].is_none() && duplicates[i].is_none() {
-                indices[ready] = i;
-                ready += 1;
-            }
-        }
-        if ready == 0 {
-            return Ok(());
-        }
-        indices[..ready]
-            .sort_unstable_by_key(|&i| (core::cmp::Reverse(work(storage[i].unwrap())), i));
-        let base = add(COORDINATOR, shared)?;
-        let prep_bound = |i: usize| {
-            add(
-                worker_bytes(storage[i].unwrap())?,
-                storage[i].unwrap().symbolic_workspace_bytes,
-            )
-        };
-        let largest_preparation = indices[..ready]
-            .iter()
-            .try_fold(0usize, |n, &i| Ok(n.max(prep_bound(i)?)))?;
-        let mut caps = [0; MAX];
-        for (slot, &i) in indices[..ready].iter().enumerate() {
-            caps[slot] = desired[i];
-        }
-        caps[..ready].sort_unstable_by(|a, b| b.cmp(a));
-        let mut width = 1;
-        let mut reserved = base;
-        for n in (2..=ceiling.min(ready).min(MAX)).rev() {
-            let pool = caps[..n]
-                .iter()
-                .try_fold(base, |sum, &cap| add(sum, add(cap, THREAD)?))?;
-            if add(pool, largest_preparation)? <= original {
-                width = n;
-                reserved = pool;
-                break;
-            }
-        }
-        stats.cohorts += 1;
-        if width == 1 {
-            let i = indices[0];
-            let lowered = add(
-                base,
-                add(
-                    worker_bytes(storage[i].unwrap())?,
-                    limits.max_requested_program_bytes,
-                )?,
-            )?;
-            let peak = lowered.max(add(base, prep_bound(i)?)?);
-            if peak > original {
-                return Err(CompileError::ResourceAdmission("native inline allowance"));
-            }
-            stats.admitted_host_bytes_peak = stats.admitted_host_bytes_peak.max(peak);
-            let start = std::time::Instant::now();
-            let prepared =
-                std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| prepare(i)))
-                    .map_err(|_| CompileError::Shape("native metadata preparation panic"))??;
-            let elapsed = start.elapsed().as_nanos();
-            stats.preparation_ns += elapsed;
-            stats.job_ns[i] += elapsed;
-            let start = std::time::Instant::now();
-            stats.jobs_started += 1;
-            stats.peak_workers = stats.peak_workers.max(1);
-            results[i] = Some(
-                std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                    compile(i, &prepared, limits.max_requested_program_bytes)
-                }))
-                .map_err(|_| CompileError::Shape("native metadata worker panic"))??,
-            );
-            stats.job_ns[i] += start.elapsed().as_nanos();
-            continue;
-        }
-        let (outcome, pool) = cpu_queue::scoped_with_state(
-            width,
-            |slot| {
-                // A full-cap worker must stay equivalent to a fresh compiler;
-                // reduced-cap workers can retry after all cached backing retires.
-                if caps[slot] < limits.max_requested_program_bytes {
-                    CountingWorkspace::begin(caps[slot]).map(Some)
-                } else {
-                    Ok(None)
-                }
-            },
-            |scratch, (i, prepared, cap): (usize, P, usize)| {
-                let result = match scratch {
-                    Ok(_) => compile(i, &prepared, cap),
-                    Err(_) => Err(CompileError::Shape("native workspace unavailable")),
-                };
-                drop(prepared);
-                (
-                    i,
-                    result,
-                    scratch
-                        .as_ref()
-                        .map_or(0, |s| s.as_ref().map_or(0, |s| s.reuses())),
-                )
-            },
-            |queue| -> Result<bool, CompileError> {
-                let mut dispatched = [false; MAX];
-                let mut used = [false; MAX];
-                let mut owner_bytes = [0; MAX];
-                let mut reused = [0; MAX];
-                let mut active = 0;
-                let mut retained_total = 0;
-                let mut retry = false;
-                let mut failure = None;
-                loop {
-                    if !retry && failure.is_none() {
-                        // Each idle slot can take the largest ready job that fits
-                        // its compiler cap and the remaining preparation allowance.
-                        for slot in 0..width {
-                            if owner_bytes[slot] != 0 {
-                                continue;
-                            }
-                            let mut selected = None;
-                            for &i in &indices[..ready] {
-                                if !dispatched[i]
-                                    && desired[i] <= caps[slot]
-                                    && add(add(reserved, retained_total)?, prep_bound(i)?)?
-                                        <= original
-                                {
-                                    selected = Some(i);
-                                    break;
-                                }
-                            }
-                            let Some(i) = selected else {
-                                continue;
-                            };
-                            let peak = add(add(reserved, retained_total)?, prep_bound(i)?)?;
-                            stats.admitted_host_bytes_peak =
-                                stats.admitted_host_bytes_peak.max(peak);
-                            let started = std::time::Instant::now();
-                            let prepared =
-                                std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                                    prepare(i)
-                                }))
-                                .map_err(|_| {
-                                    CompileError::Shape("native metadata preparation panic")
-                                })??;
-                            let elapsed = started.elapsed().as_nanos();
-                            stats.preparation_ns += elapsed;
-                            stats.job_ns[i] += elapsed;
-                            let bytes = retained(i, &prepared)?;
-                            if bytes == 0 || bytes > worker_bytes(storage[i].unwrap())? {
-                                return Err(CompileError::ResourceAdmission(
-                                    "native retained storage census",
-                                ));
-                            }
-                            stats.retained_worker_bytes_peak =
-                                stats.retained_worker_bytes_peak.max(bytes);
-                            retained_total = add(retained_total, bytes)?;
-                            owner_bytes[slot] = bytes;
-                            queue
-                                .submit(slot, (i, prepared, caps[slot]))
-                                .map_err(|_| CompileError::Shape("native queue submit"))?;
-                            stats.queue_refills += u64::from(used[slot]);
-                            used[slot] = true;
-                            dispatched[i] = true;
-                            active += 1;
-                        }
-                    }
-                    if active == 0 {
-                        if !retry
-                            && failure.is_none()
-                            && indices[..ready].iter().any(|&i| !dispatched[i])
-                        {
-                            return Err(CompileError::ResourceAdmission(
-                                "native queue made no progress",
-                            ));
-                        }
-                        break;
-                    }
-                    let done = queue
-                        .receive()
-                        .map_err(|_| CompileError::Shape("native queue receive"))?;
-                    active -= 1;
-                    retained_total -= owner_bytes[done.slot];
-                    owner_bytes[done.slot] = 0;
-                    match done.result {
-                        Ok((i, result, reuses)) => {
-                            stats.job_ns[i] += done.elapsed_ns;
-                            stats.workspace_reuses += reuses - reused[done.slot];
-                            reused[done.slot] = reuses;
-                            match result {
-                                Ok(value) => results[i] = Some(value),
-                                Err(CompileError::ResourceAdmission(
-                                    uni::shape::NATIVE_PROGRAM_BYTE_LIMIT,
-                                )) if caps[done.slot] < limits.max_requested_program_bytes => {
-                                    retry = true;
-                                    desired[i] = caps[done.slot]
-                                        .saturating_mul(2)
-                                        .min(limits.max_requested_program_bytes);
-                                }
-                                Err(error) => {
-                                    if failure.is_none() {
-                                        failure = Some(error);
-                                    }
-                                }
-                            }
-                        }
-                        Err(_) => {
-                            failure = Some(CompileError::Shape("native metadata worker panic"))
-                        }
-                    }
-                }
-                if let Some(error) = failure {
-                    Err(error)
-                } else {
-                    Ok(retry)
-                }
-            },
-        )
-        .map_err(|_| CompileError::Shape("native metadata pool failed"))?;
-        stats.jobs_started += pool.jobs_started as u64;
-        stats.threads_spawned += pool.threads_spawned as u64;
-        stats.peak_workers = stats.peak_workers.max(pool.peak_active_workers);
-        stats.coordinator_wait_ns += pool.coordinator_wait_ns;
-        if outcome? {
-            stats.budget_reductions += 1;
-        }
-    }
 }
 
 #[cfg(all(test, not(debug_assertions), target_arch = "x86_64"))]

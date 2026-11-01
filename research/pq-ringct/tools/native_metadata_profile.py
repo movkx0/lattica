@@ -6,6 +6,15 @@ def natural(n):
     require(type(n) is int and 0 <= n < (1 << 128), 'invalid native metadata counter')
     return n
 
+def phase_reservation(row, catalogue_peak):
+    original = natural(row.get('original_host_bytes_peak'))
+    phase = natural(row.get('phase_host_bytes_peak'))
+    require(0 < original <= catalogue_peak and original <= phase <= max(original, 3 << 30)
+            and phase <= original + (1 << 30), 'native phase reservation exceeds its ledger bound')
+    require(row.get('ledger_all_claims_released') is True, 'native phase claims did not retire')
+    require(natural(row.get('cache', {}).get('admitted_host_bytes_peak')) <= phase,
+            'native workers exceeded the reserved phase allowance')
+
 def validate(content):
     def records(prefix):
         return [json.loads(line[len(prefix):]) for line in content.splitlines() if line.startswith(prefix)]
@@ -69,7 +78,7 @@ def validate(content):
                     and stats.get('evictions') == stats.get('failed_computations') == 0, 'native cohort cache accounting')
             require(1 <= stats.get('peak_workers',0) <= c['workers'] and stats.get('jobs_started',0) >= 39
                     and stats.get('periodic_preparations') == 1, 'native cohort execution accounting')
-            require(natural(stats.get('admitted_host_bytes_peak')) <= c.get('original_host_bytes_peak') == summary['original_host_bytes_peak'], 'native cohort enlarged original memory budget')
+            phase_reservation(c, summary['original_host_bytes_peak'])
         identity = identities[0]
         for field in ['source','profile']: digest(identity.get(field))
         require(type(identity.get('available')) is bool, 'missing native table availability')
@@ -100,9 +109,8 @@ def validate(content):
                         'coordinator_wait_ns', 'retained_worker_bytes_peak'):
                 natural(stats.get(key))
             require(1 <= stats.get('peak_workers', 0) <= row['workers']
-                    and stats.get('jobs_started', 0) >= len(rows)
-                    and stats['admitted_host_bytes_peak'] <= row['original_host_bytes_peak'] == summary['original_host_bytes_peak'],
-                    'native queue concurrency or reservation')
+                    and stats.get('jobs_started', 0) >= len(rows), 'native queue concurrency')
+            phase_reservation(row, summary['original_host_bytes_peak'])
             if row['workers'] > 1:
                 require(stats['threads_spawned'] > 0 and stats['queue_refills'] > 0
                         and stats['workspace_reuses'] > 0 and stats['retained_worker_bytes_peak'] > 0,

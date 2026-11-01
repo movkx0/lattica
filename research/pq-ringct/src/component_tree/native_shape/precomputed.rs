@@ -15,6 +15,12 @@ pub(super) struct Row {
     pub geometry: [usize; 5],
     pub values: [usize; 8],
 }
+
+/// Comparison fixture only; it bypasses no runtime source or admission check.
+#[cfg(test)]
+pub(super) fn reference_values(key: [u8; 32]) -> [usize; 8] {
+    data::ROWS.iter().find(|r| r.key == key).expect("qualified descriptor fixture").values
+}
 mod data;
 pub(super) fn content_digest() -> [u8; 32] {
     digest(data::SOURCE, data::PROFILE, data::ROWS)

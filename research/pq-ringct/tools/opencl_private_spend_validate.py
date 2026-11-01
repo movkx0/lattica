@@ -885,6 +885,26 @@ def build_plan(args):
     identity_qualification = getattr(args, 'identity_cpu_qualification', False)
     metadata_qualification = getattr(args, 'metadata_cpu_qualification', False)
     native_metadata_profile = getattr(args, 'native_metadata_profile', False)
+    scaling = getattr(args, 'cpu_scaling_profile', None)
+    scaling_selection = None
+    if scaling:
+        from cpu_scaling_profile import selection
+        require(args.profile == 'research-compile-large' and args.expect_tests and args.build_label
+                and not native_metadata_profile and not metadata_qualification
+                and not identity_qualification and not complete_case,
+                'CPU scaling requires the dedicated CPU-only profile')
+        scaling_selection = selection(scaling, getattr(args, 'cpu_scaling_workers', None), argv)
+        scaling_selection['placement'] = getattr(args, 'cpu_scaling_placement', None) or 'spread'
+        scaling_selection['callgraph'] = bool(getattr(args, 'cpu_scaling_callgraph', False))
+        require(not scaling_selection['callgraph'] or scaling == 'native',
+                'call-stack recording requires native CPU scaling')
+        if scaling_selection['callgraph']:
+            scaling_selection['events'] = ['cycles:u']
+    else:
+        require(getattr(args, 'cpu_scaling_workers', None) is None
+                and getattr(args, 'cpu_scaling_placement', None) is None,
+                'CPU scaling options without profile')
+        require(not getattr(args, 'cpu_scaling_callgraph', False), 'call-stack recording without profile')
     if native_metadata_profile:
         require(args.profile == 'research-compile-large' and args.expect_tests and args.build_label
                 and not complete_case and not identity_qualification and not metadata_qualification,
@@ -905,8 +925,8 @@ def build_plan(args):
         require(len(argv) == 6 and argv[1] == 'identity_preprocessing_screen::cpu_recursive_identity_worker_qualification'
                 and set(argv[2:]) == {'--exact', '--ignored', '--test-threads=1', '--nocapture'},
                 'wrong CPU identity qualification selector')
-    identity_cpus = identity_physical_cpus() if complete_case or identity_qualification or metadata_qualification or native_metadata_profile else None
-    if identity_qualification or metadata_qualification or native_metadata_profile:
+    identity_cpus = identity_physical_cpus() if complete_case or identity_qualification or metadata_qualification or native_metadata_profile or scaling else None
+    if identity_qualification or metadata_qualification or native_metadata_profile or scaling:
         require(len(identity_cpus) == 16, '16-worker qualification requires sixteen physical cores')
     host_profile = selected_host_profile(getattr(args, 'host_profile', 'standard'))
     require(host_profile['name'] == 'standard' or (args.profile == 'full' and complete_case),
@@ -921,7 +941,7 @@ def build_plan(args):
     require(sum((bool(complete_case), bool(getattr(args, 'note_owned_proof', False)),
                  bool(getattr(args, 'note_workflow_cpu', False)),
                  getattr(args, 'owned_runtime_test', None) is not None,
-                 bool(direct_ring_screen), bool(metadata_qualification), bool(identity_qualification), bool(native_metadata_profile),
+                 bool(direct_ring_screen), bool(metadata_qualification), bool(identity_qualification), bool(native_metadata_profile), bool(scaling),
                  bool(getattr(args, 'direct_ring_aggregate', False)),
                  bool(getattr(args, 'owned_source_shape_test', False)),
                  bool(getattr(args, 'active_hashx_preflight', False)),
@@ -1008,6 +1028,9 @@ def build_plan(args):
     device_uuid = getattr(args, 'device_uuid', None)
     if metadata_qualification:
         environment['LATTICA_METADATA_CPU_QUALIFICATION'] = '1'
+    if scaling:
+        environment['LATTICA_CPU_SCALING_PROFILE'] = '1'
+        environment['LATTICA_CPU_SCALING_PLACEMENT'] = scaling_selection['placement']
     if device_uuid is not None:
         require(args.profile not in CPU_PROFILES, 'physical GPU pin requires a GPU profile')
         require(type(device_uuid) is str and re.fullmatch(
@@ -1143,6 +1166,7 @@ def build_plan(args):
             'cpu_quota': '1600%' if identity_cpus is not None else str(threads * 100) + '%',
             'identity_physical_cpus': identity_cpus, 'identity_cpu_qualification': identity_qualification,
             'metadata_cpu_qualification': metadata_qualification, 'native_metadata_profile': native_metadata_profile,
+            'cpu_scaling_profile': scaling_selection,
             'runtime_seconds': args.seconds,
             'comparison_baseline': False, 'performance_qualified': False,
             'benchmark': benchmark, 'correctness_label': correctness_label,
@@ -1173,7 +1197,7 @@ def require_cargo_test_artifacts(build, content, requested):
 
 
 def executable_provenance(plan, sources, runs):
-    executable = Path(plan['command'][0])
+    executable = Path(plan.get('profiled_command', plan['command'])[0])
     require(executable.is_file() and os.access(executable, os.X_OK), 'executable is absent')
     identity = {'path': str(executable), 'resolved_path': str(executable.resolve()),
                 'sha256': sha(executable)}
@@ -1805,6 +1829,15 @@ def validate_output(log, plan):
     if plan.get('identity_cpu_qualification'):
         from cpu_identity_qualification import validate
         plan['identity_cpu_qualification_acceptance'] = validate(content)
+    if plan.get('cpu_scaling_profile'):
+        if plan['cpu_scaling_profile'].get('callgraph'):
+            from cpu_callgraph_profile import validate
+            accepted, artifact = validate(content, plan['cpu_scaling_profile'], plan['cpu_callgraph_output'])
+            plan['cpu_scaling_acceptance'] = accepted
+            plan['cpu_callgraph_artifact'] = artifact
+        else:
+            from cpu_scaling_profile import validate
+            plan['cpu_scaling_acceptance'] = validate(content, plan['cpu_scaling_profile'])
     if plan.get('native_metadata_profile'):
         from native_metadata_profile import validate
         plan['native_metadata_profile_acceptance'] = validate(content)
@@ -1938,6 +1971,9 @@ def execute(args, plan):
         runs.mkdir(exist_ok=True)
         record, log = runs / (args.label + '.json'), runs / (args.label + '.log')
         require(not record.exists() and not log.exists(), 'run label already used')
+        if plan.get('cpu_callgraph_output'):
+            destination = Path(plan['cpu_callgraph_output'])
+            require(not destination.exists() and not destination.is_symlink(), 'perf recording already exists')
         unit = 'lattica-opencl-opt-' + args.label + '.service'
         require(systemd_state(unit).get('LoadState') == 'not-found', 'service name already exists')
         before = source_manifest()
@@ -2090,8 +2126,10 @@ def execute(args, plan):
             except Exception as cleanup:
                 error = (error or '') + '; cleanup: ' + repr(cleanup)
             try:
-                require(sha(plan['command'][0]) == executable['sha256'],
+                require(sha(plan.get('profiled_command', plan['command'])[0]) == executable['sha256'],
                         'executed binary changed during correctness job')
+                if plan.get('profiled_command'):
+                    require(sha('/usr/bin/perf') == plan['perf_sha256'], 'perf executable changed')
                 plan['executable_unchanged'] = True
                 unchanged = source_manifest() == before
                 plan['source_inputs_unchanged'] = unchanged
@@ -2131,6 +2169,11 @@ def main():
     parser.add_argument('--expect-direct-result', action='store_true')
     parser.add_argument('--identity-cpu-qualification', action='store_true')
     parser.add_argument('--native-metadata-profile', action='store_true')
+    parser.add_argument('--cpu-scaling-profile', choices=('registered', 'native'))
+    parser.add_argument('--cpu-scaling-workers', type=int, choices=(4, 8, 12, 16))
+    parser.add_argument('--cpu-scaling-callgraph', action='store_true',
+                        help='bounded DWARF call-stack recording for the exact native CPU catalogue')
+    parser.add_argument('--cpu-scaling-placement', choices=('scheduler', 'packed', 'spread'))
     parser.add_argument('--metadata-cpu-qualification', action='store_true')
     parser.add_argument('--full-workflow-case', action='store_true',
                         help='qualify exactly one fresh N3 or N4 complete RingCT case')
@@ -2187,6 +2230,16 @@ def main():
     parser.add_argument('command', nargs=argparse.REMAINDER)
     args = parser.parse_args()
     plan = build_plan(args)
+    if plan.get('cpu_scaling_profile'):
+        plan['profiled_command'] = plan['command']
+        plan['perf_sha256'] = sha('/usr/bin/perf')
+        if plan['cpu_scaling_profile'].get('callgraph'):
+            from cpu_callgraph_profile import command as perf_command
+            plan['cpu_callgraph_output'] = str(STATE / 'runs' / (args.label + '.perf.data'))
+            plan['command'] = perf_command(plan['profiled_command'], plan['cpu_callgraph_output'])
+        else:
+            from cpu_scaling_profile import command as perf_command
+            plan['command'] = perf_command(plan['profiled_command'])
     if not args.execute:
         print(json.dumps(plan, indent=2))
         return 0

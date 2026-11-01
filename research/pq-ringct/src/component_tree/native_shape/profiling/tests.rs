@@ -400,12 +400,15 @@ fn native_metadata_profile() {
         MetadataCpuOptions, MetadataPlanningScope,
     };
     use native_shape::{cohort, precomputed};
+    use crate::execution::retained_resources::{Bytes, Category, Ledger, WorkerAllowance};
     for case_count in [39, cases.len()] {
         for workers in [1, 2, 4, 8, 16] {
             let _planner =
                 MetadataPlanningScope::begin(MetadataCpuOptions::workers(workers).unwrap())
                     .unwrap();
             let cache = cache::Scope::begin(source).unwrap();
+            let ledger = Ledger::new(WorkerAllowance { host: 4 << 30, device: 0 });
+            let mut original_peak = 0;
             let start = Instant::now();
             for (group, cases) in cases[..case_count].chunks(cohort::MAX).enumerate() {
                 let mut descriptors =
@@ -414,8 +417,17 @@ fn native_metadata_profile() {
                 for (d, case) in descriptors.iter_mut().zip(cases) {
                     *d = case.descriptor();
                 }
-                let result =
-                    cohort::bounds(&descriptors[..cases.len()], limits(), 512 << 20).unwrap();
+                let original_bytes = descriptors[..cases.len()].iter()
+                    .map(|d| d.storage(limits()).unwrap().total_requested_bytes).max().unwrap();
+                original_peak = original_peak.max(original_bytes);
+                let original = ledger.reserve(Category::PhaseScratch,
+                    Bytes { host: original_bytes as u64, device: 0 }).unwrap();
+                let mut requests = [cohort::Request { descriptor: descriptors[0], auxiliary: 512 << 20 }; cohort::MAX];
+                for (request, descriptor) in requests.iter_mut().zip(descriptors) {
+                    request.descriptor = descriptor;
+                }
+                let result = cohort::bounds_exact_in_ledger(&requests[..cases.len()], limits(), &original, &ledger).unwrap();
+                drop(original);
                 for (i, bound) in result[..cases.len()].iter().enumerate() {
                     assert_eq!(
                         bound.map(|mut b| {
@@ -433,7 +445,9 @@ fn native_metadata_profile() {
             }
             let elapsed = start.elapsed().as_nanos();
             let s = cache.statistics();
-            assert!(s.peak_workers <= workers && s.admitted_host_bytes_peak <= peak);
+            let phase_peak = ledger.snapshot().peak.host as usize;
+            assert_eq!(ledger.snapshot().current, Bytes::ZERO);
+            assert!(s.peak_workers <= workers && s.admitted_host_bytes_peak <= phase_peak);
             assert_eq!(s.entries, case_count);
             if case_count == 39 {
                 assert_eq!(s.periodic_preparations, 1);
@@ -446,7 +460,8 @@ fn native_metadata_profile() {
                     "NATIVE_METADATA_QUEUE"
                 },
                 serde_json::json!({"workers":workers,"cases":case_count,
-            "elapsed_ns":elapsed,"counts_equal":true,"original_host_bytes_peak":peak,"cache":s,"gpu_used":false})
+                "elapsed_ns":elapsed,"counts_equal":true,"original_host_bytes_peak":original_peak,
+                "phase_host_bytes_peak":phase_peak,"ledger_all_claims_released":true,"cache":s,"gpu_used":false})
             );
         }
     }
@@ -483,3 +498,5 @@ fn native_metadata_profile() {
         );
     }
 }
+
+mod scaling;

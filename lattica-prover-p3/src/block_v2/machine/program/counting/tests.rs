@@ -154,3 +154,61 @@ fn abandoned_counting_builder_cannot_overallocate_or_reenter_scope() {
         .finish_counts()
         .is_ok());
 }
+
+#[test]
+fn dynamic_workspace_requires_grants_reports_backing_and_trims_before_reuse() {
+    let scope = CountingWorkspace::begin_dynamic().unwrap();
+    assert!(ProgramBuilder::new_counting(1, limits()).is_err());
+    assert_eq!(scope.retained_bytes().unwrap(), 0);
+    scope
+        .activate(limits().max_requested_program_bytes)
+        .unwrap();
+    assert!(scope
+        .activate(limits().max_requested_program_bytes)
+        .is_err());
+    let mut builder = ProgramBuilder::new_counting(1, limits()).unwrap();
+    emit(&mut builder);
+    assert!(scope.deactivate().is_err());
+    assert!(scope.trim_idle(0).is_err());
+    let mut expected = builder.finish_counts().unwrap();
+    let retained = scope.deactivate().unwrap();
+    assert!(retained > 0 && retained <= expected.requested_bytes_peak);
+    assert_eq!(scope.retained_bytes().unwrap(), retained);
+    assert!(ProgramBuilder::new_counting(1, limits()).is_err());
+    let smaller = scope.trim_idle(retained / 2).unwrap();
+    assert!(smaller <= retained / 2);
+    assert_eq!(scope.retained_bytes().unwrap(), smaller);
+    scope
+        .activate(limits().max_requested_program_bytes)
+        .unwrap();
+    let mut builder = ProgramBuilder::new_counting(1, limits()).unwrap();
+    emit(&mut builder);
+    let mut actual = builder.finish_counts().unwrap();
+    expected.requested_bytes_peak = 0;
+    actual.requested_bytes_peak = 0;
+    assert_eq!(actual, expected);
+    scope.deactivate().unwrap();
+    assert_eq!(scope.trim_idle(0).unwrap(), 0);
+    assert_eq!(scope.retained_bytes().unwrap(), 0);
+}
+
+#[test]
+fn dynamic_workspace_never_reclaims_an_abandoned_builder_grant() {
+    let scope = CountingWorkspace::begin_dynamic().unwrap();
+    scope
+        .activate(limits().max_requested_program_bytes)
+        .unwrap();
+    let mut builder = ProgramBuilder::new_counting(1, limits()).unwrap();
+    emit(&mut builder);
+    drop(builder);
+    assert!(scope.deactivate().is_err());
+    assert!(scope.trim_idle(0).is_err());
+    assert!(scope
+        .activate(limits().max_requested_program_bytes)
+        .is_err());
+    drop(scope);
+    let fixed = CountingWorkspace::begin(limits().max_requested_program_bytes).unwrap();
+    assert!(fixed.activate(1).is_err());
+    assert!(fixed.deactivate().is_err());
+    assert!(fixed.trim_idle(0).is_err());
+}

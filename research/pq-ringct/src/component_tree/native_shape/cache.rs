@@ -25,8 +25,16 @@ pub(crate) struct Statistics {
     pub budget_reductions: u64,
     pub admitted_host_bytes_peak: usize,
     pub threads_spawned: u64,
+    pub pinned_workers: u64,
+    pub affinity_failures: u64,
     pub queue_refills: u64,
     pub workspace_reuses: u64,
+    pub maintenance_jobs: u64,
+    pub completions_drained: u64,
+    pub admission_stalls: u64,
+    pub trimmed_compiler_bytes: u64,
+    pub idle_compiler_bytes_peak: usize,
+    pub phase_extra_bytes_peak: usize,
     pub preparation_ns: u128,
     pub coordinator_wait_ns: u128,
     pub retained_worker_bytes_peak: usize,
@@ -165,7 +173,9 @@ pub(super) fn record_cohort(s: super::cohort::Statistics) -> Result<(), CompileE
         let mut slot = slot.try_borrow_mut().map_err(|_| busy())?;
         if let Some(c) = slot.as_mut() {
             macro_rules! add { ($($field:ident),+) => { $(c.statistics.$field = c.statistics.$field.checked_add(s.$field).ok_or_else(overflow)?;)+ }; }
-            add!(cohorts, jobs_started, periodic_preparations, budget_reductions, threads_spawned, queue_refills, workspace_reuses, preparation_ns, coordinator_wait_ns);
+            add!(cohorts, jobs_started, periodic_preparations, budget_reductions, threads_spawned, pinned_workers, affinity_failures, queue_refills, workspace_reuses, maintenance_jobs, completions_drained, admission_stalls, trimmed_compiler_bytes, preparation_ns, coordinator_wait_ns);
+            c.statistics.idle_compiler_bytes_peak = c.statistics.idle_compiler_bytes_peak.max(s.idle_compiler_bytes_peak);
+            c.statistics.phase_extra_bytes_peak = c.statistics.phase_extra_bytes_peak.max(s.phase_extra_bytes_peak);
             c.statistics.retained_worker_bytes_peak = c.statistics.retained_worker_bytes_peak.max(s.retained_worker_bytes_peak);
             c.statistics.planning_ns = c.statistics.planning_ns.checked_add(s.wall_ns).ok_or_else(overflow)?;
             c.statistics.failed_computations = c.statistics.failed_computations.checked_add(s.failed_cohorts).ok_or_else(overflow)?;

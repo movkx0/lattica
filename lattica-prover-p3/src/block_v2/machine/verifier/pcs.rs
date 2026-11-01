@@ -390,8 +390,17 @@ pub(super) fn verify_view(
                     b,
                     step.map_or(profile::Challenge::ZERO, |s| s.sibling_values[0]),
                 );
-                let even = b.ext_select(bits[r], folded, sibling);
-                let odd = b.ext_select(bits[r], sibling, folded);
+                let ordered = b.select_lanes(
+                    bits[r],
+                    [
+                        folded[0], folded[1], folded[2], sibling[0], sibling[1], sibling[2],
+                    ],
+                    [
+                        sibling[0], sibling[1], sibling[2], folded[0], folded[1], folded[2],
+                    ],
+                );
+                let even = [ordered[0], ordered[1], ordered[2]];
+                let odd = [ordered[3], ordered[4], ordered[5]];
                 let row = [even[0], even[1], even[2], odd[0], odd[1], odd[2]];
                 salted_authentication(
                     b,

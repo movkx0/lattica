@@ -40,10 +40,10 @@ impl ProgramBuilder<'_> {
         coefficients.map(|v| self.constant(v))
     }
     pub fn ext_scale(&mut self, a: Extension, b: Wire) -> Extension {
-        a.map(|v| self.mul(v, b))
+        self.scale_lanes(a, b)
     }
     pub fn ext_select(&mut self, bit: Wire, a: Extension, b: Extension) -> Extension {
-        core::array::from_fn(|i| self.select(bit, a[i], b[i]))
+        self.select_lanes(bit, a, b)
     }
     pub fn ext_inverse(&mut self, a: Extension) -> Extension {
         self.cubic_inverse(a)
@@ -74,7 +74,7 @@ impl ProgramBuilder<'_> {
         core::array::from_fn(|i| self.add(a[i], b[i]))
     }
     pub fn ext_sub(&mut self, a: Extension, b: Extension) -> Extension {
-        core::array::from_fn(|i| self.sub(a[i], b[i]))
+        self.sub_lanes(a, b)
     }
     pub fn ext_mul(&mut self, a: Extension, b: Extension) -> Extension {
         self.cubic_mul(a, b)

@@ -325,3 +325,18 @@ fn full_original_cap_workers_do_not_retain_scratch_that_could_cause_false_refusa
     assert_eq!(stats.jobs_started, 4);
     assert_eq!(stats.workspace_reuses, 0);
 }
+
+mod scaling;
+
+#[test]
+fn automatic_native_ceiling_uses_physical_cores_and_explicit_requests_are_preserved() {
+    let auto = MetadataCpuOptions::default();
+    {
+        let _scope = MetadataPlanningScope::begin(auto).unwrap();
+        assert_eq!(metadata_cpu_worker_ceiling(), auto.max_workers());
+        assert_eq!(native_metadata_cpu_worker_ceiling(), auto.max_workers());
+    }
+    let explicit = MetadataCpuOptions::workers(16).unwrap();
+    let _scope = MetadataPlanningScope::begin(explicit).unwrap();
+    assert_eq!(native_metadata_cpu_worker_ceiling(), explicit.max_workers());
+}

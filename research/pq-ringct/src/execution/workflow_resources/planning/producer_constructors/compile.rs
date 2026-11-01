@@ -71,7 +71,8 @@ impl WorkflowPlanning<'_> {
         }
         self.check_native_constructor_scratch(inventory,
             Requirements::single(Category::PhaseScratch, Bytes { host:peak as u64, device:0 }))?;
-        cohort::resolve_bounds(requests, limits).map_err(|_| WorkflowError::Planning)
+        cohort::resolve_bounds_in_ledger(requests, limits, &self.scratch, self.capability.ledger())
+            .map_err(|_| WorkflowError::Planning)
     }
 
     pub(crate) fn derive_metadata_source_compiler<'metadata, 'a>(&mut self,

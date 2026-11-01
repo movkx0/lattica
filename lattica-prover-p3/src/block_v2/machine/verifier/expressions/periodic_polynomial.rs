@@ -85,7 +85,10 @@ pub(super) fn sparse_value(
         let term = b.ext_scale(sum, weight);
         value = b.ext_add(value, term);
         if let Some(error) = b.resource_failure() {
-            return Err(CompileError::from_builder_admission(error, "periodic compiler allowance"));
+            return Err(CompileError::from_builder_admission(
+                error,
+                "periodic compiler allowance",
+            ));
         }
     }
     Ok(Some(value))
