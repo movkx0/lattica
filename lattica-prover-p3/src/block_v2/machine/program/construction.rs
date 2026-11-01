@@ -72,6 +72,7 @@ pub(super) struct Budget {
     pub(super) live: usize,
     pub(super) peak: usize,
     pub(super) failed: bool,
+    pub(super) byte_limit_exceeded: bool,
 }
 
 impl Budget {
@@ -83,6 +84,7 @@ impl Budget {
             live: 0,
             peak: 0,
             failed: false,
+            byte_limit_exceeded: false,
         };
         #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
         if matches!(constants, Constants::Device(..)) {
@@ -136,6 +138,7 @@ impl Budget {
             return self.reject();
         };
         if self.limit.is_some_and(|limit| next > limit) {
+            self.byte_limit_exceeded = true;
             return self.reject();
         }
         self.live = next;
@@ -199,10 +202,21 @@ impl Budget {
 /// Interning needs get/insert only. Explicit slot storage makes allocation
 /// sizes and old/new growth overlap independent of std HashMap internals.
 /// RandomState hashes integer metadata; full-key equality resolves collisions.
+static NEXT_MAP: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+/// An empty probe carries no allocation permission. Its private identity and
+/// generation bind it to one unchanged table; stale probes use normal insert.
+pub(super) struct Vacant<K> {
+    key: K,
+    slot: usize,
+    identity: u64,
+    generation: u64,
+}
 pub(super) struct Map<K, V> {
     slots: Vec<Option<(K, V)>>,
     entries: usize,
     hash: RandomState,
+    identity: u64,
+    generation: u64,
 }
 
 impl<K: Copy + Eq + Hash, V: Copy> Map<K, V> {
@@ -211,6 +225,14 @@ impl<K: Copy + Eq + Hash, V: Copy> Map<K, V> {
             slots: Vec::new(),
             entries: 0,
             hash: RandomState::new(),
+            identity: NEXT_MAP
+                .fetch_update(
+                    std::sync::atomic::Ordering::Relaxed,
+                    std::sync::atomic::Ordering::Relaxed,
+                    |id| id.checked_add(1),
+                )
+                .expect("compiler map identity exhausted"),
+            generation: 0,
         }
     }
 
@@ -232,20 +254,81 @@ impl<K: Copy + Eq + Hash, V: Copy> Map<K, V> {
         self.slots[self.index(key)].as_ref().map(|(_, value)| value)
     }
 
+    pub(super) fn probe(&self, key: K) -> Result<V, Vacant<K>> {
+        let slot = if self.slots.is_empty() {
+            0
+        } else {
+            self.index(&key)
+        };
+        if let Some(Some((_, value))) = self.slots.get(slot) {
+            return Ok(*value);
+        }
+        Err(Vacant {
+            key,
+            slot,
+            identity: self.identity,
+            generation: self.generation,
+        })
+    }
+    pub(super) fn insert_vacant(
+        &mut self,
+        vacant: Vacant<K>,
+        value: V,
+        budget: &mut Budget,
+    ) -> Option<V> {
+        if budget.failed {
+            return None;
+        }
+        if vacant.identity != self.identity
+            || vacant.generation != self.generation
+            || self.entries == self.slots.len() / 8 * 7
+        {
+            return self.insert(vacant.key, value, budget);
+        }
+        // An unchanged generation guarantees the probed slot is still empty.
+        let Some(next) = self.generation.checked_add(1) else {
+            budget.reject();
+            return None;
+        };
+        self.slots[vacant.slot] = Some((vacant.key, value));
+        self.entries += 1;
+        self.generation = next;
+        None
+    }
+
     pub(super) fn clear(&mut self, budget: &mut Budget) -> usize {
         let bytes = self.slots.capacity() * size_of::<Option<(K, V)>>();
         drop(std::mem::take(&mut self.slots));
         self.entries = 0;
+        self.generation = self.generation.checked_add(1).unwrap_or_else(|| {
+            budget.reject();
+            u64::MAX
+        });
         budget.release(bytes);
         bytes
+    }
+    /// A numeric worker can retain this backing under its original compiler
+    /// reservation. Clear all keys and invalidate outstanding probes; the next
+    /// builder must charge the complete capacity before using it.
+    pub(super) fn reset_retained(&mut self) -> Option<usize> {
+        self.generation = self.generation.checked_add(1)?;
+        self.slots.fill(None);
+        self.entries = 0;
+        self.slots
+            .capacity()
+            .checked_mul(size_of::<Option<(K, V)>>())
     }
 
     pub(super) fn insert(&mut self, key: K, value: V, budget: &mut Budget) -> Option<V> {
         if budget.failed {
             return None;
         }
+        // Reuse the empty slot found by the initial probe unless growth moves
+        // the table. Full-key equality and randomized hashing are unchanged.
+        let mut slot = None;
         if !self.slots.is_empty() {
             let index = self.index(&key);
+            slot = Some(index);
             if let Some((_, previous)) = self.slots[index] {
                 self.slots[index] = Some((key, value));
                 return Some(previous);
@@ -278,10 +361,16 @@ impl<K: Copy + Eq + Hash, V: Copy> Map<K, V> {
             let old_bytes = old.capacity() * size_of::<Option<(K, V)>>();
             drop(old);
             budget.release(old_bytes);
+            slot = None;
         }
-        let index = self.index(&key);
+        let index = slot.unwrap_or_else(|| self.index(&key));
+        let Some(next) = self.generation.checked_add(1) else {
+            budget.reject();
+            return None;
+        };
         self.slots[index] = Some((key, value));
         self.entries += 1;
+        self.generation = next;
         None
     }
 }
@@ -294,6 +383,9 @@ impl Set {
     pub(super) fn insert(&mut self, key: Wire, budget: &mut Budget) -> bool {
         let existed = self.0.insert(key, (), budget).is_some();
         !budget.failed && !existed
+    }
+    pub(super) fn reset_retained(&mut self) -> Option<usize> {
+        self.0.reset_retained()
     }
 }
 

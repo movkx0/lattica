@@ -2,6 +2,7 @@
 //! All output/verifier/report/wrapper/caller claims precede native preparation.
 //! A's succession proves lifecycle/order; this module separately verifies the
 //! actual registered source and output. Complete-request dispatch stays closed.
+use lattica_prover_p3::block_v2::machine::backend::identity_cpu::RegistrationReports;
 use super::Error as ParentCompileError;
 use super::*;
 use crate::{
@@ -154,13 +155,14 @@ fn caller_requirement() -> Result<Requirements> {
             )>,
         >(),
         size_of::<RegisteredProgram>(),
-        size_of::<(RegisteredProgram, Report)>(),
-        size_of::<core::result::Result<(RegisteredProgram, Report), AdmissionError>>(),
+        size_of::<(RegisteredProgram, RegistrationReports)>(),
+        size_of::<core::result::Result<(RegisteredProgram, RegistrationReports), AdmissionError>>(),
         size_of::<(BatchProof<Config>, Report)>(),
         size_of::<core::result::Result<(BatchProof<Config>, Report), ExecutionError>>(),
         size_of::<NodeKey>(),
         size_of::<NodeProof>(),
         size_of::<Report>(),
+        size_of::<RegistrationReports>(),
         size_of::<Request>(),
         size_of::<Retirement>(),
         size_of::<Snapshot>(),
@@ -409,16 +411,17 @@ impl<'bound, 'source, 'request> PreissuedHashxParent<'bound, 'source, 'request> 
                 emit_report: false,
             };
             let (registered, report) =
-                RegisteredProgram::new_with_request_and_identity_hint_and_report(
+                RegisteredProgram::new_with_cpu_identity_and_report(
                     MachineAir::from_shared_program(Arc::clone(&node.program)),
                     backend.host_budget_bytes(),
                     request,
-                    None,
                 )
                 .map_err(|_| Error::Setup)?;
-            validate_report(&report, CoverageScope::Preprocessing)?;
-            emit_receipt(&report)?;
-            let setup_ns = report.elapsed_ns;
+            validate_report(&report.preprocessing, CoverageScope::Preprocessing)?;
+            validate_report(&report.identity, CoverageScope::Operation)?;
+            emit_receipt(&report.preprocessing)?;
+            emit_receipt(&report.identity)?;
+            let setup_ns = report.preprocessing.elapsed_ns;
             drop(report);
             let captured = acceptance
                 .capture(compiled, &registered, &support.ledger)

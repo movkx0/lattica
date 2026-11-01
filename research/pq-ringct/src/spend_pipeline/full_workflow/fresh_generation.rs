@@ -56,6 +56,22 @@ struct FreshGenerationPlan<const N: usize> {
     operation: Requirements,
     complete: Requirements,
 }
+
+#[cfg(all(test, not(feature = "native-spend-oracle")))]
+#[test]
+fn fresh_generation_source_plans_fit_standard_profile() {
+    fn check<const N: usize>() {
+        let plan = FreshGenerationPlan::<N>::new().unwrap();
+        let total = plan.complete.total().unwrap();
+        assert!(total.host > 0 && total.host <= 32 << 30);
+        assert!(total.device > 0 && total.device <= 8 << 30);
+        assert_eq!(plan.native.managed_bytes(), 3_151_744);
+        assert!(plan.native.requirements().get(Category::PhaseScratch).host < 24 << 30);
+        println!("FRESH_GENERATION_SOURCE_PLAN transactions={N} host={} device={}", total.host, total.device);
+    }
+    check::<3>();
+    check::<4>();
+}
 impl<const N: usize> FreshGenerationPlan<N> {
     fn new() -> Result<Self> { Self::with_host_profile(crate::host_memory_profile::HostMemoryProfile::Standard) }
     fn with_host_profile(profile: crate::host_memory_profile::HostMemoryProfile) -> Result<Self> {

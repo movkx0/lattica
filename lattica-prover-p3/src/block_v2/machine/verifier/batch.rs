@@ -49,7 +49,10 @@ fn recompose_into(
         }
         *out = value;
         if let Some(error) = b.resource_failure() {
-            return Err(CompileError::from_builder_admission(error, "permutation compiler allowance"));
+            return Err(CompileError::from_builder_admission(
+                error,
+                "permutation compiler allowance",
+            ));
         }
     }
     Ok(())
@@ -84,7 +87,16 @@ pub(crate) fn verify_with_constants(
     constants: Constants<'_>,
 ) -> Result<(), CompileError> {
     let prepared = super::super::symbolic::prepare_machine(air, constants)?;
-    verify_prepared(b, inputs, air, public, preprocessing_cap, proof, constants, prepared)
+    verify_prepared(
+        b,
+        inputs,
+        air,
+        public,
+        preprocessing_cap,
+        proof,
+        constants,
+        prepared,
+    )
 }
 
 /// Compile the full registered-machine verifier using the maintained bounded
@@ -118,9 +130,19 @@ fn verify_bounded_shape(
     proof: &BatchProof<Config>,
 ) -> Result<(), CompileError> {
     let prepared = super::super::symbolic::verifier::prepare_registry(
-        air, super::super::symbolic::verifier::Limits::default(),
+        air,
+        super::super::symbolic::verifier::Limits::default(),
     )?;
-    verify_prepared(b, inputs, air, public, preprocessing_cap, proof, Constants::cpu(), prepared)
+    verify_prepared(
+        b,
+        inputs,
+        air,
+        public,
+        preprocessing_cap,
+        proof,
+        Constants::cpu(),
+        prepared,
+    )
 }
 
 fn verify_prepared(
@@ -133,6 +155,49 @@ fn verify_prepared(
     constants: Constants<'_>,
     prepared: super::super::symbolic::Prepared,
 ) -> Result<(), CompileError> {
+    verify_prepared_view(
+        b,
+        inputs,
+        air,
+        public,
+        preprocessing_cap,
+        Some(proof),
+        constants,
+        &prepared,
+    )
+}
+
+pub(super) fn verify_counted_shape(
+    b: &mut ProgramBuilder,
+    inputs: &mut ProofInputs,
+    air: &MachineAir,
+    public: &[Wire],
+    preprocessing_cap: &[Digest],
+    prepared: &super::super::symbolic::Prepared,
+) -> Result<(), CompileError> {
+    inputs.require_geometry(b)?;
+    verify_prepared_view(
+        b,
+        inputs,
+        air,
+        public,
+        preprocessing_cap,
+        None,
+        Constants::cpu(),
+        prepared,
+    )
+}
+
+fn verify_prepared_view(
+    b: &mut ProgramBuilder,
+    inputs: &mut ProofInputs,
+    air: &MachineAir,
+    public: &[Wire],
+    preprocessing_cap: &[Digest],
+    proof: Option<&BatchProof<Config>>,
+    constants: Constants<'_>,
+    prepared: &super::super::symbolic::Prepared,
+) -> Result<(), CompileError> {
     let height = air.program().height();
     let log_height = height.ilog2() as usize;
     let ext_db = log_height + 1;
@@ -140,7 +205,7 @@ fn verify_prepared(
     if log_chunks > profile::LOG_BLOWUP {
         return Err(CompileError::Shape("quotient degree"));
     }
-    let lookups = prepared.lookups;
+    let lookups = &prepared.lookups;
     let expected_bus = match lookups.first().map(|x| &x.kind) {
         Some(Kind::Global(name)) => name,
         _ => return Err(CompileError::Unsupported("single global bus required")),
@@ -155,55 +220,107 @@ fn verify_prepared(
     let chunks = 1 << (log_chunks + 1);
     let perm_width = (lookups.len() + 1) * 3;
     if public.len() != air.num_public_values()
-        || proof.degree_bits != [ext_db]
-        || proof.opened_values.instances.len() != 1
-        || proof.lookup_terminals.len() != 1
-        || proof.lookup_terminals[0].is_none()
-        || proof.commitments.permutation.is_none()
-        || proof.commitments.random.is_none()
         || !air.main_next_row_columns().is_empty()
         || !air.preprocessed_next_row_columns().is_empty()
     {
-        return Err(CompileError::Shape("single-table batch proof"));
+        return Err(CompileError::Shape("single-table batch geometry"));
     }
-    let inst = &proof.opened_values.instances[0];
-    let opened = &inst.base_opened_values;
-    if opened.trace_local.len() != air.width()
-        || opened.trace_next.is_some()
-        || opened
-            .preprocessed_local
-            .as_ref()
-            .is_none_or(|v| v.len() != air.preprocessed_width())
-        || opened.preprocessed_next.is_some()
-        || opened.random.as_ref().is_none_or(|v| v.len() != 3)
-        || opened.quotient_chunks.len() != chunks
-        || opened.quotient_chunks.iter().any(|v| v.len() != 3)
-        || inst.permutation_local.len() != perm_width
-        || inst.permutation_next.len() != perm_width
-    {
-        return Err(CompileError::Shape("batch opened values"));
+    if let Some(proof) = proof {
+        if public.len() != air.num_public_values()
+            || proof.degree_bits != [ext_db]
+            || proof.opened_values.instances.len() != 1
+            || proof.lookup_terminals.len() != 1
+            || proof.lookup_terminals[0].is_none()
+            || proof.commitments.permutation.is_none()
+            || proof.commitments.random.is_none()
+            || !air.main_next_row_columns().is_empty()
+            || !air.preprocessed_next_row_columns().is_empty()
+        {
+            return Err(CompileError::Shape("single-table batch proof"));
+        }
+        let inst = &proof.opened_values.instances[0];
+        let opened = &inst.base_opened_values;
+        if opened.trace_local.len() != air.width()
+            || opened.trace_next.is_some()
+            || opened
+                .preprocessed_local
+                .as_ref()
+                .is_none_or(|v| v.len() != air.preprocessed_width())
+            || opened.preprocessed_next.is_some()
+            || opened.random.as_ref().is_none_or(|v| v.len() != 3)
+            || opened.quotient_chunks.len() != chunks
+            || opened.quotient_chunks.iter().any(|v| v.len() != 3)
+            || inst.permutation_local.len() != perm_width
+            || inst.permutation_next.len() != perm_width
+        {
+            return Err(CompileError::Shape("batch opened values"));
+        }
+    } else {
+        inputs.require_geometry(b)?;
     }
     let log_lde = ext_db + profile::LOG_BLOWUP;
     if preprocessing_cap.len() != 1 << log_lde.min(profile::CAP_HEIGHT) {
         return Err(CompileError::Shape("registered preprocessing cap"));
     }
-    let main_cap = inputs.cap(b, &proof.commitments.main, log_lde)?;
-    let quotient_cap = inputs.cap(b, &proof.commitments.quotient_chunks, log_lde)?;
-    let random_cap = inputs.cap(b, proof.commitments.random.as_ref().unwrap(), log_lde)?;
-    let perm_cap = inputs.cap(b, proof.commitments.permutation.as_ref().unwrap(), log_lde)?;
-    let terminal = inputs.extension(b, proof.lookup_terminals[0].as_ref().unwrap().0);
+    let opened = proof.map(|p| &p.opened_values.instances[0]);
+    let main_cap = inputs.cap_view(b, proof.map(|p| &p.commitments.main), log_lde)?;
+    let quotient_cap =
+        inputs.cap_view(b, proof.map(|p| &p.commitments.quotient_chunks), log_lde)?;
+    let random_cap = inputs.cap_view(
+        b,
+        proof.and_then(|p| p.commitments.random.as_ref()),
+        log_lde,
+    )?;
+    let perm_cap = inputs.cap_view(
+        b,
+        proof.and_then(|p| p.commitments.permutation.as_ref()),
+        log_lde,
+    )?;
+    let terminal = inputs.extension(
+        b,
+        proof.map_or(profile::Challenge::ZERO, |p| {
+            p.lookup_terminals[0].as_ref().unwrap().0
+        }),
+    );
     let zero = b.ext_constant([Val::ZERO; 3]);
     b.ext_assert_equal(terminal, zero);
-    let local = inputs.extensions(b, &opened.trace_local)?;
-    let pre = inputs.extensions(b, opened.preprocessed_local.as_ref().unwrap())?;
-    let random = inputs.extensions(b, opened.random.as_ref().unwrap())?;
-    let quotient_chunks: Vec<_> = opened
-        .quotient_chunks
-        .iter()
-        .map(|v| inputs.extensions(b, v))
+    let local = inputs.extensions_view(
+        b,
+        opened.map(|o| o.base_opened_values.trace_local.as_slice()),
+        air.width(),
+    )?;
+    let pre = inputs.extensions_view(
+        b,
+        opened.map(|o| {
+            o.base_opened_values
+                .preprocessed_local
+                .as_ref()
+                .unwrap()
+                .as_slice()
+        }),
+        air.preprocessed_width(),
+    )?;
+    let random = inputs.extensions_view(
+        b,
+        opened.map(|o| o.base_opened_values.random.as_ref().unwrap().as_slice()),
+        3,
+    )?;
+    let quotient_chunks: Vec<_> = (0..chunks)
+        .map(|i| {
+            inputs.extensions_view(
+                b,
+                opened.map(|o| o.base_opened_values.quotient_chunks[i].as_slice()),
+                3,
+            )
+        })
         .collect::<Result<_, _>>()?;
-    let perm_local = inputs.extensions(b, &inst.permutation_local)?;
-    let perm_next = inputs.extensions(b, &inst.permutation_next)?;
+    let perm_local = inputs.extensions_view(
+        b,
+        opened.map(|o| o.permutation_local.as_slice()),
+        perm_width,
+    )?;
+    let perm_next =
+        inputs.extensions_view(b, opened.map(|o| o.permutation_next.as_slice()), perm_width)?;
     let mut transcript = Transcript::new(b);
     for value in [1, ext_db, log_height, air.width(), chunks] {
         observe_usize(&mut transcript, b, value);
@@ -284,7 +401,14 @@ fn verify_prepared(
             preprocessing: false,
         },
     ];
-    super::pcs::verify(b, inputs, &mut transcript, &rounds, &proof.opening_proof)?;
+    super::pcs::verify_view(
+        b,
+        inputs,
+        &mut transcript,
+        &rounds,
+        proof.map(|p| &p.opening_proof),
+        None,
+    )?;
     let (first, last, transition, inv_vanishing) =
         expressions::selectors_with_constants(b, zeta, log_height, constants)?;
     let periodic_count = air.num_periodic_columns();
@@ -321,7 +445,7 @@ fn verify_prepared(
             base,
             extension,
             order,
-        } = prepared.constraints;
+        } = &prepared.constraints;
         let count = order
             .base_indices
             .len()

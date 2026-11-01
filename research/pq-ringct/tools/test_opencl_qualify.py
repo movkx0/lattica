@@ -414,6 +414,46 @@ class AdmissionTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "unknown same-user process"):
                 runner.protected_nonworker(process, PermissionError("protected exe"))
 
+    def test_lock_screen_exclusion_requires_exact_compositor_cgroup(self):
+        with tempfile.TemporaryDirectory() as directory:
+            process = Path(directory) / "9001"
+            process.mkdir()
+            uid = runner.os.getuid()
+            expected = (f"0::/user.slice/user-{uid}.slice/user@{uid}.service/"
+                        "session.slice/plasma-kwin_wayland.service\n")
+            for name in ("kscreenlocker_g", "kscreenlocker_w"):
+                (process / "comm").write_text(name + "\n")
+                for value in ("", "0::/worker.service\n", expected + "0::/other\n"):
+                    (process / "cgroup").write_text(value)
+                    with self.assertRaisesRegex(ValueError, "unknown same-user process"):
+                        runner.protected_nonworker(process, PermissionError("protected exe"))
+                (process / "cgroup").write_text(expected)
+                observation = runner.protected_nonworker(process, PermissionError("protected exe"))
+                self.assertEqual(observation["comm"], name)
+
+    def test_protected_ssh_session_requires_root_ssh_parent_and_session_scope(self):
+        with tempfile.TemporaryDirectory() as directory:
+            process, parent = Path(directory) / "9001", Path(directory) / "9100"
+            process.mkdir()
+            parent.mkdir()
+            (process / "comm").write_text("sshd-session\n")
+            (process / "stat").write_text("9001 (sshd-session) S 9100 0\n")
+            (process / "cgroup").write_text(f"0::/user.slice/user-{runner.os.getuid()}.slice/session-6.scope\n")
+            (parent / "comm").write_text("sshd-session\n")
+            with patch.object(Path, "stat", return_value=SimpleNamespace(st_uid=0)):
+                self.assertEqual(runner.protected_nonworker(process, PermissionError("protected"))["comm"], "sshd-session")
+                (parent / "comm").write_text("rustc\n")
+                with self.assertRaisesRegex(ValueError, "unknown same-user process"):
+                    runner.protected_nonworker(process, PermissionError("protected"))
+            (parent / "comm").write_text("sshd-session\n")
+            with patch.object(Path, "stat", return_value=SimpleNamespace(st_uid=1000)):
+                with self.assertRaisesRegex(ValueError, "unknown same-user process"):
+                    runner.protected_nonworker(process, PermissionError("protected"))
+            (process / "cgroup").write_text("0::/worker.scope\n")
+            with patch.object(Path, "stat", return_value=SimpleNamespace(st_uid=0)):
+                with self.assertRaisesRegex(ValueError, "unknown same-user process"):
+                    runner.protected_nonworker(process, PermissionError("protected"))
+
     def test_historical_unit_may_be_gone_after_reboot(self):
         with patch.object(runner, "command", return_value=SimpleNamespace(stdout="not-found\n", stderr="")):
             evidence = runner.baseline_gate()

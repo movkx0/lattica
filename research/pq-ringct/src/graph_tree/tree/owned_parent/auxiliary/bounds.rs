@@ -25,6 +25,8 @@ pub(super) fn frames() -> OwnedResult<usize> {
         bytes::<[Option<&crate::graph_crypto::Request>; 2]>(8)?,
         bytes::<[Option<&crate::graph_auxiliary::AuxiliaryRequest>; 2]>(8)?,
         bytes::<[Option<NativeDescriptor<'static>>; 2]>(8)?,
+        bytes::<[native_shape::cohort::Descriptor<'static>; 2]>(8)?,
+        bytes::<[Option<NativeCoreBound>; native_shape::cohort::MAX]>(8)?,
         bytes::<OwnedResult<[Option<NativeDescriptor<'static>>; 2]>>(8)?,
         bytes::<OwnedResult<&crate::graph_crypto::Request>>(8)?,
         bytes::<OwnedResult<&crate::graph_auxiliary::AuxiliaryRequest>>(8)?,
@@ -71,6 +73,8 @@ pub(super) fn frames() -> OwnedResult<usize> {
 }
 // These helpers return before the next core is entered: request verify_impl,
 // owned Uniform/Sparse/Transcript joins, and native_core_bound. Their periodic
+// Numeric metadata may split this original envelope across joined workers.
+// Materialized verifier cores remain serial: their
 // columns, symbolic recordings, public/cap vectors and planner templates are
 // local destructible owners, so only the largest complete core scope can be
 // active. The Program and complete accumulated ProofInputs survive every core;
@@ -204,9 +208,18 @@ pub(super) fn derive<'a>(prepared: &'a SourceRetained<PreparedWorkflowSources<'a
         maximum_inputs = add(maximum_inputs, envelope.input_values_upper_bound)?;
         maximum_hint_words = add(maximum_hint_words, envelope.selection_hint_words_upper_bound)?;
     }
+    let mut descriptors = [native_shape::cohort::Descriptor::Other(
+        native_shape::unchanged::OtherNativeDescriptor::PrivateProof); 2];
+    let mut count = 0;
     for native in sources.natives().into_iter().flatten() {
-        let core = native_shape::native_core_bound(native.descriptor(), super::super::source::construction(),
-            super::super::source::AUXILIARY_BYTES).map_err(|_| GraphParentFailure::Source)?;
+        descriptors[count] = native_shape::cohort::Descriptor::Native(native.descriptor());
+        count += 1;
+    }
+    let cores = if count == 0 { [None; native_shape::cohort::MAX] } else {
+        native_shape::cohort::bounds(&descriptors[..count], super::super::source::construction(),
+            super::super::source::AUXILIARY_BYTES).map_err(|_| GraphParentFailure::Source)?
+    };
+    for core in cores[..count].iter().flatten() {
         if core.counts.quotient_chunks != 16 { return Err(GraphParentFailure::Source); }
         operations = joined(operations, core.counts.operations)?;
         maximum_wires = add(maximum_wires, core.counts.wires)?;

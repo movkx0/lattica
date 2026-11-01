@@ -624,7 +624,10 @@ impl CompiledNode {
             "batch node exceeds retained-LDE memory admission",
         )?;
         let registered =
-            RegisteredProgram::new_with_memory_budget(MachineAir::from_shared_program(self.program), memory_budget)
+            RegisteredProgram::new_with_cpu_identity_from_env(
+MachineAir::from_shared_program(self.program),
+memory_budget,
+)
                 .map_err(err)?;
         Ok(PreparedNode {
             spec: self.spec,
@@ -647,7 +650,7 @@ impl CompiledNode {
             self.geometry()?.retained_lde_bytes <= limits.host_bytes,
             "batch node exceeds retained-LDE host admission",
         )?;
-        let registered = RegisteredProgram::new_with_request(
+        let registered = RegisteredProgram::new_with_cpu_identity(
             MachineAir::from_shared_program(self.program),
             limits.host_bytes,
             crate::opencl::strict_request(),

@@ -13,46 +13,38 @@ const PERIOD_TILE: usize = 2048;
 pub(crate) const MAX_SELECTORS: u64 = 64;
 pub(crate) const MAX_QUOTIENT_CHUNKS: usize = crate::block_v2::profile::MAX_QUOTIENT_CHUNKS;
 const CONSTANT_WORDS: usize = MAX_QUOTIENT_CHUNKS * (MAX_QUOTIENT_CHUNKS + 1);
+// Fixed workgroup SRAM (two 64-entry u32 planes) is covered by the context
+// reserve, separate from the unchanged managed input/output scratch.
+const CONSTANT_LANES: usize = 32;
+const _: () = assert!(MAX_SELECTORS == 64 && MAX_QUOTIENT_CHUNKS == 32);
 // Staging coexists with the builder's fixed folding cache. Caller-owned
 // coefficient arrays are charged separately to its construction allowance.
 const _: () = assert!(MAX_SELECTORS as usize <= CONSTANT_WORDS);
 const _: () = assert!(8192 + 16 + PERIOD_TILE as u64 * 8 <= public_hash::HOST_BYTES);
 const _: () = assert!(8192 + 16 + CONSTANT_WORDS as u64 * 8 <= public_hash::HOST_BYTES);
 
-pub(crate) const KERNEL_SRC: &str = concat!(
-    r#"
+macro_rules! compiler_constants_source {
+    ($extra:expr) => {
+        concat!(
+            r#"
 inline ulong compiler_inv(ulong value) {
     return gl_pow(value, 0xfffffffeffffffffUL);
 }
-__kernel void device_compiler_constants(__global const ulong *input,
-    __global ulong *output, uint operation, uint count, uint size, ulong exponent) {
-    uint k = get_global_id(0);
-    if (k >= count) return;
-    if (operation == 0) {
-        output[k] = gl_canon(compiler_inv(input[0]));
-    } else if (operation == 1) {
-        ulong denominator = 1UL;
-        for (uint j = 0; j < count; ++j) {
-            if (j != k)
-                denominator = gl_mul(denominator, gl_sub(input[0] + (ulong)k, input[0] + (ulong)j));
-        }
-        output[k] = gl_canon(compiler_inv(denominator));
-    } else if (operation == 3) {
-        if (k < size) {
-            output[k] = gl_canon(compiler_inv(gl_mul(7UL, gl_pow(input[0], (ulong)k))));
-        } else {
-            uint i = (k - size) / size, j = (k - size) % size;
-            if (i == j) { output[k] = 0UL; return; }
-            ulong a = gl_mul(7UL, gl_pow(input[0], (ulong)i));
-            ulong b = gl_mul(7UL, gl_pow(input[0], (ulong)j));
-            ulong den = gl_sub(gl_pow(gl_mul(a, compiler_inv(b)), exponent), 1UL);
-            output[k] = gl_canon(compiler_inv(den));
-        }
-    }
-}
 "#,
-    include_str!("compiler_constants/periodic.cl")
-);
+            include_str!("compiler_constants/tables.cl"),
+            include_str!("compiler_constants/lookup.cl"),
+            include_str!("compiler_constants/periodic.cl"),
+            $extra
+        )
+    };
+}
+#[cfg(not(test))]
+pub(crate) const KERNEL_SRC: &str = compiler_constants_source!("");
+#[cfg(test)]
+pub(crate) const KERNEL_SRC: &str =
+    compiler_constants_source!(include_str!("compiler_constants/reference.cl"));
+#[cfg(test)]
+mod tests;
 
 impl DeviceSession {
     pub(crate) fn compiler_inverse_generator(
@@ -64,7 +56,14 @@ impl DeviceSession {
             .get(log_height)
             .ok_or("compiler subgroup height")?;
         let mut output = [Val::ZERO; 1];
-        self.compiler_constants(&[root.as_canonical_u64()], 0, 1, 0, &mut output, run)?;
+        self.compiler_constants(
+            &[root.as_canonical_u64()],
+            0,
+            1,
+            log_height as u64,
+            &mut output,
+            run,
+        )?;
         Ok(output[0])
     }
 
@@ -103,7 +102,14 @@ impl DeviceSession {
         }
         let root =
             Val::TWO_ADIC_GENERATORS[log_height + chunks.ilog2() as usize].as_canonical_u64();
-        self.compiler_constants(&[root], 3, chunks, 1 << log_height, output, run)
+        self.compiler_constants(
+            &[root],
+            3,
+            chunks,
+            (log_height + chunks.ilog2() as usize) as u64,
+            output,
+            run,
+        )
     }
 
     fn compiler_constants(
@@ -111,9 +117,30 @@ impl DeviceSession {
         input: &[u64],
         operation: u32,
         size: usize,
-        exponent: u64,
+        log_root: u64,
         output: &mut [Val],
         run: &Run,
+    ) -> Result<(), String> {
+        self.dispatch_compiler_constants(
+            input,
+            operation,
+            size,
+            log_root,
+            output,
+            run,
+            "device_compiler_constants",
+        )
+    }
+
+    fn dispatch_compiler_constants(
+        &self,
+        input: &[u64],
+        operation: u32,
+        size: usize,
+        parameter: u64,
+        output: &mut [Val],
+        run: &Run,
+        kernel_name: &'static str,
     ) -> Result<(), String> {
         let count = output.len();
         run.check_device_stage(Stage::Preprocessing, Backend::OpenCl)
@@ -130,7 +157,7 @@ impl DeviceSession {
         }
         #[cfg(not(feature = "gpu"))]
         {
-            let _ = (operation, size, exponent);
+            let _ = (operation, size, parameter, kernel_name);
             Err("GPU compiler constants are not implemented on Metal".into())
         }
         #[cfg(feature = "gpu")]
@@ -156,14 +183,15 @@ impl DeviceSession {
             unsafe {
                 engine
                     .pq
-                    .kernel_builder("device_compiler_constants")
+                    .kernel_builder(kernel_name)
                     .arg(&input_buffer.storage.buffer)
                     .arg(&output_buffer.storage.buffer)
                     .arg(operation)
                     .arg(count as u32)
                     .arg(size as u32)
-                    .arg(exponent)
-                    .global_work_size(count)
+                    .arg(parameter)
+                    .global_work_size(count.div_ceil(CONSTANT_LANES) * CONSTANT_LANES)
+                    .local_work_size(CONSTANT_LANES)
                     .build()
                     .map_err(|e| e.to_string())?
                     .cmd()

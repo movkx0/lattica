@@ -162,6 +162,16 @@ def main():
     parser.add_argument('--output', required=True, type=Path)
     args = parser.parse_args()
     manifest = json.loads(args.manifest.read_text())
+    if manifest.get('schema') == 'ringct-owned-workflow-comparison-v1':
+        from owned_workflow_benchmark import compare_manifest
+        result = compare_manifest(args.manifest)
+        with args.output.open('x') as stream:
+            json.dump(result, stream, indent=2)
+            stream.write('\n')
+        print(json.dumps({'output': str(args.output),
+                          'timing_criteria_passed': result['timing_criteria_passed'],
+                          'performance_qualified': False}))
+        return
     guard.require(set(manifest) == {'screening', 'pairs'}, 'unknown comparison manifest fields')
     def load(path):
         return load_run(args.manifest.parent / path)

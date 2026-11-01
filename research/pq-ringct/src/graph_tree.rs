@@ -24,6 +24,8 @@ use std::sync::Arc;
 pub(crate) mod fixed_sources;
 #[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
 pub(crate) mod native_sources;
+#[cfg(all(feature = "full-workflow-experiment", target_os = "linux", target_arch = "x86_64"))]
+pub(crate) mod metadata;
 mod leaf;
 mod plan;
 mod tree;

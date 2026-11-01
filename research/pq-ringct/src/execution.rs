@@ -8,7 +8,7 @@ use lattica_prover_p3::{
     block_v2::{
         machine::{
             analysis::MachineAnalysis,
-            backend::{RegisteredIdentityReceipt, RegisteredProgram, RegisteredVerifier},
+            backend::{RegisteredProgram, RegisteredVerifier},
             program::Val,
             MachineAir, Program,
         },
@@ -62,6 +62,8 @@ mod tests;
 
 pub const PUBLIC_METADATA_LIMIT_BYTES: usize = 64 << 20;
 const GEOMETRY_METADATA_BYTES: usize = lattica_prover_p3::block_v2::machine::verifier::batch::shape::HEIGHT_ENVELOPE_CACHE_RESERVED_BYTES;
+const PLANNING_METADATA_BYTES: usize = lattica_prover_p3::block_v2::machine::verifier::batch::shape::METADATA_PLANNING_SCOPE_RESERVED_BYTES;
+const NATIVE_METADATA_BYTES: usize = crate::component_tree::native_shape::cache::RESERVED_BYTES;
 const MAX_METADATA_ENTRIES: usize = 256;
 /// Entry experiments share exactly the same public byte and receipt limits.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -80,8 +82,6 @@ impl MetadataCapacity {
 }
 // The receipt cache shares PUBLIC_METADATA_LIMIT_BYTES with verifier metadata;
 // it does not add to the worker's public metadata allowance.
-const MAX_IDENTITY_HINT_ENTRIES: usize = 4096;
-const IDENTITY_HINT_LIMIT_BYTES: usize = 1 << 20;
 static NEXT_SESSION: AtomicU64 = AtomicU64::new(1);
 
 fn hex(bytes: &[u8]) -> String {
@@ -229,74 +229,9 @@ struct Metadata {
     payload_bytes: usize,
 }
 
-/// Small fixed-capacity LRU, independent of the much larger verifier entries.
-/// Production R is an opaque, fixed-size receipt with no owned heap or device
-/// storage. The generic payload lets unit tests exercise eviction without GPU
-/// registration or any way to mint a production receipt.
-struct IdentityHintCache<R> {
-    entries: VecDeque<(Identity, R)>,
-    max_entries: usize,
-    evictions: u64,
-}
-impl<R> IdentityHintCache<R> {
-    fn new() -> Self {
-        let max_entries = MAX_IDENTITY_HINT_ENTRIES
-            .min(IDENTITY_HINT_LIMIT_BYTES / std::mem::size_of::<(Identity, R)>());
-        let entries = VecDeque::with_capacity(max_entries);
-        // Actual backing capacity is charged below. Refuse a library allocation
-        // strategy that would violate this cache's explicit physical subcap.
-        assert!(
-            entries.capacity() * std::mem::size_of::<(Identity, R)>() <= IDENTITY_HINT_LIMIT_BYTES
-        );
-        Self {
-            entries,
-            max_entries,
-            evictions: 0,
-        }
-    }
-    fn backing_bytes(&self) -> usize {
-        self.entries.capacity() * std::mem::size_of::<(Identity, R)>()
-    }
-    fn get(&self, identity: Identity) -> Option<&R> {
-        // Nomination never promotes an entry: only successful registration and
-        // the independent verifier-cap check authorize retention/promotion.
-        self.entries
-            .iter()
-            .find(|(candidate, _)| *candidate == identity)
-            .map(|(_, receipt)| receipt)
-    }
-    fn remove(&mut self, identity: Identity) {
-        if let Some(index) = self
-            .entries
-            .iter()
-            .position(|(candidate, _)| *candidate == identity)
-        {
-            let _ = self.entries.remove(index);
-            self.evictions += 1;
-        }
-    }
-    fn remember(&mut self, identity: Identity, receipt: R) {
-        if self.max_entries == 0 {
-            return;
-        }
-        if let Some(index) = self
-            .entries
-            .iter()
-            .position(|(candidate, _)| *candidate == identity)
-        {
-            let _ = self.entries.remove(index);
-        } else if self.entries.len() == self.max_entries {
-            let _ = self.entries.pop_front();
-            self.evictions += 1;
-        }
-        self.entries.push_back((identity, receipt));
-    }
-}
-
 struct Registry {
     prepared: Option<RegisteredTemplate>,
     metadata: VecDeque<Metadata>,
-    identity_hints: IdentityHintCache<RegisteredIdentityReceipt>,
     // Both backing allocations and all verifier/cap heap payloads are charged.
     metadata_bytes: usize,
     maximum_metadata_entries: usize,
@@ -327,16 +262,13 @@ impl Registry {
     fn with_options(capacity: MetadataCapacity, telemetry: RegistrationTelemetry) -> Self {
         let maximum_metadata_entries = capacity.entries();
         let metadata = VecDeque::with_capacity(maximum_metadata_entries);
-        let identity_hints = IdentityHintCache::new();
         let trace = RegistrationTrace::new(telemetry);
         let metadata_bytes = metadata.capacity() * std::mem::size_of::<Metadata>()
-            + identity_hints.backing_bytes()
-            + trace.accounted_bytes() + GEOMETRY_METADATA_BYTES;
+            + trace.accounted_bytes() + GEOMETRY_METADATA_BYTES + PLANNING_METADATA_BYTES + NATIVE_METADATA_BYTES;
         assert!(metadata_bytes <= PUBLIC_METADATA_LIMIT_BYTES);
         Self {
             prepared: None,
             metadata,
-            identity_hints,
             metadata_bytes,
             maximum_metadata_entries,
             trace,
@@ -363,12 +295,6 @@ impl Registry {
             self.trace.release(prepared.telemetry_access, reason);
         }
     }
-    fn identity_hint(&self, identity: Identity) -> Option<&RegisteredIdentityReceipt> {
-        // This is only a candidate lookup. Core registration must independently
-        // validate the complete identity stream and freshly computed cap. Do
-        // not promote the LRU until cached_verifier also validates that cap.
-        self.identity_hints.get(identity)
-    }
     fn cached_verifier(
         &mut self,
         identity: Identity,
@@ -383,7 +309,6 @@ impl Registry {
             self.metadata_bytes -= entry.payload_bytes;
             self.metadata_evictions += 1;
             self.metadata_identity_evictions += 1;
-            self.identity_hints.remove(identity);
             return Err(message);
         }
         let verifier = Arc::clone(&entry.verifier);
@@ -412,7 +337,6 @@ impl Registry {
             })
             .ok_or("verifier cache size overflow")?;
         let container_bytes = self.metadata.capacity() * std::mem::size_of::<Metadata>()
-            + self.identity_hints.backing_bytes()
             + self.trace.accounted_bytes() + GEOMETRY_METADATA_BYTES;
         if payload_bytes > PUBLIC_METADATA_LIMIT_BYTES.saturating_sub(container_bytes) {
             self.metadata_oversized_rejections += 1;
@@ -812,15 +736,12 @@ impl ProvingContext {
             }
             let active_rows = program.active_rows() as u64;
             let padded_rows = program.height() as u64;
-            let identity_hint = state.identity_hint(identity).cloned();
-            state.identity_hints_supplied += u64::from(identity_hint.is_some());
             let started = Instant::now();
             let result = (|| -> Result<(RegisteredTemplate, bool, bool), String> {
-                let registered = RegisteredProgram::new_with_request_and_identity_hint(
+                let registered = RegisteredProgram::new_with_cpu_identity(
                     MachineAir::from_shared_program(program),
                     host_bytes,
                     self.request,
-                    identity_hint.as_ref(),
                 )
                 .map_err(|e| {
                     let message = error(e);
@@ -836,7 +757,7 @@ impl ProvingContext {
                 state.registrations += 1;
                 state.registered_active_rows += active_rows;
                 state.registered_padded_rows += padded_rows;
-                let receipt_hit = registered.identity_hint_hit();
+                let receipt_hit = false;
                 state.identity_hint_hits += u64::from(receipt_hit);
                 let (verifier, payload, metadata_hit) = match state.cached_verifier(
                     identity,
@@ -862,9 +783,6 @@ impl ProvingContext {
                         (verifier, payload, false)
                     }
                 };
-                if let Some(receipt) = registered.identity_receipt() {
-                    state.identity_hints.remember(identity, receipt.clone());
-                }
                 Ok((
                     RegisteredTemplate {
                         registered,
@@ -949,17 +867,18 @@ impl ProvingContext {
             "prepared_entries":usize::from(state.prepared.is_some()), "maximum_prepared_entries":1,
             "registrations":state.registrations, "prepared_cache_hits":state.prepared_hits,
             "metadata_cache_hits":state.metadata_hits, "prepared_evictions":state.prepared_evictions,
+            "identity_hashing":"cpu",
             "identity_hints_supplied":state.identity_hints_supplied,
             "identity_hint_hits":state.identity_hint_hits,
-            "identity_receipt_entries":state.identity_hints.entries.len(),
-            "identity_receipt_maximum_entries":state.identity_hints.max_entries,
-            "identity_receipt_evictions":state.identity_hints.evictions,
-            "identity_receipt_cache_bytes":state.identity_hints.backing_bytes(),
-            "identity_receipt_cache_limit_bytes":IDENTITY_HINT_LIMIT_BYTES,
+            "identity_receipt_entries":0,
+            "identity_receipt_maximum_entries":0,
+            "identity_receipt_evictions":0,
+            "identity_receipt_cache_bytes":0,
+            "identity_receipt_cache_limit_bytes":0,
             "source_geometry_cache_limit_bytes":GEOMETRY_METADATA_BYTES,
-            "identity_receipt_retained_bytes":state.identity_hints.entries.iter().map(|(_, receipt)| receipt.accounted_bytes()).sum::<usize>()});
+            "identity_receipt_retained_bytes":0});
         let cache = json!({
-            "verifier_metadata_cache_bytes":state.metadata_bytes-state.identity_hints.backing_bytes()-state.trace.accounted_bytes()-GEOMETRY_METADATA_BYTES,
+            "verifier_metadata_cache_bytes":state.metadata_bytes-state.trace.accounted_bytes()-GEOMETRY_METADATA_BYTES,
             "metadata_evictions":state.metadata_evictions, "metadata_entries":state.metadata.len(),
             "maximum_metadata_entries":state.maximum_metadata_entries,
             "metadata_entry_size_bytes":std::mem::size_of::<Metadata>(),

@@ -5,6 +5,7 @@ use crate::proving::{Backend, Run, Stage};
 use p3_field::{Field, PrimeCharacteristicRing, TwoAdicField};
 
 mod folding;
+mod periodic_parameters;
 pub(crate) use folding::{FoldOperation, Folding};
 
 /// Explicit construction assignment for a runtime-local backend. These are
@@ -175,8 +176,7 @@ impl<'a> Constants<'a> {
         match self {
             Self::Cpu(run) => Self::cpu_work(run, || {
                 let log_n = n.ilog2();
-                let mut step = Val::two_adic_generator(log_n as usize).inverse();
-                let inv_n = Val::from_usize(n).inverse();
+                let (mut step, inv_n) = periodic_parameters::get(log_n);
 
                 // Inverse radix-2 DIF: use only caller-admitted storage. Each
                 // stage halves the transform size and squares its root, for

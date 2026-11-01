@@ -290,11 +290,11 @@ impl<'tables, 'case, 'plans, 'request> ShakeRuntime<'tables, 'case, 'plans, 'req
                 original_input(ready(&compiled)?.binding(), ready(&compiled)?.slot_id(), inventory, closed_ordinal, 0)?;
                 same_binding(ready(&packet)?.binding(), binding)?;
                 ready(&packet)?.check_before_native().map_err(|_| WorkflowError::Source)?;
-                #[cfg(feature = "identity-batch-experiment")]
+                #[cfg(feature = "full-workflow-experiment")]
                 let mut peers = crate::execution::workflow_resources::PairedIdentityPeers::default();
-                #[cfg(feature = "identity-batch-experiment")]
-                let mut peer_indices = [None; 15];
-                #[cfg(feature = "identity-batch-experiment")]
+                #[cfg(feature = "full-workflow-experiment")]
+                let mut peer_indices = [None; lattica_prover_p3::block_v2::machine::backend::identity_cpu::MAX_IDENTITY_STREAMS - 1];
+                #[cfg(feature = "full-workflow-experiment")]
                 for position in 1..cohort_count {
                     let (step, CryptoOutput::Compiled(peer_index)) = input(&dispatch, position, CryptoFamily::Shake, request)?
                         else { return Err(WorkflowError::Identity); };
@@ -319,7 +319,7 @@ impl<'tables, 'case, 'plans, 'request> ShakeRuntime<'tables, 'case, 'plans, 'req
                         return Err(WorkflowError::Source);
                     }
                 };
-                #[cfg(feature = "identity-batch-experiment")]
+                #[cfg(feature = "full-workflow-experiment")]
                 {
                     *target = Some(phase.prove_owned_outer_cohort(operation, packet_owner, &mut peers));
                     for (peer, index) in peers.owners.iter_mut().zip(peer_indices) {
@@ -330,7 +330,7 @@ impl<'tables, 'case, 'plans, 'request> ShakeRuntime<'tables, 'case, 'plans, 'req
                         }
                     }
                 }
-                #[cfg(not(feature = "identity-batch-experiment"))]
+                #[cfg(not(feature = "full-workflow-experiment"))]
                 { *target = Some(phase.prove_owned_outer(operation, packet_owner)); }
                 report.record_outer(plan, ordinal, ready(&target)?, started.elapsed().as_nanos()).map_err(|_| WorkflowError::Source)?;
                 if node == plan.root_id() {

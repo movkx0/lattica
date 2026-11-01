@@ -107,7 +107,7 @@ impl DriverStage {
 /// again for retained recursive caller frames. Includes setter arguments and
 /// match bindings as well as the diagnostic value and its mutable reborrows.
 pub(crate) fn frame_bytes() -> usize {
-    size_of::<[DriverStage; 8]>() + size_of::<[&mut DriverStage; 8]>()
+    super::super::metadata_timing::frame_bytes() + size_of::<[DriverStage; 8]>() + size_of::<[&mut DriverStage; 8]>()
         + size_of::<[DriverAction; 8]>() + size_of::<[Option<ProducerFamily>; 8]>()
         + size_of::<[Option<usize>; 32]>() + size_of::<[&'static str; 8]>()
 }

@@ -1,6 +1,7 @@
 //! First paired leaf using A040's opaque original native-to-outer attempt.
 //! Every extra owner is preclaimed before native PCS assignment. No legacy
 //! raw-token continuation or complete-request dispatch is constructed here.
+use lattica_prover_p3::block_v2::machine::backend::identity_cpu::RegistrationReports;
 use super::*;
 use crate::{
     component_tree::owned_shake::request_merge::{
@@ -190,14 +191,15 @@ fn bridge_requirement() -> Result<Requirements> {
             Ledger,
         )>(),
         size_of::<RegisteredProgram>(),
-        size_of::<(RegisteredProgram, Report)>(),
-        size_of::<core::result::Result<(RegisteredProgram, Report), AdmissionError>>(),
+        size_of::<(RegisteredProgram, RegistrationReports)>(),
+        size_of::<core::result::Result<(RegisteredProgram, RegistrationReports), AdmissionError>>(),
         size_of::<AdmissionError>(),
         size_of::<(BatchProof<Config>, Report)>(),
         size_of::<core::result::Result<(BatchProof<Config>, Report), ExecutionError>>(),
         size_of::<NodeKey>(),
         size_of::<NodeProof>(),
         size_of::<Report>(),
+        size_of::<RegistrationReports>(),
         size_of::<Request>(),
         size_of::<Retirement>(),
         size_of::<Result<Retirement>>(),
@@ -463,16 +465,17 @@ impl<'compiled, 'bound, 'source, 'request> PreparedHashxLeaf<'compiled, 'bound, 
             };
             let node = &compiled.compiled;
             let (registered, report) =
-                RegisteredProgram::new_with_request_and_identity_hint_and_report(
+                RegisteredProgram::new_with_cpu_identity_and_report(
                     MachineAir::from_shared_program(Arc::clone(&node.program)),
                     backend.host_budget_bytes(),
                     request,
-                    None,
                 )
                 .map_err(|_| Error::Setup)?;
-            validate_report(&report, CoverageScope::Preprocessing)?;
-            emit_receipt(&report)?;
-            let setup_elapsed_ns = report.elapsed_ns;
+            validate_report(&report.preprocessing, CoverageScope::Preprocessing)?;
+            validate_report(&report.identity, CoverageScope::Operation)?;
+            emit_receipt(&report.preprocessing)?;
+            emit_receipt(&report.identity)?;
+            let setup_elapsed_ns = report.preprocessing.elapsed_ns;
             drop(report);
             let captured = acceptance
                 .capture(compiled, &registered, &support.ledger)

@@ -9,7 +9,7 @@ pub(super) fn planning_frames() -> Result<usize> {
     let total = [endpoints::SOURCE_STORE_CONSTRUCTION_FRAME_BYTES,
         bytes::<source::GroupBlueprint>(8)?, bytes::<RequestNodeSource>(8)?,
         bytes::<RequestStep>(8)?, bytes::<RequestSlotRequirements>(8)?,
-        bytes::<[usize; 16]>(16)?,
+        bytes::<[usize; identity_cohorts::MAX_IDENTITY_STREAMS]>(16)?,
         bytes::<[Option<usize>; usize::BITS as usize]>(4)?,
         bytes::<Requirements>(16)?, bytes::<Sha3_256>(4)?,
         bytes::<Vec<u64>>(4)?, bytes::<u64>(12)?,

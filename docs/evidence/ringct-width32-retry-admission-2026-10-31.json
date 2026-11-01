@@ -1,0 +1,33 @@
+{
+  "schema": "ringct-width32-retry-admission-v1",
+  "recorded_utc": "2026-10-31T20:22:06.256926+00:00",
+  "status": "launch_refused",
+  "reason": "fresh memory admission failed",
+  "no_retry_service_launched": true,
+  "source_root": "/home/access/code/lattica/.tools/width32-run-source",
+  "width": 32,
+  "host_memory_profile": {
+    "name": "expanded-40",
+    "worker_host_bytes": 42949672960,
+    "memory_max_bytes": 59055800320,
+    "memory_high_bytes": 56908316672,
+    "fresh_memavailable_required_bytes": 61203283968
+  },
+  "measured_available_bytes_after_refusal": 60548366336,
+  "minimum_additional_available_bytes": 654917632,
+  "plan": {
+    "path": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-w32-n3-plan-r4.json",
+    "sha256": "34c08a769ea988d57ca988a45e1aa485cb4e04c0eb17f9545d4b7d9b16f83b65"
+  },
+  "launch_refusal": {
+    "path": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/prep-w32-n3-launch-r4.log",
+    "sha256": "001062fb1a6cd13598b48e35553ebd102bf0407d2c3334ce11f1bd32d5c4049f"
+  },
+  "completed_standard_attempt": {
+    "path": "/home/access/code/lattica/docs/evidence/ringct-width32-standard-run-2026-10-31.json",
+    "sha256": "7e0ef264acc74f3f56fa88983542af68f104b0fc987146141bd13001ef3c780b"
+  },
+  "source_and_component_checks_passed": true,
+  "source_or_guard_limits_modified_for_retry": false,
+  "pending_user_action": "Free another 1\u20132 GiB of RAM; recheck fresh admission and shared validation lock before retrying."
+}

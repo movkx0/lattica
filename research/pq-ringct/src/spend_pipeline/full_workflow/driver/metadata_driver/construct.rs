@@ -9,6 +9,7 @@ pub(crate) fn run<const N: usize>(
     native_cache: &ProofCache, outer_cache: &OuterProofCache,
     stage: &mut DriverStage,
 ) -> Result<CompletedCaseSummary> {
+    super::super::metadata_timing::phase(super::super::metadata_timing::Phase::Native);
     stage.layer("construct");
     let mut planning = PlanningGuard::new(planning);
     planning.get()?.validate_metadata_driver(metadata, case)?;
@@ -175,6 +176,7 @@ pub(crate) fn run<const N: usize>(
     native_layers::fill_outer_layer(planning.get()?, metadata, case, compilers, outer_cache, outer_plans, stage)?;
 
     // These source data borrows may shorten to the native compiler lifetime.
+    super::super::metadata_timing::phase(super::super::metadata_timing::Phase::Graph);
     *stage = DriverStage::Call("metadata_fixed_plans");
     let fixed_plans_result = planning.get()?.metadata_fixed_plans(metadata, case);
     let fixed_plans = table(&fixed_plans_result)?;
@@ -184,6 +186,7 @@ pub(crate) fn run<const N: usize>(
     let fixed_outer_plans = table(&fixed_outer_plans_result)?;
     graph_layers::fill_fixed_outer(planning.get()?, metadata, case, fixed_plans, outer_cache, fixed_outer_plans, stage)?;
 
+    super::super::metadata_timing::phase(super::super::metadata_timing::Phase::Crypto);
     *stage = DriverStage::Call("metadata_shake_plans");
 
     let shake_plans_result = planning.get()?.metadata_shake_plans(metadata, case);
@@ -193,6 +196,7 @@ pub(crate) fn run<const N: usize>(
     let aes_plans = table(&aes_plans_result)?;
     crypto::fill(planning.get()?, metadata, case, shake_plans, aes_plans, stage)?;
 
+    super::super::metadata_timing::phase(super::super::metadata_timing::Phase::Graph);
     *stage = DriverStage::Call("metadata_parameters_plans");
 
     let parameters_plans_result = planning.get()?.metadata_parameters_plans(metadata, case);
@@ -218,6 +222,7 @@ pub(crate) fn run<const N: usize>(
     graph_layers::fill_direct_leaves(planning.get()?, metadata, case, direct_dependencies, outer_cache, direct_plans, stage)?;
 
     // Every execution/result/preissue table is also a separate original owner.
+    super::super::metadata_timing::phase(super::super::metadata_timing::Phase::Native);
     *stage = DriverStage::Call("metadata_source_native_outputs");
     let source_native_outputs_result = planning.get()?.metadata_source_native_outputs(metadata, case);
     let source_native_outputs = table(&source_native_outputs_result)?;
@@ -341,6 +346,7 @@ pub(crate) fn run<const N: usize>(
     *stage = DriverStage::Call("metadata_linear_map_outer_preissues");
     let linear_map_outer_preissues_result = planning.get()?.metadata_linear_map_outer_preissues(metadata, case);
     let linear_map_outer_preissues = table(&linear_map_outer_preissues_result)?;
+    super::super::metadata_timing::phase(super::super::metadata_timing::Phase::Graph);
     *stage = DriverStage::Call("metadata_fixed_compiled_outputs");
     let fixed_compiled_outputs_result = planning.get()?.metadata_fixed_compiled_outputs(metadata, case);
     let fixed_compiled_outputs = table(&fixed_compiled_outputs_result)?;
@@ -377,6 +383,7 @@ pub(crate) fn run<const N: usize>(
     *stage = DriverStage::Call("metadata_equality_preissues");
     let equality_preissues_result = planning.get()?.metadata_equality_preissues(metadata, case);
     let equality_preissues = table(&equality_preissues_result)?;
+    super::super::metadata_timing::phase(super::super::metadata_timing::Phase::Crypto);
     *stage = DriverStage::Call("metadata_shake_endpoint_outputs");
     let shake_endpoint_outputs_result = planning.get()?.metadata_shake_endpoint_outputs(metadata, case);
     let shake_endpoint_outputs = table(&shake_endpoint_outputs_result)?;
@@ -548,6 +555,7 @@ pub(crate) fn run<const N: usize>(
         runtime: &auxiliary_runtime,
         inputs: &direct_inputs,
     };
+    super::super::metadata_timing::phase(super::super::metadata_timing::Phase::Graph);
     let runtimes = OrdinaryRuntimes {
         native: &native_runtime,
         shake: &shake_runtime,

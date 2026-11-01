@@ -18,6 +18,11 @@ pub(in crate::execution) trait FixedPayload: serde::Serialize {}
 // apply their exact scope/stage validator; native/outer components are empty.
 impl FixedPayload for lattica_prover_p3::proving::Report {}
 
+// Bounded to sixteen workers, with two fixed-scope reports and primitive
+// worker records. Prefix admission includes report and serialization frames.
+#[cfg(feature = "full-workflow-experiment")]
+impl FixedPayload for lattica_prover_p3::block_v2::machine::backend::identity_cpu::IdentityBatchReport {}
+
 trait Sink { fn write(&mut self, bytes: &[u8]) -> isize; }
 
 struct StderrSink;

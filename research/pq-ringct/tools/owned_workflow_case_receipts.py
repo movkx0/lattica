@@ -378,7 +378,7 @@ def validate(content, report, collect_gpu_receipts, *, verification_mode):
             'generation/source wrapper durations exceed complete planning interval')
     owned_ns = sum(entry_totals(receipts, entry)['elapsed_ns']
                    for entry in NATIVE_ENTRIES + MACHINE_ENTRIES) + observed_owned['elapsed_ns']
-    owned_ns += identity_audit['totals']['elapsed_ns']
+    owned_ns += identity_audit['totals']['elapsed_ns'] + identity_audit['totals'].get('finalization_ns', 0)
     require(owned_ns <= execution_ns, 'owned receipt durations exceed complete execution interval')
 
     row_audit = owned_workflow_row_receipts.validate(

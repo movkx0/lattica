@@ -28,7 +28,7 @@ use crate::execution::workflow_resources::{PlanningAdmissionTransition, Planning
 
 // ExpandAlpha consumes two exact request roots, their endpoint owners,
 // and the Uniform/Sparse native owners. Each edge is precharged.
-const MAX_PHASE_INPUTS: usize = 16;
+const MAX_PHASE_INPUTS: usize = lattica_prover_p3::block_v2::machine::backend::identity_cpu::MAX_IDENTITY_STREAMS;
 mod slot_policy;
 mod memory_diagnostics;
 use memory_diagnostics::{CloseMemoryStage, MemoryGate};
@@ -145,11 +145,11 @@ fn push<T>(values: &mut Vec<T>, value: T) -> Result<()> {
 struct RequestState {
     endpoints: Option<SlotId>,
     native: [Option<(usize, SlotId)>; 2],
-    compiled: [Option<(usize, SlotId)>; 16],
+    compiled: [Option<(usize, SlotId)>; MAX_PHASE_INPUTS],
     frontier: [Option<(usize, SlotId)>; usize::BITS as usize],
 }
 impl RequestState {
-    fn new() -> Self { Self { endpoints: None, native: [None; 2], compiled: [None; 16], frontier: [None; usize::BITS as usize] } }
+    fn new() -> Self { Self { endpoints: None, native: [None; 2], compiled: [None; MAX_PHASE_INPUTS], frontier: [None; usize::BITS as usize] } }
     fn insert_compiled(&mut self, node: usize, slot: SlotId) -> Result<()> {
         if self.compiled.iter().flatten().any(|(id, _)| *id == node) { return Err(ClosureError::Order); }
         *self.compiled.iter_mut().find(|entry| entry.is_none()).ok_or(ClosureError::Order)? = Some((node, slot));

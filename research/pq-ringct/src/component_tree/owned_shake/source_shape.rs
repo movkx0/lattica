@@ -21,7 +21,10 @@ use crate::{
 use core::mem::size_of;
 use lattica_prover_p3::block_v2::machine::{
     program::{ConstructionLimits, Program, ProgramBuilder, ProofInputs, MAX_WIRES},
-    verifier::{batch::shape::OperationCounts, uni::shape::NativeCoreCounts, CompileError},
+    verifier::{
+        batch::shape::OperationCounts, uni::shape::NativeCoreMetadata as NativeCoreCounts,
+        CompileError,
+    },
 };
 use p3_air::BaseAir;
 
@@ -330,21 +333,29 @@ impl<'request> SourceShapePlan<'request> {
         let metadata = original
             .split(self.metadata)
             .map_err(|_| Error::Authority)?;
+        use crate::component_tree::native_shape::cohort;
+        let count = self.identity.span.segment_count;
+        let first = self.descriptors[0].ok_or(Error::Source)?;
+        let descriptors = [
+            cohort::Descriptor::Native(first),
+            cohort::Descriptor::Native(self.descriptors[1].unwrap_or(first)),
+        ];
+        let auxiliary = self
+            .storage
+            .iter()
+            .flatten()
+            .map(|s| s.auxiliary_peak_bytes)
+            .max()
+            .ok_or(Error::Source)?;
+        let bounds = cohort::bounds(&descriptors[..count], self.construction, auxiliary)
+            .map_err(|_| Error::Planner)?;
         let mut cores = [None, None];
-        for (offset, destination) in cores
-            .iter_mut()
-            .enumerate()
-            .take(self.identity.span.segment_count)
-        {
-            let descriptor = self.descriptors[offset].ok_or(Error::Source)?;
-            let storage = self.storage[offset].ok_or(Error::Source)?;
-            let result =
-                native_core_bound(descriptor, self.construction, storage.auxiliary_peak_bytes)
-                    .map_err(|_| Error::Planner)?;
-            if result.storage != storage {
+        for i in 0..count {
+            let result = bounds[i].ok_or(Error::Planner)?;
+            if result.storage != self.storage[i].ok_or(Error::Source)? {
                 return Err(Error::Source);
             }
-            *destination = Some(result.counts);
+            cores[i] = Some(result.counts);
         }
         let geometry = Geometry::from_cores(&cores, self.identity.span.segment_count)?;
         if original.requirements() != self.temporary {

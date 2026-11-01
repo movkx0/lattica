@@ -38,6 +38,11 @@ docs/RECURSION_FEASIBILITY.md).
 
 ## Build and check
 
+The [RingCT preprocessing workflow](PREPROCESSING.md) uses streaming CPU identity
+hashing with up to 16 physical CPU workers, GPU preprocessing and proof generation,
+and independent CPU verification. It includes guarded N3/N4 and component qualification.
+Its source and component screens do not establish a complete-workflow speedup.
+
 The default build has no native backend. Enabling `native-matrict` requires Linux
 x86_64, AVX2, AES-NI, FMA, a C compiler and an archiver. All native calls share one
 mutex because the reference implementation has mutable global state.

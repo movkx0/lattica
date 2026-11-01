@@ -337,7 +337,6 @@ fn core() -> NativeCoreCounts {
         wires: 216,
         input_values: 216,
         selection_hint_words: 0,
-        manifest_sha3_256: [0; 32],
         planner_requested_program_bytes_peak: 0,
     }
 }

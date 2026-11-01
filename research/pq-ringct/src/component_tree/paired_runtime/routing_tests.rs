@@ -8,8 +8,11 @@ fn template_key(input_len: usize) -> (NodeKey, NodeProof) {
     let contract = Contract::shake([7; 32], 3, shake_air::Descriptor { input_len, output_len: 32 }).unwrap();
     let spec = contract.span(0, contract.total).unwrap();
     let program = ProgramBuilder::new(source::PUBLICS).unwrap().finish(Some(64)).unwrap();
-    let registered = RegisteredProgram::new_with_request(MachineAir::new(program), 512 << 20,
-        BackendRequest { policy: Policy::CpuRequired, emit_report: false }).unwrap();
+    let registered = RegisteredProgram::new_with_cpu_identity(
+MachineAir::new(program),
+512 << 20,
+BackendRequest { policy: Policy::CpuRequired, emit_report: false },
+).unwrap();
     let key = NodeKey { spec, height: 64, cap: registered.preprocessing_cap().roots().to_vec(),
         verifier: Arc::new(registered.verifier()) };
     let endpoints = EndpointContext { context: [11; 32], statement: [Val::ONE; 4],

@@ -21,8 +21,12 @@ const NATIVE_HOST: u64 = 24 << 30;
 const REQUESTED_SHAKE_MAXIMUM: usize = 32;
 
 fn inventory() -> (CryptoPlan, GraphContext) {
+    inventory_at(4)
+}
+
+fn inventory_at(index: u64) -> (CryptoPlan, GraphContext) {
     let native = crate::native::generate_fixture_with_setup_seed(
-        FIXTURE_CONTEXT, FIXTURE_SETUP, 4,
+        FIXTURE_CONTEXT, FIXTURE_SETUP, index,
         crate::native::FixtureAmounts { input: [19, 31], output: [23, 27] },
     ).unwrap();
     let graph = committed_backend::lower_unproved(
@@ -50,6 +54,9 @@ fn inventory() -> (CryptoPlan, GraphContext) {
     }).unwrap();
     (crypto, context)
 }
+
+#[cfg(feature = "full-workflow-experiment")]
+mod identity_matrix;
 
 fn effective_shake_maximum(crypto: &CryptoPlan) -> usize {
     use crate::shake_air::lane::{self, batch};

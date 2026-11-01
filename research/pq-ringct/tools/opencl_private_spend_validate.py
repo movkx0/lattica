@@ -5,6 +5,7 @@ Planning is the default. Execution requires a coordinator-owned exclusive
 window; all subprocesses run in a transient, swap-free systemd user service.
 """
 import argparse
+import csv
 import fcntl
 import hashlib
 import importlib.util
@@ -73,6 +74,24 @@ def command(argv):
     return subprocess.run(argv, capture_output=True, text=True, timeout=30)
 
 
+def full_workflow_device_identity(environment):
+    """Bind owned-case timing evidence to the physical GPU and driver."""
+    uuid = environment.get('LATTICA_GPU_DEVICE_UUID')
+    require(type(uuid) is str and re.fullmatch(
+        r'GPU-[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}', uuid),
+        'owned workflow device UUID is missing or malformed')
+    result = command(['nvidia-smi', '--id=' + uuid,
+                      '--query-gpu=uuid,name,driver_version,memory.total',
+                      '--format=csv,noheader,nounits'])
+    require(result.returncode == 0, 'cannot identify owned workflow GPU: ' + result.stderr)
+    rows = list(csv.reader(result.stdout.splitlines(), skipinitialspace=True))
+    require(len(rows) == 1 and len(rows[0]) == 4, 'ambiguous owned workflow GPU inventory')
+    actual, name, driver, memory = (value.strip() for value in rows[0])
+    require(actual.lower() == uuid.lower() and name and driver and memory.isdecimal()
+            and int(memory) > 0, 'owned workflow GPU inventory differs from requested UUID')
+    return dict(uuid=uuid, name=name, driver_version=driver, memory_total_mib=int(memory))
+
+
 def systemd_state(unit):
     properties = ['LoadState', 'ActiveState', 'SubState', 'MainPID', 'ControlPID',
                   'ControlGroup', 'Result', 'ExecMainCode', 'ExecMainStatus',
@@ -90,7 +109,7 @@ def source_manifest():
         paths.update(path for path in directory.rglob('*')
                      if path.is_file() and '__pycache__' not in path.parts
                      and 'target' not in path.parts and '.tools' not in path.relative_to(ROOT).parts)
-    for name in ['Cargo.toml', 'Cargo.lock', 'build.rs']:
+    for name in ['Cargo.toml', 'Cargo.lock', 'build.rs', 'metadata_sources.rs']:
         paths.add(ROOT / 'lattica-prover-p3' / name)
     return {str(path.relative_to(ROOT)): sha(path) for path in sorted(paths)}
 
@@ -863,6 +882,32 @@ def build_plan(args):
         argv.pop(0)
     require(argv and Path(argv[0]).is_absolute(), 'command needs an absolute executable path')
     complete_case = getattr(args, 'full_workflow_case', False)
+    identity_qualification = getattr(args, 'identity_cpu_qualification', False)
+    metadata_qualification = getattr(args, 'metadata_cpu_qualification', False)
+    native_metadata_profile = getattr(args, 'native_metadata_profile', False)
+    if native_metadata_profile:
+        require(args.profile == 'research-compile-large' and args.expect_tests and args.build_label
+                and not complete_case and not identity_qualification and not metadata_qualification,
+                'native metadata profiling requires its dedicated recorded CPU test')
+        require(len(argv) == 6 and argv[1] == 'component_tree::native_shape::profiling::tests::native_metadata_profile'
+                and set(argv[2:]) == {'--exact', '--ignored', '--test-threads=1', '--nocapture'},
+                'wrong native metadata profiling selector')
+    if metadata_qualification:
+        require(args.profile == 'research-compile-large' and args.expect_tests and args.build_label
+                and not complete_case and not identity_qualification,
+                'metadata qualification requires its dedicated recorded CPU test')
+        require(len(argv) == 6 and argv[1] == 'block_v2::machine::verifier::batch::shape::metadata_planning::tests::metadata_cpu_worker_qualification'
+                and set(argv[2:]) == {'--exact', '--ignored', '--test-threads=1', '--nocapture'},
+                'wrong metadata CPU qualification selector')
+    if identity_qualification:
+        require(args.profile == 'full' and args.expect_tests and not complete_case,
+                'CPU identity qualification requires its dedicated full-profile test')
+        require(len(argv) == 6 and argv[1] == 'identity_preprocessing_screen::cpu_recursive_identity_worker_qualification'
+                and set(argv[2:]) == {'--exact', '--ignored', '--test-threads=1', '--nocapture'},
+                'wrong CPU identity qualification selector')
+    identity_cpus = identity_physical_cpus() if complete_case or identity_qualification or metadata_qualification or native_metadata_profile else None
+    if identity_qualification or metadata_qualification or native_metadata_profile:
+        require(len(identity_cpus) == 16, '16-worker qualification requires sixteen physical cores')
     host_profile = selected_host_profile(getattr(args, 'host_profile', 'standard'))
     require(host_profile['name'] == 'standard' or (args.profile == 'full' and complete_case),
             'expanded host profiles require an explicit complete RingCT workflow')
@@ -876,7 +921,7 @@ def build_plan(args):
     require(sum((bool(complete_case), bool(getattr(args, 'note_owned_proof', False)),
                  bool(getattr(args, 'note_workflow_cpu', False)),
                  getattr(args, 'owned_runtime_test', None) is not None,
-                 bool(direct_ring_screen),
+                 bool(direct_ring_screen), bool(metadata_qualification), bool(identity_qualification), bool(native_metadata_profile),
                  bool(getattr(args, 'direct_ring_aggregate', False)),
                  bool(getattr(args, 'owned_source_shape_test', False)),
                  bool(getattr(args, 'active_hashx_preflight', False)),
@@ -961,6 +1006,8 @@ def build_plan(args):
         'LATTICA_PROVING_POLICY': 'cpu-required' if args.profile in CPU_PROFILES else 'gpu-required',
     }
     device_uuid = getattr(args, 'device_uuid', None)
+    if metadata_qualification:
+        environment['LATTICA_METADATA_CPU_QUALIFICATION'] = '1'
     if device_uuid is not None:
         require(args.profile not in CPU_PROFILES, 'physical GPU pin requires a GPU profile')
         require(type(device_uuid) is str and re.fullmatch(
@@ -1093,7 +1140,10 @@ def build_plan(args):
             'public_hash_kernel': public_hash_kernel,
             'memory_max_bytes': maximum * GIB, 'memory_high_bytes': high * GIB,
             'fresh_memavailable_required_bytes': admission * GIB,
-            'cpu_quota': str(threads * 100) + '%', 'runtime_seconds': args.seconds,
+            'cpu_quota': '1600%' if identity_cpus is not None else str(threads * 100) + '%',
+            'identity_physical_cpus': identity_cpus, 'identity_cpu_qualification': identity_qualification,
+            'metadata_cpu_qualification': metadata_qualification, 'native_metadata_profile': native_metadata_profile,
+            'runtime_seconds': args.seconds,
             'comparison_baseline': False, 'performance_qualified': False,
             'benchmark': benchmark, 'correctness_label': correctness_label,
             'expect_tests': args.expect_tests, 'expect_result': args.expect_result,
@@ -1389,7 +1439,24 @@ def collect_gpu_receipts(content, *, native_entry_names=None):
 
 
 def validate_receipts(content, result):
+    cpu_identity = []
+    if result.get('context', {}).get('identity_hashing') == 'cpu':
+        from cpu_identity_receipts import stage
+        filtered = []
+        for line in content.splitlines():
+            if line.startswith('proving_stage_report '):
+                report = json.loads(line.removeprefix('proving_stage_report '))
+                if report.get('entry_point') == 'block_v2_cpu_identity':
+                    stage(report, 'block_v2_cpu_identity', 'cpu', 'cpu_required')
+                    cpu_identity.append(report)
+                    continue
+            filtered.append(line)
+        require(len(cpu_identity) == result['context'].get('registrations'),
+                'CPU identity coverage does not match registrations')
+        content = '\n'.join(filtered)
     receipts = collect_gpu_receipts(content)
+    if cpu_identity:
+        receipts['cpu_identity'] = dict(reports=len(cpu_identity), elapsed_ns=sum(r['elapsed_ns'] for r in cpu_identity))
     counts = receipts['counts']
     native_reports = receipts['native_reports']
     private_spend_reports = receipts['private_spend_reports']
@@ -1735,6 +1802,15 @@ def validate_output(log, plan):
             require(all(record == accepted[0] for record in accepted),
                     'inconsistent public hash test execution evidence')
             plan['public_hash_acceptance'] = accepted[0]
+    if plan.get('identity_cpu_qualification'):
+        from cpu_identity_qualification import validate
+        plan['identity_cpu_qualification_acceptance'] = validate(content)
+    if plan.get('native_metadata_profile'):
+        from native_metadata_profile import validate
+        plan['native_metadata_profile_acceptance'] = validate(content)
+    if plan.get('metadata_cpu_qualification'):
+        from metadata_cpu_qualification import validate
+        plan['metadata_cpu_qualification_acceptance'] = validate(content)
     if plan.get('full_workflow_case_environment') is not None:
         plan['full_workflow_case_acceptance'] = first_leaf_module('full_workflow_case_guard').validate_log(
             content, plan, collect_gpu_receipts)
@@ -1908,6 +1984,8 @@ def execute(args, plan):
                 plan, before, executable, str(ROOT))
         if plan.get('benchmark', False):
             plan['prior_correctness'] = prior_correctness(plan, before, executable, runs)
+        if plan.get('full_workflow_case_environment') is not None:
+            plan['full_workflow_device'] = full_workflow_device_identity(plan['environment'])
         properties = {'Type': 'exec', 'RemainAfterExit': 'yes', 'Restart': 'no',
                       'MemoryMax': str(plan['memory_max_bytes']),
                       'MemoryHigh': str(plan['memory_high_bytes']), 'MemorySwapMax': '0',
@@ -1915,6 +1993,8 @@ def execute(args, plan):
                       'RuntimeMaxSec': str(args.seconds), 'TimeoutStopSec': '10',
                       'KillMode': 'control-group', 'WorkingDirectory': (plan.get('full_workflow_case_environment') or {}).get('output_directory', str(ROOT)),
                       'StandardOutput': 'append:' + str(log), 'StandardError': 'inherit'}
+        if plan.get('identity_physical_cpus') is not None:
+            properties['AllowedCPUs'] = ','.join(map(str, plan['identity_physical_cpus']))
         argv = ['/usr/bin/systemd-run', '--user', '--quiet', '--unit=' + unit]
         argv += ['--property=' + key + '=' + value for key, value in properties.items()]
         argv += ['/usr/bin/env', '-i'] + [key + '=' + value for key, value in plan['environment'].items()]
@@ -1939,6 +2019,18 @@ def execute(args, plan):
                         and state.get('MemorySwapMax') == '0', 'service memory policy changed')
                 if state.get('MainPID') == '0' and state.get('SubState') in ('exited', 'failed', 'dead'):
                     break
+                if plan.get('identity_physical_cpus') is not None and int(state.get('MainPID', '0')) > 0:
+                    try:
+                        affinity = sorted(os.sched_getaffinity(int(state['MainPID'])))
+                    except ProcessLookupError:
+                        affinity = None
+                    if affinity is not None:
+                        require(affinity == plan['identity_physical_cpus'], 'identity physical CPU affinity changed')
+                        plan['observed_identity_cpu_affinity'] = affinity
+                        cpu_max = (Path('/sys/fs/cgroup') / state['ControlGroup'].lstrip('/') / 'cpu.max').read_text().split()
+                        require(len(cpu_max) == 2 and cpu_max[0] != 'max'
+                                and int(cpu_max[0]) == 16 * int(cpu_max[1]), 'identity CPU quota changed')
+                        plan['observed_identity_cpu_max'] = cpu_max
                 require(time.monotonic() - started <= args.seconds + 30, 'observation exceeded runtime limit')
                 time.sleep(2)
             require(state.get('Result') == 'success' and state.get('ExecMainCode') == '1'
@@ -1946,7 +2038,13 @@ def execute(args, plan):
             # Runner-owned monotonic observation brackets launch through terminal
             # success. It is not a caller-supplied timeout or post-cleanup wall.
             plan['observation_before_validation_ns'] = time.monotonic_ns() - started_ns
+            if plan.get('identity_physical_cpus') is not None:
+                require(plan.get('observed_identity_cpu_affinity') == plan['identity_physical_cpus'],
+                        'physical CPU affinity was not observed')
             validate_output(log, plan)
+            if plan.get('full_workflow_case_environment') is not None:
+                require(full_workflow_device_identity(plan['environment']) == plan['full_workflow_device'],
+                        'owned workflow GPU/driver changed during execution')
             if recursion is not None and recursion['mode'] != 'caller-census':
                 require(prior_direct_ring_caller_census(plan, before, executable, runs)
                         == plan['prior_direct_ring_caller_census'],
@@ -1955,12 +2053,15 @@ def execute(args, plan):
                 require(prior_correctness(plan, before, executable, runs) == plan['prior_correctness'],
                         'prior correctness provenance changed during benchmark')
             artifacts = {}
-            if plan['record_artifacts']:
+            emitted = None
+            test_build = (Path(plan['command'][0]).name == 'cargo'
+                          and plan['command'][1:2] == ['test'] and '--no-run' in plan['command'])
+            if plan['record_artifacts'] or test_build:
                 emitted = require_cargo_test_artifacts(
                     plan, log.read_text(errors='replace'), plan['record_artifacts'])
                 if emitted is not None:
                     plan['cargo_test_emitted_executables'] = emitted
-            for path in plan['record_artifacts']:
+            for path in sorted(set(plan['record_artifacts']) | set(emitted or [])):
                 require(Path(path).is_file() and os.access(path, os.X_OK),
                         'missing executable build artifact: ' + path)
                 artifacts[path] = sha(path)
@@ -2005,6 +2106,19 @@ def execute(args, plan):
         return int(error is not None)
 
 
+def identity_physical_cpus(allowed=None, topology=Path('/sys/devices/system/cpu')):
+    """Select one permitted logical CPU per physical core, at most sixteen."""
+    allowed = sorted(os.sched_getaffinity(0) if allowed is None else allowed)
+    cores = {}
+    for cpu in allowed:
+        base = topology / f'cpu{cpu}' / 'topology'
+        pair = (int((base / 'physical_package_id').read_text()), int((base / 'core_id').read_text()))
+        cores.setdefault(pair, cpu)
+    result = sorted(cores.values())[:16]
+    require(result, 'no allowed physical CPUs for identity hashing')
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--profile', choices=PROFILES, required=True)
@@ -2015,6 +2129,9 @@ def main():
     parser.add_argument('--expect-tests', action='store_true')
     parser.add_argument('--expect-result', action='store_true')
     parser.add_argument('--expect-direct-result', action='store_true')
+    parser.add_argument('--identity-cpu-qualification', action='store_true')
+    parser.add_argument('--native-metadata-profile', action='store_true')
+    parser.add_argument('--metadata-cpu-qualification', action='store_true')
     parser.add_argument('--full-workflow-case', action='store_true',
                         help='qualify exactly one fresh N3 or N4 complete RingCT case')
     parser.add_argument('--retained-tree-storage', choices=['device', 'host'], default='device')

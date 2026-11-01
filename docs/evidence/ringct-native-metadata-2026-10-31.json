@@ -1,0 +1,1262 @@
+{
+  "task": "Native RingCT metadata-only profiling and CPU optimization",
+  "date": "2026-10-31",
+  "scope": "39 exact descriptors across 13 native families; no transaction generation, full N3/N4 run, or GPU work",
+  "changes": [
+    "Build-time source fingerprint with original v1 byte framing",
+    "Canonical closed descriptor keys and immutable linear-map hash computed at construction",
+    "39 source/profile/content-qualified native numeric table rows; default workflow selection and bounded fallback",
+    "Joined, deduplicated native cache misses share the original reservation; physical worker ceiling 16, 256 MiB scheduling floor, byte-cap-only retries",
+    "Shared immutable AES periodic columns within cohorts; descriptor-dependent symbolic constraints remain separate",
+    "Requalified 72 registered numeric rows after core compiler instrumentation changes"
+  ],
+  "baseline": {
+    "cache": {
+      "entries": 39,
+      "evictions": 0,
+      "failed_computations": 0,
+      "hits": 312,
+      "misses": 39,
+      "planning_ns": 15553534485,
+      "reserved_host_bytes": 1048576
+    },
+    "cases": 39,
+    "catalogue_ns": 101552,
+    "cold_ns": 15552119097,
+    "fingerprint_cold_ns": 49493419,
+    "fingerprint_warm_ns": 30,
+    "gpu_used": false,
+    "original_host_bytes_peak": 2560764280,
+    "scope": "native descriptor metadata only; no transactions or proofs",
+    "warm_total_ns": 1685322
+  },
+  "final": {
+    "cache": {
+      "admitted_host_bytes_peak": 0,
+      "budget_reductions": 0,
+      "cohorts": 0,
+      "entries": 39,
+      "evictions": 0,
+      "failed_computations": 0,
+      "hits": 312,
+      "jobs_started": 0,
+      "misses": 39,
+      "peak_workers": 0,
+      "periodic_preparations": 0,
+      "planning_ns": 14389700698,
+      "reserved_host_bytes": 1048576,
+      "table_hits": 0
+    },
+    "cases": 39,
+    "catalogue_ns": 270025,
+    "cold_ns": 14389554510,
+    "fingerprint_cold_ns": 160,
+    "fingerprint_warm_ns": 30,
+    "gpu_used": false,
+    "original_host_bytes_peak": 2560764280,
+    "scope": "native descriptor metadata only; no transactions or proofs",
+    "warm_total_ns": 551075
+  },
+  "native_cohorts": [
+    {
+      "cache": {
+        "admitted_host_bytes_peak": 2536598104,
+        "budget_reductions": 0,
+        "cohorts": 39,
+        "entries": 39,
+        "evictions": 0,
+        "failed_computations": 0,
+        "hits": 0,
+        "jobs_started": 39,
+        "misses": 39,
+        "peak_workers": 1,
+        "periodic_preparations": 1,
+        "planning_ns": 14436051171,
+        "reserved_host_bytes": 1048576,
+        "table_hits": 0
+      },
+      "counts_equal": true,
+      "elapsed_ns": 14436078602,
+      "gpu_used": false,
+      "original_host_bytes_peak": 2560764280,
+      "workers": 1
+    },
+    {
+      "cache": {
+        "admitted_host_bytes_peak": 2560764280,
+        "budget_reductions": 0,
+        "cohorts": 20,
+        "entries": 39,
+        "evictions": 0,
+        "failed_computations": 0,
+        "hits": 0,
+        "jobs_started": 39,
+        "misses": 39,
+        "peak_workers": 2,
+        "periodic_preparations": 1,
+        "planning_ns": 9514184732,
+        "reserved_host_bytes": 1048576,
+        "table_hits": 0
+      },
+      "counts_equal": true,
+      "elapsed_ns": 9514214273,
+      "gpu_used": false,
+      "original_host_bytes_peak": 2560764280,
+      "workers": 2
+    },
+    {
+      "cache": {
+        "admitted_host_bytes_peak": 2560764280,
+        "budget_reductions": 0,
+        "cohorts": 10,
+        "entries": 39,
+        "evictions": 0,
+        "failed_computations": 0,
+        "hits": 0,
+        "jobs_started": 39,
+        "misses": 39,
+        "peak_workers": 4,
+        "periodic_preparations": 1,
+        "planning_ns": 6125585398,
+        "reserved_host_bytes": 1048576,
+        "table_hits": 0
+      },
+      "counts_equal": true,
+      "elapsed_ns": 6125612829,
+      "gpu_used": false,
+      "original_host_bytes_peak": 2560764280,
+      "workers": 4
+    },
+    {
+      "cache": {
+        "admitted_host_bytes_peak": 2560764280,
+        "budget_reductions": 0,
+        "cohorts": 10,
+        "entries": 39,
+        "evictions": 0,
+        "failed_computations": 0,
+        "hits": 0,
+        "jobs_started": 39,
+        "misses": 39,
+        "peak_workers": 4,
+        "periodic_preparations": 1,
+        "planning_ns": 6208437211,
+        "reserved_host_bytes": 1048576,
+        "table_hits": 0
+      },
+      "counts_equal": true,
+      "elapsed_ns": 6208469693,
+      "gpu_used": false,
+      "original_host_bytes_peak": 2560764280,
+      "workers": 8
+    },
+    {
+      "cache": {
+        "admitted_host_bytes_peak": 2560764280,
+        "budget_reductions": 0,
+        "cohorts": 10,
+        "entries": 39,
+        "evictions": 0,
+        "failed_computations": 0,
+        "hits": 0,
+        "jobs_started": 39,
+        "misses": 39,
+        "peak_workers": 4,
+        "periodic_preparations": 1,
+        "planning_ns": 6213545043,
+        "reserved_host_bytes": 1048576,
+        "table_hits": 0
+      },
+      "counts_equal": true,
+      "elapsed_ns": 6213574474,
+      "gpu_used": false,
+      "original_host_bytes_peak": 2560764280,
+      "workers": 16
+    }
+  ],
+  "native_table": {
+    "cache": {
+      "admitted_host_bytes_peak": 0,
+      "budget_reductions": 0,
+      "cohorts": 0,
+      "entries": 39,
+      "evictions": 0,
+      "failed_computations": 0,
+      "hits": 0,
+      "jobs_started": 0,
+      "misses": 39,
+      "peak_workers": 0,
+      "periodic_preparations": 0,
+      "planning_ns": 61982,
+      "reserved_host_bytes": 1048576,
+      "table_hits": 39
+    },
+    "cases": 39,
+    "counts_equal": true,
+    "elapsed_ns": 90432,
+    "gpu_used": false,
+    "phases": {
+      "finalization_ns": 0,
+      "key_ns": 30172,
+      "lookup_ns": 26980,
+      "lowering_ns": 0,
+      "periodic_ns": 0,
+      "preflight_ns": 11300,
+      "symbolic_ns": 0
+    }
+  },
+  "native_table_identity": {
+    "available": true,
+    "profile": [
+      76,
+      65,
+      84,
+      84,
+      73,
+      67,
+      65,
+      45,
+      66,
+      76,
+      79,
+      67,
+      75,
+      45,
+      86,
+      50,
+      45,
+      67,
+      65,
+      78,
+      68,
+      73,
+      68,
+      65,
+      84,
+      69,
+      45,
+      48,
+      48,
+      48,
+      48,
+      49
+    ],
+    "source": [
+      58,
+      228,
+      129,
+      33,
+      132,
+      99,
+      29,
+      11,
+      31,
+      166,
+      48,
+      225,
+      90,
+      166,
+      21,
+      28,
+      212,
+      123,
+      46,
+      221,
+      161,
+      7,
+      185,
+      238,
+      165,
+      144,
+      148,
+      117,
+      221,
+      133,
+      212,
+      141
+    ]
+  },
+  "descriptor_comparison": [
+    {
+      "name": "aes-single",
+      "family": "aes",
+      "baseline_cold_ns": 300093679,
+      "final_cold_ns": 304897737,
+      "baseline_warm_per_call_ns": 3232.625,
+      "final_warm_per_call_ns": 1543.75,
+      "values_equal": true
+    },
+    {
+      "name": "aes-sample-g64",
+      "family": "aes",
+      "baseline_cold_ns": 358534797,
+      "final_cold_ns": 360013562,
+      "baseline_warm_per_call_ns": 2006.25,
+      "final_warm_per_call_ns": 1590.0,
+      "values_equal": true
+    },
+    {
+      "name": "aes-alpha-middle64",
+      "family": "aes",
+      "baseline_cold_ns": 357694411,
+      "final_cold_ns": 358405638,
+      "baseline_warm_per_call_ns": 2048.875,
+      "final_warm_per_call_ns": 1637.625,
+      "values_equal": true
+    },
+    {
+      "name": "aes-alpha-tail33",
+      "family": "aes",
+      "baseline_cold_ns": 374001778,
+      "final_cold_ns": 355166700,
+      "baseline_warm_per_call_ns": 1998.75,
+      "final_warm_per_call_ns": 1593.75,
+      "values_equal": true
+    },
+    {
+      "name": "aes-sparse-tail8",
+      "family": "aes",
+      "baseline_cold_ns": 326400676,
+      "final_cold_ns": 320144959,
+      "baseline_warm_per_call_ns": 2017.625,
+      "final_warm_per_call_ns": 1578.875,
+      "values_equal": true
+    },
+    {
+      "name": "aes-counter-variant",
+      "family": "aes",
+      "baseline_cold_ns": 291878086,
+      "final_cold_ns": 305610061,
+      "baseline_warm_per_call_ns": 1997.5,
+      "final_warm_per_call_ns": 1587.625,
+      "values_equal": true
+    },
+    {
+      "name": "shake-single",
+      "family": "shake",
+      "baseline_cold_ns": 354473517,
+      "final_cold_ns": 357882877,
+      "baseline_warm_per_call_ns": 2038.875,
+      "final_warm_per_call_ns": 1626.25,
+      "values_equal": true
+    },
+    {
+      "name": "shake-absorb8",
+      "family": "shake",
+      "baseline_cold_ns": 399177872,
+      "final_cold_ns": 397615147,
+      "baseline_warm_per_call_ns": 2046.25,
+      "final_warm_per_call_ns": 1970.0,
+      "values_equal": true
+    },
+    {
+      "name": "shake-padding",
+      "family": "shake",
+      "baseline_cold_ns": 367367156,
+      "final_cold_ns": 373404975,
+      "baseline_warm_per_call_ns": 1990.0,
+      "final_warm_per_call_ns": 1612.625,
+      "values_equal": true
+    },
+    {
+      "name": "shake-squeeze8",
+      "family": "shake",
+      "baseline_cold_ns": 396845855,
+      "final_cold_ns": 404280608,
+      "baseline_warm_per_call_ns": 1973.75,
+      "final_warm_per_call_ns": 1690.0,
+      "values_equal": true
+    },
+    {
+      "name": "transcript-bytes",
+      "family": "transcript",
+      "baseline_cold_ns": 278776125,
+      "final_cold_ns": 268907605,
+      "baseline_warm_per_call_ns": 2051.25,
+      "final_warm_per_call_ns": 1726.375,
+      "values_equal": true
+    },
+    {
+      "name": "transcript-mixed",
+      "family": "transcript",
+      "baseline_cold_ns": 377044030,
+      "final_cold_ns": 290429490,
+      "baseline_warm_per_call_ns": 1955.0,
+      "final_warm_per_call_ns": 1630.0,
+      "values_equal": true
+    },
+    {
+      "name": "sparse-alpha",
+      "family": "sparse",
+      "baseline_cold_ns": 346072870,
+      "final_cold_ns": 323190304,
+      "baseline_warm_per_call_ns": 1706.25,
+      "final_warm_per_call_ns": 1260.0,
+      "values_equal": true
+    },
+    {
+      "name": "sparse-x",
+      "family": "sparse",
+      "baseline_cold_ns": 319294466,
+      "final_cold_ns": 311634279,
+      "baseline_warm_per_call_ns": 1790.0,
+      "final_warm_per_call_ns": 1372.5,
+      "values_equal": true
+    },
+    {
+      "name": "uniform-g",
+      "family": "uniform",
+      "baseline_cold_ns": 315829616,
+      "final_cold_ns": 321031228,
+      "baseline_warm_per_call_ns": 1743.75,
+      "final_warm_per_call_ns": 1342.5,
+      "values_equal": true
+    },
+    {
+      "name": "uniform-alpha",
+      "family": "uniform",
+      "baseline_cold_ns": 334617812,
+      "final_cold_ns": 308186396,
+      "baseline_warm_per_call_ns": 1738.875,
+      "final_warm_per_call_ns": 1285.0,
+      "values_equal": true
+    },
+    {
+      "name": "statement-19",
+      "family": "statement",
+      "baseline_cold_ns": 371599793,
+      "final_cold_ns": 371128957,
+      "baseline_warm_per_call_ns": 2488.75,
+      "final_warm_per_call_ns": 1711.25,
+      "values_equal": true
+    },
+    {
+      "name": "statement-20",
+      "family": "statement",
+      "baseline_cold_ns": 382773636,
+      "final_cold_ns": 372482835,
+      "baseline_warm_per_call_ns": 2655.0,
+      "final_warm_per_call_ns": 1881.375,
+      "values_equal": true
+    },
+    {
+      "name": "private-proof",
+      "family": "private",
+      "baseline_cold_ns": 397909208,
+      "final_cold_ns": 362712298,
+      "baseline_warm_per_call_ns": 1665.125,
+      "final_warm_per_call_ns": 1437.625,
+      "values_equal": true
+    },
+    {
+      "name": "affine-q-1",
+      "family": "affine",
+      "baseline_cold_ns": 232991801,
+      "final_cold_ns": 209675633,
+      "baseline_warm_per_call_ns": 2635.0,
+      "final_warm_per_call_ns": 1860.125,
+      "values_equal": true
+    },
+    {
+      "name": "affine-q-64",
+      "family": "affine",
+      "baseline_cold_ns": 289562492,
+      "final_cold_ns": 269194092,
+      "baseline_warm_per_call_ns": 1938.75,
+      "final_warm_per_call_ns": 1912.5,
+      "values_equal": true
+    },
+    {
+      "name": "ntt-q-1",
+      "family": "ntt",
+      "baseline_cold_ns": 535595374,
+      "final_cold_ns": 387027422,
+      "baseline_warm_per_call_ns": 2310.0,
+      "final_warm_per_call_ns": 1785.125,
+      "values_equal": true
+    },
+    {
+      "name": "mul-q-1",
+      "family": "mul",
+      "baseline_cold_ns": 416715826,
+      "final_cold_ns": 257581506,
+      "baseline_warm_per_call_ns": 2631.375,
+      "final_warm_per_call_ns": 1822.5,
+      "values_equal": true
+    },
+    {
+      "name": "ntt-q-32",
+      "family": "ntt",
+      "baseline_cold_ns": 1298877926,
+      "final_cold_ns": 747697059,
+      "baseline_warm_per_call_ns": 3208.75,
+      "final_warm_per_call_ns": 1901.25,
+      "values_equal": true
+    },
+    {
+      "name": "mul-q-32",
+      "family": "mul",
+      "baseline_cold_ns": 906711681,
+      "final_cold_ns": 809618677,
+      "baseline_warm_per_call_ns": 2071.25,
+      "final_warm_per_call_ns": 1931.25,
+      "values_equal": true
+    },
+    {
+      "name": "affine-qhat-1",
+      "family": "affine",
+      "baseline_cold_ns": 223033162,
+      "final_cold_ns": 225481897,
+      "baseline_warm_per_call_ns": 1952.625,
+      "final_warm_per_call_ns": 1827.5,
+      "values_equal": true
+    },
+    {
+      "name": "affine-qhat-64",
+      "family": "affine",
+      "baseline_cold_ns": 275265118,
+      "final_cold_ns": 275411783,
+      "baseline_warm_per_call_ns": 2018.75,
+      "final_warm_per_call_ns": 1881.25,
+      "values_equal": true
+    },
+    {
+      "name": "ntt-qhat-1",
+      "family": "ntt",
+      "baseline_cold_ns": 398587405,
+      "final_cold_ns": 398161718,
+      "baseline_warm_per_call_ns": 1948.875,
+      "final_warm_per_call_ns": 1972.625,
+      "values_equal": true
+    },
+    {
+      "name": "mul-qhat-1",
+      "family": "mul",
+      "baseline_cold_ns": 266590225,
+      "final_cold_ns": 267485525,
+      "baseline_warm_per_call_ns": 1866.25,
+      "final_warm_per_call_ns": 1960.0,
+      "values_equal": true
+    },
+    {
+      "name": "ntt-qhat-32",
+      "family": "ntt",
+      "baseline_cold_ns": 764186603,
+      "final_cold_ns": 755065673,
+      "baseline_warm_per_call_ns": 2017.5,
+      "final_warm_per_call_ns": 1930.0,
+      "values_equal": true
+    },
+    {
+      "name": "mul-qhat-32",
+      "family": "mul",
+      "baseline_cold_ns": 756226635,
+      "final_cold_ns": 767793602,
+      "baseline_warm_per_call_ns": 2081.25,
+      "final_warm_per_call_ns": 1947.625,
+      "values_equal": true
+    },
+    {
+      "name": "g-bound-6825771",
+      "family": "g_bound",
+      "baseline_cold_ns": 502379934,
+      "final_cold_ns": 493400391,
+      "baseline_warm_per_call_ns": 2713.875,
+      "final_warm_per_call_ns": 1926.25,
+      "values_equal": true
+    },
+    {
+      "name": "g-bound-1137628",
+      "family": "g_bound",
+      "baseline_cold_ns": 490594819,
+      "final_cold_ns": 501076184,
+      "baseline_warm_per_call_ns": 2021.375,
+      "final_warm_per_call_ns": 2005.0,
+      "values_equal": true
+    },
+    {
+      "name": "permutation-q",
+      "family": "permutation",
+      "baseline_cold_ns": 364778131,
+      "final_cold_ns": 367740074,
+      "baseline_warm_per_call_ns": 1985.0,
+      "final_warm_per_call_ns": 1937.625,
+      "values_equal": true
+    },
+    {
+      "name": "permutation-x",
+      "family": "permutation",
+      "baseline_cold_ns": 276198618,
+      "final_cold_ns": 278025838,
+      "baseline_warm_per_call_ns": 2700.0,
+      "final_warm_per_call_ns": 2071.25,
+      "values_equal": true
+    },
+    {
+      "name": "linear-q-1",
+      "family": "linear_map",
+      "baseline_cold_ns": 194575905,
+      "final_cold_ns": 196752719,
+      "baseline_warm_per_call_ns": 13585.25,
+      "final_warm_per_call_ns": 2077.625,
+      "values_equal": true
+    },
+    {
+      "name": "linear-q-2",
+      "family": "linear_map",
+      "baseline_cold_ns": 195102785,
+      "final_cold_ns": 191712903,
+      "baseline_warm_per_call_ns": 13680.25,
+      "final_warm_per_call_ns": 2023.75,
+      "values_equal": true
+    },
+    {
+      "name": "linear-qhat-16",
+      "family": "linear_map",
+      "baseline_cold_ns": 307740780,
+      "final_cold_ns": 322742833,
+      "baseline_warm_per_call_ns": 94733.125,
+      "final_warm_per_call_ns": 2036.375,
+      "values_equal": true
+    },
+    {
+      "name": "linear-signed",
+      "family": "linear_map",
+      "baseline_cold_ns": 206018494,
+      "final_cold_ns": 200783325,
+      "baseline_warm_per_call_ns": 13421.5,
+      "final_warm_per_call_ns": 1997.625,
+      "values_equal": true
+    }
+  ],
+  "table_timing_note": "Native table lookup timing begins after source/profile/content validation; excludes that one-time validation and scope setup.",
+  "registered_qualification": [
+    {
+      "cache": {
+        "entries": 4,
+        "evictions": 0,
+        "failed_computations": 0,
+        "hits": 4,
+        "misses": 4,
+        "planning_ns": 18608772366,
+        "reserved_host_bytes": 1048576,
+        "table_hits": 0
+      },
+      "cold_ns": 18608774156,
+      "counts_equal": true,
+      "gpu_used": false,
+      "original_host_bytes": 2522146248,
+      "planning": {
+        "admitted_host_bytes_peak": 2522146248,
+        "budget_reductions": 0,
+        "cohorts": 72,
+        "envelopes": 4,
+        "failed_envelopes": 0,
+        "heights_completed": 72,
+        "jobs_started": 72,
+        "largest_cohort": 1,
+        "peak_active_workers": 1,
+        "shared_symbolic_bytes_peak": 134217728,
+        "symbolic_preparations": 4,
+        "wall_ns": 18608763576,
+        "worker_auxiliary_bytes_peak": 9711128,
+        "worker_ceiling": 1,
+        "worker_elapsed_ns": 18569883048
+      },
+      "shapes": 72,
+      "warm_ns": 1020,
+      "workers": 1
+    },
+    {
+      "cache": {
+        "entries": 4,
+        "evictions": 0,
+        "failed_computations": 0,
+        "hits": 4,
+        "misses": 4,
+        "planning_ns": 10832697710,
+        "reserved_host_bytes": 1048576,
+        "table_hits": 0
+      },
+      "cold_ns": 10832699110,
+      "counts_equal": true,
+      "gpu_used": false,
+      "original_host_bytes": 2522146248,
+      "planning": {
+        "admitted_host_bytes_peak": 2522146248,
+        "budget_reductions": 0,
+        "cohorts": 36,
+        "envelopes": 4,
+        "failed_envelopes": 0,
+        "heights_completed": 72,
+        "jobs_started": 72,
+        "largest_cohort": 2,
+        "peak_active_workers": 2,
+        "shared_symbolic_bytes_peak": 134217728,
+        "symbolic_preparations": 4,
+        "wall_ns": 10832688510,
+        "worker_auxiliary_bytes_peak": 9711128,
+        "worker_ceiling": 2,
+        "worker_elapsed_ns": 20993539259
+      },
+      "shapes": 72,
+      "warm_ns": 1230,
+      "workers": 2
+    },
+    {
+      "cache": {
+        "entries": 4,
+        "evictions": 0,
+        "failed_computations": 0,
+        "hits": 4,
+        "misses": 4,
+        "planning_ns": 7525405884,
+        "reserved_host_bytes": 1048576,
+        "table_hits": 0
+      },
+      "cold_ns": 7525408245,
+      "counts_equal": true,
+      "gpu_used": false,
+      "original_host_bytes": 2522146248,
+      "planning": {
+        "admitted_host_bytes_peak": 2522146248,
+        "budget_reductions": 0,
+        "cohorts": 20,
+        "envelopes": 4,
+        "failed_envelopes": 0,
+        "heights_completed": 72,
+        "jobs_started": 72,
+        "largest_cohort": 4,
+        "peak_active_workers": 4,
+        "shared_symbolic_bytes_peak": 134217728,
+        "symbolic_preparations": 4,
+        "wall_ns": 7525397034,
+        "worker_auxiliary_bytes_peak": 9711128,
+        "worker_ceiling": 4,
+        "worker_elapsed_ns": 24805691461
+      },
+      "shapes": 72,
+      "warm_ns": 880,
+      "workers": 4
+    },
+    {
+      "cache": {
+        "entries": 4,
+        "evictions": 0,
+        "failed_computations": 0,
+        "hits": 4,
+        "misses": 4,
+        "planning_ns": 5465968555,
+        "reserved_host_bytes": 1048576,
+        "table_hits": 0
+      },
+      "cold_ns": 5465970645,
+      "counts_equal": true,
+      "gpu_used": false,
+      "original_host_bytes": 2522146248,
+      "planning": {
+        "admitted_host_bytes_peak": 2522146248,
+        "budget_reductions": 0,
+        "cohorts": 12,
+        "envelopes": 4,
+        "failed_envelopes": 0,
+        "heights_completed": 72,
+        "jobs_started": 72,
+        "largest_cohort": 8,
+        "peak_active_workers": 8,
+        "shared_symbolic_bytes_peak": 134217728,
+        "symbolic_preparations": 4,
+        "wall_ns": 5465960415,
+        "worker_auxiliary_bytes_peak": 9711128,
+        "worker_ceiling": 8,
+        "worker_elapsed_ns": 29651224748
+      },
+      "shapes": 72,
+      "warm_ns": 870,
+      "workers": 8
+    },
+    {
+      "cache": {
+        "entries": 4,
+        "evictions": 0,
+        "failed_computations": 0,
+        "hits": 4,
+        "misses": 4,
+        "planning_ns": 4437632682,
+        "reserved_host_bytes": 1048576,
+        "table_hits": 0
+      },
+      "cold_ns": 4437634552,
+      "counts_equal": true,
+      "gpu_used": false,
+      "original_host_bytes": 2522146248,
+      "planning": {
+        "admitted_host_bytes_peak": 2522146248,
+        "budget_reductions": 0,
+        "cohorts": 8,
+        "envelopes": 4,
+        "failed_envelopes": 0,
+        "heights_completed": 72,
+        "jobs_started": 72,
+        "largest_cohort": 16,
+        "peak_active_workers": 16,
+        "shared_symbolic_bytes_peak": 134217728,
+        "symbolic_preparations": 4,
+        "wall_ns": 4437622241,
+        "worker_auxiliary_bytes_peak": 9711128,
+        "worker_ceiling": 16,
+        "worker_elapsed_ns": 36500037789
+      },
+      "shapes": 72,
+      "warm_ns": 790,
+      "workers": 16
+    }
+  ],
+  "registered_table_identity": {
+    "available": true,
+    "profile_id": [
+      76,
+      65,
+      84,
+      84,
+      73,
+      67,
+      65,
+      45,
+      66,
+      76,
+      79,
+      67,
+      75,
+      45,
+      86,
+      50,
+      45,
+      67,
+      65,
+      78,
+      68,
+      73,
+      68,
+      65,
+      84,
+      69,
+      45,
+      48,
+      48,
+      48,
+      48,
+      49
+    ],
+    "signature": [
+      23,
+      7,
+      32,
+      94,
+      4,
+      6,
+      128,
+      4,
+      16,
+      191,
+      67108864,
+      1048576
+    ],
+    "source_digest": [
+      239,
+      78,
+      122,
+      9,
+      41,
+      147,
+      39,
+      87,
+      173,
+      6,
+      91,
+      209,
+      160,
+      191,
+      101,
+      168,
+      230,
+      239,
+      91,
+      165,
+      235,
+      158,
+      214,
+      171,
+      214,
+      67,
+      243,
+      62,
+      199,
+      186,
+      230,
+      203
+    ]
+  },
+  "workflow_registered_tables": [
+    {
+      "cache": {
+        "entries": 4,
+        "evictions": 0,
+        "failed_computations": 0,
+        "hits": 0,
+        "misses": 4,
+        "planning_ns": 46091,
+        "reserved_host_bytes": 1048576,
+        "table_hits": 4
+      },
+      "elapsed_ns": 51081,
+      "envelopes": 4,
+      "gpu_used": false,
+      "heights": 72,
+      "planning": {
+        "admitted_host_bytes_peak": 0,
+        "budget_reductions": 0,
+        "cohorts": 0,
+        "envelopes": 0,
+        "failed_envelopes": 0,
+        "heights_completed": 0,
+        "jobs_started": 0,
+        "largest_cohort": 0,
+        "peak_active_workers": 0,
+        "shared_symbolic_bytes_peak": 0,
+        "symbolic_preparations": 0,
+        "wall_ns": 0,
+        "worker_auxiliary_bytes_peak": 0,
+        "worker_ceiling": 1,
+        "worker_elapsed_ns": 0
+      }
+    }
+  ],
+  "fingerprint_encoding_check": {
+    "workflow_v1_byte_encoding_equal": true,
+    "native_source_byte_encoding_equal": true,
+    "files": 2305,
+    "compiler": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+    "target": "x86_64-unknown-linux-gnu",
+    "opt": "3",
+    "debug": false
+  },
+  "python_checks": {
+    "relevant_suite_passed": 83,
+    "broader_suite_passed": 106,
+    "broader_suite_external_fixture_errors": 3,
+    "missing_fixture": "/home/access/code/pq-ringct-research/research/pq-ringct/data/complete-spend-acceptance-recovery-v2-1db18b9e1bece2fd.json",
+    "affected_tests": [
+      "test_opencl_qualify.AdmissionTests.test_historical_unit_may_be_gone_after_reboot",
+      "test_opencl_qualify.AdmissionTests.test_live_historical_unit_refuses",
+      "test_opencl_qualify.AdmissionTests.test_unavailable_service_manager_refuses"
+    ]
+  },
+  "limits": "Original CPU compiler, auxiliary, metadata and guard memory caps retained; no full-workflow speedup claim.",
+  "records": [
+    {
+      "label": "ringct-native-metadata-profile-build-r1",
+      "record": ".tools/pq-opencl-opt/runs/ringct-native-metadata-profile-build-r1.json",
+      "status": "passed",
+      "terminal_and_reaped": true,
+      "record_sha256": "6d1cb9b46258c98ccb16721a9b2ae04b351c341a79eb778babc6bb1f1296f42b",
+      "raw_log_sha256": "6aab9c0f553be95d1a8a6365d1cfd10f0e495ee48e18fd4bca397d7355e7518e",
+      "tests": [],
+      "memory_peak_bytes": "2819596288"
+    },
+    {
+      "label": "ringct-native-metadata-profile-baseline-r1",
+      "record": ".tools/pq-opencl-opt/runs/ringct-native-metadata-profile-baseline-r1.json",
+      "status": "passed",
+      "terminal_and_reaped": true,
+      "record_sha256": "92ce580109d661feff976ef475d6388ff5b6d3c767a6a039b28e1a3e25886cd8",
+      "raw_log_sha256": "1a3ce905e4b92be5e5a08f1543e4b726d0a09aceb2c3d22ad77505397baa8342",
+      "tests": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "memory_peak_bytes": "308936704"
+    },
+    {
+      "label": "ringct-native-metadata-optimized-build-r1",
+      "record": ".tools/pq-opencl-opt/runs/ringct-native-metadata-optimized-build-r1.json",
+      "status": "passed",
+      "terminal_and_reaped": true,
+      "record_sha256": "e26c2e764cb66a17b0016490252e874259fb04cd2a6cb9bc3d764b94b34bc828",
+      "raw_log_sha256": "89662c7952b4023d3c4b5d8dce289d025afd21d15285cd9de0edbfd2c6d72fa4",
+      "tests": [],
+      "memory_peak_bytes": "2683723776"
+    },
+    {
+      "label": "ringct-native-metadata-optimized-profile-r2",
+      "record": ".tools/pq-opencl-opt/runs/ringct-native-metadata-optimized-profile-r2.json",
+      "status": "passed",
+      "terminal_and_reaped": true,
+      "record_sha256": "02dab62363db0ff9ded019cd19bc46fbf969964c81e2ef2e00c620f28f88cc28",
+      "raw_log_sha256": "536afab197e4d520d33c42940313f9e649928ca4d44fec76093e41d3f86dbeb3",
+      "tests": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "memory_peak_bytes": "657575936"
+    },
+    {
+      "label": "ringct-native-metadata-unit-r1",
+      "record": ".tools/pq-opencl-opt/runs/ringct-native-metadata-unit-r1.json",
+      "status": "passed",
+      "terminal_and_reaped": true,
+      "record_sha256": "9e8469d0f97124d6667f441974b2ced6798c00c33b5d6b964963c8cd268c3ca7",
+      "raw_log_sha256": "5fea8ad552adf5276b5b063233a278393f320b4e3a3df3bd967bedbec2067d4c",
+      "tests": [
+        {
+          "passed": 14,
+          "failed": 0,
+          "ignored": 8
+        }
+      ],
+      "memory_peak_bytes": "103702528"
+    },
+    {
+      "label": "ringct-native-metadata-optimized-build-r2",
+      "record": ".tools/pq-opencl-opt/runs/ringct-native-metadata-optimized-build-r2.json",
+      "status": "passed",
+      "terminal_and_reaped": true,
+      "record_sha256": "91862d9d40c9fac56338bb3e25b177f001f69635faa468e9e93ea7c8f6b57e5e",
+      "raw_log_sha256": "7cfbd280695f64a461a5ee2fba3b3bdcbf610882dc6c55bb4f1aecc65b35a5b9",
+      "tests": [],
+      "memory_peak_bytes": "2573291520"
+    },
+    {
+      "label": "ringct-native-metadata-tuned-profile-r1",
+      "record": ".tools/pq-opencl-opt/runs/ringct-native-metadata-tuned-profile-r1.json",
+      "status": "passed",
+      "terminal_and_reaped": true,
+      "record_sha256": "b35a66775912726963e3e1403ad27f9766ecda20e831d8f4366f6f8e9942ac8f",
+      "raw_log_sha256": "f4c8693bfc13a547940857ad5ac968d4c93eb0e2c04a3afac8986a2e74ad469d",
+      "tests": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "memory_peak_bytes": "559779840"
+    },
+    {
+      "label": "ringct-native-metadata-core-build-r1",
+      "record": ".tools/pq-opencl-opt/runs/ringct-native-metadata-core-build-r1.json",
+      "status": "passed",
+      "terminal_and_reaped": true,
+      "record_sha256": "4b9b48db343371f20bfd39ec9a5b855344ecb7e601ad7202dc4d11aeed20c10d",
+      "raw_log_sha256": "41a11ca991519d26e491a49e9edea1df03f635c07128930011632b705504e590",
+      "tests": [],
+      "memory_peak_bytes": "6044315648"
+    },
+    {
+      "label": "ringct-native-metadata-registered-bootstrap-r1",
+      "record": ".tools/pq-opencl-opt/runs/ringct-native-metadata-registered-bootstrap-r1.json",
+      "status": "passed",
+      "terminal_and_reaped": true,
+      "record_sha256": "f00955b2622a5cfcc1a1e1062322e56df14f48ad28cd626bb610108c6fb76314",
+      "raw_log_sha256": "637fa4f9cde1320f9b6c14698d519057c4ed012328d589f4711b1c2ede2fdfce",
+      "tests": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "memory_peak_bytes": "985972736"
+    },
+    {
+      "label": "ringct-native-metadata-core-build-r2",
+      "record": ".tools/pq-opencl-opt/runs/ringct-native-metadata-core-build-r2.json",
+      "status": "passed",
+      "terminal_and_reaped": true,
+      "record_sha256": "34703757f5741bdb4f7cb295f7d0e482f6944b9f906fc7036b71e83cb07099ce",
+      "raw_log_sha256": "dcbd26114bfab7c9d0c8c7becfad6237c47bb85279cf800fa4f210cf6c4a0c5d",
+      "tests": [],
+      "memory_peak_bytes": "6030929920"
+    },
+    {
+      "label": "ringct-native-metadata-registered-final-r1",
+      "record": ".tools/pq-opencl-opt/runs/ringct-native-metadata-registered-final-r1.json",
+      "status": "passed",
+      "terminal_and_reaped": true,
+      "record_sha256": "708f41101e953235b944a0561f483210fba6210e76353f81832603c00d31f6c7",
+      "raw_log_sha256": "9cba5432ac62584fc5a5787554ee0ffd88c45d393bc5c9cf97a031962c40e284",
+      "tests": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "memory_peak_bytes": "1033404416"
+    },
+    {
+      "label": "ringct-native-metadata-core-program-r1",
+      "record": ".tools/pq-opencl-opt/runs/ringct-native-metadata-core-program-r1.json",
+      "status": "passed",
+      "terminal_and_reaped": true,
+      "record_sha256": "50509b0b6b898b81f0cde17fc065e569ab0660e96275e0df364d96bea23ce02b",
+      "raw_log_sha256": "accba148be60f460e89177e705fa2b206b49a0dce8726114ca4a8ec38d3f964d",
+      "tests": [
+        {
+          "passed": 55,
+          "failed": 0,
+          "ignored": 2
+        }
+      ],
+      "memory_peak_bytes": "4345856"
+    },
+    {
+      "label": "ringct-native-metadata-core-verifier-r1",
+      "record": ".tools/pq-opencl-opt/runs/ringct-native-metadata-core-verifier-r1.json",
+      "status": "passed",
+      "terminal_and_reaped": true,
+      "record_sha256": "7cdc88a4ebdcd37ca6a4741fd8929a44c86ce9c95ec48f2eeefd0c76758d6877",
+      "raw_log_sha256": "6c20e570b89391682c72f3797e5c0fd1d98197d100669aa4d701b81795fe760b",
+      "tests": [
+        {
+          "passed": 47,
+          "failed": 0,
+          "ignored": 6
+        }
+      ],
+      "memory_peak_bytes": "340594688"
+    },
+    {
+      "label": "ringct-native-metadata-final-build-r1",
+      "record": ".tools/pq-opencl-opt/runs/ringct-native-metadata-final-build-r1.json",
+      "status": "passed",
+      "terminal_and_reaped": true,
+      "record_sha256": "46b666301c4d2569fbdc119b227bcb797c37fb8102708883ab278ce19b0121da",
+      "raw_log_sha256": "381bce4cb7135ff8d43ad840f2f7f19a7c91a285cd0454c34be897b9ec5a0e01",
+      "tests": [],
+      "memory_peak_bytes": "2691395584"
+    },
+    {
+      "label": "ringct-native-metadata-final-profile-r1",
+      "record": ".tools/pq-opencl-opt/runs/ringct-native-metadata-final-profile-r1.json",
+      "status": "passed",
+      "terminal_and_reaped": true,
+      "record_sha256": "415d4220dd632149b6efd6ff7bcf5ccfc77dbbd6cb836f1fc6d4d6b1f1bca4a7",
+      "raw_log_sha256": "bd18a7a10ef18e9b5539224c2fd8c1e036a2f4c866c4d647698a2810768f5ecf",
+      "tests": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "memory_peak_bytes": "520531968"
+    },
+    {
+      "label": "ringct-native-metadata-final-unit-r1",
+      "record": ".tools/pq-opencl-opt/runs/ringct-native-metadata-final-unit-r1.json",
+      "status": "passed",
+      "terminal_and_reaped": true,
+      "record_sha256": "c52cb88f507fbd166470e2f54da2147856fbf097b4bfdc7b9243596cf2f4626d",
+      "raw_log_sha256": "de3c39cde9f22feba6adb26ad3d385a595faf94807c2defa3f7a09d1abd085e7",
+      "tests": [
+        {
+          "passed": 14,
+          "failed": 0,
+          "ignored": 8
+        }
+      ],
+      "memory_peak_bytes": "103407616"
+    },
+    {
+      "label": "ringct-native-metadata-full-count-parity-r1",
+      "record": ".tools/pq-opencl-opt/runs/ringct-native-metadata-full-count-parity-r1.json",
+      "status": "passed",
+      "terminal_and_reaped": true,
+      "record_sha256": "2649ae668682830b1e5d80f12b0eb5986a952c62ee4be73bd9581754f7cf0ed3",
+      "raw_log_sha256": "d3f5db8ef77acc50cb9dbf6fbf1dcae38c66799adc49913ffb17f4af0afbfac4",
+      "tests": [
+        {
+          "passed": 2,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "memory_peak_bytes": "313315328"
+    },
+    {
+      "label": "ringct-native-metadata-source-shape-r1",
+      "record": ".tools/pq-opencl-opt/runs/ringct-native-metadata-source-shape-r1.json",
+      "status": "passed",
+      "terminal_and_reaped": true,
+      "record_sha256": "ae1b00e9d9606aa239b3d30306f4188149ae45ca9be847743e133e0d50d2a232",
+      "raw_log_sha256": "d5cba4683aa096cccff3eba88fc598f0dac4f58b0fc029a63bf7dc5a515cb32f",
+      "tests": [
+        {
+          "passed": 7,
+          "failed": 0,
+          "ignored": 2
+        }
+      ],
+      "memory_peak_bytes": "2707456"
+    },
+    {
+      "label": "ringct-native-metadata-existing-batches-r1",
+      "record": ".tools/pq-opencl-opt/runs/ringct-native-metadata-existing-batches-r1.json",
+      "status": "passed",
+      "terminal_and_reaped": true,
+      "record_sha256": "db1b4025103551dfb2b5c4bc3d9a536e3c9105022aa01a128ac201e873625f99",
+      "raw_log_sha256": "14b98d67e4859ac5f66560aff9c6b168e471ec41be23771ad039fc2c9d6d7564",
+      "tests": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "memory_peak_bytes": "129957888"
+    },
+    {
+      "label": "ringct-native-metadata-workflow-tables-r1",
+      "record": ".tools/pq-opencl-opt/runs/ringct-native-metadata-workflow-tables-r1.json",
+      "status": "passed",
+      "terminal_and_reaped": true,
+      "record_sha256": "77a02d2711b65e25e05e9a26fc5820703b43e9384cb2c2b9250a791208bac23c",
+      "raw_log_sha256": "fe2e541f2b5f0e0256427557ce06418f663a328361dc123888670cae3a036681",
+      "tests": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "memory_peak_bytes": "2621440"
+    },
+    {
+      "label": "ringct-native-metadata-cli-build-r1",
+      "record": ".tools/pq-opencl-opt/runs/ringct-native-metadata-cli-build-r1.json",
+      "status": "passed",
+      "terminal_and_reaped": true,
+      "record_sha256": "e0f0346cfa64fcffe7555df267b9e142c7ebf27292eb1eeaab74594cc30e9f40",
+      "raw_log_sha256": "4d7cb8eff117da6f657c76c9fe315f4f5ac6223d507acf4e195e466aafc8cd3a",
+      "tests": [],
+      "memory_peak_bytes": "2109607936"
+    },
+    {
+      "label": "ringct-native-metadata-cli-help-r1",
+      "record": ".tools/pq-opencl-opt/runs/ringct-native-metadata-cli-help-r1.json",
+      "status": "passed",
+      "terminal_and_reaped": true,
+      "record_sha256": "c72f05267b40e9ba6e5b5f026d954c0eec5269be4259cdeb0a0155b57799a55e",
+      "raw_log_sha256": "d6ad29b2dad3f02dc29022700cb3cfc3267176e79c112d339355bf6930e673d4",
+      "tests": [],
+      "memory_peak_bytes": "2359296"
+    }
+  ]
+}

@@ -188,10 +188,10 @@ impl RegisteredNtt {
     pub fn new(modulus: u64, memory_budget: u64) -> Result<Self, Error> {
         let compiled = crate::rust_verify::constraints_ntt::compile(modulus, &[0; 256])
             .map_err(|error| Error::Compile(CompileError::Backend(error.to_string())))?;
-        let registered = RegisteredProgram::new_with_memory_budget(
-            MachineAir::new(compiled.program),
-            memory_budget,
-        )
+        let registered = RegisteredProgram::new_with_cpu_identity_from_env(
+MachineAir::new(compiled.program),
+memory_budget,
+)
         .map_err(|error| Error::Compile(CompileError::Backend(format!("{error:?}"))))?;
         Ok(Self {
             modulus,

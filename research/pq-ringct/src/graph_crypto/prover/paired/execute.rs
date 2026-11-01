@@ -113,7 +113,7 @@ impl<'request> PairedRequestPlan<'request> {
         -> core::result::Result<PairedRequestOutput<'request>, PairedExecuteError> {
         // The standalone diagnostic executor has a single compiler slot. Only
         // the closed complete driver implements the admitted cohort schedule.
-        if self.identity_limits != IdentityBatchLimits::default() {
+        if self.identity_limits.parallel() {
             return Err(PairedFailure::Authority.into());
         }
         self.check_prepared_endpoints()?;

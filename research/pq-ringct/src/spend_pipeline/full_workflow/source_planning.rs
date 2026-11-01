@@ -88,7 +88,7 @@ pub(crate) struct SourcePlanningPlan<'source> {
     scratch: Requirements,
     backend: Bytes,
     layout: ShakeWrapperLayout,
-    identity_limits: lattica_prover_p3::block_v2::machine::backend::identity_batch::IdentityBatchLimits,
+    identity_limits: lattica_prover_p3::block_v2::machine::backend::identity_cpu::IdentityCpuOptions,
     budgets: Budgets,
     algebra_limits: ResourceLimits,
     #[cfg(not(debug_assertions))]
@@ -290,14 +290,14 @@ impl<'source> SourcePlanningPlan<'source> {
     pub(crate) fn budgets(&self) -> Budgets { self.budgets }
     pub(crate) fn algebra_limits(&self) -> ResourceLimits { self.algebra_limits }
     pub(crate) fn layout(&self) -> ShakeWrapperLayout { self.layout }
-    pub(crate) fn identity_limits(&self) -> lattica_prover_p3::block_v2::machine::backend::identity_batch::IdentityBatchLimits {
+    pub(crate) fn identity_limits(&self) -> lattica_prover_p3::block_v2::machine::backend::identity_cpu::IdentityCpuOptions {
         self.identity_limits
     }
     pub(crate) fn with_identity_limits(mut self,
-        limits: lattica_prover_p3::block_v2::machine::backend::identity_batch::IdentityBatchLimits) -> Result<Self> {
-        use lattica_prover_p3::block_v2::machine::backend::identity_batch::IdentityHashSchedule;
-        if limits.schedule == IdentityHashSchedule::BatchedV1 {
-            if !cfg!(feature = "identity-batch-experiment") { return Err(SourcePreparationError::Source); }
+        limits: lattica_prover_p3::block_v2::machine::backend::identity_cpu::IdentityCpuOptions) -> Result<Self> {
+
+        if limits.parallel() {
+            if !cfg!(feature = "full-workflow-experiment") { return Err(SourcePreparationError::Source); }
             let mut hash = Sha3_256::new();
             hash.update(b"lattica/workflow-identity-schedule/v1");
             hash.update(self.source);

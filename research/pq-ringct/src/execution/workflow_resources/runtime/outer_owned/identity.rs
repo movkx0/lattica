@@ -2,12 +2,13 @@
 //! normal registration. Sibling tokens stay inside their compiler slots.
 use super::*;
 use crate::graph_crypto::PairedCompiled;
-use lattica_prover_p3::block_v2::machine::backend::identity_batch::{
-    IdentityBatchFootprint, IdentityBatchReport, IdentityHashSchedule,
+use lattica_prover_p3::block_v2::machine::backend::identity_cpu::{
+    BorrowedIdentityBatchPlan, IdentityBatchFootprint, IdentityBatchReport,
+    PendingBorrowedIdentityBatch, MAX_IDENTITY_STREAMS,
 };
 
 pub(crate) struct PairedIdentityPeers<'request> {
-    pub(crate) owners: [Option<Retained<PairedCompiled<'request>>>; 15],
+    pub(crate) owners: [Option<Retained<PairedCompiled<'request>>>; MAX_IDENTITY_STREAMS - 1],
 }
 impl Default for PairedIdentityPeers<'_> {
     fn default() -> Self {
@@ -17,15 +18,30 @@ impl Default for PairedIdentityPeers<'_> {
     }
 }
 
-#[derive(Default, serde::Serialize)]
+#[derive(serde::Serialize)]
 pub(super) struct PrefixEpoch {
     pub(super) batch: Option<u64>,
-    pub(super) jobs: [Option<u64>; 16],
+    pub(super) job_capacity: usize,
+    pub(super) jobs: [Option<u64>; MAX_IDENTITY_STREAMS],
+    pub(super) footprint: Option<IdentityBatchFootprint>,
     pub(super) startup: Option<StartupTiming>,
     pub(super) retirement:
         Option<lattica_prover_p3::block_v2::gpu_hash::device::ringct_runtime::Retirement>,
     pub(super) totals:
         Option<crate::execution::owned_workflow_observation::IdentityPreprocessingTotals>,
+}
+impl Default for PrefixEpoch {
+    fn default() -> Self {
+        Self {
+            batch: None,
+            job_capacity: MAX_IDENTITY_STREAMS,
+            jobs: [None; MAX_IDENTITY_STREAMS],
+            footprint: None,
+            startup: None,
+            retirement: None,
+            totals: None,
+        }
+    }
 }
 impl PrefixEpoch {
     pub(super) fn is_empty(&self) -> bool {
@@ -46,8 +62,10 @@ pub(super) fn forwarding_bytes() -> Result<usize, OuterOwnedError> {
         size_of::<PrefixEpoch>(),
         size_of::<IdentityBatchReport>(),
         size_of::<IdentityBatchFootprint>(),
-        size_of::<[super::super::super::types::SlotId; 16]>(),
-        size_of::<[Option<usize>; 15]>(),
+        size_of::<BorrowedIdentityBatchPlan<'static>>(),
+        size_of::<PendingBorrowedIdentityBatch<'static>>(),
+        size_of::<[super::super::super::types::SlotId; MAX_IDENTITY_STREAMS]>(),
+        size_of::<[Option<usize>; MAX_IDENTITY_STREAMS - 1]>(),
     ]
     .into_iter()
     .try_fold(1usize << 20, |sum, n| {
@@ -109,13 +127,10 @@ pub(super) unsafe fn prepare<'request>(
     let startup_requirement = plan.startup_requirement();
     let wrapper_requirement = plan.wrapper_requirement();
     let pcs_requirement = plan.pcs_requirement();
-    let expected = IdentityBatchFootprint::for_program_bounds(
-        count,
-        (count as u64)
-            .checked_mul(crate::component_tree::paired_runtime::source::PROGRAM_BYTES as u64)
-            .ok_or(OuterOwnedError::Partition)?,
-    )
-    .map_err(|_| OuterOwnedError::Partition)?;
+    let expected = request_plan
+        .identity_footprint(operation.identity_node())
+        .map_err(OuterOwnedError::Operation)?
+        .ok_or(OuterOwnedError::Partition)?;
     if expected.host_bytes > plan.operation_host() as u64
         || expected.managed_bytes > pcs_requirement.get(Category::PhaseScratch).device
     {
@@ -182,21 +197,25 @@ pub(super) unsafe fn prepare<'request>(
         }
         programs.push((
             nodes[0] as u64,
-            Arc::clone(operation.identity_compiler().borrowed_parts().0),
+            operation.identity_compiler().borrowed_parts().0,
         ));
         for (peer, node) in peers.owners.iter().flatten().zip(&nodes[1..count]) {
-            programs.push((*node as u64, Arc::clone(peer.get().borrowed_parts().0)));
+            programs.push((*node as u64, peer.get().borrowed_parts().0));
         }
-        request_plan
+        let batch = request_plan
             .identity_context()
             .map_err(OuterOwnedError::Operation)?
-            .plan(
+            .plan_borrowed(
                 request_plan.identity_limits(),
                 programs,
                 expected.host_bytes,
                 expected.managed_bytes,
             )
-            .map_err(|_| OuterOwnedError::Partition)?
+            .map_err(|_| OuterOwnedError::Partition)?;
+        if batch.footprint().borrowed_program_host_bytes > expected.borrowed_program_host_bytes {
+            return Err(OuterOwnedError::Partition);
+        }
+        batch
             .execute(Request {
                 policy: Policy::GpuRequired,
                 emit_report: false,
@@ -226,6 +245,7 @@ pub(super) unsafe fn prepare<'request>(
             return Err(OuterOwnedError::Authority);
         }
         telemetry.batch = Some(report.batch);
+        telemetry.footprint = Some(report.footprint);
         for (target, node) in telemetry.jobs.iter_mut().zip(&nodes[..count]) {
             *target = Some(*node as u64);
         }
@@ -268,13 +288,13 @@ pub(super) fn register(
     host: u64,
     request: Request,
     used: &mut Option<PrefixUse>,
-) -> Result<(RegisteredProgram, lattica_prover_p3::proving::Report), OuterOwnedError> {
+) -> Result<(RegisteredProgram, lattica_prover_p3::block_v2::machine::backend::identity_cpu::RegistrationReports), OuterOwnedError> {
     let plan = operation.identity_plan();
     let prefix = operation
         .identity_compiler()
         .take_identity_prefix()
         .map_err(OuterOwnedError::Operation)?;
-    let required = plan.identity_limits().schedule == IdentityHashSchedule::BatchedV1
+    let required = plan.identity_limits().parallel()
         && plan.node_sources()[operation.identity_node()]
             .group
             .is_some();
@@ -284,22 +304,21 @@ pub(super) fn register(
                 batch: prefix.batch(),
                 job: prefix.job(),
             });
-            RegisteredProgram::new_with_identity_prefix_and_report(
+            RegisteredProgram::new_with_cpu_identity_prefix_and_report(
                 MachineAir::from_shared_program(Arc::clone(program)),
                 host,
                 request,
                 plan.identity_context()
-                    .map_err(OuterOwnedError::Operation)?,
+                                    .map_err(OuterOwnedError::Operation)?,
                 operation.identity_node() as u64,
                 prefix,
             )
             .map_err(|_| OuterOwnedError::Setup)
         }
-        (false, None) => RegisteredProgram::new_with_request_and_identity_hint_and_report(
+        (false, None) => RegisteredProgram::new_with_cpu_identity_and_report(
             MachineAir::from_shared_program(Arc::clone(program)),
             host,
             request,
-            None,
         )
         .map_err(|_| OuterOwnedError::Setup),
         _ => Err(OuterOwnedError::Authority),

@@ -81,8 +81,8 @@ pub(crate) struct PairedNodeReport {
 /// Only a bounded compile operation constructs this payload. A's Retained
 /// owner keeps its original compiler/input claim while proving borrows it.
 pub(crate) struct PairedCompiled<'request> {
-    #[cfg(feature = "identity-batch-experiment")]
-    identity_prefix: std::cell::RefCell<Option<lattica_prover_p3::block_v2::machine::backend::identity_batch::CompletedIdentityPrefix>>,
+    #[cfg(feature = "full-workflow-experiment")]
+    identity_prefix: std::cell::RefCell<Option<lattica_prover_p3::block_v2::machine::backend::identity_cpu::CompletedIdentityPrefix>>,
     node: CompiledNode,
     request: &'request Request,
     context: GraphContext,
@@ -92,14 +92,14 @@ pub(crate) struct PairedCompiled<'request> {
     report: PairedNodeReport,
 }
 impl PairedCompiled<'_> {
-    #[cfg(feature = "identity-batch-experiment")]
+    #[cfg(feature = "full-workflow-experiment")]
     pub(crate) fn identity_prefix_is_empty(&self) -> Result<bool> {
         Ok(self.identity_prefix.try_borrow().map_err(|_| PairedFailure::Authority)?.is_none())
     }
-    #[cfg(feature = "identity-batch-experiment")]
+    #[cfg(feature = "full-workflow-experiment")]
     pub(crate) fn install_identity_prefix(&self,
-        prefix: lattica_prover_p3::block_v2::machine::backend::identity_batch::CompletedIdentityPrefix) -> Result<()> {
-        use lattica_prover_p3::block_v2::machine::backend::identity_batch::IDENTITY_PREFIX_HOST_BYTES;
+        prefix: lattica_prover_p3::block_v2::machine::backend::identity_cpu::CompletedIdentityPrefix) -> Result<()> {
+        use lattica_prover_p3::block_v2::machine::backend::identity_cpu::IDENTITY_PREFIX_HOST_BYTES;
         let mut target = self.identity_prefix.try_borrow_mut().map_err(|_| PairedFailure::Authority)?;
         if target.is_some() || prefix.retained_host_bytes() > IDENTITY_PREFIX_HOST_BYTES {
             return Err(PairedFailure::Capacity);
@@ -107,9 +107,9 @@ impl PairedCompiled<'_> {
         *target = Some(prefix);
         Ok(())
     }
-    #[cfg(feature = "identity-batch-experiment")]
+    #[cfg(feature = "full-workflow-experiment")]
     pub(crate) fn take_identity_prefix(&self)
-        -> Result<Option<lattica_prover_p3::block_v2::machine::backend::identity_batch::CompletedIdentityPrefix>> {
+        -> Result<Option<lattica_prover_p3::block_v2::machine::backend::identity_cpu::CompletedIdentityPrefix>> {
         Ok(self.identity_prefix.try_borrow_mut().map_err(|_| PairedFailure::Authority)?.take())
     }
     /// Borrows stay inside the charged compiler owner throughout outer work.
@@ -201,7 +201,7 @@ fn compiled<'request>(node: CompiledNode, request: &'request Request, context: &
     let report = PairedNodeReport { active_rows: node.program.active_rows(),
         padded_rows: node.program.height(), compile_ns, ..PairedNodeReport::default() };
     Ok(PairedCompiled {
-        #[cfg(feature = "identity-batch-experiment")]
+        #[cfg(feature = "full-workflow-experiment")]
         identity_prefix: std::cell::RefCell::new(None),
         node, request, context: context.clone(), endpoints: endpoints.clone(),
         span, source, report })

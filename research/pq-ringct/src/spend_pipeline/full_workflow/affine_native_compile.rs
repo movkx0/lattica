@@ -59,7 +59,8 @@ impl<'a> AffineNativeCompilePlan<'a> {
     /// Refusal returns the unconsumed metadata original to its issuer.
     pub(crate) fn new(native: &'a AffineNativeOperationPlan<'a>,
         blueprint: &'a AffineLeafBlueprint<'a, 'a>, original: Reservation,
-        planning: &Reservation, ledger: &Ledger)
+        planning: &Reservation, ledger: &Ledger,
+        resolved: crate::component_tree::native_shape::cohort::ResolvedBound)
         -> core::result::Result<Self, (AffineNativeCompileFailure, Reservation)>
     {
         let mut original = Some(original);
@@ -83,7 +84,7 @@ impl<'a> AffineNativeCompilePlan<'a> {
                 || !crate::host_memory_profile::HostMemoryProfile::valid_worker_ceiling(ledger.snapshot().allowance.host)
                 || ledger.snapshot().allowance.device > 8 << 30
             { return Err(AffineNativeCompileFailure::Authority); }
-            let compiler = blueprint.inspect(planning, ledger).map_err(AffineNativeCompileFailure::Compile)?;
+            let compiler = blueprint.inspect_resolved(planning, ledger, resolved).map_err(AffineNativeCompileFailure::Compile)?;
             let (output, compiler_scratch) = blueprint.compiler_requirements();
             let scratch = combine(&[compiler_scratch, Self::frame_requirements()?,
                 crate::execution::workflow_resources::affine_native_compile_issuer_scratch_requirements()
@@ -116,6 +117,7 @@ impl<'a> AffineNativeCompilePlan<'a> {
     }
     fn frame_bytes() -> Result<usize> {
         [size_of::<Self>(), size_of::<Result<Self>>(),
+            size_of::<crate::component_tree::native_shape::cohort::ResolvedBound>(),
             size_of::<core::result::Result<Self, (AffineNativeCompileFailure, Reservation)>>(),
             size_of::<AffineNativeCompileOperation<'static, 'static>>(),
             size_of::<AffineLeafBlueprint<'static, 'static>>(),

@@ -82,11 +82,13 @@ unsafe fn attempt_parameters_pp<'plan, 'source_plan, 'graph>(
         let mut scope = OwnedOuterScope::new(access, program, bound.admission(),
             &session, &ledger, output, failure)?;
         let request = Request { policy: Policy::GpuRequired, emit_report: false };
-        let (registered, report) = RegisteredProgram::new_with_request_and_identity_hint_and_report(
-            MachineAir::from_shared_program(Arc::clone(program)),
-            bound.admission().host_budget_bytes(), request, None,
-        ).map_err(|_error| OuterOwnedError::Setup)?;
-        scope.record_report(&report, CoverageScope::Preprocessing)?;
+        let (registered, report) = RegisteredProgram::new_with_cpu_identity_and_report(
+MachineAir::from_shared_program(Arc::clone(program)),
+bound.admission().host_budget_bytes(),
+request,
+).map_err(|_error| OuterOwnedError::Setup)?;
+        scope.record_report(&report.preprocessing, CoverageScope::Preprocessing)?;
+        scope.record_report(&report.identity, CoverageScope::Operation)?;
         drop(report);
         *produced.get_mut() = Some(bound.prove_registered(&mut scope, registered)
             .map_err(OuterOwnedError::GraphOperation)?);

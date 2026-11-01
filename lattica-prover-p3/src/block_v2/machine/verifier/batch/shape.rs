@@ -16,13 +16,23 @@ use super::super::{CompileError, ProofInputs};
 use crate::block_v2::profile;
 use p3_field::PrimeCharacteristicRing;
 
+mod retained;
 mod storage;
 pub use storage::PlanningStorage;
 mod envelope;
 mod envelope_cache;
-pub use envelope_cache::{HeightEnvelopeCacheScope, HeightEnvelopeCacheStatistics,
-    HEIGHT_ENVELOPE_CACHE_ENTRIES, HEIGHT_ENVELOPE_CACHE_RESERVED_BYTES};
+mod metadata_planning;
+mod precomputed;
 pub use envelope::{verifier_height_envelope, VerifierHeightEnvelope};
+pub use envelope_cache::{
+    HeightEnvelopeCacheScope, HeightEnvelopeCacheStatistics, HEIGHT_ENVELOPE_CACHE_ENTRIES,
+    HEIGHT_ENVELOPE_CACHE_RESERVED_BYTES,
+};
+pub use metadata_planning::{
+    metadata_cpu_worker_ceiling,
+    MetadataCpuOptions, MetadataPlanningScope, MetadataPlanningStatistics, MAX_METADATA_WORKERS,
+    METADATA_PLANNING_SCOPE_RESERVED_BYTES,
+};
 
 pub const MAX_CHILDREN: usize = 4;
 
@@ -136,6 +146,187 @@ pub fn verifier_core_bound(
     construction: ConstructionLimits,
     auxiliary_host_allowance: usize,
 ) -> Result<VerifierCoreBound, CompileError> {
+    verifier_core_bound_with_budget(
+        outer_public_values,
+        children,
+        construction,
+        auxiliary_host_allowance,
+        construction.max_requested_program_bytes,
+    )
+}
+
+fn verifier_core_bound_with_budget(
+    outer_public_values: usize,
+    children: &[RegisteredChildShape],
+    construction: ConstructionLimits,
+    auxiliary_host_allowance: usize,
+    program_bytes: usize,
+) -> Result<VerifierCoreBound, CompileError> {
+    verifier_core_bound_prepared(
+        outer_public_values,
+        children,
+        construction,
+        auxiliary_host_allowance,
+        program_bytes,
+        None,
+    )
+}
+
+/// Only MachineAir's public width influences its symbolic relation; heights and
+/// authenticated row data enter the verifier later. Do not cache arbitrary AIRs.
+struct RegisteredSymbolic {
+    public_values: usize,
+    prepared: crate::block_v2::machine::symbolic::Prepared,
+}
+impl RegisteredSymbolic {
+    fn new(public_values: usize) -> Result<Self, CompileError> {
+        let air = empty_air(RegisteredChildShape {
+            public_values,
+            height: 8,
+            preprocessing_cap_roots: 64,
+        })?;
+        let prepared = crate::block_v2::machine::symbolic::verifier::prepare_registry(
+            &air,
+            crate::block_v2::machine::symbolic::verifier::Limits::default(),
+        )?;
+        Ok(Self {
+            public_values,
+            prepared,
+        })
+    }
+}
+
+fn verifier_core_bound_prepared(
+    outer_public_values: usize,
+    children: &[RegisteredChildShape],
+    construction: ConstructionLimits,
+    auxiliary_host_allowance: usize,
+    program_bytes: usize,
+    shared: Option<&RegisteredSymbolic>,
+) -> Result<VerifierCoreBound, CompileError> {
+    let storage = PlanningStorage::for_children(outer_public_values, children, construction)?;
+    if storage.auxiliary_peak_bytes > auxiliary_host_allowance {
+        return Err(CompileError::ResourceAdmission(
+            "registered shape auxiliary allowance",
+        ));
+    }
+    // No template, symbolic graph, builder or input storage exists before the
+    // preceding allocation-free shape/storage/overflow/allowance checks.
+    if program_bytes == 0 || program_bytes > construction.max_requested_program_bytes {
+        return Err(CompileError::ResourceAdmission(
+            "metadata compiler budget geometry",
+        ));
+    }
+    let mut builder = ProgramBuilder::new_counting(
+        outer_public_values,
+        ConstructionLimits {
+            max_requested_program_bytes: program_bytes,
+            ..construction
+        },
+    )
+    .map_err(|e| CompileError::from_builder_admission(e, "registered shape builder allowance"))?;
+    let mut inputs = ProofInputs::counting();
+    let compiled = (|| -> Result<(), CompileError> {
+        for &child in children {
+            let air = empty_air(child)?;
+            let owned;
+            let prepared = if let Some(shared) = shared {
+                shared
+            } else {
+                owned = RegisteredSymbolic::new(child.public_values)?;
+                &owned
+            };
+            if prepared.public_values != child.public_values {
+                return Err(CompileError::Shape("registered symbolic public width"));
+            }
+            let public = inputs.bases_geometry(&mut builder, child.public_values)?;
+            let mut cap = [[super::Wire(0); 4]; 64];
+            for digest in &mut cap[..child.preprocessing_cap_roots] {
+                *digest = core::array::from_fn(|_| inputs.base(&mut builder, super::Val::ZERO));
+            }
+            if let Some(error) = builder.resource_failure() {
+                return Err(CompileError::from_builder_admission(
+                    error,
+                    "registered shape cap inputs",
+                ));
+            }
+            super::verify_counted_shape(
+                &mut builder,
+                &mut inputs,
+                &air,
+                &public,
+                &cap[..child.preprocessing_cap_roots],
+                &prepared.prepared,
+            )?;
+            // Only fresh unknown wire identities and interning tables remain. No
+            // proof template, dummy witness buffer or cloned symbolic graph exists.
+        }
+        Ok(())
+    })();
+    if program_bytes < construction.max_requested_program_bytes
+        && builder.program_byte_limit_exceeded()
+    {
+        return Err(CompileError::ResourceAdmission(
+            metadata_planning::SPLIT_BUDGET,
+        ));
+    }
+    compiled?;
+    let counts = builder.finish_counts().map_err(|e| {
+        CompileError::from_builder_admission(e, "registered shape counting allowance")
+    })?;
+    let operations = OperationCounts {
+        scalar: counts.scalar,
+        cubic: counts.cubic,
+        poseidon: counts.poseidon,
+    };
+    let result = VerifierCoreBound {
+        operations,
+        wire_upper_bound: counts.wires,
+        input_values_upper_bound: counts.witnesses,
+        selection_hint_words_upper_bound: counts.hint_words,
+        active_rows_upper_bound: counts.active_rows,
+        padded_rows_upper_bound: counts.padded_rows,
+        planner_requested_program_bytes_peak: counts.requested_bytes_peak,
+        storage,
+    };
+    debug_assert!(inputs.values.is_empty());
+    drop(inputs);
+    Ok(result)
+}
+
+/// Count SelectHint backing words of an already-owned program without allocation.
+/// This observation grants no source bound for a different program or dispatch.
+pub fn selection_hint_words(program: &Program) -> Result<usize, CompileError> {
+    program.operations.iter().try_fold(0usize, |total, op| {
+        let extra = match op {
+            Op::SelectHint { entries, bits, .. } => entries.len().checked_add(bits.len()),
+            _ => Some(0),
+        };
+        extra
+            .and_then(|extra| total.checked_add(extra))
+            .ok_or(CompileError::ResourceAdmission(
+                "registered core hint census overflow",
+            ))
+    })
+}
+
+fn empty_air(child: RegisteredChildShape) -> Result<MachineAir, CompileError> {
+    let program = ProgramBuilder::new(child.public_values)
+        .and_then(|b| b.finish(Some(child.height)))
+        .map_err(|_| CompileError::Shape("registered shape empty program"))?;
+    Ok(MachineAir::new(program))
+}
+
+#[cfg(test)]
+mod tests;
+
+#[cfg(test)]
+fn materialized_core_bound(
+    outer_public_values: usize,
+    children: &[RegisteredChildShape],
+    construction: ConstructionLimits,
+    auxiliary_host_allowance: usize,
+) -> Result<VerifierCoreBound, CompileError> {
     let storage = PlanningStorage::for_children(outer_public_values, children, construction)?;
     if storage.auxiliary_peak_bytes > auxiliary_host_allowance {
         return Err(CompileError::ResourceAdmission(
@@ -200,29 +391,3 @@ pub fn verifier_core_bound(
     drop(inputs);
     Ok(result)
 }
-
-/// Count SelectHint backing words of an already-owned program without allocation.
-/// This observation grants no source bound for a different program or dispatch.
-pub fn selection_hint_words(program: &Program) -> Result<usize, CompileError> {
-    program.operations.iter().try_fold(0usize, |total, op| {
-        let extra = match op {
-            Op::SelectHint { entries, bits, .. } => entries.len().checked_add(bits.len()),
-            _ => Some(0),
-        };
-        extra
-            .and_then(|extra| total.checked_add(extra))
-            .ok_or(CompileError::ResourceAdmission(
-                "registered core hint census overflow",
-            ))
-    })
-}
-
-fn empty_air(child: RegisteredChildShape) -> Result<MachineAir, CompileError> {
-    let program = ProgramBuilder::new(child.public_values)
-        .and_then(|b| b.finish(Some(child.height)))
-        .map_err(|_| CompileError::Shape("registered shape empty program"))?;
-    Ok(MachineAir::new(program))
-}
-
-#[cfg(test)]
-mod tests;

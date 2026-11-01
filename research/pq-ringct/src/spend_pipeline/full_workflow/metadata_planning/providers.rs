@@ -1,5 +1,6 @@
 //! Source-only original metadata and transient constructor requirements.
-//! Every source view/blueprint query is allocation-free under bootstrap frames.
+//! Blueprint queries reuse the prepared owner's admitted graph analysis.
+//! Bootstrap frames cover first initialization and pure numerical queries.
 use super::*;
 use crate::graph_tree::owned_parent::*;
 use lattica_prover_p3::block_v2::native_gpu::graph_source_preparation::GraphSourceKind;
@@ -10,7 +11,7 @@ pub(super) fn source_native<'a_member>(member: &'a_member SourceRetained<Prepare
         spend_pipeline::full_workflow::{source_native::SourceNativeOperationPlan,
             source_native_compile::SourceNativeCompilePlan}};
     let p = member.get();
-    let blueprint = NativeSourceBlueprint::new(p.plan(), p.graph(), p.context(), p.source_factory(), kind)
+    let blueprint = NativeSourceBlueprint::new_for_prepared(p, kind)
         .map_err(|_| ClosureError::Source)?;
     Ok(ProducerRequirements { original: sum(
         SourceNativeOperationPlan::metadata_requirements().map_err(|_| ClosureError::Resource)?, sum(

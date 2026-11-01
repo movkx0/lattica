@@ -120,7 +120,30 @@ def protected_nonworker(directory, error):
     # This is workload admission, not a security boundary. Only the observed
     # ordinary non-worker names may be excluded; unknown names fail closed.
     name = (directory / "comm").read_text().strip()
-    require(name in PROTECTED_NON_WORKERS,
+    known = name in PROTECTED_NON_WORKERS
+    # Linux truncates these KDE executable names in /proc/comm. Require the
+    # observed compositor service as well; the name alone earns no exclusion.
+    if name in {"kscreenlocker_g", "kscreenlocker_w"}:
+        expected = (f"0::/user.slice/user-{os.getuid()}.slice/user@{os.getuid()}.service/"
+                    "session.slice/plasma-kwin_wayland.service")
+        try:
+            known = (directory / "cgroup").read_text().splitlines() == [expected]
+        except OSError:
+            known = False
+    if name == "sshd-session":
+        # OpenSSH's nondumpable user session is also observable without reading
+        # its executable. Require a system session scope and a root-owned SSH
+        # parent; arbitrary same-user processes with this name still refuse.
+        try:
+            group = (directory / "cgroup").read_text().strip()
+            fields = (directory / "stat").read_text().rsplit(")", 1)[1].split()
+            parent = directory.parent / str(int(fields[1]))
+            known = (re.fullmatch(rf"0::/user\.slice/user-{os.getuid()}\.slice/session-[0-9]+\.scope", group) is not None
+                     and parent.stat().st_uid == 0
+                     and (parent / "comm").read_text().strip() in {"sshd", "sshd-session"})
+        except (OSError, ValueError, IndexError):
+            known = False
+    require(known,
             "cannot inspect unknown same-user process during exclusive admission: "
             + json.dumps({"pid": int(directory.name), "comm": name}))
     return {"pid": int(directory.name), "comm": name,
@@ -395,6 +418,10 @@ def validate_probe(log, args):
         for line in stream:
             if line.startswith("proving_stage_report "):
                 report = json.loads(line.removeprefix("proving_stage_report "))
+                if report.get("entry_point") == "block_v2_cpu_identity":
+                    from cpu_identity_receipts import stage
+                    stage(report, "block_v2_cpu_identity", "cpu", "cpu_required")
+                    continue
                 if report.get("entry_point") in required:
                     require(report.get("policy") == "gpu_required",
                             "targeted preprocessing/proving report did not require GPU")
@@ -592,6 +619,10 @@ def validate_matrict_evidence(log, result, args, gpu_reports):
             phase = "shutdown"
         elif line.startswith("proving_stage_report "):
             report = json.loads(line.removeprefix("proving_stage_report "))
+            if report.get("entry_point") == "block_v2_cpu_identity":
+                from cpu_identity_receipts import stage
+                stage(report, "block_v2_cpu_identity", "cpu", "cpu_required")
+                continue
             require(phase in {"preparation", "aggregation"} and initializations,
                     "proving receipt outside initialized GPU preparation/aggregation")
             category = validate_full_gpu_report(report)
@@ -709,6 +740,10 @@ def validate_aggregate(log, args):
     for line in log.read_text().splitlines():
         if line.startswith("proving_stage_report "):
             report = json.loads(line.removeprefix("proving_stage_report "))
+            if report.get("entry_point") == "block_v2_cpu_identity":
+                from cpu_identity_receipts import stage
+                stage(report, "block_v2_cpu_identity", "cpu", "cpu_required")
+                continue
             require(report.get("policy") in {"compatible", "cpu_required", "gpu_required"},
                     "unknown serialized proving policy")
             if report.get("policy") == "gpu_required":

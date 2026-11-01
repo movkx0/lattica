@@ -295,3 +295,75 @@ fn opaque_core_four_child_shape_and_late_builder_refusal_are_closed() {
     // A fresh call has no surviving sticky builder or symbolic state.
     assert!(verifier_core_bound(0, &[child(0, 8)], limits(), 512 << 20).is_ok());
 }
+
+#[test]
+fn counting_sink_matches_materialized_registered_core() {
+    if !cfg!(all(not(debug_assertions), target_arch = "x86_64")) {
+        return;
+    }
+    check_counting_shape(25, 8);
+}
+
+fn check_counting_shape(publics: usize, height: usize) {
+    let shape = RegisteredChildShape {
+        public_values: publics,
+        height,
+        preprocessing_cap_roots: 1
+            << (height.ilog2() as usize + 1 + profile::LOG_BLOWUP).min(profile::CAP_HEIGHT),
+    };
+    let reference = materialized_core_bound(0, &[shape], limits(), 512 << 20).unwrap();
+    let counted = verifier_core_bound(0, &[shape], limits(), 512 << 20).unwrap();
+    assert_eq!(counted.operations, reference.operations);
+    assert_eq!(counted.wire_upper_bound, reference.wire_upper_bound);
+    assert_eq!(
+        counted.input_values_upper_bound,
+        reference.input_values_upper_bound
+    );
+    assert_eq!(
+        counted.selection_hint_words_upper_bound,
+        reference.selection_hint_words_upper_bound
+    );
+    assert_eq!(
+        counted.active_rows_upper_bound,
+        reference.active_rows_upper_bound
+    );
+    assert_eq!(
+        counted.padded_rows_upper_bound,
+        reference.padded_rows_upper_bound
+    );
+    assert_eq!(counted.storage, reference.storage);
+    assert!(
+        counted.planner_requested_program_bytes_peak
+            < reference.planner_requested_program_bytes_peak
+    );
+    eprintln!("metadata_counting_parity publics={publics} height={height} counted_peak={} materialized_peak={}",
+        counted.planner_requested_program_bytes_peak, reference.planner_requested_program_bytes_peak);
+}
+
+#[test]
+#[ignore = "72 registered verifier shapes; guarded release CPU qualification"]
+fn metadata_counting_matches_materialized_height_domain() {
+    assert!(cfg!(all(not(debug_assertions), target_arch = "x86_64")));
+    for publics in [25, 28, 38, 46] {
+        for log_height in 3..=20 {
+            check_counting_shape(publics, 1 << log_height);
+        }
+    }
+}
+
+#[test]
+fn shared_registered_symbolics_refuse_a_different_public_width() {
+    if !cfg!(all(not(debug_assertions), target_arch = "x86_64")) {
+        return;
+    }
+    let prepared = RegisteredSymbolic::new(28).unwrap();
+    assert!(verifier_core_bound_prepared(
+        0,
+        &[child(25, 8)],
+        limits(),
+        512 << 20,
+        limits().max_requested_program_bytes,
+        Some(&prepared)
+    )
+    .is_err());
+}

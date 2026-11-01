@@ -40,12 +40,12 @@ impl SourceMetadataPlanningPlan<'_> {
         // Blueprint construction calls the same pure footprint helpers before
         // returned compiler claims exist. Admit their exact forwarding frames
         // here as well as in each eventual compiler scratch original.
-        let helper_frames = add(
+        let helper_frames = add(crate::graph_tree::metadata::GraphMetadata::construction_bytes(), add(
             crate::graph_tree::ntt_sources::NttLeafBlueprint::source_requirement_frame_bytes()
                 .map_err(|_| ClosureError::Resource)?,
             crate::graph_tree::mul_sources::MulLeafBlueprint::source_requirement_frame_bytes()
                 .map_err(|_| ClosureError::Resource)?,
-        )?;
+        )?)?;
         let retained = Self::retained_requirements()?.total().map_err(|_| ClosureError::Overflow)?;
         let own = Requirements::single(Category::PhaseScratch, Bytes {
             host: retained.host.checked_add(u64::try_from(add(add(view_frames, blueprint_frames)?, helper_frames)?)
@@ -175,12 +175,10 @@ impl SourceMetadataPlanningPlan<'_> {
                 if level >= LEVELS { return Err(ClosureError::Overflow); }
                 let pairs = width / 2;
                 self.counts.parent_levels[level] = add(self.counts.parent_levels[level], pairs)?;
-                for _ in 0..pairs {
-                    self.include(ProducerRequirements {
-                        original: GraphParentPlan::planning_requirements().map_err(|_| ClosureError::Resource)?,
-                        construction: GraphParentPlan::planning_scratch_requirements().map_err(|_| ClosureError::Resource)?,
-                    })?;
-                }
+                self.include(ProducerRequirements {
+                    original: repeated(GraphParentPlan::planning_requirements().map_err(|_| ClosureError::Resource)?, pairs)?,
+                    construction: GraphParentPlan::planning_scratch_requirements().map_err(|_| ClosureError::Resource)?,
+                })?;
                 width = add(pairs, width % 2)?;
                 level += 1;
             }
@@ -211,5 +209,35 @@ impl SourceMetadataPlanningPlan<'_> {
         for count in c.parent_levels { steps = add(steps, mul(count, 2)?)?; }
         self.counts.steps = add(steps, add(mul(self.members.len() - 1, 2)?, 1)?)?;
         Ok(())
+    }
+}
+
+/// Additive originals scale with the number of parents; serial scratch stays
+/// at the single-parent maximum. Overflow refuses before modifying the plan.
+fn repeated(requirements: Requirements, count: usize) -> Result<Requirements> {
+    let count = u64::try_from(count).map_err(|_| ClosureError::Overflow)?;
+    let mut total = Requirements::default();
+    for category in Category::ALL {
+        let value = requirements.get(category);
+        total.add(category, Bytes {
+            host:value.host.checked_mul(count).ok_or(ClosureError::Overflow)?,
+            device:value.device.checked_mul(count).ok_or(ClosureError::Overflow)?,
+        }).map_err(|_| ClosureError::Overflow)?;
+    }
+    Ok(total)
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn aggregate_parent_originals_match_serial_addition_and_refuse_overflow() {
+        let mut original = Requirements::single(Category::RegisteredMetadata, Bytes {host:17,device:19});
+        original.add(Category::CompilerInputs, Bytes {host:31,device:0}).unwrap();
+        for count in [0,1,2,17,1024] {
+            let mut serial = Requirements::default();
+            for _ in 0..count { serial = sum(serial,original).unwrap(); }
+            assert_eq!(repeated(original,count).unwrap(), serial);
+        }
+        assert!(repeated(Requirements::single(Category::RegisteredMetadata, Bytes {host:u64::MAX,device:0}),2).is_err());
     }
 }

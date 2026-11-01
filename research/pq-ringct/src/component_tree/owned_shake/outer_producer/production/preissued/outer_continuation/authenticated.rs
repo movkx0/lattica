@@ -62,6 +62,7 @@ impl<'compiled, 'bound, 'source, 'request>
             8 * size_of::<Bytes>(),
             8 * size_of::<Summary>(),
             8 * size_of::<Report>(),
+            8 * size_of::<lattica_prover_p3::block_v2::machine::backend::identity_cpu::RegistrationReports>(),
             8 * size_of::<Request>(),
             8 * size_of::<std::time::Instant>(),
             8 * size_of::<Ledger>(),
@@ -197,16 +198,17 @@ impl<'compiled, 'request> Continuation<'compiled, 'request, 'request> {
             };
             let node = &compiled.compiled;
             let (registered, report) =
-                RegisteredProgram::new_with_request_and_identity_hint_and_report(
+                RegisteredProgram::new_with_cpu_identity_and_report(
                     MachineAir::from_shared_program(Arc::clone(&node.program)),
                     backend.host_budget_bytes(),
                     proof_request,
-                    None,
                 )
                 .map_err(|_| Error::Setup)?;
-            validate_report(&report, CoverageScope::Preprocessing)?;
-            emit_receipt(&report)?;
-            let setup_elapsed_ns = report.elapsed_ns;
+            validate_report(&report.preprocessing, CoverageScope::Preprocessing)?;
+            validate_report(&report.identity, CoverageScope::Operation)?;
+            emit_receipt(&report.preprocessing)?;
+            emit_receipt(&report.identity)?;
+            let setup_elapsed_ns = report.preprocessing.elapsed_ns;
             drop(report);
             let captured = acceptance
                 .capture(compiled, &registered, &ledger)

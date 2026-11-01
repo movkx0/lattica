@@ -3,6 +3,102 @@
 //! remains unchanged as an independent protocol reference.
 use super::*;
 
+/// Single-use streaming sponge. A prefix retains its partial rate block and
+/// is framed with the length of the *complete* message, including its suffix.
+pub(crate) struct State {
+    permutation: p3_goldilocks::Poseidon2Goldilocks<8>,
+    capacity: [Goldilocks; 4],
+    rate: [Goldilocks; 4],
+    used: usize,
+    remaining: usize,
+}
+impl State {
+    pub(crate) fn new(domain: u64, count: usize) -> Result<Self, String> {
+        if domain >= MODULUS {
+            return Err(CommitmentError::NonCanonicalField.to_string());
+        }
+        let len = u64::try_from(count).map_err(|_| CommitmentError::InvalidLength.to_string())?;
+        if len >= MODULUS {
+            return Err(CommitmentError::InvalidLength.to_string());
+        }
+        // Construct the public round tables once, not once per rate block.
+        // The Linux CPU worker path admits these bounded allocations and
+        // propagates allocation failure through the scoped worker join.
+        #[cfg(not(target_arch = "aarch64"))]
+        let permutation = {
+            use p3_goldilocks::{
+                GOLDILOCKS_POSEIDON2_RC_8_EXTERNAL_FINAL as FINAL,
+                GOLDILOCKS_POSEIDON2_RC_8_EXTERNAL_INITIAL as INITIAL,
+                GOLDILOCKS_POSEIDON2_RC_8_INTERNAL as INTERNAL,
+            };
+            fn table<T: Copy>(values: &[T]) -> Result<Vec<T>, String> {
+                let mut table = Vec::new();
+                table
+                    .try_reserve_exact(values.len())
+                    .map_err(|_| "CPU identity round-table allocation")?;
+                table.extend_from_slice(values);
+                Ok(table)
+            }
+            p3_goldilocks::Poseidon2Goldilocks::<8>::new(
+                p3_poseidon2::ExternalLayerConstants::new(table(&INITIAL)?, table(&FINAL)?),
+                table(&INTERNAL)?,
+            )
+        };
+        #[cfg(target_arch = "aarch64")]
+        let permutation = default_goldilocks_poseidon2_8();
+        Ok(Self {
+            permutation,
+            capacity: [domain, len, 0, 0].map(Goldilocks::from_u64),
+            rate: [Goldilocks::ZERO; 4],
+            used: 0,
+            remaining: count,
+        })
+    }
+    pub(crate) fn retained_heap_bytes(&self) -> usize {
+        use p3_goldilocks::{
+            GOLDILOCKS_POSEIDON2_RC_8_EXTERNAL_FINAL as FINAL,
+            GOLDILOCKS_POSEIDON2_RC_8_EXTERNAL_INITIAL as INITIAL,
+            GOLDILOCKS_POSEIDON2_RC_8_INTERNAL as INTERNAL,
+        };
+        core::mem::size_of_val(&INITIAL)
+            + core::mem::size_of_val(&FINAL)
+            + core::mem::size_of_val(&INTERNAL)
+    }
+    pub(crate) fn push(&mut self, field: u64) -> Result<(), CommitmentError> {
+        if self.remaining == 0 {
+            return Err(CommitmentError::InvalidLength);
+        }
+        if field >= MODULUS {
+            return Err(CommitmentError::NonCanonicalField);
+        }
+        self.rate[self.used] = Goldilocks::from_u64(field);
+        self.used += 1;
+        self.remaining -= 1;
+        if self.used == 4 {
+            self.permute();
+        }
+        Ok(())
+    }
+    fn permute(&mut self) {
+        let mut input = [Goldilocks::ZERO; 8];
+        input[..4].copy_from_slice(&self.capacity);
+        input[4..].copy_from_slice(&self.rate);
+        self.permutation.permute_mut(&mut input);
+        self.capacity.copy_from_slice(&input[..4]);
+        self.rate = [Goldilocks::ZERO; 4];
+        self.used = 0;
+    }
+    pub(crate) fn finish(mut self) -> Result<Digest, CommitmentError> {
+        if self.remaining != 0 {
+            return Err(CommitmentError::InvalidLength);
+        }
+        if self.used != 0 {
+            self.permute();
+        }
+        Ok(self.capacity.map(|v| v.as_canonical_u64()))
+    }
+}
+
 pub(crate) fn words(bytes: &[u8]) -> impl Iterator<Item = u64> + '_ {
     bytes.chunks(4).map(|part| {
         let mut word = [0; 4];

@@ -39,6 +39,24 @@ plan. The controller/types/API/device parent hooks are hashed as postimages.
 The ocl 0.19.7 Cargo package checksum is checked; source drift refuses the
 census and requires review. No driver, environment or entropy call is made.
 
+The device facade lock was refreshed after reviewing main integration
+`a558265` on 2026-10-31. The native path still creates the same session and
+host-quota owners, validates original context identity, and admits each matrix
+through the existing memory plan before allocation. Session/Arc sizes remain
+derived from the actual Rust types by `host_storage::session_bytes`; controller,
+dispatch, bundle, layout, input/output types and the other ten source locks are
+unchanged. The imported facade lock was stale and rejected fresh generation
+before dispatch. The N3/N4 fresh-generation source-plan test now exercises this
+boundary without initializing a GPU or creating proofs.
+
+The facade lock was refreshed again for CPU identity preprocessing on
+2026-10-31. The only facade addition is `RetirementFence(Weak<JobLease>)`
+and its observer/accessor: it observes the original preprocessing lease and
+cannot keep that lease alive. Native spend does not create this fence; its
+session layout, dispatch, allocations and ten other source locks are unchanged.
+The added source text remains included in the static-source census. CPU prefix
+ownership and worker memory are charged by their separate existing originals.
+
 The ocl inventory follows 0.19.7 `standard/program.rs` and `kernel.rs`:
 
 - ProgramBuilder requests 64-entry options; source/includes/EOF and compiler

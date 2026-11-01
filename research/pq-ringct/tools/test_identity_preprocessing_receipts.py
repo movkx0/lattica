@@ -5,23 +5,28 @@ import unittest
 from identity_preprocessing_receipts import reconcile, FIELDS, PEAKS
 
 
-def fixture():
+def fixture(width=None, borrowed=False, capacity=None):
     events = []
     source = [9] * 32
+    cohorts = [(0, [0, 1], [11, 15]), (1, [3], [21])] if width is None else [
+        (0, list(range(width)), [11 + 4 * job for job in range(width)]),
+        (1, [width], [11 + 4 * width]),
+    ]
+    capacity = (16 if width is None else 32) if capacity is None else capacity
     def binding(kind, ordinal):
         return dict(kind=kind, ordinal=ordinal, source_fingerprint=source.copy(),
                     compiled_source_fingerprint=[4] * 32)
-    for node, step in [(4, 11), (5, 15), (7, 21)]:
+    for node, step in [(job + 4, step) for _, jobs, steps in cohorts for job, step in zip(jobs, steps)]:
         for output, kind, ordinal in [('Compiled', 'GroupCompile', step - 2), ('Outer', 'OuterProve', step)]:
             events.append(('owned_dispatch_verification', dict(stage='inventory', identity=dict(
                 route={'Crypto': dict(family='Shake', output={output: node})},
                 binding=binding(kind, ordinal)))))
     totals = dict.fromkeys(FIELDS, 0)
-    for batch, jobs, steps in [(0, [0, 1], [11, 15]), (1, [3], [21])]:
+    for batch, jobs, steps in cohorts:
         measured = dict(batches=1, programs=len(jobs), elapsed_ns=1000, analysis_ns=100,
                         hash_wall_ns=500, hash_device_ns=400, fields=100,
                         uploaded_bytes=256, downloaded_bytes=128,
-                        reserved_host_peak_bytes=1 << 30, reserved_managed_peak_bytes=1 << 20)
+                        reserved_host_peak_bytes=2 << 30, reserved_managed_peak_bytes=1 << 20)
         for key in FIELDS:
             totals[key] = max(totals[key], measured[key]) if key in PEAKS else totals[key] + measured[key]
         events.append(('owned_identity_report', dict(schema='lattica-proving-stages-v1',
@@ -36,10 +41,18 @@ def fixture():
             epoch = dict(startup={}, retirement={}, independent_verification_complete=True,
                          cpu_verification_ns=10, identity_prefix_use=dict(batch=batch, job=job))
             if index == 0:
-                epoch['identity_prefix'] = dict(batch=batch, jobs=jobs + [None] * (16 - len(jobs)),
+                epoch['identity_prefix'] = dict(batch=batch, jobs=jobs + [None] * (capacity - len(jobs)),
                     startup=dict(elapsed_ns=10, succeeded=True, retained_tree_host_bytes=8 << 30),
                     retirement=dict(managed_live_bytes=0, host_tree_live_bytes=0,
                                     managed_peak_bytes=1 << 20, lease_released=True), totals=measured)
+                if width is not None:
+                    epoch['identity_prefix']['job_capacity'] = capacity
+                if borrowed:
+                    epoch['identity_prefix']['footprint'] = dict(
+                        program_storage='borrowed', borrowed_program_host_bytes=len(jobs) * (2 << 20),
+                        host_bytes=measured['reserved_host_peak_bytes'],
+                        retained_host_bytes=len(jobs) * ((32 << 20) + 4096),
+                        managed_bytes=measured['reserved_managed_peak_bytes'], max_allocation_bytes=4096)
             events.append(('owned_outer_epoch', dict(schema='ringct-owned-outer-epoch-v2',
                 ordinal=step, binding=binding('OuterProve', step), epoch=epoch)))
     return events, totals
@@ -50,6 +63,55 @@ def render(events):
 
 
 class IdentityReceiptTests(unittest.TestCase):
+    def test_borrowed_prefix_reports_incremental_storage_and_preserves_legacy(self):
+        for width, borrowed, capacity in ((None, False, 16), (24, False, 24), (24, True, 24), (32, True, 32)):
+            with self.subTest(width=width, borrowed=borrowed, capacity=capacity):
+                events, totals = fixture(width, borrowed, capacity)
+                _, audit = reconcile(render(events), totals)
+                self.assertEqual(audit['tokens_consumed'], 3 if width is None else width + 1)
+
+    def test_borrowed_prefix_footprint_mutations_refuse(self):
+        for field, changed in (
+            ('program_storage', 'standalone'), ('borrowed_program_host_bytes', 0),
+            ('borrowed_program_host_bytes', True), ('host_bytes', (1 << 30) + 1),
+            ('retained_host_bytes', 1), ('managed_bytes', (1 << 20) + 1),
+            ('max_allocation_bytes', 1 << 21),
+        ):
+            events, totals = fixture(24, True)
+            footprint = next(value['epoch']['identity_prefix']['footprint'] for name, value in events
+                             if name == 'owned_outer_epoch' and 'identity_prefix' in value['epoch'])
+            footprint[field] = changed
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                reconcile(render(events), totals)
+
+    def test_expanded_capacity_consumes_every_job_and_partial_tail(self):
+        for width in (1, 8, 12, 16, 17, 24, 25, 32):
+            with self.subTest(width=width):
+                events, totals = fixture(width)
+                _, audit = reconcile(render(events), totals)
+                self.assertEqual(audit['tokens_consumed'], width + 1)
+                self.assertEqual(audit['max_streams'], width)
+
+    def test_expanded_capacity_and_null_tail_are_explicit_and_bounded(self):
+        for mutation in (
+            lambda p: p.pop('job_capacity'),
+            lambda p: p.update(job_capacity=16),
+            lambda p: p.update(job_capacity=25),
+            lambda p: p.update(job_capacity=True),
+            lambda p: p.update(job_capacity=24.0),
+            lambda p: p['jobs'].pop(),
+            lambda p: p['jobs'].__setitem__(-1, 99),
+        ):
+            events, totals = fixture(17)
+            prefix = next(value['epoch']['identity_prefix'] for name, value in events
+                          if name == 'owned_outer_epoch' and 'identity_prefix' in value['epoch'])
+            mutation(prefix)
+            with self.subTest(mutation=mutation), self.assertRaises(ValueError):
+                reconcile(render(events), totals)
+        events, totals = fixture(33)
+        with self.assertRaisesRegex(ValueError, 'cohort geometry'):
+            reconcile(render(events), totals)
+
     def test_pairs_odd_tail_and_separate_fresh_work_are_reconciled(self):
         events, totals = fixture()
         content, audit = reconcile(render(events), totals)

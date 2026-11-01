@@ -1,4 +1,6 @@
 //! Opt-in preprocessing schedule. These options change execution, not identities.
+/// Maximum independent prefixes in one batch; cryptographic parameters are unchanged.
+pub const MAX_IDENTITY_STREAMS: usize = 32;
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum IdentityHashSchedule {
@@ -17,7 +19,7 @@ impl Default for IdentityBatchLimits {
 }
 impl IdentityBatchLimits {
     pub fn batched(max_streams: usize) -> Result<Self, &'static str> {
-        if !matches!(max_streams, 1 | 2 | 4 | 8 | 16) { return Err("identity batch ceiling must be 1, 2, 4, 8 or 16"); }
+        if !(1..=MAX_IDENTITY_STREAMS).contains(&max_streams) { return Err("identity batch ceiling must be between 1 and 32"); }
         Ok(Self { schedule: IdentityHashSchedule::BatchedV1, max_streams })
     }
     pub fn max_streams(self) -> usize { self.max_streams }
@@ -33,7 +35,9 @@ impl IdentityBatchLimits {
 #[cfg(feature = "gpu-tuning")]
 mod gpu;
 #[cfg(feature = "gpu-tuning")]
-pub use gpu::{IdentityBatchContext, IdentityBatchPlan, PendingIdentityBatch, CompletedIdentityPrefix, IdentityBatchFootprint, IdentityBatchReport, IDENTITY_PREFIX_HOST_BYTES};
+pub use gpu::{IdentityBatchContext, IdentityBatchPlan, PendingIdentityBatch, CompletedIdentityPrefix,
+    BorrowedIdentityBatchPlan, PendingBorrowedIdentityBatch, IdentityProgramStorage,
+    IdentityBatchFootprint, IdentityBatchReport, IDENTITY_PREFIX_HOST_BYTES};
 
 #[cfg(test)]
 mod tests {
@@ -42,7 +46,8 @@ mod tests {
     fn identity_batch_selection_is_explicit_and_bounded() {
         assert_eq!(IdentityBatchLimits::default().schedule, IdentityHashSchedule::Serial);
         assert_eq!(IdentityBatchLimits::parse("batched-v1", None).unwrap().max_streams(), 8);
-        for n in [0, 3, 5, 9, 17, usize::MAX] { assert!(IdentityBatchLimits::batched(n).is_err()); }
+        for n in 1..=MAX_IDENTITY_STREAMS { assert_eq!(IdentityBatchLimits::batched(n).unwrap().max_streams(), n); }
+        for n in [0, MAX_IDENTITY_STREAMS + 1, usize::MAX] { assert!(IdentityBatchLimits::batched(n).is_err()); }
         assert!(IdentityBatchLimits::parse("serial", Some(8)).is_err());
         assert!(IdentityBatchLimits::parse("auto", None).is_err());
     }

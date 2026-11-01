@@ -60,7 +60,10 @@ impl CompiledNode {
             "graph node exceeds retained-LDE budget before registration",
         )?;
         let registered =
-            RegisteredProgram::new_with_memory_budget(MachineAir::from_shared_program(self.program), memory_budget)
+            RegisteredProgram::new_with_cpu_identity_from_env(
+MachineAir::from_shared_program(self.program),
+memory_budget,
+)
                 .map_err(err)?;
         Ok(PreparedNode {
             registered,

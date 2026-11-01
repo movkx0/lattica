@@ -1,4 +1,7 @@
 //! Build-time inputs for persistent research proof-cache invalidation.
+#[path = "../../lattica-prover-p3/src/block_v2/machine/numeric_sources.rs"]
+mod numeric_sources;
+use sha3::{Digest, Sha3_256};
 use std::{
     env, fs,
     path::{Path, PathBuf},
@@ -16,7 +19,10 @@ fn rust_sources(path: &Path, files: &mut Vec<PathBuf>) {
         if entry.is_dir() {
             rust_sources(&entry, files);
         } else if entry.extension().is_some_and(|extension| {
-            matches!(extension.to_str(), Some("rs" | "cl" | "cu" | "metal" | "c" | "h" | "inc"))
+            matches!(
+                extension.to_str(),
+                Some("rs" | "cl" | "cu" | "metal" | "c" | "h" | "inc")
+            )
         }) {
             files.push(entry);
         }
@@ -44,6 +50,7 @@ pub fn write_manifest() {
         "research/pq-ringct/graph_proof_sources.rs",
         "lattica-prover-p3/Cargo.toml",
         "lattica-prover-p3/build.rs",
+        "lattica-prover-p3/metadata_sources.rs",
         "lattica-prover-p3/vendor/p3-field/Cargo.toml",
         "lattica-prover-p3/vendor/p3-lookup/Cargo.toml",
         "lattica-prover-p3/vendor/p3-symmetric/Cargo.toml",
@@ -55,16 +62,6 @@ pub fn write_manifest() {
     }
     files.sort();
     files.dedup();
-    let mut source = String::from("const SOURCES: &[(&str, &[u8])] = &[\n");
-    for path in files {
-        println!("cargo:rerun-if-changed={}", path.display());
-        let label = path.strip_prefix(root).unwrap().to_str().unwrap();
-        source.push_str(&format!(
-            "({label:?}, include_bytes!({:?})),\n",
-            path.to_str().unwrap()
-        ));
-    }
-    source.push_str("];\n");
     let compiler = Command::new(env::var_os("RUSTC").unwrap())
         .arg("--version")
         .output()
@@ -77,7 +74,41 @@ pub fn write_manifest() {
         env::var("OPT_LEVEL").unwrap(),
         env::var("DEBUG").unwrap()
     );
-    source.push_str(&format!("const BUILD_IDENTITY: &str = {identity:?};\n"));
+    // Preserve the runtime v1 framing, but hash it once when building. Runtime
+    // callers no longer embed or scan the complete compiler source tree.
+    let mut workflow = Sha3_256::new();
+    workflow.update(b"lattica/matrict/compiled-proof-sources/v1");
+    workflow.update(identity.as_bytes());
+    let features = [
+        u8::from(env::var_os("CARGO_FEATURE_RECURSIVE_WIDE").is_some()),
+        u8::from(env::var_os("CARGO_FEATURE_NATIVE_MATRICT").is_some()),
+    ];
+    workflow.update(features);
+    let mut numeric = Sha3_256::new();
+    numeric.update(b"ringct/native-numeric-sources/v2\0");
+    numeric.update(identity.as_bytes());
+    numeric.update(features);
+    for path in files {
+        println!("cargo:rerun-if-changed={}", path.display());
+        let label = path.strip_prefix(root).unwrap().to_str().unwrap();
+        let contents = fs::read(&path).expect("read proof source");
+        let feed = |hash: &mut Sha3_256| {
+            hash.update((label.len() as u64).to_le_bytes());
+            hash.update(label.as_bytes());
+            hash.update((contents.len() as u64).to_le_bytes());
+            hash.update(&contents);
+        };
+        feed(&mut workflow);
+        if numeric_sources::selected(label, true) {
+            feed(&mut numeric);
+        }
+    }
+    let fingerprint: [u8; 32] = workflow.finalize().into();
+    let native: [u8; 32] = numeric.finalize().into();
+    let source = format!(
+        "const SOURCE_FINGERPRINT: [u8; 32] = {fingerprint:?};\n\
+        pub(crate) const NATIVE_NUMERIC_SOURCE: [u8; 32] = {native:?};\n"
+    );
     let destination = PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("graph-proof-sources.rs");
     if fs::read_to_string(&destination).ok().as_deref() != Some(&source) {
         fs::write(destination, source).expect("write proof source manifest");

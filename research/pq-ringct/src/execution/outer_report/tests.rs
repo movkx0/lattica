@@ -12,7 +12,7 @@ fn missing_or_reordered_receipts_cannot_complete_or_retry() {
     // Entering validation/publication is terminal until the genuine report
     // has both validated and been published. A partial failure cannot retry.
     let mut partial = Sequence::new();
-    assert_eq!(partial.begin(CoverageScope::Preprocessing), Ok(State::Proof));
+    assert_eq!(partial.begin(CoverageScope::Preprocessing), Ok(State::Identity));
     assert_eq!(partial.timings(), Err(Error::Order));
     assert_eq!(partial.begin(CoverageScope::RegisteredProof), Err(Error::Order));
 }

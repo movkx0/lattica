@@ -233,15 +233,24 @@ fn authentication_rejects_oversized_scratch_before_inputs() {
     let row = [Wire(0); 6];
     let rows = [&row[..]; MAX_MATRICES + 1];
     let salts = vec![vec![Val::ZERO; 4]; MAX_MATRICES + 1];
-    assert!(salted_authentication(&mut b, &mut inputs, &cap, &[], &rows, &salts, &[]).is_err());
+    assert!(salted_authentication(
+        &mut b,
+        &mut inputs,
+        &cap,
+        &[],
+        &rows,
+        Some(&salts),
+        Some(&[])
+    )
+    .is_err());
     assert!(salted_authentication(
         &mut b,
         &mut inputs,
         &cap,
         &[Wire(0); MAX_LOG + 1],
         &rows[..1],
-        &salts[..1],
-        &[[Val::ZERO; 4]; MAX_LOG + 1 - profile::CAP_HEIGHT]
+        Some(&salts[..1]),
+        Some(&[[Val::ZERO; 4]; MAX_LOG + 1 - profile::CAP_HEIGHT])
     )
     .is_err());
     assert!(inputs.values.is_empty());

@@ -116,12 +116,23 @@ pub(crate) fn uni<A: BaseAir<Val> + Air<Builder>>(
     air: &A,
     constants: Constants<'_>,
 ) -> Result<Constraints, CompileError> {
+    uni_with_storage(air, constants).map(|(constraints, _)| constraints)
+}
+fn uni_with_storage<A: BaseAir<Val> + Air<Builder>>(
+    air: &A,
+    constants: Constants<'_>,
+) -> Result<(Constraints, usize), CompileError> {
     let builder = recording::run(!matches!(constants, Constants::Cpu(None)), || {
         let mut builder = Builder::new(AirLayout::from_air::<Val>(air))?;
         air.eval(&mut builder);
         Ok(builder)
     })?;
-    finish(&builder, constants)
+    let storage = normalize::Storage::new(!matches!(constants, Constants::Cpu(None)));
+    let constraints = finish_with_storage(&builder, constants, &storage)?;
+    // Cumulative requested backing includes every normalized output Arc and
+    // vector, plus discarded temporaries. It conservatively covers the retained
+    // output after the original recording and normalization workspace retire.
+    Ok((constraints, storage.admitted_bytes()))
 }
 pub(crate) fn batch<A: BaseAir<Val> + Air<Builder>>(
     air: &A,
@@ -396,7 +407,16 @@ pub(crate) fn prepare_uni_bounded<A>(
 where
     A: BaseAir<Val> + Air<Builder>,
 {
-    let constraints = uni(air, constants)?;
+    prepare_uni_bounded_with_storage(air, constants).map(|(constraints, _)| constraints)
+}
+pub(crate) fn prepare_uni_bounded_with_storage<A>(
+    air: &A,
+    constants: Constants<'_>,
+) -> Result<((Vec<BaseExpr>, usize), usize), CompileError>
+where
+    A: BaseAir<Val> + Air<Builder>,
+{
+    let (constraints, bytes) = uni_with_storage(air, constants)?;
     if !constraints.extension.is_empty() || !constraints.order.ext_indices.is_empty() {
         return Err(CompileError::Unsupported("uni extension constraints"));
     }
@@ -405,7 +425,7 @@ where
     if degree < actual {
         return Err(CompileError::Shape("symbolic degree hint"));
     }
-    Ok((constraints.base, log_chunks(degree)))
+    Ok(((constraints.base, log_chunks(degree)), bytes))
 }
 pub(crate) fn native_uni<A>(air: &A) -> (Vec<BaseExpr>, usize)
 where
@@ -418,37 +438,121 @@ where
     )
 }
 
-#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
-#[doc(hidden)]
-pub mod ringct_shake;
-#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream",
+    feature = "ringct-research-quota"
+))]
 #[doc(hidden)]
 pub mod ringct_aes;
-#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream",
+    feature = "ringct-research-quota"
+))]
 #[doc(hidden)]
 pub mod ringct_graph_source;
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream",
+    feature = "ringct-research-quota"
+))]
+#[doc(hidden)]
+pub mod ringct_shake;
 
-#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
-pub mod ringct_uniform;
-#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream",
+    feature = "ringct-research-quota"
+))]
 pub mod ringct_transcript;
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream",
+    feature = "ringct-research-quota"
+))]
+pub mod ringct_uniform;
 
-#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream",
+    feature = "ringct-research-quota"
+))]
 pub mod ringct_affine;
-#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream",
+    feature = "ringct-research-quota"
+))]
 pub mod ringct_sparse;
 
-#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream",
+    feature = "ringct-research-quota"
+))]
 pub mod ringct_ntt;
 
-#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream",
+    feature = "ringct-research-quota"
+))]
 pub mod ringct_mul;
 
-#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream",
+    feature = "ringct-research-quota"
+))]
 pub mod ringct_g_bound;
 
-#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream",
+    feature = "ringct-research-quota"
+))]
 pub mod ringct_permutation;
 
-#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream",
+    feature = "ringct-research-quota"
+))]
 pub mod ringct_linear_map;

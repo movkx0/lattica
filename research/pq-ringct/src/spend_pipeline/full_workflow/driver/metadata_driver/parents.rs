@@ -16,6 +16,7 @@ pub(super) fn run<'context, 'view, 'case, 'graph: 'view, const N: usize>(
     level: usize,
     stage: &mut DriverStage,
 ) -> Result<CompletedCaseSummary> {
+    super::super::metadata_timing::phase(super::super::metadata_timing::Phase::Graph);
     stage.layer("parents");
     stage.level(level);
     let mut planning = PlanningGuard::new(planning);

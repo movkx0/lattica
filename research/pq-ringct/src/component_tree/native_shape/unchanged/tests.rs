@@ -7,7 +7,7 @@ use crate::{
 };
 use lattica_prover_p3::block_v2::machine::{
     program::{ProgramBuilder, MAX_WIRES},
-    verifier::{batch::shape::OperationCounts, uni, ProofInputs},
+    verifier::{batch::shape::OperationCounts, uni::{self, BoundedSymbolicAllowance, BoundedSymbolicBuilder}, ProofInputs},
 };
 use p3_air::{symbolic::SymbolicAirBuilder, Air};
 use p3_field::PrimeCharacteristicRing;
@@ -365,7 +365,7 @@ fn geometry_refusal_and_cloned_descriptor_obey_allocation_bounds() {
 
 fn reference<A>(air: &A, height: usize) -> (OperationCounts, usize, usize, [u8; 32])
 where
-    A: BaseAir<Val> + Air<SymbolicAirBuilder<Val>>,
+    A: BaseAir<Val> + Air<SymbolicAirBuilder<Val>> + Air<BoundedSymbolicBuilder>,
 {
     let template = crate::component_tree::shape_diagnostic::invalid_native_template(air, height);
     let mut builder = ProgramBuilder::new(0).unwrap();
@@ -392,7 +392,7 @@ where
 
 fn qualify<A>(name: &str, descriptor: OtherNativeDescriptor<'_>, air: &A)
 where
-    A: BaseAir<Val> + Air<SymbolicAirBuilder<Val>>,
+    A: BaseAir<Val> + Air<SymbolicAirBuilder<Val>> + Air<BoundedSymbolicBuilder>,
 {
     let g = descriptor.geometry().unwrap();
     // All reference objects are destroyed before the bounded planner begins.
@@ -402,12 +402,17 @@ where
         (
             bound.counts.operations,
             bound.counts.wires,
-            bound.counts.input_values,
-            bound.counts.manifest_sha3_256
+            bound.counts.input_values
         ),
-        expected,
+        (expected.0, expected.1, expected.2),
         "bounded/reference native core drift: {name}"
     );
+    let audit = uni::shape::verifier_core_counts(air, g.height, &air.periodic_columns(),
+        limits(), BoundedSymbolicAllowance::REQUIRED).unwrap();
+    assert_eq!(audit.manifest_sha3_256, expected.3, "retained compiler manifest drift");
+    assert_eq!(audit.selection_hint_words, bound.counts.selection_hint_words);
+    assert_eq!(audit.quotient_chunks, bound.counts.quotient_chunks);
+    assert!(bound.counts.planner_requested_program_bytes_peak < audit.planner_requested_program_bytes_peak);
     eprintln!("unchanged_native_core kind={name} width={} height={} publics={} periodic={} quotient_chunks={} scalar={} cubic={} poseidon={} active_rows={} padded_rows={} auxiliary_reservation={} planner_requested_peak={} proof_produced=false dispatch_admitted=false",
         g.width, g.height, g.public_values, g.periodic_columns, bound.counts.quotient_chunks,
         expected.0.scalar, expected.0.cubic, expected.0.poseidon,
@@ -533,4 +538,73 @@ fn algebra_cores_match_reference_and_late_refusal_stays_fail_closed() {
         d,
         &PermutationAir::new(PermutationKind::InverseChallenge),
     );
+}
+
+#[test]
+#[ignore = "unchanged native metadata counting parity; serialized release CPU guard"]
+fn metadata_counting_matches_other_native_family_references() {
+    assert!(cfg!(all(not(debug_assertions), target_arch = "x86_64")));
+    assert_eq!(
+        std::env::var("LATTICA_PROVING_POLICY").as_deref(),
+        Ok("cpu-required")
+    );
+    qualify(
+        "counted-statement",
+        OtherNativeDescriptor::Statement {
+            setup_seed: [19; 32],
+        },
+        &StatementAir {
+            setup_seed: [19; 32],
+        },
+    );
+    qualify(
+        "counted-private",
+        OtherNativeDescriptor::PrivateProof,
+        &ProofAir,
+    );
+    for modulus in [Q, QHAT] {
+        let k = ComponentKind::Affine {
+            kind: AffineKind::Add,
+            modulus,
+        };
+        qualify(
+            "counted-affine",
+            OtherNativeDescriptor::Algebra { kind: &k, count: 1 },
+            &AffineAir::new(AffineKind::Add, modulus, 1).unwrap(),
+        );
+        let k = ComponentKind::Ntt { modulus };
+        qualify(
+            "counted-ntt",
+            OtherNativeDescriptor::Algebra { kind: &k, count: 1 },
+            &NttAir::new(modulus, 1).unwrap(),
+        );
+        let k = ComponentKind::Mul { modulus };
+        qualify(
+            "counted-mul",
+            OtherNativeDescriptor::Algebra { kind: &k, count: 1 },
+            &MulAir::new(modulus, 1).unwrap(),
+        );
+    }
+    let k = ComponentKind::GBound { bound: 6_825_771 };
+    qualify(
+        "counted-g-bound",
+        OtherNativeDescriptor::Algebra { kind: &k, count: 1 },
+        &GBoundAir::new(6_825_771).unwrap(),
+    );
+    let kind = PermutationKind::InverseChallenge;
+    let k = ComponentKind::Permutation { kind };
+    qualify(
+        "counted-permutation",
+        OtherNativeDescriptor::Algebra { kind: &k, count: 1 },
+        &PermutationAir::new(kind),
+    );
+    for descriptor in [canonical_map(1, Q, 1), signed_map(1)] {
+        let air = LinearMapAir::new(descriptor.clone());
+        let k = ComponentKind::LinearMap { descriptor };
+        qualify(
+            "counted-linear-map",
+            OtherNativeDescriptor::Algebra { kind: &k, count: 1 },
+            &air,
+        );
+    }
 }

@@ -8,7 +8,7 @@ FIELDS = ('batches', 'programs', 'elapsed_ns', 'analysis_ns', 'hash_wall_ns',
 PEAKS = FIELDS[-2:]
 
 
-def reconcile(content, expected):
+def reconcile_legacy(content, expected):
     # Imported at call time to preserve the existing receipt module boundary.
     import owned_workflow_case_receipts as receipts
     import owned_workflow_cpu_receipts as cpu
@@ -91,7 +91,18 @@ def reconcile(content, expected):
         binding = (source, value['binding']['ordinal'])
         if prefix is not None:
             require(expected is not None and raw is not None, 'prefix epoch lacks actual GPU report')
-            receipts.object_fields(prefix, ('batch', 'jobs', 'startup', 'retirement', 'totals'), 'prefix epoch')
+            # Historical epochs have exactly sixteen slots. New epochs declare
+            # the expanded capacity; do not infer authority from a list length.
+            capacity = 16
+            fields = ('batch', 'jobs', 'startup', 'retirement', 'totals')
+            if 'job_capacity' in prefix:
+                fields += ('job_capacity',)
+                capacity = receipts.integer(prefix['job_capacity'], 'identity job capacity')
+                require(capacity in (24, 32), 'identity job capacity changed')
+            if 'footprint' in prefix:
+                require('job_capacity' in prefix, 'borrowed prefix capacity missing')
+                fields += ('footprint',)
+            receipts.object_fields(prefix, fields, 'prefix epoch')
             batch = receipts.integer(prefix['batch'], 'identity batch')
             key = (source, batch)
             require(key not in batches, 'repeated identity batch')
@@ -103,11 +114,24 @@ def reconcile(content, expected):
             for name in FIELDS:
                 receipts.integer(measured[name], 'prefix.' + name, bits=128, positive=True)
             count = measured['programs']
-            require(measured['batches'] == 1 and 1 <= count <= 16,
+            require(measured['batches'] == 1 and 1 <= count <= capacity,
                     'identity cohort geometry changed')
             jobs = prefix['jobs']
-            require(type(jobs) is list and len(jobs) == 16 and jobs[count:] == [None] * (16 - count),
+            require(type(jobs) is list and len(jobs) == capacity and jobs[count:] == [None] * (capacity - count),
                     'identity cohort tail changed')
+            if 'footprint' in prefix:
+                footprint = receipts.object_fields(prefix['footprint'], (
+                    'program_storage', 'borrowed_program_host_bytes', 'host_bytes',
+                    'retained_host_bytes', 'managed_bytes', 'max_allocation_bytes'), 'prefix footprint')
+                for name in set(footprint) - {'program_storage'}:
+                    receipts.integer(footprint[name], 'prefix footprint.' + name, positive=True)
+                require(footprint['program_storage'] == 'borrowed'
+                        and footprint['retained_host_bytes'] == count * ((32 << 20) + 4096)
+                        and footprint['host_bytes'] > footprint['retained_host_bytes']
+                        and footprint['host_bytes'] == measured['reserved_host_peak_bytes']
+                        and footprint['managed_bytes'] == measured['reserved_managed_peak_bytes']
+                        and footprint['max_allocation_bytes'] <= footprint['managed_bytes'],
+                        'borrowed prefix footprint mismatch')
             for job in jobs[:count]:
                 receipts.integer(job, 'identity job')
                 require((source, batch, job) not in pending
@@ -150,3 +174,12 @@ def reconcile(content, expected):
     else:
         require(not used and not batches, 'unselected identity preprocessing')
     return '\n'.join(normalized), {'totals': totals, 'max_streams': max_streams, 'tokens_consumed': len(used)}
+
+
+def reconcile(content, expected):
+    # Historical GPU records remain audit-only. New workflow envelopes require
+    # CPU finalization totals and cannot select the legacy runtime mode.
+    if isinstance(expected, dict) and 'finalizations' in expected:
+        from cpu_identity_receipts import reconcile as cpu_reconcile
+        return cpu_reconcile(content, expected)
+    return reconcile_legacy(content, expected)

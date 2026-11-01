@@ -70,11 +70,13 @@ unsafe fn attempt_final<'plan, 'source>(access: &ExecutionAccess<'_>, phase: &mu
         let (program, _, _) = operation.borrowed_parts(access).map_err(OuterOwnedError::FinalOperation)?;
         let mut scope = OwnedOuterScope::new(access, program, bound.admission(),
             &session, &ledger, output, failure)?;
-        let (registered, report) = RegisteredProgram::new_with_request_and_identity_hint_and_report(
-            MachineAir::from_shared_program(Arc::clone(program)), bound.admission().host_budget_bytes(),
-            Request { policy: Policy::GpuRequired, emit_report: false }, None,
-        ).map_err(|_| OuterOwnedError::Setup)?;
-        scope.record_report(&report, CoverageScope::Preprocessing)?;
+        let (registered, report) = RegisteredProgram::new_with_cpu_identity_and_report(
+MachineAir::from_shared_program(Arc::clone(program)),
+bound.admission().host_budget_bytes(),
+Request { policy: Policy::GpuRequired, emit_report: false },
+).map_err(|_| OuterOwnedError::Setup)?;
+        scope.record_report(&report.preprocessing, CoverageScope::Preprocessing)?;
+        scope.record_report(&report.identity, CoverageScope::Operation)?;
         drop(report);
         *produced.get_mut() = Some(bound.prove_registered(&mut scope, registered)
             .map_err(OuterOwnedError::FinalOperation)?);

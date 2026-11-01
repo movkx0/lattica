@@ -47,7 +47,6 @@ impl Storage {
         storage.limit = limit;
         storage
     }
-    #[cfg(test)]
     pub(in crate::block_v2::machine::symbolic) fn admitted_bytes(&self) -> usize {
         self.state.get().bytes
     }

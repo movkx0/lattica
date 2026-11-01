@@ -1,7 +1,6 @@
 //! Exhaustive finite public-height domain, not a sampled cap/height maximum.
 use super::{
-    verifier_core_bound, CompileError, ConstructionLimits, OperationCounts, PlanningStorage,
-    RegisteredChildShape,
+    CompileError, ConstructionLimits, OperationCounts, PlanningStorage, RegisteredChildShape,
 };
 use crate::block_v2::profile;
 
@@ -27,19 +26,32 @@ pub struct VerifierHeightEnvelope {
 /// envelope. The caller supplies its existing admitted row ceiling; this API
 /// does not raise it or assume the compiler is monotone in log(height).
 ///
-/// One template/program exists at a time. The largest public storage shape is
-/// preflighted before the first compilation, then each individual compile also
-/// enforces its limits. Any refused height discards the partial accumulator and
-/// returns an error. No proof execution, registration, callback or retry occurs.
+/// The largest public storage shape is preflighted before compilation. A scoped
+/// CPU planner may split that same allowance between independent counting
+/// compilers, including their auxiliary storage and thread stacks. If a reduced
+/// compiler byte cap refuses, all workers join before retrying unfinished numeric
+/// work at a lower width. Full-cap and non-byte-cap failures remain errors. No
+/// proof, witness, registration or admission authority is cached or returned.
 pub fn verifier_height_envelope(
     public_values: usize,
     maximum_child_height: usize,
     construction: ConstructionLimits,
     auxiliary_host_allowance: usize,
 ) -> Result<VerifierHeightEnvelope, CompileError> {
-    super::envelope_cache::memoized(public_values, maximum_child_height, construction,
-        auxiliary_host_allowance, || derive_height_envelope(public_values,
-            maximum_child_height, construction, auxiliary_host_allowance))
+    super::envelope_cache::memoized(
+        public_values,
+        maximum_child_height,
+        construction,
+        auxiliary_host_allowance,
+        || {
+            derive_height_envelope(
+                public_values,
+                maximum_child_height,
+                construction,
+                auxiliary_host_allowance,
+            )
+        },
+    )
 }
 
 fn derive_height_envelope(
@@ -66,6 +78,27 @@ fn derive_height_envelope(
             "registered height envelope auxiliary allowance",
         ));
     }
+    let heights = super::metadata_planning::heights(
+        public_values,
+        maximum_child_height,
+        construction,
+        auxiliary_host_allowance,
+        planning_storage,
+    )?;
+    assemble(
+        public_values,
+        maximum_child_height,
+        planning_storage,
+        heights.into_iter().flatten(),
+    )
+}
+
+pub(super) fn assemble(
+    public_values: usize,
+    maximum_child_height: usize,
+    planning_storage: PlanningStorage,
+    heights: impl IntoIterator<Item = super::VerifierCoreBound>,
+) -> Result<VerifierHeightEnvelope, CompileError> {
     let mut envelope = VerifierHeightEnvelope {
         public_values,
         maximum_child_height,
@@ -77,13 +110,7 @@ fn derive_height_envelope(
         planner_requested_program_bytes_peak: 0,
         planning_storage,
     };
-    for log_height in 3..=maximum_child_height.ilog2() {
-        let bound = verifier_core_bound(
-            0,
-            &[shape(1 << log_height)],
-            construction,
-            auxiliary_host_allowance,
-        )?;
+    for bound in heights {
         envelope.operations.scalar = envelope.operations.scalar.max(bound.operations.scalar);
         envelope.operations.cubic = envelope.operations.cubic.max(bound.operations.cubic);
         envelope.operations.poseidon = envelope.operations.poseidon.max(bound.operations.poseidon);

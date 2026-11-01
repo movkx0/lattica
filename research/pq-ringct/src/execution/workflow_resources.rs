@@ -33,7 +33,7 @@ pub(crate) use planning::{producer_metadata_retained_requirements,
     producer_constructor_retained_requirements, CompleteSlotFailure, CompleteSlotResult,
     FinalContractResult, FinalContractTable, FinalContractFailure, OwnedFinalContract};
 pub(crate) use runtime::WorkflowCompletionReceipt;
-#[cfg(feature = "identity-batch-experiment")]
+#[cfg(feature = "full-workflow-experiment")]
 pub(crate) use runtime::PairedIdentityPeers;
 #[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
 pub(crate) use runtime::{source_native_issuer_scratch_requirements, source_native_packet_metadata_host_bytes, PreissuedSourceNative, source_native_compile_issuer_scratch_requirements};

@@ -131,3 +131,24 @@ fn endpoint_request_plan_remains_covariant_with_original_retained() {
         u64::try_from(endpoints::OUTPUT_COPY_FRAME_BYTES).unwrap());
     assert!(endpoints::OUTPUT_COPY_FRAME_BYTES >= 8 * core::mem::size_of::<Result<OwnedAesEndpoints<'static>>>());
 }
+
+#[test]
+fn native_metadata_groups_cross_boundaries_without_duplicate_compilation() {
+    use crate::component_tree::native_shape::cache;
+    use lattica_prover_p3::block_v2::machine::verifier::batch::shape::{MetadataCpuOptions, MetadataPlanningScope};
+    let _planner = MetadataPlanningScope::begin(MetadataCpuOptions::workers(4).unwrap()).unwrap();
+    let cache = cache::Scope::begin(crate::graph_proofs::compiled_source_fingerprint()).unwrap();
+    let request = request(16 * 64 * 16 + 1, 64);
+    let ledger = Ledger::new(WorkerAllowance { host:32 << 30, device:8 << 30 });
+    let scratch = ledger.admit_phase(OwnedAesRequestPlan::planning_scratch_requirements(&request).unwrap()).unwrap();
+    let metadata = ledger.admit_phase(OwnedAesRequestPlan::planning_requirements(&request).unwrap()).unwrap();
+    let plan = OwnedAesRequestPlan::derive_pre_reserved(&request,context(),metadata,&scratch,&ledger).unwrap();
+    assert_eq!(request.segments().len(),17);
+    assert_eq!(plan.node_sources().len(),33);
+    assert_eq!(cache.statistics().jobs_started,17);
+    assert_eq!(cache.statistics().entries,17);
+    assert_eq!(cache.statistics().hits,0);
+    assert_eq!(cache.statistics().periodic_preparations,1);
+    assert!(cache.statistics().peak_workers <= 4);
+    assert!(cache.statistics().admitted_host_bytes_peak <= scratch.requirements().get(Category::PhaseScratch).host as usize);
+}

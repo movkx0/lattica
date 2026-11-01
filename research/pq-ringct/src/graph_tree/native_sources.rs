@@ -1,6 +1,7 @@
 //! Concrete unchanged Statement/PrivateProof graph leaves.
 //!
-//! The allocation-free blueprint describes the exact registered source leaf.
+//! The blueprint describes the exact registered source leaf. Workflow queries
+//! reuse bounded numerical analysis held by the admitted prepared source.
 //! Its bounded template inspection runs under an original planning claim, and
 //! compilation borrows an independently verified child and original compiler
 //! claims. Neither operation is native/outer dispatch or a graph-root proof.
@@ -161,109 +162,315 @@ pub(crate) struct NativeSourceBlueprint<'a, 'graph> {
     scratch: Requirements,
 }
 impl<'a, 'graph> NativeSourceBlueprint<'a, 'graph> {
-    pub(crate) fn new(plan: &'a Plan, graph: &'a UnprovedRelationGraph,
-        context: &'a GraphContext, factory: &'a SourceFactory<'graph>, kind: GraphSourceKind)
-        -> NativeResult<Self>
-    {
-        let fixed = FixedSourceCensus::from_graph(graph).map_err(|_| NativeSourceFailure::Source)?;
+    pub(crate) fn new(
+        plan: &'a Plan,
+        graph: &'a UnprovedRelationGraph,
+        context: &'a GraphContext,
+        factory: &'a SourceFactory<'graph>,
+        kind: GraphSourceKind,
+    ) -> NativeResult<Self> {
+        Self::new_inner(plan, graph, context, factory, kind, None)
+    }
+    pub(crate) fn new_for_prepared(
+        prepared: &'a crate::spend_pipeline::full_workflow::PreparedWorkflowSources<'graph>,
+        kind: GraphSourceKind,
+    ) -> NativeResult<Self> {
+        let metadata = prepared
+            .metadata()
+            .map_err(|_| NativeSourceFailure::Source)?;
+        Self::new_inner(
+            prepared.plan(),
+            prepared.graph(),
+            prepared.context(),
+            prepared.source_factory(),
+            kind,
+            Some(metadata),
+        )
+    }
+    fn new_inner(
+        plan: &'a Plan,
+        graph: &'a UnprovedRelationGraph,
+        context: &'a GraphContext,
+        factory: &'a SourceFactory<'graph>,
+        kind: GraphSourceKind,
+        metadata: Option<&super::metadata::GraphMetadata>,
+    ) -> NativeResult<Self> {
+        let fixed = match metadata {
+            Some(m) => m.fixed(),
+            None => {
+                FixedSourceCensus::from_graph(graph).map_err(|_| NativeSourceFailure::Source)?
+            }
+        };
         let (ordinal, expected, descriptor) = match kind {
-            GraphSourceKind::Statement => (1, LeafKind::Statement,
-                OtherNativeDescriptor::Statement { setup_seed: graph.setup_seed() }),
-            GraphSourceKind::PrivateProof => (2, LeafKind::PrivateProof, OtherNativeDescriptor::PrivateProof),
+            GraphSourceKind::Statement => (
+                1,
+                LeafKind::Statement,
+                OtherNativeDescriptor::Statement {
+                    setup_seed: graph.setup_seed(),
+                },
+            ),
+            GraphSourceKind::PrivateProof => (
+                2,
+                LeafKind::PrivateProof,
+                OtherNativeDescriptor::PrivateProof,
+            ),
         };
-        let leaf = plan.leaves().get(ordinal).ok_or(NativeSourceFailure::Coverage)?;
-        let polynomial = |source: &Source| match kind {
-            GraphSourceKind::Statement => matches!(source, Source::StatementPolynomial { .. }),
-            GraphSourceKind::PrivateProof => matches!(source, Source::ProofPolynomial { .. }),
-        };
-        let byte = |source: &Source| matches!(source, Source::Context | Source::StatementSeed)
-            || match kind { GraphSourceKind::Statement => matches!(source, Source::StatementSerial { .. }),
-                GraphSourceKind::PrivateProof => matches!(source, Source::ProofAlpha) };
-        if leaf.kind() != &expected
-            || !leaf.polynomial_indices().iter().copied().eq(graph.polynomials().iter()
-                .enumerate().filter_map(|(i, node)| polynomial(&node.source).then_some(i)))
-            || !leaf.byte_indices().iter().copied().eq(graph.bytes().iter()
-                .enumerate().filter_map(|(i, node)| byte(&node.source).then_some(i)))
-            || !leaf.operation_indices().iter().copied().eq(graph.operations().iter()
-                .enumerate().filter_map(|(i, operation)|
-                    (kind == GraphSourceKind::PrivateProof && matches!(operation, Operation::Norm { .. })).then_some(i)))
-            || (kind == GraphSourceKind::PrivateProof && leaf.operation_indices().len() != 6)
-        {
-            return Err(NativeSourceFailure::Coverage);
+        let leaf = plan
+            .leaves()
+            .get(ordinal)
+            .ok_or(NativeSourceFailure::Coverage)?;
+        if let Some(metadata) = metadata {
+            if !metadata.native_coverage(kind == GraphSourceKind::PrivateProof) {
+                return Err(NativeSourceFailure::Coverage);
+            }
+        } else {
+            let polynomial = |source: &Source| match kind {
+                GraphSourceKind::Statement => matches!(source, Source::StatementPolynomial { .. }),
+                GraphSourceKind::PrivateProof => matches!(source, Source::ProofPolynomial { .. }),
+            };
+            let byte = |source: &Source| {
+                matches!(source, Source::Context | Source::StatementSeed)
+                    || match kind {
+                        GraphSourceKind::Statement => {
+                            matches!(source, Source::StatementSerial { .. })
+                        }
+                        GraphSourceKind::PrivateProof => matches!(source, Source::ProofAlpha),
+                    }
+            };
+            if leaf.kind() != &expected
+                || !leaf.polynomial_indices().iter().copied().eq(graph
+                    .polynomials()
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(i, node)| polynomial(&node.source).then_some(i)))
+                || !leaf.byte_indices().iter().copied().eq(graph
+                    .bytes()
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(i, node)| byte(&node.source).then_some(i)))
+                || !leaf.operation_indices().iter().copied().eq(graph
+                    .operations()
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(i, operation)| {
+                        (kind == GraphSourceKind::PrivateProof
+                            && matches!(operation, Operation::Norm { .. }))
+                        .then_some(i)
+                    }))
+                || (kind == GraphSourceKind::PrivateProof && leaf.operation_indices().len() != 6)
+            {
+                return Err(NativeSourceFailure::Coverage);
+            }
         }
-        let storage = descriptor.storage(construction()).map_err(|_| NativeSourceFailure::Resource)?;
+        let storage = descriptor
+            .storage(construction())
+            .map_err(|_| NativeSourceFailure::Resource)?;
+        let key = crate::component_tree::native_shape::cohort::Descriptor::Other(descriptor).key();
+        let (planning, output, scratch) = match metadata {
+            Some(metadata) => metadata.footprint(0, key, storage, || {
+                Self::source_requirements(&storage, &fixed)
+            })?,
+            None => Self::source_requirements(&storage, &fixed)?,
+        };
+        Ok(Self {
+            plan,
+            graph,
+            context,
+            factory,
+            kind,
+            descriptor,
+            storage,
+            ordinal,
+            planning,
+            output,
+            scratch,
+        })
+    }
+    fn source_requirements(
+        storage: &NativePlanningStorage,
+        fixed: &FixedSourceCensus,
+    ) -> NativeResult<(Requirements, Requirements, Requirements)> {
         let wrapper_heap = sum([
             // Two serial-word bridges bound either source family. Include
             // each 32-bit decomposition independently and growth replacement.
-            bytes::<Byte>(2 * 4 * 32)?, bytes::<Wire>(2 * 8 * 4 * 32)?,
-            bytes::<Wire>(2 * 4 * 16)?, bytes::<Wire>(4 * 16)?,
+            bytes::<Byte>(2 * 4 * 32)?,
+            bytes::<Wire>(2 * 8 * 4 * 32)?,
+            bytes::<Wire>(2 * 4 * 16)?,
+            bytes::<Wire>(4 * 16)?,
             // The statement bundle join calls initial a second time outside
             // the AIR callback accounted in native storage.
-            bytes::<Val>(2 * (4 * 8 + 4 * 8 + 22))?, bytes::<Vec<Val>>(2 * 3)?,
+            bytes::<Val>(2 * (4 * 8 + 4 * 8 + 22))?,
+            bytes::<Vec<Val>>(2 * 3)?,
             8 * 512,
         ])?;
-        let wrapper_frames = mul(8, sum([
-            size_of::<Self>(), size_of::<NativeResult<Self>>(), size_of::<NativeCoreBound>(),
-            size_of::<NativeSourceCompilePlan<'static, 'static, 'static>>(),
-            size_of::<NativeResult<NativeSourceCompilePlan<'static, 'static, 'static>>>(),
-            size_of::<NativeSourceFacts>(), size_of::<NativeResult<NativeSourceFacts>>(),
-            size_of::<Spec>(), size_of::<CompiledNode>(), size_of::<NativeResult<CompiledNode>>(),
-            size_of::<OwnedCompiledSource<'static, 'static, 'static>>(),
-            size_of::<CompileOutcome<'static, 'static, 'static>>(),
-            size_of::<Reservation>(), size_of::<(NativeSourceFailure, Reservation)>(),
-            size_of::<ProgramBuilder>(), size_of::<ProofInputs>(),
-            size_of::<WipedInputs>(), size_of::<std::time::Instant>(),
-            size_of::<SourceBinding<'static, 'static, 'static>>(),
-            size_of::<[[Wire; 4]; crate::statement_air::POLYNOMIALS]>(),
-            size_of::<[[Wire; 4]; crate::proof_air::POLYNOMIALS]>(),
-            size_of::<[Byte; 32]>(), size_of::<[Wire; 32]>(), size_of::<[Wire; 16]>(),
-            size_of::<[Val; 8]>(), size_of::<[Val; PUBLIC_VALUES]>(),
-            size_of::<[Wire; PUBLIC_VALUES]>(), size_of::<[Requirements; 4]>(),
-            16 * size_of::<Vec<Wire>>(), 16 * size_of::<usize>(),
-        ])?)?;
-        let auxiliary = sum([storage.auxiliary_peak_bytes, fixed.source_scratch_bytes,
-            fixed.frame_bytes, wrapper_heap, wrapper_frames])?;
+        let wrapper_frames = mul(
+            8,
+            sum([
+                size_of::<Self>(),
+                size_of::<NativeResult<Self>>(),
+                size_of::<NativeCoreBound>(),
+                size_of::<Option<crate::component_tree::native_shape::cohort::ResolvedBound>>(),
+                size_of::<NativeSourceCompilePlan<'static, 'static, 'static>>(),
+                size_of::<NativeResult<NativeSourceCompilePlan<'static, 'static, 'static>>>(),
+                size_of::<NativeSourceFacts>(),
+                size_of::<NativeResult<NativeSourceFacts>>(),
+                size_of::<Spec>(),
+                size_of::<CompiledNode>(),
+                size_of::<NativeResult<CompiledNode>>(),
+                size_of::<OwnedCompiledSource<'static, 'static, 'static>>(),
+                size_of::<CompileOutcome<'static, 'static, 'static>>(),
+                size_of::<Reservation>(),
+                size_of::<(NativeSourceFailure, Reservation)>(),
+                size_of::<ProgramBuilder>(),
+                size_of::<ProofInputs>(),
+                size_of::<WipedInputs>(),
+                size_of::<std::time::Instant>(),
+                size_of::<SourceBinding<'static, 'static, 'static>>(),
+                size_of::<[[Wire; 4]; crate::statement_air::POLYNOMIALS]>(),
+                size_of::<[[Wire; 4]; crate::proof_air::POLYNOMIALS]>(),
+                size_of::<[Byte; 32]>(),
+                size_of::<[Wire; 32]>(),
+                size_of::<[Wire; 16]>(),
+                size_of::<[Val; 8]>(),
+                size_of::<[Val; PUBLIC_VALUES]>(),
+                size_of::<[Wire; PUBLIC_VALUES]>(),
+                size_of::<[Requirements; 4]>(),
+                16 * size_of::<Vec<Wire>>(),
+                16 * size_of::<usize>(),
+            ])?,
+        )?;
+        let wrapper_frames = add(
+            wrapper_frames,
+            crate::graph_tree::metadata::GraphMetadata::construction_bytes(),
+        )?;
+        let auxiliary = sum([
+            storage.auxiliary_peak_bytes,
+            fixed.source_scratch_bytes,
+            fixed.frame_bytes,
+            wrapper_heap,
+            wrapper_frames,
+        ])?;
         if auxiliary > AUXILIARY_BYTES || fixed.construction.max_input_values != ROOT_INPUTS {
             return Err(NativeSourceFailure::Resource);
         }
-        let planning = requirement(Category::PhaseScratch,
-            add(storage.total_requested_bytes, wrapper_frames)?)?;
+        let planning = requirement(
+            Category::PhaseScratch,
+            add(storage.total_requested_bytes, wrapper_frames)?,
+        )?;
         let mut output = requirement(Category::SymbolicCompiler, PROGRAM_BYTES)?;
-        output.add(Category::CompilerInputs,
-            requirement(Category::CompilerInputs, add(storage.input_backing_bytes,
-                bytes::<Val>(2 * PUBLIC_VALUES)?)?)?.get(Category::CompilerInputs))
+        output
+            .add(
+                Category::CompilerInputs,
+                requirement(
+                    Category::CompilerInputs,
+                    add(
+                        storage.input_backing_bytes,
+                        bytes::<Val>(2 * PUBLIC_VALUES)?,
+                    )?,
+                )?
+                .get(Category::CompilerInputs),
+            )
             .map_err(|_| NativeSourceFailure::Resource)?;
-        output.add(Category::RegisteredMetadata,
-            requirement(Category::RegisteredMetadata,
-                sum([size_of::<Program>(), 2 * size_of::<usize>(),
-                    size_of::<OwnedCompiledSource<'static, 'static, 'static>>(),
-                    // The full typed slot owner survives the compiler phase.
-                    size_of::<crate::execution::workflow_resources::RetainedOriginal<
-                        OwnedCompiledSource<'static, 'static, 'static>>>()])?)?
-                .get(Category::RegisteredMetadata)).map_err(|_| NativeSourceFailure::Resource)?;
+        output
+            .add(
+                Category::RegisteredMetadata,
+                requirement(
+                    Category::RegisteredMetadata,
+                    sum([
+                        size_of::<Program>(),
+                        2 * size_of::<usize>(),
+                        size_of::<OwnedCompiledSource<'static, 'static, 'static>>(),
+                        // The full typed slot owner survives the compiler phase.
+                        size_of::<
+                            crate::execution::workflow_resources::RetainedOriginal<
+                                OwnedCompiledSource<'static, 'static, 'static>,
+                            >,
+                        >(),
+                    ])?,
+                )?
+                .get(Category::RegisteredMetadata),
+            )
+            .map_err(|_| NativeSourceFailure::Resource)?;
         let scratch = requirement(Category::PhaseScratch, auxiliary)?;
-        Ok(Self { plan, graph, context, factory, kind, descriptor, storage, ordinal,
-            planning, output, scratch })
+        Ok((planning, output, scratch))
     }
-    pub(crate) fn kind(&self) -> GraphSourceKind { self.kind }
-    pub(crate) fn ordinal(&self) -> usize { self.ordinal }
-    pub(crate) fn graph_plan(&self) -> &'a Plan { self.plan }
-    pub(crate) fn relation_graph(&self) -> &'a UnprovedRelationGraph { self.graph }
-    pub(crate) fn context(&self) -> &'a GraphContext { self.context }
-    pub(crate) fn source_factory(&self) -> &'a SourceFactory<'graph> { self.factory }
-    pub(crate) fn planning_requirements(&self) -> Requirements { self.planning }
-    pub(crate) fn compiler_requirements(&self) -> (Requirements, Requirements) { (self.output, self.scratch) }
+
+    pub(crate) fn kind(&self) -> GraphSourceKind {
+        self.kind
+    }
+    pub(crate) fn ordinal(&self) -> usize {
+        self.ordinal
+    }
+    pub(crate) fn graph_plan(&self) -> &'a Plan {
+        self.plan
+    }
+    pub(crate) fn relation_graph(&self) -> &'a UnprovedRelationGraph {
+        self.graph
+    }
+    pub(crate) fn context(&self) -> &'a GraphContext {
+        self.context
+    }
+    pub(crate) fn source_factory(&self) -> &'a SourceFactory<'graph> {
+        self.factory
+    }
+    /// Numeric-only request; normal inspection still authenticates originals.
+    pub(crate) fn metadata_request(
+        &self,
+    ) -> crate::component_tree::native_shape::cohort::Request<'_> {
+        crate::component_tree::native_shape::cohort::Request {
+            descriptor: crate::component_tree::native_shape::cohort::Descriptor::Other(
+                self.descriptor,
+            ),
+            auxiliary: self.storage.auxiliary_peak_bytes,
+        }
+    }
+    pub(crate) fn planning_requirements(&self) -> Requirements {
+        self.planning
+    }
+    pub(crate) fn compiler_requirements(&self) -> (Requirements, Requirements) {
+        (self.output, self.scratch)
+    }
 
     /// Run during complete closure, before native proof zero. The exact
     /// original claim covers bounded recorder/template/builder allocations.
-    pub(crate) fn inspect<'plan>(&'plan self, original: &Reservation, ledger: &Ledger)
-        -> NativeResult<NativeSourceCompilePlan<'plan, 'a, 'graph>>
-    {
+    pub(crate) fn inspect<'plan>(
+        &'plan self,
+        original: &Reservation,
+        ledger: &Ledger,
+    ) -> NativeResult<NativeSourceCompilePlan<'plan, 'a, 'graph>> {
+        self.inspect_inner(original, ledger, None)
+    }
+    pub(crate) fn inspect_resolved<'plan>(
+        &'plan self,
+        original: &Reservation,
+        ledger: &Ledger,
+        resolved: crate::component_tree::native_shape::cohort::ResolvedBound,
+    ) -> NativeResult<NativeSourceCompilePlan<'plan, 'a, 'graph>> {
+        self.inspect_inner(original, ledger, Some(resolved))
+    }
+    fn inspect_inner<'plan>(
+        &'plan self,
+        original: &Reservation,
+        ledger: &Ledger,
+        resolved: Option<crate::component_tree::native_shape::cohort::ResolvedBound>,
+    ) -> NativeResult<NativeSourceCompilePlan<'plan, 'a, 'graph>> {
         admitted(original, ledger, self.planning)?;
-        let core = other_native_core_bound(self.descriptor, construction(), self.storage.auxiliary_peak_bytes)
-            .map_err(|_| NativeSourceFailure::Compile)?;
-        if core.storage != self.storage { return Err(NativeSourceFailure::SourceDrift); }
-        Ok(NativeSourceCompilePlan { blueprint: self, facts: NativeSourceFacts::from_core(core, self.kind)? })
+        let core = match resolved {
+            Some(bound) => bound.for_request(self.metadata_request(), construction()),
+            None => other_native_core_bound(
+                self.descriptor,
+                construction(),
+                self.storage.auxiliary_peak_bytes,
+            ),
+        }
+        .map_err(|_| NativeSourceFailure::Compile)?;
+        if core.storage != self.storage {
+            return Err(NativeSourceFailure::SourceDrift);
+        }
+        Ok(NativeSourceCompilePlan {
+            blueprint: self,
+            facts: NativeSourceFacts::from_core(core, self.kind)?,
+        })
     }
 }
 
