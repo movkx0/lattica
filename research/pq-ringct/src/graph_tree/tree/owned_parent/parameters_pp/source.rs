@@ -62,14 +62,21 @@ fn validate_request_leaf(tree: &Plan, graph: &UnprovedRelationGraph,
     { return Err(GraphParentFailure::Coverage); }
     Ok(())
 }
-pub(super) fn compiler_requirements(prepared: &PreparedWorkflowSources<'_>)
+pub(super) fn compiler_requirements(prepared: &PreparedWorkflowSources<'_>, child_maximum_rows: usize)
+    -> OwnedResult<(Requirements, Requirements)>
+{
+    compiler_requirements_for_graph(prepared.graph(), child_maximum_rows)
+}
+// The authenticated request bounds the child proof before this estimate is
+// used. Source derivation and the execution source check enforce that same
+// maximum; no unrelated graph parent's global height is needed here.
+fn compiler_requirements_for_graph(graph: &UnprovedRelationGraph, child_maximum_rows: usize)
     -> OwnedResult<(Requirements, Requirements)>
 {
     let storage = PlanningStorage::for_children(PUBLIC_VALUES,
-        &[child_shape(super::super::source::MAX_ROWS)?], super::super::source::construction())
+        &[child_shape(child_maximum_rows)?], super::super::source::construction())
         .map_err(|_| GraphParentFailure::Source)?;
-    let fixed = FixedSourceCensus::from_graph(prepared.graph()).map_err(|_| GraphParentFailure::Source)?;
-    let graph = prepared.graph();
+    let fixed = FixedSourceCensus::from_graph(graph).map_err(|_| GraphParentFailure::Source)?;
     let coverage = add(add(graph.polynomials().len(), graph.bytes().len())?, graph.operations().len())?;
     // group_coverage flags and geometrically grown ordered index vectors can
     // coexist with SourceBinding's own root/coverage backing. The single artifact

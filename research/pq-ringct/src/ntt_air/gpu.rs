@@ -19,9 +19,7 @@ impl NttAir {
         if inputs.len() != self.count {
             return Err("raw NTT input count".into());
         }
-        let (steps, permutation) = self.gpu_operation_schedule();
-        let spec = ArithmeticOperationSpec::ntt(self.modulus, self.count, &steps, &permutation)?;
-        drop(steps);
+        let spec = self.raw_operation_spec()?;
         ctx.admit_arithmetic_operation(&spec)?;
         let raw: Vec<_> = inputs.iter().flatten().map(|&v| v as u64).collect();
         let result = ctx.arithmetic_output(&spec, &raw)?;
@@ -34,6 +32,10 @@ impl NttAir {
             .collect()
     }
 
+    pub(crate) fn raw_operation_spec(&self) -> Result<ArithmeticOperationSpec, String> {
+        let (steps, permutation) = self.gpu_operation_schedule();
+        ArithmeticOperationSpec::ntt(self.modulus, self.count, &steps, &permutation)
+    }
     fn gpu_operation_schedule(&self) -> (Vec<[u64; 4]>, [u64; 64]) {
         let steps = (0..768)
             .map(|i| {

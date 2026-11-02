@@ -1,5 +1,6 @@
 use super::*;
 use crate::block_v2::machine::compiler_constants::Constants;
+use p3_field::PrimeCharacteristicRing;
 
 fn budget() -> Budget {
     let mut value = Budget::new(Constants::cpu(), 0).unwrap();
@@ -97,4 +98,103 @@ fn nonzero_wire_slots_reduce_constant_map_padding_and_preserve_zero() {
     assert_eq!(packed.release_retained(), Some(held));
     assert_eq!(packed.retained_bytes(), Some(0));
     assert!(packed.get(&0).is_none());
+}
+
+#[test]
+fn fixed_tuple_keys_hash_once_without_changing_storage_layout() {
+    use std::hash::Hasher;
+    #[derive(Default)]
+    struct Writes {
+        calls: usize,
+        bytes: Vec<u8>,
+    }
+    impl Hasher for Writes {
+        fn finish(&self) -> u64 {
+            0
+        }
+        fn write(&mut self, bytes: &[u8]) {
+            self.calls += 1;
+            self.bytes.extend_from_slice(bytes);
+        }
+    }
+    fn encoded<K: Compact>(key: K) -> Writes {
+        let mut hash = Writes::default();
+        key.store().unwrap().hash(&mut hash);
+        hash
+    }
+    let a = encoded((3u8, Wire(0), Wire(MAX_WIRES - 1)));
+    assert_eq!((a.calls, a.bytes.len()), (1, 9));
+    assert_eq!(&a.bytes[1..5], &1u32.to_le_bytes());
+    assert_ne!(a.bytes, encoded((3u8, Wire(MAX_WIRES - 1), Wire(0))).bytes);
+    let a = encoded((Wire(0), Wire(1), Wire(2)));
+    assert_eq!((a.calls, a.bytes.len()), (1, 12));
+    let a = encoded((1u8, [Wire(0); 3], [Wire(MAX_WIRES - 1); 3]));
+    assert_eq!((a.calls, a.bytes.len()), (1, 25));
+    // The hasher changes neither packed niches nor any allocation census.
+    type W = NonZeroU32;
+    assert_eq!(
+        std::mem::size_of::<Option<(Triple<u8, W, W>, W)>>(),
+        std::mem::size_of::<Option<((u8, W, W), W)>>()
+    );
+    assert_eq!(
+        std::mem::size_of::<Option<(Triple<u8, [W; 3], [W; 3]>, [W; 3])>>(),
+        std::mem::size_of::<Option<((u8, [W; 3], [W; 3]), [W; 3])>>()
+    );
+    assert!((1u8, Wire(0), Wire(MAX_WIRES)).store().is_none());
+}
+
+#[test]
+fn known_constant_filter_preserves_sparse_values_and_clears_retained_storage() {
+    let mut known = KnownConstants::new();
+    let mut memory = budget();
+    for index in [0, 63, 64, 257, 4096, MAX_WIRES - 1] {
+        known.insert(Wire(index), Val::from_u64(index as u64 + 1), &mut memory);
+    }
+    assert!(!memory.failed);
+    for index in [0, 63, 64, 257, 4096, MAX_WIRES - 1] {
+        assert_eq!(
+            known.get(&Wire(index)),
+            Some(Val::from_u64(index as u64 + 1))
+        );
+    }
+    for index in [1, 62, 65, 256, 4095, MAX_WIRES, usize::MAX] {
+        assert_eq!(known.get(&Wire(index)), None);
+    }
+    let live = memory.live;
+    known.insert(Wire(63), Val::ONE, &mut memory);
+    known.insert(Wire(usize::MAX), Val::ONE, &mut memory);
+    assert_eq!(known.get(&Wire(63)), Some(Val::ONE));
+    assert_eq!(memory.live, live);
+    assert!(!memory.failed);
+    assert_eq!(known.reset_retained(), Some(live));
+    assert_eq!(known.get(&Wire(63)), None);
+    assert_eq!(known.get(&Wire(MAX_WIRES - 1)), None);
+    known.insert(Wire(65), Val::ONE, &mut memory);
+    assert_eq!(memory.live, live);
+    assert_eq!(known.get(&Wire(65)), Some(Val::ONE));
+    assert_eq!(known.release_retained(), Some(live));
+    assert_eq!(known.retained_bytes(), Some(0));
+    assert_eq!(known.get(&Wire(65)), None);
+}
+
+#[test]
+fn known_constant_filter_charges_growth_overlap_before_allocating() {
+    for admitted in [false, true] {
+        let mut known = KnownConstants::new();
+        let mut memory = budget();
+        known.insert(Wire(0), Val::ONE, &mut memory);
+        assert_eq!(known.present.capacity(), 4);
+        let before = memory.live;
+        memory.limit = Some(before + 64 - usize::from(!admitted));
+        known.insert(Wire(256), Val::ONE, &mut memory);
+        assert_eq!(memory.failed, !admitted);
+        assert_eq!(memory.byte_limit_exceeded, !admitted);
+        assert_eq!(known.get(&Wire(0)), Some(Val::ONE));
+        assert_eq!(known.get(&Wire(256)), admitted.then_some(Val::ONE));
+        assert_eq!(memory.live, before + if admitted { 32 } else { 0 });
+        assert_eq!(known.retained_bytes(), Some(memory.live));
+        if admitted {
+            assert_eq!(memory.peak, before + 64);
+        }
+    }
 }

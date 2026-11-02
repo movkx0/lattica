@@ -3,6 +3,26 @@ impl Backend for CommittedBackend<'_> {
     type Residue = ResidueRef;
     type Signed = SignedRef;
     type Byte = ByteRef;
+    fn relation_balance(&mut self, a: &Polynomial<ResidueRef>, aut: &Polynomial<ResidueRef>, out0: &Polynomial<ResidueRef>, out1: &Polynomial<ResidueRef>, z0: &Polynomial<ResidueRef>) -> Polynomial<ResidueRef> {
+        #[cfg(feature = "opencl")]
+        if self.device.is_some() && crate::preparation_options::vector_arithmetic() { return self.vector_relation_balance(a, aut, out0, out1, z0); }
+        relation_balance_scalar(self, a, aut, out0, out1, z0)
+    }
+    fn relation_coin_term(&mut self, aut: &Polynomial<ResidueRef>, coin0: &Polynomial<ResidueRef>, coin1: &Polynomial<ResidueRef>, c: &Polynomial<ResidueRef>) -> Polynomial<ResidueRef> {
+        #[cfg(feature = "opencl")]
+        if self.device.is_some() && crate::preparation_options::vector_arithmetic() { return self.vector_relation_coin_term(aut, coin0, coin1, c); }
+        relation_coin_term_scalar(self, aut, coin0, coin1, c)
+    }
+    fn relation_adjust(&mut self, w: &mut Polynomial<ResidueRef>, f10: &Polynomial<ResidueRef>, f11: &Polynomial<ResidueRef>) -> () {
+        #[cfg(feature = "opencl")]
+        if self.device.is_some() && crate::preparation_options::vector_arithmetic() { return self.vector_relation_adjust(w, f10, f11); }
+        relation_adjust_scalar(self, w, f10, f11)
+    }
+    fn inverse_challenge(&mut self, x: &Polynomial<SignedRef>) -> Polynomial<SignedRef> {
+        #[cfg(feature = "opencl")]
+        if self.device.is_some() && crate::preparation_options::vector_arithmetic() { return self.vector_inverse_challenge(x); }
+        inverse_challenge_scalar(self, x)
+    }
     fn constant(&mut self, value: u64, q: u64) -> ResidueRef {
         assert!(matches!(q, Q | QHAT));
         // Constants belong to the public expression topology, never a private
@@ -145,6 +165,33 @@ impl Backend for CommittedBackend<'_> {
             bound,
             value,
         }
+    }
+    fn signed_sub_poly(
+        &mut self,
+        a: &Polynomial<SignedRef>,
+        b: &Polynomial<SignedRef>,
+    ) -> Polynomial<SignedRef> {
+        // Validate every operand before submitting the existing vector operation.
+        // Preserve the scalar expression order and bounds: only raw witness
+        // evaluation is batched, not the authenticated graph topology.
+        let bounds: [u32; D] = core::array::from_fn(|i| {
+            self.check_signed(a[i]);
+            self.check_signed(b[i]);
+            a[i].bound.checked_add(b[i].bound)
+                .filter(|&v| v <= i32::MAX as u32)
+                .expect("fixed signed affine bound")
+        });
+        let values = witness_value!(self,
+            device => device.signed_sub_poly(&a.map(|v| v.value), &b.map(|v| v.value)),
+            core::array::from_fn(|i| a[i].value - b[i].value), [0; D]);
+        core::array::from_fn(|i| {
+            let expr = self.expression(Expression::SignedSub {
+                left: a[i].expr,
+                right: b[i].expr,
+                bound: bounds[i],
+            });
+            SignedRef { owner: self.graph.owner, expr, bound: bounds[i], value: values[i] }
+        })
     }
     fn add_poly(
         &mut self,

@@ -71,7 +71,8 @@ impl WorkflowPlanning<'_> {
         }
         self.check_native_constructor_scratch(inventory,
             Requirements::single(Category::PhaseScratch, Bytes { host:peak as u64, device:0 }))?;
-        cohort::resolve_bounds_in_ledger(requests, limits, &self.scratch, self.capability.ledger())
+        self.native_session.try_borrow_mut().map_err(|_| WorkflowError::Planning)?
+            .resolve(requests, limits, &self.scratch, self.capability.ledger())
             .map_err(|_| WorkflowError::Planning)
     }
 

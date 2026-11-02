@@ -4,8 +4,8 @@ use super::*;
 /// completes workflow retirement and case completion.
 pub(crate) fn run<const N: usize>(
     planning: WorkflowPlanning<'_>, metadata: &SourceMetadataPlanningPlan<'_>,
-    startup: &CaseOwnerSlot<'_, core::result::Result<FreshPlanningContext<'_>, FreshGenerationError>>,
-    batch: &CaseOwnerSlot<'_, FreshGenerationBatch<N>>, case: &CaseRetirementState,
+    startup: &crate::spend_pipeline::full_workflow::fresh_generation::case_lifetime::MetadataOwner<'_, '_, '_>,
+    batch: Option<&CaseOwnerSlot<'_, FreshGenerationBatch<N>>>, case: &CaseRetirementState,
     native_cache: &ProofCache, outer_cache: &OuterProofCache,
     stage: &mut DriverStage,
 ) -> Result<CompletedCaseSummary> {

@@ -170,6 +170,10 @@ impl<'a> SourceMetadataPlanningPlan<'a> {
             Bytes { host: crate::execution::workflow_resources::controller_bytes(slots)
                 .map_err(|_| ClosureError::Resource)?, device: 0 }))?;
         *stage = MetadataPlanningStage::Envelope;
+        #[cfg(test)]
+        for (label, requirements) in [("constructors", result.constructors), ("tables", result.tables), ("scratch", result.scratch)] {
+            profile_requirements(label, requirements);
+        }
         result.planning = sum(sum(result.constructors, result.tables)?, result.scratch)?;
         *stage = MetadataPlanningStage::Complete;
         Ok(result)
@@ -206,4 +210,15 @@ impl<'a> SourceMetadataPlanningPlan<'a> {
     pub(crate) fn ledger(&self) -> &Ledger { &self.ledger }
     pub(crate) fn members(&self) -> &'a [&'a SourceRetained<PreparedWorkflowSources<'a>>] { self.members }
     pub(crate) fn initial_inspection(&self) -> ClosureInspection { self.inspection }
+}
+
+#[cfg(test)]
+pub(crate) fn profile_requirements(label: &str, requirements: Requirements) {
+    if std::env::var_os("LATTICA_RINGCT_METADATA_STAGE_PROFILE").is_none() { return; }
+    for category in Category::ALL {
+        let bytes = requirements.get(category);
+        if bytes != Bytes::ZERO {
+            eprintln!("RINGCT_METADATA_RESERVATION {{\"label\":\"{label}\",\"category\":\"{category:?}\",\"host\":{},\"device\":{}}}", bytes.host, bytes.device);
+        }
+    }
 }

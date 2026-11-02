@@ -55,7 +55,7 @@ impl AesBlueprint {
             core.counts.selection_hint_words, true)
     }
 
-    pub(crate) fn compiler_requirements(&self) -> Result<(Requirements, Requirements)> {
+    pub(crate) fn compiler_requirements(&self, source: ComponentSourceFacts) -> Result<(Requirements, Requirements)> {
         // NativePlanningStorage already includes the exact AES AIR, public
         // periodic table, bounded symbolic recorder/graph, verifier helpers,
         // ProofInputs growth and returned native wire vectors. Wrapper fields
@@ -69,14 +69,18 @@ impl AesBlueprint {
             bytes::<Vec<crate::component_tree::Val>>(8)?,
             super::super::caller_bytes()?, 64 << 10,
         ].into_iter().try_fold(0, add)?;
+        let retained = source.retained_program_host_bytes()?;
+        let retained_input = source.retained_input_host_bytes()?;
+        let complete_input = add(self.storage.input_backing_bytes, bytes::<crate::component_tree::Val>(2 * PUBLICS)?)?;
+        let construction_extra = add(PROGRAM_BYTES.checked_sub(retained).ok_or(PairedFailure::Capacity)?,
+            complete_input.checked_sub(retained_input).ok_or(PairedFailure::Capacity)?)?;
         let output = combine(&[
             requirement(Category::SymbolicCompiler,
-                add(PROGRAM_BYTES, bytes::<super::super::PairedCompiled<'static>>(8)?)?)?,
-            requirement(Category::CompilerInputs,
-                add(self.storage.input_backing_bytes, bytes::<crate::component_tree::Val>(2 * PUBLICS)?)?)?,
+                add(retained, bytes::<super::super::PairedCompiled<'static>>(8)?)?)?,
+            requirement(Category::CompilerInputs, retained_input)?,
         ])?;
         let scratch = requirement(Category::PhaseScratch,
-            add(self.storage.auxiliary_peak_bytes, wrapper)?)?;
+            add(construction_extra, add(self.storage.auxiliary_peak_bytes, wrapper)?)?)?;
         Ok((output, scratch))
     }
 }

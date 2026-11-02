@@ -134,6 +134,9 @@ impl PermutationLeafFacts {
             || node.witness.len() != self.input_values || hints != self.selection_hint_words
             || operations.scalar > self.operations.scalar || operations.cubic > self.operations.cubic
             || operations.poseidon > self.operations.poseidon
+            || p.retained_host_bytes().map_err(|_| PermutationLeafFailure::Resource)?
+                > self.operations.retained_program_host_ceiling(PUBLIC_VALUES, self.maximum_wires,
+                    self.selection_hint_words).map_err(|_| PermutationLeafFailure::Resource)?
             || p.construction_host_bytes() > PROGRAM_BYTES {
             return Err(PermutationLeafFailure::SourceDrift);
         }
@@ -283,15 +286,22 @@ impl<'a, 'graph> PermutationLeafBlueprint<'a, 'graph> {
             None => other_native_core_bound(self.descriptor, construction(), self.storage.auxiliary_peak_bytes),
         }.map_err(|_| PermutationLeafFailure::Compile)?;
         if core.storage != self.storage { return Err(PermutationLeafFailure::SourceDrift); }
-        Ok(PermutationLeafCompiler { blueprint: self, facts: PermutationLeafFacts::from_core(core, self.kind)? })
+        let facts = PermutationLeafFacts::from_core(core, self.kind)?;
+        let (output, scratch) = super::compiler_storage::split(self.output, self.scratch, PROGRAM_BYTES,
+            facts.operations, PUBLIC_VALUES, facts.maximum_wires, facts.selection_hint_words)
+            .map_err(|_| PermutationLeafFailure::Resource)?;
+        Ok(PermutationLeafCompiler { blueprint: self, facts, output, scratch })
     }
 }
 
 pub(crate) struct PermutationLeafCompiler<'plan, 'a, 'graph> {
     blueprint: &'plan PermutationLeafBlueprint<'a, 'graph>,
     facts: PermutationLeafFacts,
+    output: Requirements,
+    scratch: Requirements,
 }
 impl<'plan, 'a, 'graph> PermutationLeafCompiler<'plan, 'a, 'graph> {
+    pub(crate) fn compiler_requirements(&self) -> (Requirements, Requirements) { (self.output, self.scratch) }
     pub(crate) fn facts(&self) -> PermutationLeafFacts { self.facts }
     pub(crate) fn blueprint(&self) -> &PermutationLeafBlueprint<'a, 'graph> { self.blueprint }
 
@@ -300,8 +310,8 @@ impl<'plan, 'a, 'graph> PermutationLeafCompiler<'plan, 'a, 'graph> {
         -> PermutationResult<CompiledNode>
     {
         let source = self.blueprint;
-        admitted(output, ledger, source.output)?;
-        admitted(scratch, ledger, source.scratch)?;
+        admitted(output, ledger, self.output)?;
+        admitted(scratch, ledger, self.scratch)?;
         if core::ptr::eq(output, scratch) || !child.source().same_source(source.source)
             || !child.owned().belongs_to(ledger) || child.owned().geometry().kind() != source.kind {
             return Err(PermutationLeafFailure::Authority);

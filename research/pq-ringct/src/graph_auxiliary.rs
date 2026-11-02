@@ -20,6 +20,8 @@ use sha3::{Digest, Sha3_256};
 mod cache;
 #[cfg(feature = "opencl")]
 mod preparation;
+#[cfg(feature = "opencl")]
+pub(crate) use preparation::BATCH_FRAME_BYTES;
 pub use cache::{ArchivedReverification, AuxiliaryCache, CacheOutcome};
 #[cfg(all(test, feature = "native-matrict"))]
 mod tests;

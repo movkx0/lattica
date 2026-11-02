@@ -885,6 +885,39 @@ def build_plan(args):
     identity_qualification = getattr(args, 'identity_cpu_qualification', False)
     metadata_qualification = getattr(args, 'metadata_cpu_qualification', False)
     native_metadata_profile = getattr(args, 'native_metadata_profile', False)
+    metadata_stage_profile = getattr(args, 'metadata_stage_profile', False)
+    metadata_preparation_detail = getattr(args, 'metadata_preparation_detail', False)
+    hash_variant = getattr(args, 'metadata_hash_variant', None)
+    reuse_variant = getattr(args, 'metadata_reuse_variant', None)
+    require(reuse_variant in (None, 'baseline', 'structure', 'verifier', 'arithmetic', 'all'), 'invalid reuse variant')
+    require(reuse_variant is None or metadata_stage_profile, 'reuse variant requires metadata-stage profile')
+    require(hash_variant in (None, 'reference', 'nodes', 'endpoints', 'fields', 'all'), 'invalid hash variant')
+    require(hash_variant is None or metadata_stage_profile, 'hash variant requires metadata-stage profile')
+    require(not metadata_preparation_detail or metadata_stage_profile,
+            'preparation detail requires metadata-stage profile')
+    fixture_out = getattr(args, 'metadata_fixture_out', None)
+    fixture_in = getattr(args, 'metadata_fixture_in', None)
+    metadata_workers = getattr(args, 'metadata_workers', None) or 16
+    require(metadata_stage_profile or (fixture_out is None and fixture_in is None and getattr(args, 'metadata_workers', None) is None),
+            'metadata fixture/workers require metadata-stage profile')
+    if metadata_stage_profile:
+        require(not (fixture_in and fixture_out), 'fixture capture and replay are mutually exclusive')
+        if fixture_in is not None:
+            fixture_in = str(Path(fixture_in).resolve())
+            require(Path(fixture_in).is_file(), 'metadata fixture does not exist')
+        require(metadata_workers in (1, 8, 16), 'unsupported metadata worker count')
+        if fixture_out is not None:
+            fixture_out = str(Path(fixture_out).resolve())
+            require(not Path(fixture_out).exists() and Path(fixture_out).parent.is_dir(), 'fixture output must be a new file in an existing directory')
+        from metadata_stage_profile import SELECTOR
+        require(args.profile == 'full' and args.expect_tests and args.build_label,
+                'complete metadata profiling requires the recorded full-profile test')
+        require(len(argv) == 6 and argv[1] == SELECTOR
+                and set(argv[2:]) == {'--exact', '--ignored', '--test-threads=1', '--nocapture'},
+                'wrong complete metadata profiling selector')
+        require(getattr(args, 'retained_tree_storage', 'device') == 'host'
+                and getattr(args, 'device_uuid', None) is not None,
+                'complete metadata profiling requires host-retained trees and a physical GPU pin')
     scaling = getattr(args, 'cpu_scaling_profile', None)
     scaling_selection = None
     if scaling:
@@ -925,8 +958,8 @@ def build_plan(args):
         require(len(argv) == 6 and argv[1] == 'identity_preprocessing_screen::cpu_recursive_identity_worker_qualification'
                 and set(argv[2:]) == {'--exact', '--ignored', '--test-threads=1', '--nocapture'},
                 'wrong CPU identity qualification selector')
-    identity_cpus = identity_physical_cpus() if complete_case or identity_qualification or metadata_qualification or native_metadata_profile or scaling else None
-    if identity_qualification or metadata_qualification or native_metadata_profile or scaling:
+    identity_cpus = identity_physical_cpus() if complete_case or identity_qualification or metadata_qualification or native_metadata_profile or scaling or metadata_stage_profile else None
+    if identity_qualification or metadata_qualification or native_metadata_profile or scaling or metadata_stage_profile:
         require(len(identity_cpus) == 16, '16-worker qualification requires sixteen physical cores')
     host_profile = selected_host_profile(getattr(args, 'host_profile', 'standard'))
     require(host_profile['name'] == 'standard' or (args.profile == 'full' and complete_case),
@@ -941,7 +974,7 @@ def build_plan(args):
     require(sum((bool(complete_case), bool(getattr(args, 'note_owned_proof', False)),
                  bool(getattr(args, 'note_workflow_cpu', False)),
                  getattr(args, 'owned_runtime_test', None) is not None,
-                 bool(direct_ring_screen), bool(metadata_qualification), bool(identity_qualification), bool(native_metadata_profile), bool(scaling),
+                 bool(direct_ring_screen), bool(metadata_qualification), bool(identity_qualification), bool(native_metadata_profile), bool(scaling), bool(metadata_stage_profile),
                  bool(getattr(args, 'direct_ring_aggregate', False)),
                  bool(getattr(args, 'owned_source_shape_test', False)),
                  bool(getattr(args, 'active_hashx_preflight', False)),
@@ -1135,6 +1168,22 @@ def build_plan(args):
         environment, sequence_refusal_receipt = sequence_refusal_environment(
             args, tree_storage, public_hash_kernel)
     full_case_environment = None
+    if metadata_stage_profile:
+        environment['LATTICA_RINGCT_METADATA_STAGE_PROFILE'] = 'n3-paired-v1'
+        environment['LATTICA_RINGCT_METADATA_WORKERS'] = str(metadata_workers)
+        environment['LATTICA_RINGCT_METADATA_HASH_VARIANT'] = hash_variant or 'all'
+        environment['LATTICA_RINGCT_METADATA_REUSE_VARIANT'] = reuse_variant or 'all'
+        if metadata_preparation_detail:
+            environment['LATTICA_RINGCT_METADATA_PREPARATION_DETAIL'] = '1'
+        if fixture_in is not None:
+            environment['LATTICA_RINGCT_METADATA_FIXTURE_IN'] = fixture_in
+        if fixture_out is not None:
+            environment['LATTICA_RINGCT_METADATA_FIXTURE_OUT'] = fixture_out
+        # libtest otherwise uses a 2 MiB thread stack; the real CLI runs on
+        # Linux's 8 MiB main stack. Keep the process memory limits unchanged.
+        environment['RUST_MIN_STACK'] = str(8 << 20)
+        environment['LATTICA_RINGCT_HOST_PROFILE'] = 'standard'
+        environment['LATTICA_V2_HOST_OUTPUT_BYTES'] = str(24 * GIB)
     if complete_case:
         full_case_environment = first_leaf_module('full_workflow_case_guard').configure(
             args, argv, environment, ROOT, STATE)
@@ -1166,6 +1215,12 @@ def build_plan(args):
             'cpu_quota': '1600%' if identity_cpus is not None else str(threads * 100) + '%',
             'identity_physical_cpus': identity_cpus, 'identity_cpu_qualification': identity_qualification,
             'metadata_cpu_qualification': metadata_qualification, 'native_metadata_profile': native_metadata_profile,
+            'metadata_stage_profile': metadata_stage_profile,
+            'metadata_preparation_detail': metadata_preparation_detail,
+        'metadata_hash_variant': hash_variant or 'all',
+        'metadata_reuse_variant': reuse_variant or 'all',
+            'metadata_fixture_out': fixture_out, 'metadata_fixture_in': fixture_in,
+            'metadata_fixture_sha256': sha(Path(fixture_in)) if fixture_in else None, 'metadata_workers': metadata_workers if metadata_stage_profile else None,
             'cpu_scaling_profile': scaling_selection,
             'runtime_seconds': args.seconds,
             'comparison_baseline': False, 'performance_qualified': False,
@@ -1841,6 +1896,14 @@ def validate_output(log, plan):
     if plan.get('native_metadata_profile'):
         from native_metadata_profile import validate
         plan['native_metadata_profile_acceptance'] = validate(content)
+    if plan.get('metadata_stage_profile'):
+        if plan.get('metadata_fixture_in'):
+            require(sha(Path(plan['metadata_fixture_in'])) == plan['metadata_fixture_sha256'], 'metadata fixture changed during run')
+        from metadata_stage_profile import validate
+        plan['metadata_stage_profile_acceptance'] = validate(
+            content, require_preparation_detail=plan.get('metadata_preparation_detail', False))
+        require(plan['metadata_stage_profile_acceptance']['hash_variant'] == plan.get('metadata_hash_variant', 'all'), 'metadata hash variant mismatch')
+        require(plan['metadata_stage_profile_acceptance']['reuse_variant'] == plan.get('metadata_reuse_variant', 'all'), 'metadata reuse variant mismatch')
     if plan.get('metadata_cpu_qualification'):
         from metadata_cpu_qualification import validate
         plan['metadata_cpu_qualification_acceptance'] = validate(content)
@@ -2168,7 +2231,16 @@ def main():
     parser.add_argument('--expect-result', action='store_true')
     parser.add_argument('--expect-direct-result', action='store_true')
     parser.add_argument('--identity-cpu-qualification', action='store_true')
+    parser.add_argument('--metadata-fixture-out')
+    parser.add_argument('--metadata-fixture-in')
+    parser.add_argument('--metadata-workers', type=int, choices=(1, 8, 16))
+    parser.add_argument('--metadata-hash-variant', choices=('reference', 'nodes', 'endpoints', 'fields', 'all'))
+    parser.add_argument('--metadata-reuse-variant', choices=('baseline', 'structure', 'verifier', 'arithmetic', 'all'))
+    parser.add_argument('--metadata-preparation-detail', action='store_true',
+                        help='bounded raw-operation attribution; separate from timing comparisons')
     parser.add_argument('--native-metadata-profile', action='store_true')
+    parser.add_argument('--metadata-stage-profile', action='store_true',
+                        help='measure complete fresh N3 metadata and stop before all recursive proofs')
     parser.add_argument('--cpu-scaling-profile', choices=('registered', 'native'))
     parser.add_argument('--cpu-scaling-workers', type=int, choices=(4, 8, 12, 16))
     parser.add_argument('--cpu-scaling-callgraph', action='store_true',

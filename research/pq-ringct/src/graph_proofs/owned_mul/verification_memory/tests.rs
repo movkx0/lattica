@@ -4,7 +4,7 @@ use lattica_prover_p3::block_v2::native_gpu::{
     mul_recording::{self, MulRecorder}, mul_preparation::{Q, QHAT},
 };
 
-fn recorded_replay(air: &SourceAir) -> MulSymbolicReplay {
+pub(super) fn recorded_replay(air: &SourceAir) -> MulSymbolicReplay {
     let source = MulPreparationPlan::new(air.kind()).unwrap();
     let ledger = ResourceLedger::new(WorkerAllowance { host: 32 << 30, device: 0 });
     let symbolic = source.host().prepared_partition_bytes().unwrap();

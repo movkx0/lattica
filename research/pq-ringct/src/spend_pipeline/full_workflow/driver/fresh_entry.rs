@@ -16,8 +16,14 @@ macro_rules! fixed_case {
 identity_limits: lattica_prover_p3::block_v2::machine::backend::identity_cpu::IdentityCpuOptions, host_profile: crate::host_memory_profile::HostMemoryProfile, planning_cache: bool,
 metadata_cpu: lattica_prover_p3::block_v2::machine::verifier::batch::shape::MetadataCpuOptions) -> Result<CompletedCaseSummary> {
             let (mut summary, observation, started) = {
+                #[cfg(test)]
+                let input_started = std::time::Instant::now();
                 let generated = FreshGenerationBatch::<$n>::generate_with_host_profile(setup_seed, context, $first, host_profile)?;
-                let started = generated.started();
+                #[cfg(test)]
+                let native_input_generation_ns = input_started.elapsed().as_nanos();
+                #[cfg(test)]
+        super::metadata_profile::capture(&generated.views()?).map_err(|_| failed("metadata fixture capture failed"))?;
+        let started = generated.started();
                 let case = CaseRetirementState::prepare(&generated)?;
                 let batch_slot = case.install_batch(generated)?;
                 let mut startup = batch_slot.begin_planning()?;
@@ -29,6 +35,8 @@ metadata_cpu: lattica_prover_p3::block_v2::machine::verifier::batch::shape::Meta
                     let fresh = startup.get()?.as_ref().map_err(|_| failed("fresh planning startup refused"))?;
                 // The fresh context's original 64 MiB metadata claim includes the
                 // dedicated 1 MiB geometry sublimit before this scope is created.
+                #[cfg(test)]
+                let generation_and_startup_ns = input_started.elapsed().as_nanos();
                 let metadata_clock = metadata_timing::Scope::begin().ok_or_else(|| failed("metadata clock scope"))?;
                 let geometry_cache = if planning_cache {
                     Some(lattica_prover_p3::block_v2::machine::verifier::batch::shape::HeightEnvelopeCacheScope::begin_with_precomputed(
@@ -57,22 +65,36 @@ let metadata_planner = lattica_prover_p3::block_v2::machine::verifier::batch::sh
                     scope.install(SourcePlanningPlan::$scope(fresh, views, layout, batch)
                         .and_then(|plan| plan.with_identity_limits(identity_limits)))?;
                     let scope = scope.get()?.as_ref().map_err(|_| failed("fresh source scope refused"))?;
-                    let mut planning = WorkflowPlanning::admit_fresh(scope, fresh).map_err(|_| failed("fresh workflow planning admission refused"))?;
+                    let metadata_owner = super::super::fresh_generation::case_lifetime::MetadataOwner::Fresh(&startup);
+        let mut planning = WorkflowPlanning::admit_fresh(scope, fresh).map_err(|_| failed("fresh workflow planning admission refused"))?;
                     metadata_timing::phase(Phase::GraphSources);
-                    bootstrap_layers::prepare_graph_layer(scope, &mut planning, &startup, graph_plans.get()?, graphs.get()?)?;
+                    bootstrap_layers::prepare_graph_layer(scope, &mut planning, &metadata_owner, graph_plans.get()?, graphs.get()?)?;
                     metadata_timing::phase(Phase::SourcePreparation);
-                    bootstrap_layers::prepare_source_layer(scope, &mut planning, &startup, graphs.get()?, preparation_plans.get()?, prepared.get()?)?;
+                    bootstrap_layers::prepare_source_layer(scope, &mut planning, &metadata_owner, graphs.get()?, preparation_plans.get()?, prepared.get()?)?;
                     members.install([$(prepared.get()?.get($index)?.get()?.as_ref().map_err(|_| failed("fresh source preparation refused"))?),+])?;
                     metadata_timing::phase(Phase::Inventory);
                     let mut metadata_stage = MetadataPlanningStage::Readiness;
                     metadata.install(planning.plan_producer_metadata(scope, members.get()?, &mut metadata_stage))?;
                     let metadata = metadata.get()?.as_ref().map_err(|error| FreshGenerationError::ProducerMetadata { stage: metadata_stage, cause: *error })?;
                     metadata_timing::phase(Phase::Reservation);
-                    planning.reserve_producer_metadata(metadata, &startup).map_err(|_| failed("producer metadata reservation refused"))?;
+                    planning.reserve_producer_metadata(metadata, &metadata_owner).map_err(|_| failed("producer metadata reservation refused"))?;
                     metadata_timing::phase(Phase::Constructors);
                     let mut driver_stage = super::metadata_driver::DriverStage::Readiness;
-                    let mut completed = super::metadata_driver::run(planning, metadata, &startup, &batch_slot, &case, &caches.native, &caches.outer, &mut driver_stage)
-                        .map_err(|cause| FreshGenerationError::Workflow { stage: driver_stage, cause })?;
+                    let outcome = super::metadata_driver::run(planning, metadata, &metadata_owner, Some(&batch_slot), &case, &caches.native, &caches.outer, &mut driver_stage);
+                    #[cfg(test)]
+                    if super::metadata_profile::active() && outcome.is_err() {
+                        let complete = matches!(&outcome, Err(crate::execution::workflow_resources::WorkflowError::MetadataProfileComplete));
+                        // Preserve explicitly incomplete diagnostics on a normal
+                        // metadata refusal; only the final stop marks completion.
+                        if !complete { metadata_timing::finish(); }
+                        super::metadata_profile::record(complete, $n, native_input_generation_ns, generation_and_startup_ns,
+                            metadata_clock.statistics().ok_or_else(|| failed("unfinished metadata clock"))?,
+                            geometry_cache.as_ref().ok_or_else(|| failed("missing geometry profile cache"))?.statistics(),
+                            native_metadata_cache.as_ref().ok_or_else(|| failed("missing native profile cache"))?.statistics(),
+                            native_metadata_cache.as_ref().unwrap().miss_statistics(), metadata_planner.statistics())
+                            .map_err(|_| failed("metadata profile report failed"))?;
+                    }
+                    let mut completed = outcome.map_err(|cause| FreshGenerationError::Workflow { stage: driver_stage, cause })?;
                     completed.metadata_wall = metadata_clock.statistics();
                     completed.cache_statistics = Some(caches.statistics());
                 completed.source_geometry_cache = geometry_cache.as_ref().map(|scope| scope.statistics());

@@ -55,6 +55,7 @@ impl<'source, 'a> EqualityGraphPlan<'source, 'a> {
         let source = source::derive(prepared_value.plan(), prepared_value.graph(), prepared_value.context(), ordinal,
             prepared.source_fingerprint(), prepared.compiled_source_fingerprint())?;
         let (compiled, compiler_scratch) = source::compiler_requirements(census)?;
+        let (compiled, compiler_scratch) = super::memory::packed_compiler_requirements(source, (compiled, compiler_scratch), census.construction.max_requested_program_bytes)?;
         let (output, verifier) = source.output_requirements()?;
         let failure = super::memory::failure_requirements()?;
         let fact = |kind, output, scratch| PhaseFacts { kind, output, scratch, failure,

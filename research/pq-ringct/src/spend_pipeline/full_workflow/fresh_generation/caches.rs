@@ -43,5 +43,11 @@ impl FreshProofCaches {
         let outer = OuterProofCache::fresh_without_storage(&control);
         Ok(Self { native, outer, control, original })
     }
+    #[cfg(test)]
+    pub(crate) fn for_fixture(ledger: &crate::execution::retained_resources::Ledger) -> Result<Self> {
+        let original = ledger.admit_phase(Self::requirements()?).map_err(|_| FreshGenerationError::Resource("fixture cache admission"))?;
+        let control = Control::new(ProofCachePolicy::FreshOnly);
+        Ok(Self { native: ProofCache::fresh_without_storage(&control), outer: OuterProofCache::fresh_without_storage(&control), control, original })
+    }
     pub(crate) fn statistics(&self) -> [FamilyStatistics; 5] { self.control.fixed_statistics() }
 }

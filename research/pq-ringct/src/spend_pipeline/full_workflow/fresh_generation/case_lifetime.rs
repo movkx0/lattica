@@ -13,6 +13,8 @@ use crate::spend_pipeline::full_workflow::{ClosedWorkflowPlan, ClosureError};
 use std::cell::{Cell, OnceCell, RefCell};
 use core::mem::size_of;
 mod metadata_source;
+mod metadata_owner;
+pub(crate) use metadata_owner::MetadataOwner;
 mod metadata_seal;
 mod runtime_identity;
 mod planning_residual;
@@ -29,6 +31,8 @@ pub(crate) struct CaseRetirementState {
     state: Cell<State>,
     ledger: Ledger,
     generation_session: u64,
+    #[cfg(test)]
+    fixture_context: Option<*const crate::execution::ProvingContext>,
     transactions: usize,
     batch_identity: Cell<*const ()>,
     sealed_plan: Cell<*const ()>,
@@ -46,6 +50,9 @@ pub(crate) struct CaseOwnerSlot<'case, T> {
     owner: OnceCell<T>,
     state: &'case CaseRetirementState,
     original: Option<Reservation>,
+    // Table slots cannot escape their frozen Vec. Their table keeps the
+    // shared sequential install/destruction frames alive, including unwind.
+    shared_table_frames: bool,
 }
 
 fn frames(parts: &[usize]) -> Result<Requirements> {
@@ -91,6 +98,7 @@ impl CaseRetirementState {
         Ok(Self {
             state: Cell::new(State::Prepared), ledger: batch.ledger.clone(),
             generation_session: batch.terminal.session_id(), transactions: N,
+            #[cfg(test)] fixture_context: None,
             batch_identity: Cell::new(core::ptr::null()),
             sealed_plan: Cell::new(core::ptr::null()),
             sealed_context: Cell::new(core::ptr::null()),
@@ -111,7 +119,7 @@ impl CaseRetirementState {
         { return Err(source("case batch does not match generation")); }
         let original = self.batch_original.borrow_mut().take()
             .ok_or_else(|| source("case batch slot already issued"))?;
-        let slot = CaseOwnerSlot { owner: OnceCell::new(), state: self, original: Some(original) };
+        let slot = CaseOwnerSlot { shared_table_frames: false, owner: OnceCell::new(), state: self, original: Some(original) };
         slot.install(batch)?;
         Ok(slot)
     }
@@ -124,7 +132,7 @@ impl CaseRetirementState {
         if self.state.get() != State::Armed { return Err(source("case owner slot outside active case")); }
         let original = self.ledger.admit_phase(slot_requirements::<T>()?)
             .map_err(|_| source("case owner slot admission failed"))?;
-        Ok(CaseOwnerSlot { owner: OnceCell::new(), state: self, original: Some(original) })
+        Ok(CaseOwnerSlot { shared_table_frames: false, owner: OnceCell::new(), state: self, original: Some(original) })
     }
 
     fn retaining(&self) -> bool { matches!(self.state.get(), State::Armed | State::Sealed | State::Finalizing | State::Poisoned) }
@@ -221,7 +229,7 @@ impl<const N: usize> CaseOwnerSlot<'_, FreshGenerationBatch<N>> {
         drop(planning_claim);
         let original = self.state.planning_original.borrow_mut().take()
             .ok_or_else(|| source("case planning slot already issued"))?;
-        let slot = CaseOwnerSlot { owner: OnceCell::new(), state: self.state, original: Some(original) };
+        let slot = CaseOwnerSlot { shared_table_frames: false, owner: OnceCell::new(), state: self.state, original: Some(original) };
         self.state.batch_identity.set(batch as *const FreshGenerationBatch<N> as *const ());
         self.state.state.set(State::Armed);
         slot.install(batch.start_planning())?;

@@ -71,7 +71,7 @@ fn attempt<'a>(access: &ExecutionAccess<'_>, phase: &mut OwnedPhase<'_>,
 {
     operation.validate(access, phase.ledger())?;
     let (compiler_output, compiler_scratch) = operation.plan().source_compile_plan()
-        .blueprint().compiler_requirements();
+        .compiler_requirements();
     if access.backend != Bytes::ZERO || !output.belongs_to(phase.ledger())
         || access.binding().facts().output != compiler_output
         || !contains(access.binding().facts().scratch, compiler_scratch)

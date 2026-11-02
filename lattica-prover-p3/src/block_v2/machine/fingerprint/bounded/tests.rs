@@ -77,6 +77,9 @@ fn bounded_fingerprint_rejects_quota_and_geometry_before_encoding() {
     // Distinct roots are distinct nodes even when their values are identical.
     let roots = vec![SymbolicExpression::Leaf(BaseLeaf::IsFirstRow); MAX_NODES];
     let at_limit = encode(&roots, &[], &empty, HOST_BYTES).unwrap();
+    assert!(at_limit.capacity() * 8 <= RETAINED_BYTES);
+    assert_eq!(allocation(MAX_NODES, MAX_NODES, HOST_BYTES).unwrap() * 8, RETAINED_BYTES);
+    assert!(RETAINED_BYTES < HOST_BYTES);
     assert_eq!(at_limit[1], MAX_NODES as u64);
     let mut beyond = roots;
     beyond[0] = -beyond[0].clone();

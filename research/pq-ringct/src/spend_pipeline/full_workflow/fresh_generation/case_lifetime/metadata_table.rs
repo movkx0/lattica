@@ -46,7 +46,20 @@ fn backing_requirements<T>(count: usize) -> Result<Requirements> {
         size_of::<core::result::Result<Reservation,
             (crate::execution::retained_resources::Error, Reservation, Reservation)>>(),
     ])?;
-    combine(array, forwarding)
+    // A table is !Send/!Sync and installs/destroys entries sequentially. Keep
+    // one complete set of T-sized caller frames with its backing, not one
+    // set per resident entry. Frozen array capacity remains charged in full.
+    combine(combine(array, forwarding)?, super::slot_requirements::<T>()?)
+}
+fn table_slot_requirements<T>() -> Result<Requirements> {
+    // Keep a distinct, nonempty original for each ownership-control shell.
+    // The frozen table original already covers every inline payload and its
+    // Vec allocation. Entries cannot escape that table or become standalone
+    // slots; membership authenticates both originals and the shared-frame bit.
+    Ok(Requirements::single(Category::RegisteredMetadata, Bytes {
+        host: u64::try_from(size_of::<CaseOwnerSlot<'static, ()>>())
+            .map_err(|_| source("table slot census width"))?, device: 0,
+    }))
 }
 
 impl<'case, T> CaseOwnerTable<'case, T> {
@@ -54,7 +67,7 @@ impl<'case, T> CaseOwnerTable<'case, T> {
     /// The count is not permission to allocate or admit a replacement claim.
     pub(crate) fn requirements(count: usize) -> Result<Requirements> {
         let mut total = backing_requirements::<T>(count)?;
-        let slot = CaseRetirementState::owner_slot_requirements::<T>()?;
+        let slot = table_slot_requirements::<T>()?;
         let count = u64::try_from(count).map_err(|_| source("case table slot count width"))?;
         for category in Category::ALL {
             let part = slot.get(category);
@@ -87,11 +100,16 @@ impl<'case, T> CaseOwnerTable<'case, T> {
 
     fn construct(&mut self, count: usize) -> Result<()> {
         let original = self.unissued.as_ref().ok_or_else(|| source("case table original missing"))?;
+        #[cfg(test)]
+        if std::env::var_os("LATTICA_RINGCT_METADATA_STAGE_PROFILE").is_some() {
+            let bytes = original.requirements().total().map_err(|_| source("table profile overflow"))?;
+            eprintln!("RINGCT_METADATA_OWNER_TABLE {{\"type\":\"{}\",\"count\":{count},\"host\":{}}}", core::any::type_name::<T>(), bytes.host);
+        }
         if self.state.state.get() != State::Armed || !original.belongs_to(&self.state.ledger)
             || original.requirements() != Self::requirements(count)?
         { return Err(source("case table original mismatch")); }
         let backing = backing_requirements::<T>(count)?;
-        let slot = CaseRetirementState::owner_slot_requirements::<T>()?;
+        let slot = table_slot_requirements::<T>()?;
         self.backing = Some(self.unissued.as_mut().expect("checked original").split(backing)
             .map_err(|_| source("case table backing split failed"))?);
         let slots = self.slots.as_mut().expect("construction owns vector");
@@ -100,22 +118,11 @@ impl<'case, T> CaseOwnerTable<'case, T> {
         for _ in 0..count {
             let original = self.unissued.as_mut().expect("construction remainder").split(slot)
                 .map_err(|_| source("case table slot split failed"))?;
-            match self.state.preclaim_from_original(original) {
-                Ok(slot) => slots.push(slot),
-                Err((error, original)) => {
-                    let remainder = self.unissued.take().expect("construction remainder");
-                    match remainder.reunite(original) {
-                        Ok(original) => self.unissued = Some(original),
-                        Err((_error, remainder, refused)) => {
-                            // Unexpected provenance failure must not release
-                            // either owner while the case remains unretired.
-                            core::mem::forget(remainder);
-                            core::mem::forget(refused);
-                        }
-                    }
-                    return Err(error);
-                }
-            }
+            // This private path is reached only after the exact array and
+            // shared-frame original was installed above. No public standalone
+            // slot constructor accepts this smaller retained-only original.
+            slots.push(CaseOwnerSlot { owner: super::OnceCell::new(), state: self.state,
+                original: Some(original), shared_table_frames: true });
         }
         if self.unissued.as_ref().ok_or_else(|| source("case table remainder lost"))?
             .requirements().total().map_err(|_| source("case table remainder overflow"))? != Bytes::ZERO
@@ -138,7 +145,7 @@ impl<'case, T> CaseOwnerTable<'case, T> {
         if slots.len() != slots.capacity() { return false; }
         let (Ok(backing), Ok(slot)) = (
             backing_requirements::<T>(slots.len()),
-            CaseRetirementState::owner_slot_requirements::<T>(),
+            table_slot_requirements::<T>(),
         ) else { return false; };
         self.backing.as_ref().is_some_and(|original|
             original.belongs_to(&case.ledger) && original.requirements() == backing)
@@ -146,7 +153,7 @@ impl<'case, T> CaseOwnerTable<'case, T> {
                 original.belongs_to(&case.ledger)
                     && original.requirements() == Requirements::default())
             && slots.iter().all(|owner|
-                core::ptr::eq(owner.state, case)
+                owner.shared_table_frames && core::ptr::eq(owner.state, case)
                     && owner.original.as_ref().is_some_and(|original|
                         original.belongs_to(&case.ledger) && original.requirements() == slot))
     }

@@ -1,6 +1,7 @@
 //! Small raw witness operations; only node roots and status are read back.
 use super::*;
 use crate::proving::{Backend, Run, Stage};
+use crate::proving::preparation_profile as profile;
 
 pub(in crate::block_v2::gpu_hash::engine) const KERNEL_SRC: &str = include_str!("pq_operations.cl");
 
@@ -13,6 +14,7 @@ impl DeviceSession {
         host_allowance: usize,
         run: &Run,
     ) -> Result<[u64; 4], String> {
+        let _operation = profile::operation(profile::NODE);
         let expected_words = match kind {
             0 if matches!(modulus, 167770241 | 3489661057) => 256,
             1 if modulus == 0 => 256,
@@ -36,7 +38,10 @@ impl DeviceSession {
             let raw = random::SecretAllocation::new(engine, expected_words)?;
             let output = random::SecretAllocation::new(engine, 5)?;
             let fence = engine.fence();
+            let upload = profile::metric(profile::UPLOAD);
             raw.buffer().write(input).enq().map_err(|e| e.to_string())?;
+            drop(upload);
+            let setup = profile::metric(profile::KERNEL);
             let mut builder = engine.pq.kernel_builder("pq_operation_commit_node");
             builder
                 .arg(raw.buffer())
@@ -47,18 +52,18 @@ impl DeviceSession {
                 builder.arg(&constant.buffer);
             }
             let mut event = compute::Event::empty();
+            let kernel = builder.global_work_size(1).build().map_err(|e| e.to_string())?;
+            drop(setup);
             // SAFETY: fixed input/output shapes were admitted together before
             // uploading any node values; the kernel has one bounded work item.
             unsafe {
-                builder
-                    .global_work_size(1)
-                    .build()
-                    .map_err(|e| e.to_string())?
+                kernel
                     .cmd()
                     .enew(&mut event)
                     .enq()
                     .map_err(|e| e.to_string())?;
             }
+            let wait = profile::metric(profile::DEVICE_WAIT);
             let ns = self
                 .session
                 .record_event(
@@ -71,16 +76,20 @@ impl DeviceSession {
                     run.observation_failed();
                     e
                 })?;
+            drop(wait);
             run.observe_device(Stage::WitnessTrace, Backend::OpenCl, 1, ns)
                 .map_err(|e| e.to_string())?;
             let mut words = [0u64; 5];
+            let readback = profile::metric(profile::READBACK);
             output
                 .buffer()
                 .read(&mut words[..])
                 .enq()
                 .map_err(|e| e.to_string())?;
             fence.finish()?;
+            drop(readback);
             let uploaded = (input.len() * 8) as u64;
+            profile::transfer(uploaded, 40);
             engine.stats.uploaded_bytes += uploaded;
             engine.stats.downloaded_bytes += 40;
             {

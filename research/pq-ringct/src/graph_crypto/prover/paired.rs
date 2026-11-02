@@ -182,7 +182,6 @@ impl<'request> PairedRequestPlan<'request> {
         plan.push(RequestStepKind::Endpoints, PhaseKind::EndpointAttach,
             plan.slots.endpoint, requirement(Category::PhaseScratch,
                 endpoints::OUTPUT_COPY_FRAME_BYTES)?)?;
-        let parent_source = source::parent_source()?;
         let mut carry = [None; usize::BITS as usize];
         let mut live = 0usize;
         let mut maximum_live = 0usize;
@@ -196,7 +195,7 @@ impl<'request> PairedRequestPlan<'request> {
             let id = plan.nodes.len();
             plan.nodes.push(RequestNodeSource { id, span: ComponentSpan::leaf(span)?, source: leaf_source,
                 children: None, group: Some(span) });
-            let (output, scratch) = source::compiler_requirements(leaf_source, Some(span.segment_count))?;
+            let (output, scratch) = source::compiler_requirements(leaf_source, source::CompilerGeometry::Group(span.segment_count))?;
             plan.slots.compiled = maxima(plan.slots.compiled, output);
             plan.push(RequestStepKind::Group { node: id }, PhaseKind::GroupCompile, output,
                 combine(&[scratch, endpoints::group_preparation_requirements(request)?.0])?)?;
@@ -209,7 +208,7 @@ impl<'request> PairedRequestPlan<'request> {
                 let slot = carry.get_mut(level).ok_or(PairedFailure::Overflow)?;
                 match slot.take() {
                     None => { *slot = Some(value); break; }
-                    Some(left) => { value = plan.merge(left, value, parent_source)?; live -= 1; level += 1; }
+                    Some(left) => { value = plan.merge(left, value)?; live -= 1; level += 1; }
                 }
             }
         }
@@ -217,7 +216,7 @@ impl<'request> PairedRequestPlan<'request> {
         for left in carry.into_iter().flatten() {
             right = Some(match right {
                 None => left,
-                Some(right) => { live -= 1; plan.merge(left, right, parent_source)? }
+                Some(right) => { live -= 1; plan.merge(left, right)? }
             });
         }
         plan.root = right.ok_or(PairedFailure::Coverage)?;
@@ -249,14 +248,16 @@ impl<'request> PairedRequestPlan<'request> {
                 PreissuedPairedOuter::planning_scratch_requirement()?])?)
     }
 
-    fn merge(&mut self, left: usize, right: usize, source: ComponentSourceFacts) -> Result<usize> {
+    fn merge(&mut self, left: usize, right: usize) -> Result<usize> {
         let a = *self.nodes.get(left).ok_or(PairedFailure::Order)?;
         let b = *self.nodes.get(right).ok_or(PairedFailure::Order)?;
+        let rows = [a.source.maximum_padded_rows, b.source.maximum_padded_rows];
+        let source = source::parent_source(rows[0], rows[1])?;
         let id = self.nodes.len();
         if id == self.nodes.capacity() { return Err(PairedFailure::Capacity); }
         self.nodes.push(RequestNodeSource { id, span: ComponentSpan::merge(a.span, b.span)?, source,
             children: Some([left, right]), group: None });
-        let (output, scratch) = source::compiler_requirements(source, None)?;
+        let (output, scratch) = source::compiler_requirements(source, source::CompilerGeometry::Parent(rows))?;
         self.slots.compiled = maxima(self.slots.compiled, output);
         self.push(RequestStepKind::Merge { node: id, left, right }, PhaseKind::ParentCompile, output, scratch)?;
         self.push_outer(id)?;

@@ -56,7 +56,9 @@ impl<'source, 'a> ParametersPpGraphPlan<'source, 'a> {
         { return Err(GraphParentFailure::Authority); }
         source::validate_coverage(prepared.get(), request, ordinal)?;
         let source = source::derive(prepared, request, ordinal)?;
-        let (compiled, compiler_scratch) = source::compiler_requirements(prepared.get())?;
+        let (compiled, compiler_scratch) = source::compiler_requirements(
+            prepared.get(), request.root_source().maximum_padded_rows)?;
+        let (compiled, compiler_scratch) = super::memory::packed_compiler_requirements(source, (compiled, compiler_scratch), super::source::PROGRAM_BYTES)?;
         let (output, verifier) = source.output_requirements()?;
         let failure = super::memory::failure_requirements()?;
         let fact = |kind, output, scratch| PhaseFacts { kind, output, scratch, failure,

@@ -41,8 +41,10 @@ impl CommittedBackend<'_> {
                 index,
             })
         });
-        let commitment = witness_value!(self, device => device.commit_canonical(&values, modulus),
-            commit_values(POLYNOMIAL_DOMAIN, modulus, &values), [Val::ZERO; 4]);
+        let commitment = if self.pending_commitments { [Val::ZERO; 4] } else {
+            witness_value!(self, device => device.commit_canonical(&values, modulus),
+                commit_values(POLYNOMIAL_DOMAIN, modulus, &values), [Val::ZERO; 4])
+        };
         self.graph.polynomials.push(PolynomialNode {
             kind: PolynomialKind::Canonical { modulus },
             source,
@@ -64,8 +66,10 @@ impl CommittedBackend<'_> {
                 index,
             })
         });
-        let commitment = witness_value!(self, device => device.commit_signed(&values),
-            commit_signed_values(&values), [Val::ZERO; 4]);
+        let commitment = if self.pending_commitments { [Val::ZERO; 4] } else {
+            witness_value!(self, device => device.commit_signed(&values),
+                commit_signed_values(&values), [Val::ZERO; 4])
+        };
         self.graph.polynomials.push(PolynomialNode {
             kind: PolynomialKind::Signed { bound },
             source,
@@ -110,8 +114,10 @@ impl CommittedBackend<'_> {
             owner: self.graph.owner,
             index: self.graph.bytes.len(),
         };
-        let commitment = witness_value!(self, device => device.commit_bytes(&values),
-            commit_bytes(BYTES32_DOMAIN, &values), [Val::ZERO; 4]);
+        let commitment = if self.pending_commitments { [Val::ZERO; 4] } else {
+            witness_value!(self, device => device.commit_bytes(&values),
+                commit_bytes(BYTES32_DOMAIN, &values), [Val::ZERO; 4])
+        };
         self.graph.bytes.push(BytesNode {
             source,
             commitment,

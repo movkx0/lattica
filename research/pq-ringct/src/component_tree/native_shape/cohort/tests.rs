@@ -568,3 +568,153 @@ fn phase_original_is_checked_before_native_cache_selection() {
     drop(original);
     assert_eq!(ledger.snapshot().current, Bytes::ZERO);
 }
+
+#[test]
+fn measured_costs_reorder_work_without_authorizing_memory() {
+    let a = fixture().storage;
+    let mut b = a;
+    b.geometry.height *= 2;
+    let mut hints = reuse::Hints::default();
+    assert!(hints.estimate(b) > hints.estimate(a));
+    hints.observe(a, 9000, 60 << 20);
+    hints.observe(b, 1000, usize::MAX);
+    assert!(hints.estimate(a) > hints.estimate(b));
+    let mut nearby = a;
+    nearby.geometry.public_values += 1;
+    assert!(hints.contains(nearby.geometry));
+    assert_eq!(hints.cap(nearby, limits()), initial_cap(nearby, limits()));
+    assert!(hints.cap(a, limits()) >= initial_cap(a, limits()));
+    assert_eq!(hints.cap(b, limits()), limits().max_requested_program_bytes);
+    let mut order = Vec::new();
+    let mut slots = [Some(a); MAX];
+    slots[1] = Some(b);
+    let mut results = [None; MAX];
+    let mut stats = Statistics::default();
+    let order = std::sync::Mutex::new(&mut order);
+    scheduler::run_accounted(
+        &slots,
+        &[None; MAX],
+        2,
+        limits(),
+        a.total_requested_bytes.max(b.total_requested_bytes),
+        0,
+        1,
+        &mut results,
+        &mut stats,
+        &mut reuse::empty(),
+        &mut hints,
+        0,
+        |_| Ok(()),
+        |i, _| worker_bytes(slots[i].unwrap()),
+        |i, _, _| {
+            order.lock().unwrap().push(i);
+            Ok(fixture())
+        },
+    )
+    .unwrap();
+    assert_eq!(order.lock().unwrap()[0], 0);
+}
+
+#[test]
+fn compiler_backing_survives_windows_and_ledger_claim_transfer() {
+    use crate::execution::retained_resources::{Bytes, Category, Ledger, WorkerAllowance};
+    let ledger = Ledger::new(WorkerAllowance {
+        host: 4 << 30,
+        device: 0,
+    });
+    let value = fixture();
+    let original = ledger
+        .reserve(
+            Category::PhaseScratch,
+            Bytes {
+                host: value.storage.total_requested_bytes as u64,
+                device: 0,
+            },
+        )
+        .unwrap();
+    let backing = phase::Backing {
+        original: &original,
+        ledger: &ledger,
+    };
+    let mut session = Session::default();
+    let mut reference = None;
+    for window in 0..2 {
+        let mut permit = session
+            .admit(&backing, value.storage.total_requested_bytes, 9, 16)
+            .unwrap();
+        let mut buffers = std::mem::replace(&mut session.buffers, reuse::empty());
+        let imported = reuse::bytes(&buffers).unwrap();
+        let mut results = [None; MAX];
+        let mut stats = Statistics::default();
+        scheduler::run_accounted(
+            &[Some(value.storage); MAX],
+            &[None; MAX],
+            9,
+            limits(),
+            permit.budget(),
+            0,
+            2,
+            &mut results,
+            &mut stats,
+            &mut buffers,
+            &mut session.hints,
+            permit.extra_bytes(),
+            |_| {
+                Descriptor::Native(NativeDescriptor::Sparse(sparse_air::Kind::AlphaPrime39))
+                    .prepare(value.storage, None)
+            },
+            |_, p| p.retained_worker_bytes(),
+            |_, p, cap| {
+                p.lower(ConstructionLimits {
+                    max_requested_program_bytes: cap,
+                    ..limits()
+                })
+            },
+        )
+        .unwrap();
+        assert_eq!(stats.jobs_started, 9);
+        assert!(stats.admitted_host_bytes_peak >= COORDINATOR + 2 * THREAD + imported);
+        if window != 0 {
+            assert_eq!(stats.restored_workspaces, 2);
+        }
+        let mut counts = results[0].unwrap().counts;
+        counts.planner_requested_program_bytes_peak = 0;
+        if let Some(prior) = reference {
+            assert_eq!(counts, prior);
+        }
+        reference = Some(counts);
+        let held = reuse::trim(&mut buffers, permit.extra_bytes()).unwrap();
+        assert!(held > 0);
+        session.claim = permit.retain(held).unwrap();
+        session.buffers = buffers;
+        drop(permit);
+        assert_eq!(
+            ledger.snapshot().current.host,
+            original.requirements().get(Category::PhaseScratch).host + held as u64
+        );
+    }
+    // A foreign ledger cannot inherit buffers or their allocation authority.
+    let foreign = Ledger::new(WorkerAllowance {
+        host: 4 << 30,
+        device: 0,
+    });
+    assert!(session
+        .admit(
+            &phase::Backing {
+                original: &original,
+                ledger: &foreign
+            },
+            value.storage.total_requested_bytes,
+            9,
+            16
+        )
+        .is_err());
+    assert!(session.buffers.iter().all(Option::is_none));
+    assert!(session.claim.is_none());
+    assert_eq!(
+        ledger.snapshot().current.host,
+        value.storage.total_requested_bytes as u64
+    );
+    drop(original);
+    assert_eq!(ledger.snapshot().current, Bytes::ZERO);
+}

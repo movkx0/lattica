@@ -28,7 +28,7 @@ impl CaseRetirementState {
             Ok(())
         })();
         match checked {
-            Ok(()) => Ok(CaseOwnerSlot { owner: OnceCell::new(), state: self,
+            Ok(()) => Ok(CaseOwnerSlot { shared_table_frames: false, owner: OnceCell::new(), state: self,
                 original: Some(original) }),
             Err(error) => Err((error, original)),
         }

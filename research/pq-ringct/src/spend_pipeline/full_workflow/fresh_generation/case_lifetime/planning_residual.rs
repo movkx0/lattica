@@ -4,7 +4,7 @@ use super::*;
 
 impl CaseRetirementState {
     pub(crate) fn claim_planning_residual(&self, original: &Reservation) -> Result<()> {
-        if self.state.get() != State::Armed || self.batch_identity.get().is_null()
+        if self.state.get() != State::Armed || !self.metadata_owner_installed()
             || !original.belongs_to(&self.ledger)
             || self.original.as_ref().is_none_or(|state| !state.belongs_to(&self.ledger))
             || self.planning_residual_issued.get()

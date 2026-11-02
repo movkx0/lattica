@@ -85,6 +85,7 @@ impl<'source, 'a> AuxiliaryGraphPlan<'source, 'a> {
         // recursive template construction. Planning never observes proof rows.
         let (compiled, compiler_scratch) = bounds::compiler_requirements(prepared.get(), sources)?;
         let source = bounds::derive(prepared, sources, ordinal)?;
+        let (compiled, compiler_scratch) = super::memory::packed_compiler_requirements(source, (compiled, compiler_scratch), super::source::PROGRAM_BYTES)?;
         let (output, verifier) = source.output_requirements()?;
         let failure = super::memory::failure_requirements()?;
         let fact = |kind, output, scratch| PhaseFacts { kind, output, scratch, failure,

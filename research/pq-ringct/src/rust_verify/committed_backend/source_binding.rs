@@ -19,6 +19,7 @@ use sha3::{Digest, Sha3_256};
 
 pub const NODE_MANIFEST_DOMAIN: u64 = 0x4d4154525f534731;
 mod operations;
+pub(crate) mod prepared;
 #[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
 mod owned_sources;
 const VERSION: u64 = 1;
@@ -202,6 +203,7 @@ impl RegisteredGraphShape {
         })
     }
     pub fn matches(&self, graph: &UnprovedRelationGraph) -> bool {
+        crate::preparation_options::reuse_count(crate::preparation_options::ReuseCounter::ExactComparisons);
         self.exact_shape == inventory::exact_shape(graph)
     }
     fn header(&self, graph: &UnprovedRelationGraph) -> Vec<u64> {
@@ -249,6 +251,11 @@ impl RegisteredGraphShape {
         if !self.matches(graph) {
             return Err(error("graph shape differs from trusted registration"));
         }
+        self.bound_node_manifest_on_gpu(graph, operations)
+    }
+    #[cfg(feature = "opencl")]
+    fn bound_node_manifest_on_gpu(&self, graph: &UnprovedRelationGraph,
+        operations: &lattica_prover_p3::block_v2::native_gpu::OperationContext<'_>) -> Result<[Val; 4]> {
         let count = graph
             .polynomials
             .len()

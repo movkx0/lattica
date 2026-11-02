@@ -17,6 +17,20 @@ pub struct OperationContext<'a> {
     pub(crate) run: &'a Run,
     pub(crate) host_allowance: usize,
     failed: Cell<bool>,
+    #[cfg(feature = "gpu")]
+    pub(super) workspace: std::cell::RefCell<Option<crate::block_v2::gpu_hash::engine::device::preparation_storage::Workspace>>,
+}
+/// Additional storage that a caller must fund before opting into scope reuse.
+#[derive(Clone, Copy, Debug)]
+pub struct RawPreparationWorkspaceStorage { pub host_bytes: usize, pub device_bytes: usize }
+impl RawPreparationWorkspaceStorage {
+    pub const fn fixed() -> Self {
+        #[cfg(feature = "gpu")]
+        { use crate::block_v2::gpu_hash::engine::device::preparation_storage as storage;
+          Self { host_bytes: storage::HOST_BYTES, device_bytes: storage::DEVICE_BYTES } }
+        #[cfg(not(feature = "gpu"))]
+        { Self { host_bytes: 0, device_bytes: 0 } }
+    }
 }
 
 struct PoisonOnDrop<'a> {
@@ -72,15 +86,19 @@ pub fn with_operations<T>(
         Run::new(WITNESS_PREPARATION_ENTRY, request, capabilities).map_err(|e| e.to_string())?;
     let session = DeviceSession::new()?;
     let _capacity = session.reserve_proof_capacity()?;
+    let profile = crate::proving::preparation_profile::Scope::begin();
     let context = OperationContext {
         session: &session,
         run: &run,
         host_allowance: host_bytes,
         failed: Cell::new(false),
+        #[cfg(feature = "gpu")]
+        workspace: std::cell::RefCell::new(None),
     };
     let value = context.execute(|| operation(&context))?;
     drop(context);
     let report = run.finish(true).map_err(|e| e.to_string())?;
+    profile.complete();
     Ok((value, report))
 }
 
@@ -96,6 +114,20 @@ impl Drop for RawNode {
 }
 
 impl OperationContext<'_> {
+    pub fn enable_reusable_storage(&self) -> Result<(), String> {
+        self.execute(|| {
+            #[cfg(feature = "gpu")]
+            {
+                if self.workspace.try_borrow().map_err(|_| "reentrant preparation workspace")?.is_some() { return Ok(()); }
+                self.admit_host_bytes(RawPreparationWorkspaceStorage::fixed().host_bytes)?;
+                let workspace = self.session.preparation_workspace()?;
+                *self.workspace.try_borrow_mut().map_err(|_| "reentrant preparation workspace")? = Some(workspace);
+                Ok(())
+            }
+            #[cfg(not(feature = "gpu"))]
+            { Err("raw preparation workspace requires OpenCL".into()) }
+        })
+    }
     /// All public operations use this boundary, including their admission and
     /// conversions. A caught error or panic cannot yield a successful report.
     pub(crate) fn execute<T>(
@@ -106,7 +138,13 @@ impl OperationContext<'_> {
     }
 
     pub(crate) fn admit_host_bytes(&self, bytes: usize) -> Result<(), String> {
-        if bytes > self.host_allowance {
+        #[cfg(feature = "gpu")]
+        let retained = if self.workspace.try_borrow().map_err(|_| "reentrant preparation workspace")?.is_some() {
+            RawPreparationWorkspaceStorage::fixed().host_bytes
+        } else { 0 };
+        #[cfg(not(feature = "gpu"))]
+        let retained = 0;
+        if bytes.checked_add(retained).is_none_or(|total| total > self.host_allowance) {
             return Err("raw witness operation exceeds host allowance".into());
         }
         Ok(())
@@ -121,6 +159,8 @@ impl OperationContext<'_> {
     ) -> Result<[u64; 4], String> {
         self.execute(|| {
             self.admit_host_bytes((256 + 9) * 8)?;
+            #[cfg(feature = "gpu")]
+            if let Some(result) = self.session.prepared_commit_node(&self.workspace, 0, values, modulus, self.run) { return result; }
             self.session
                 .pq_operation_commit_node(0, values, modulus, self.host_allowance, self.run)
         })
@@ -135,6 +175,8 @@ impl OperationContext<'_> {
             for (word, &value) in raw.0.iter_mut().zip(values) {
                 *word = value as u64;
             }
+            #[cfg(feature = "gpu")]
+            if let Some(result) = self.session.prepared_commit_node(&self.workspace, 1, &raw.0, 0, self.run) { return result; }
             self.session
                 .pq_operation_commit_node(1, &raw.0, 0, self.host_allowance, self.run)
         })
@@ -149,6 +191,8 @@ impl OperationContext<'_> {
             for (word, &value) in raw.0.iter_mut().zip(values) {
                 *word = u64::from(value);
             }
+            #[cfg(feature = "gpu")]
+            if let Some(result) = self.session.prepared_commit_node(&self.workspace, 2, &raw.0[..32], 0, self.run) { return result; }
             self.session
                 .pq_operation_commit_node(2, &raw.0[..32], 0, self.host_allowance, self.run)
         })

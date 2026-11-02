@@ -104,6 +104,16 @@ impl ComponentSourceFacts {
             self.maximum_wires, self.maximum_hint_words)
             .map(|bytes| bytes.min(PROGRAM_BYTES)).map_err(|_| PairedFailure::Overflow)
     }
+    /// ProofInputs starts empty and grows by checked powers of two, up to the
+    /// unchanged input limit. Keep its final backing and public Vec capacity;
+    /// old/new growth overlap belongs to construction scratch.
+    pub(crate) fn retained_input_host_bytes(self) -> Result<usize> {
+        let capacity = if self.maximum_input_values == 0 { 0 } else {
+            self.maximum_input_values.checked_next_power_of_two()
+                .ok_or(PairedFailure::Overflow)?.max(4).min(INPUT_VALUES)
+        };
+        bytes::<crate::component_tree::Val>(add(capacity, 2 * PUBLICS)?)
+    }
     fn new(operations: OperationCounts, wires: usize, inputs: usize, hints: usize,
            input_values_are_exact: bool) -> Result<Self> {
         let active = operations.active_rows(PUBLICS).map_err(|_| PairedFailure::Overflow)?;
@@ -136,6 +146,8 @@ impl ComponentSourceFacts {
             || program.witness_values() > self.maximum_input_values
             || (self.input_values_are_exact && program.witness_values() != self.maximum_input_values)
             || node.witness.len() != program.witness_values()
+            || bytes::<crate::component_tree::Val>(add(node.witness.capacity(), node.public.capacity())?)?
+                > self.retained_input_host_bytes()?
             || program.retained_host_bytes().map_err(|_| PairedFailure::Capacity)?
                 > self.retained_program_host_bytes()?
             || shape::selection_hint_words(program).map_err(|_| PairedFailure::Overflow)?
@@ -264,43 +276,54 @@ pub(crate) fn parent_planning_requirements() -> Result<Requirements> {
     requirement(Category::PhaseScratch, add(PROGRAM_BYTES, storage.auxiliary_peak_bytes)?)
 }
 
-pub(crate) fn parent_source() -> Result<ComponentSourceFacts> {
-    let envelope = shape::verifier_height_envelope(PUBLICS, MAX_ROWS, construction(), AUXILIARY_BYTES)
+pub(crate) fn parent_source(left_rows: usize, right_rows: usize) -> Result<ComponentSourceFacts> {
+    registered_shape(left_rows)?;
+    registered_shape(right_rows)?;
+    let left = shape::verifier_height_envelope(PUBLICS, left_rows, construction(), AUXILIARY_BYTES)
         .map_err(|_| PairedFailure::Source)?;
-    if envelope.heights_enumerated != 18 { return Err(PairedFailure::SourceDrift); }
+    let right = shape::verifier_height_envelope(PUBLICS, right_rows, construction(), AUXILIARY_BYTES)
+        .map_err(|_| PairedFailure::Source)?;
+    if left.heights_enumerated != left_rows.ilog2() as usize - 2
+        || right.heights_enumerated != right_rows.ilog2() as usize - 2
+    { return Err(PairedFailure::SourceDrift); }
     // Exactly the maintained component public_wires + bind_merge framing.
     let framing = OperationCounts {
         scalar: 8 * 162 + (8 + 6 + 4) * 2 + 2 * (HEADER - 3) + 5 + 3 * 4,
         cubic: 0, poseidon: 0,
     };
-    let operations = envelope.operations.with_overhead(envelope.operations)
+    let operations = left.operations.with_overhead(right.operations)
         .and_then(|n| n.with_overhead(framing)).map_err(|_| PairedFailure::Overflow)?;
     ComponentSourceFacts::new(operations,
-        add(PUBLICS, add(mul(2, envelope.wire_upper_bound)?, framing.scalar)?)?,
-        mul(2, envelope.input_values_upper_bound)?,
-        mul(2, envelope.selection_hint_words_upper_bound)?, false)
+        add(PUBLICS, add(add(left.wire_upper_bound, right.wire_upper_bound)?, framing.scalar)?)?,
+        add(left.input_values_upper_bound, right.input_values_upper_bound)?,
+        add(left.selection_hint_words_upper_bound, right.selection_hint_words_upper_bound)?, false)
 }
+#[derive(Clone, Copy)]
+pub(crate) enum CompilerGeometry { Group(usize), Parent([usize; 2]) }
 
 /// The compiled owner keeps Program and ProofInputs charged while the outer
 /// backend borrows them. Scratch is returned only after the compiler finishes.
-pub(crate) fn compiler_requirements(source: ComponentSourceFacts, members: Option<usize>) -> Result<(Requirements, Requirements)> {
-    let (input, auxiliary) = if let Some(members) = members {
+pub(crate) fn compiler_requirements(source: ComponentSourceFacts, geometry: CompilerGeometry) -> Result<(Requirements, Requirements)> {
+    let (input, auxiliary) = if let CompilerGeometry::Group(members) = geometry {
         let source = ShakeGroupCompileFootprint::for_group(members, construction())
             .map_err(|_| PairedFailure::Source)?;
         (source.input_backing_bytes, source.auxiliary_peak_bytes)
-    } else {
+    } else if let CompilerGeometry::Parent([left, right]) = geometry {
         let source = PlanningStorage::for_children(PUBLICS,
-            &[registered_shape(MAX_ROWS)?, registered_shape(MAX_ROWS)?], construction())
+            &[registered_shape(left)?, registered_shape(right)?], construction())
             .map_err(|_| PairedFailure::Source)?;
         (source.input_backing_bytes, source.auxiliary_peak_bytes)
-    };
+    } else { unreachable!() };
     if auxiliary > AUXILIARY_BYTES { return Err(PairedFailure::Capacity); }
     let owners = bytes::<super::PairedCompiled<'static>>(8)?;
     let retained = source.retained_program_host_bytes()?;
-    let construction_extra = PROGRAM_BYTES.checked_sub(retained).ok_or(PairedFailure::Capacity)?;
+    let retained_input = source.retained_input_host_bytes()?;
+    let complete_input = add(input, bytes::<crate::component_tree::Val>(2 * PUBLICS)?)?;
+    let construction_extra = add(PROGRAM_BYTES.checked_sub(retained).ok_or(PairedFailure::Capacity)?,
+        complete_input.checked_sub(retained_input).ok_or(PairedFailure::Capacity)?)?;
     let output = combine(&[
         requirement(Category::SymbolicCompiler, add(retained, owners)?)?,
-        requirement(Category::CompilerInputs, add(input, bytes::<crate::component_tree::Val>(2 * PUBLICS)?)?)?,
+        requirement(Category::CompilerInputs, retained_input)?,
     ])?;
     // The output plus this temporary still covers the full 2 GiB construction
     // ceiling. It retires only after check_compiled accepted immutable backing.
@@ -320,11 +343,31 @@ mod retained_tests {
             OperationCounts { scalar: 100, cubic: 5, poseidon: 2 }, 256, 10, 16, true).unwrap();
         let retained = facts.retained_program_host_bytes().unwrap();
         assert!(retained < PROGRAM_BYTES);
-        let auxiliary = ShakeGroupCompileFootprint::for_group(1, construction()).unwrap().auxiliary_peak_bytes;
-        let (output, scratch) = compiler_requirements(facts, Some(1)).unwrap();
+        let footprint = ShakeGroupCompileFootprint::for_group(1, construction()).unwrap();
+        let (output, scratch) = compiler_requirements(facts, CompilerGeometry::Group(1)).unwrap();
         let owners = bytes::<super::super::PairedCompiled<'static>>(8).unwrap();
         assert_eq!(output.get(Category::SymbolicCompiler).host, (retained + owners) as u64);
-        assert_eq!(output.get(Category::SymbolicCompiler).host + scratch.get(Category::PhaseScratch).host,
-            (PROGRAM_BYTES + owners + auxiliary + super::super::caller_bytes().unwrap()) as u64);
+        assert_eq!(output.total().unwrap().host + scratch.total().unwrap().host,
+            (PROGRAM_BYTES + owners + footprint.auxiliary_peak_bytes + super::super::caller_bytes().unwrap()
+                + footprint.input_backing_bytes + bytes::<crate::component_tree::Val>(2 * PUBLICS).unwrap()) as u64);
+        assert_eq!(output.get(Category::CompilerInputs).host, facts.retained_input_host_bytes().unwrap() as u64);
+    }
+    #[test]
+    fn parent_geometry_uses_both_source_heights_and_refuses_invalid_rows() {
+        let small = parent_source(1 << 16, 1 << 17).unwrap();
+        let large = parent_source(MAX_ROWS, MAX_ROWS).unwrap();
+        assert!(small.maximum_active_rows <= large.maximum_active_rows);
+        assert!(small.maximum_wires < large.maximum_wires);
+        assert!(small.maximum_input_values < large.maximum_input_values);
+        assert!(parent_source(7, 1 << 17).is_err());
+        assert!(parent_source(1 << 16, MAX_ROWS + 1).is_err());
+        let (output, scratch) = compiler_requirements(small, CompilerGeometry::Parent([1 << 16, 1 << 17])).unwrap();
+        let storage = PlanningStorage::for_children(PUBLICS,
+            &[registered_shape(1 << 16).unwrap(), registered_shape(1 << 17).unwrap()], construction()).unwrap();
+        assert_eq!(output.get(Category::CompilerInputs).host, small.retained_input_host_bytes().unwrap() as u64);
+        assert_eq!(output.total().unwrap().host + scratch.total().unwrap().host,
+            (PROGRAM_BYTES + bytes::<super::super::PairedCompiled<'static>>(8).unwrap()
+                + storage.auxiliary_peak_bytes + super::super::caller_bytes().unwrap()
+                + storage.input_backing_bytes + bytes::<crate::component_tree::Val>(2 * PUBLICS).unwrap()) as u64);
     }
 }

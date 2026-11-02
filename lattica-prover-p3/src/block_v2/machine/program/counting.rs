@@ -33,16 +33,57 @@ impl Counter {
     pub(super) fn operations(&self) -> usize {
         self.counts.scalar + self.counts.cubic + self.counts.poseidon
     }
-    fn observe(&mut self, op: &Op, allocated: usize) -> Result<(), ExecutionError> {
-        let valid = |wire: Wire| wire.0 < self.defined;
-        match op {
-            Op::Bit { source, bit, .. } if !valid(*source) || *bit >= 64 => {
-                return Err(ExecutionError::InvalidWire)
+    // Fixed-size ports let optimized callers count a known opcode without
+    // materializing the general WirePorts/Op representations. Validation and
+    // read-count overflow checks are identical to the full compiler sink.
+    #[inline(always)]
+    fn ports<const R: usize, const W: usize, const KIND: u8>(
+        &mut self,
+        reads: [Wire; R],
+        writes: [Wire; W],
+        allocated: usize,
+    ) -> Result<(), ExecutionError> {
+        if reads.iter().any(|w| w.0 >= self.defined) {
+            return Err(ExecutionError::InvalidWire);
+        }
+        self.reads = self
+            .reads
+            .checked_add(R as u64)
+            .filter(|&n| n <= u32::MAX as u64)
+            .ok_or(ExecutionError::TooLarge)?;
+        for wire in writes {
+            if wire.0 != self.defined || wire.0 >= allocated {
+                return Err(ExecutionError::InvalidWire);
             }
-            Op::SelectHint { entries, bits, .. } => {
+            self.defined += 1;
+        }
+        if self.defined != allocated {
+            return Err(ExecutionError::InvalidWire);
+        }
+        let count = match KIND {
+            1 => &mut self.counts.cubic,
+            2 => &mut self.counts.poseidon,
+            _ => &mut self.counts.scalar,
+        };
+        *count = count.checked_add(1).ok_or(ExecutionError::TooLarge)?;
+        Ok(())
+    }
+    #[inline(always)]
+    fn observe(&mut self, op: &Op, allocated: usize) -> Result<(), ExecutionError> {
+        match op {
+            Op::Input { out, .. } | Op::Constant { out, .. } => {
+                self.ports::<0, 1, 0>([], [*out], allocated)
+            }
+            Op::Bit { source, bit, out } => {
+                if source.0 >= self.defined || *bit >= 64 {
+                    return Err(ExecutionError::InvalidWire);
+                }
+                self.ports::<0, 1, 0>([], [*out], allocated)
+            }
+            Op::SelectHint { entries, bits, out } => {
                 if bits.len() > 24
                     || entries.len() != 1usize << bits.len()
-                    || entries.iter().chain(bits).any(|&w| !valid(w))
+                    || entries.iter().chain(bits).any(|w| w.0 >= self.defined)
                 {
                     return Err(ExecutionError::InvalidWire);
                 }
@@ -52,40 +93,32 @@ impl Counter {
                     .checked_add(entries.len())
                     .and_then(|n| n.checked_add(bits.len()))
                     .ok_or(ExecutionError::TooLarge)?;
+                self.ports::<0, 1, 0>([], [*out], allocated)
             }
-            _ => {}
-        }
-        let reads = op.reads();
-        if reads.iter().any(|&w| !valid(w)) {
-            return Err(ExecutionError::InvalidWire);
-        }
-        // A bound on all reads also bounds every individual u32 reference
-        // count. The supported row domain is much smaller than this ceiling.
-        self.reads = self
-            .reads
-            .checked_add(reads.len() as u64)
-            .filter(|&n| n <= u32::MAX as u64)
-            .ok_or(ExecutionError::TooLarge)?;
-        for wire in op.writes() {
-            if wire.0 != self.defined || wire.0 >= allocated {
-                return Err(ExecutionError::InvalidWire);
+            Op::Add { a, b, out } | Op::Mul { a, b, out } => {
+                self.ports::<2, 1, 0>([*a, *b], [*out], allocated)
             }
-            self.defined += 1;
+            Op::Equal { a, b } => self.ports::<2, 0, 0>([*a, *b], [], allocated),
+            Op::Boolean { a } => self.ports::<1, 0, 0>([*a], [], allocated),
+            Op::Inverse { a, out } => self.ports::<1, 1, 0>([*a], [*out], allocated),
+            Op::Select { bit, a, b, out } => {
+                self.ports::<3, 1, 0>([*a, *b, *bit], [*out], allocated)
+            }
+            Op::CubicMul { a, b, out } => {
+                self.ports::<6, 3, 1>([a[0], a[1], a[2], b[0], b[1], b[2]], *out, allocated)
+            }
+            Op::CubicInverse { a, out } => self.ports::<3, 3, 1>(*a, *out, allocated),
+            Op::Poseidon { input, output } => self.ports::<8, 8, 2>(
+                input.map(|w| Wire(w as usize)),
+                output.map(|w| Wire(w as usize)),
+                allocated,
+            ),
         }
-        if self.defined != allocated {
-            return Err(ExecutionError::InvalidWire);
-        }
-        let count = match op {
-            Op::Poseidon { .. } => &mut self.counts.poseidon,
-            Op::CubicMul { .. } | Op::CubicInverse { .. } => &mut self.counts.cubic,
-            _ => &mut self.counts.scalar,
-        };
-        *count = count.checked_add(1).ok_or(ExecutionError::TooLarge)?;
-        Ok(())
     }
 }
 
 impl ScopedProgramBuilder<'_> {
+    #[inline(always)]
     pub(super) fn count_operation(&mut self, op: &Op) {
         if self.memory.failed {
             return;
@@ -211,6 +244,37 @@ thread_local! {
 /// require an active-job grant before compilation and an exact retained-byte
 /// charge while idle. The enclosing scheduler owns both reservations.
 /// No instructions, witness values, proof material or numeric results are cached.
+/// Transferable, cleared numeric compiler storage. No program, backend,
+/// witness, descriptor or allocation authority crosses worker lifetimes.
+/// Its owner must keep every retained byte reserved until it is dropped.
+pub struct CountingBacking {
+    constants: CompactMap<u64, Wire>,
+    known: KnownConstants,
+    expressions: CompactMap<(u8, Wire, Wire), Wire>,
+    booleans: ConstructionSet,
+    cubic_expressions: CompactMap<(u8, [Wire; 3], [Wire; 3]), [Wire; 3]>,
+    selections: CompactMap<(Wire, Wire, Wire), Wire>,
+    permutations: CompactMap<[Wire; 8], [Wire; 8]>,
+}
+impl CountingBacking {
+    pub fn retained_bytes(&self) -> Result<usize, ExecutionError> {
+        [
+            self.constants.retained_bytes(),
+            self.known.retained_bytes(),
+            self.expressions.retained_bytes(),
+            self.booleans.retained_bytes(),
+            self.cubic_expressions.retained_bytes(),
+            self.selections.retained_bytes(),
+            self.permutations.retained_bytes(),
+        ]
+        .into_iter()
+        .try_fold(0usize, |sum, bytes| {
+            sum.checked_add(bytes.ok_or(ExecutionError::TooLarge)?)
+                .ok_or(ExecutionError::TooLarge)
+        })
+    }
+}
+
 pub struct CountingWorkspace {
     _thread: PhantomData<Rc<()>>,
 }
@@ -249,6 +313,82 @@ impl CountingWorkspace {
             Ok(Self {
                 _thread: PhantomData,
             })
+        })
+    }
+    /// Export only idle dynamic backing. Clear occupancy before transfer;
+    /// the old thread can no longer lease these buffers.
+    pub fn take_backing(&self) -> Result<Option<CountingBacking>, ExecutionError> {
+        WORKSPACE.with(|slot| {
+            let mut slot = slot
+                .try_borrow_mut()
+                .map_err(|_| ExecutionError::ProvingPolicy)?;
+            let state = slot.as_mut().ok_or(ExecutionError::ProvingPolicy)?;
+            if !state.dynamic || state.leased || state.cap != 0 {
+                return Err(ExecutionError::ProvingPolicy);
+            }
+            let Some(mut cached) = state.cached.take() else {
+                return Ok(None);
+            };
+            cached
+                .constants
+                .reset_retained()
+                .ok_or(ExecutionError::TooLarge)?;
+            cached
+                .known
+                .reset_retained()
+                .ok_or(ExecutionError::TooLarge)?;
+            cached
+                .expressions
+                .reset_retained()
+                .ok_or(ExecutionError::TooLarge)?;
+            cached
+                .booleans
+                .reset_retained()
+                .ok_or(ExecutionError::TooLarge)?;
+            cached
+                .cubic_expressions
+                .reset_retained()
+                .ok_or(ExecutionError::TooLarge)?;
+            cached
+                .selections
+                .reset_retained()
+                .ok_or(ExecutionError::TooLarge)?;
+            cached
+                .permutations
+                .reset_retained()
+                .ok_or(ExecutionError::TooLarge)?;
+            Ok(Some(CountingBacking {
+                constants: cached.constants,
+                known: cached.known,
+                expressions: cached.expressions,
+                booleans: cached.booleans,
+                cubic_expressions: cached.cubic_expressions,
+                selections: cached.selections,
+                permutations: cached.permutations,
+            }))
+        })
+    }
+    /// The caller retains the backing's existing charge; activation separately
+    /// admits growth. Restoring into an occupied or leased workspace is refused.
+    pub fn restore_backing(&self, backing: CountingBacking) -> Result<(), ExecutionError> {
+        WORKSPACE.with(|slot| {
+            let mut slot = slot
+                .try_borrow_mut()
+                .map_err(|_| ExecutionError::ProvingPolicy)?;
+            let state = slot.as_mut().ok_or(ExecutionError::ProvingPolicy)?;
+            if !state.dynamic || state.leased || state.cap != 0 || state.cached.is_some() {
+                return Err(ExecutionError::ProvingPolicy);
+            }
+            let mut cached = ScopedProgramBuilder::new(0)?;
+            cached.constants = backing.constants;
+            cached.known = backing.known;
+            cached.expressions = backing.expressions;
+            cached.booleans = backing.booleans;
+            cached.cubic_expressions = backing.cubic_expressions;
+            cached.selections = backing.selections;
+            cached.permutations = backing.permutations;
+            state.cached = Some(cached);
+            Ok(())
         })
     }
     pub fn reuses(&self) -> u64 {

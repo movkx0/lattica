@@ -119,7 +119,8 @@ impl RawPreparationReportStorage {
             + size_of::<Error>()
             + size_of::<Timer<'static>>()
             + arc_bytes::<Mutex<State>>()
-            + size_of::<Self>();
+            + size_of::<Self>()
+            + super::preparation_profile::HOST_BYTES;
         let required_host_bytes = [
             capability_backing_bytes,
             observation_backing_bytes,

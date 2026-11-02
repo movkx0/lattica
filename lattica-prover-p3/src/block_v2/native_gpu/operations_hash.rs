@@ -34,6 +34,7 @@ impl OperationContext<'_> {
             self.admit_host_bytes(field_chunk_staging_bytes(words.len())?)?;
             #[cfg(feature = "gpu")]
             {
+                if let Some(result) = self.session.prepared_commit_fields(&self.workspace, initial, words, self.run) { return result; }
                 self.session.pq_operation_commit_fields(
                     initial,
                     words,

@@ -45,7 +45,7 @@ pub(super) fn available() -> bool {
 }
 fn qualified(source: [u8; 32], profile_id: [u8; 32], content: [u8; 32], rows: &[Row]) -> bool {
     !rows.is_empty()
-        && rows.len() <= 256
+        && rows.len() <= 512
         && source == crate::graph_proofs::native_numeric_source_fingerprint()
         && profile_id == profile::CANDIDATE_PROFILE_ID
         && digest(source, profile_id, rows) == content
@@ -104,6 +104,18 @@ pub(super) fn lookup<D: DescriptorKey>(
             planner_requested_program_bytes_peak: peak,
         },
     })
+}
+
+#[cfg(test)]
+pub(super) fn miss_reason<D: DescriptorKey>(family: u8, descriptor: &D,
+    limits: ConstructionLimits, storage: NativePlanningStorage) -> &'static str {
+    if !available() { return "unqualified_table"; }
+    if limits.max_requested_program_bytes != 2 << 30 || limits.max_wires != MAX_WIRES || limits.max_input_values != 1 << 20 { return "unsupported_limits"; }
+    let key = key::descriptor(family, descriptor);
+    let Ok(index) = data::ROWS.binary_search_by_key(&key, |r| r.key) else { return "descriptor_absent"; };
+    let g = storage.geometry;
+    if data::ROWS[index].geometry != [g.width, g.height, g.public_values, g.periodic_columns, g.maximum_period] { return "geometry_mismatch"; }
+    "invalid_numeric_bounds"
 }
 
 #[cfg(test)]

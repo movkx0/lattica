@@ -29,6 +29,10 @@ pub(super) enum Job {
         compatible: bool,
     },
     Trim,
+    Park {
+        geometry: Option<NativeGeometry>,
+        retain: bool,
+    },
 }
 pub(super) struct Output {
     result: Option<(usize, Result<NativeCoreBound, CompileError>)>,
@@ -91,6 +95,7 @@ impl State {
         storage: &[Option<NativePlanningStorage>; MAX],
         prepared: &[AtomicUsize; cpu_queue::MAX_WORKERS],
         stats: &mut Statistics,
+        hints: &mut reuse::Hints,
     ) -> Result<(), CompileError> {
         let done = match event {
             cpu_queue::Event::Completed(done) => done,
@@ -154,7 +159,14 @@ impl State {
             (Task::Compile(expected), Some((i, result))) if expected == i => {
                 stats.job_ns[i] += done.elapsed_ns;
                 match result {
-                    Ok(value) => results[i] = Some(value),
+                    Ok(value) => {
+                        hints.observe(
+                            storage[i].unwrap(),
+                            stats.job_ns[i],
+                            value.counts.planner_requested_program_bytes_peak,
+                        );
+                        results[i] = Some(value);
+                    }
                     Err(CompileError::ResourceAdmission(uni::shape::NATIVE_PROGRAM_BYTE_LIMIT))
                         if self.grants[slot] < limits.max_requested_program_bytes =>
                     {
@@ -194,13 +206,16 @@ pub(super) fn run_accounted<P: Send>(
     ceiling: usize,
     results: &mut [Option<NativeCoreBound>; MAX],
     stats: &mut Statistics,
+    buffers: &mut reuse::Buffers,
+    hints: &mut reuse::Hints,
+    retain_limit: usize,
     prepare: impl Fn(usize) -> Result<P, CompileError> + Sync,
     retained: impl Fn(usize, &P) -> Result<usize, CompileError> + Sync,
     compile: impl Fn(usize, &P, usize) -> Result<NativeCoreBound, CompileError> + Sync,
 ) -> Result<(), CompileError> {
     let mut desired = [0; MAX];
     for i in 0..count {
-        desired[i] = initial_cap(storage[i].unwrap(), limits);
+        desired[i] = hints.cap(storage[i].unwrap(), limits);
     }
     let prep_bound = |i: usize| {
         add(
@@ -220,8 +235,7 @@ pub(super) fn run_accounted<P: Send>(
         if ready == 0 {
             return Ok(());
         }
-        indices[..ready]
-            .sort_unstable_by_key(|&i| (core::cmp::Reverse(work(storage[i].unwrap())), i));
+        hints.order(&mut indices[..ready], storage);
         let base = add(COORDINATOR, shared)?;
         // Preparation finishes before this job starts compiling. Charge the
         // maximum of those two phases, while other jobs retain their full cost.
@@ -241,6 +255,7 @@ pub(super) fn run_accounted<P: Send>(
             .unwrap_or(1);
         stats.cohorts += 1;
         if width == 1 {
+            *buffers = reuse::empty();
             let i = indices[0];
             let peak = add(
                 base,
@@ -270,9 +285,21 @@ pub(super) fn run_accounted<P: Send>(
                 .map_err(|_| CompileError::Shape("native metadata worker panic"))??,
             );
             stats.job_ns[i] += start.elapsed().as_nanos();
+            hints.observe(
+                storage[i].unwrap(),
+                stats.job_ns[i],
+                results[i]
+                    .unwrap()
+                    .counts
+                    .planner_requested_program_bytes_peak,
+            );
             continue;
         }
         let base = add(base, width * THREAD)?;
+        reuse::trim(buffers, budget.saturating_sub(base))?;
+        stats.admitted_host_bytes_peak = stats
+            .admitted_host_bytes_peak
+            .max(add(base, reuse::bytes(buffers)?)?);
         let mut maintenance = 0u64;
         let activity = CompilerActivity {
             active: AtomicUsize::new(0),
@@ -280,14 +307,58 @@ pub(super) fn run_accounted<P: Send>(
         };
         let prepared: [AtomicUsize; cpu_queue::MAX_WORKERS] =
             core::array::from_fn(|_| AtomicUsize::new(0));
+        // Slots outside this pool are dropped before they can release budget.
+        for b in &mut buffers[width..] {
+            *b = None;
+        }
+        let initial: [(usize, Option<NativeGeometry>); cpu_queue::MAX_WORKERS] =
+            core::array::from_fn(|i| {
+                buffers[i].as_ref().map_or((0, None), |b| {
+                    (b.backing.retained_bytes().unwrap(), b.geometry)
+                })
+            });
+        stats.restored_workspaces += initial[..width]
+            .iter()
+            .filter(|(bytes, _)| *bytes != 0)
+            .count() as u64;
+        let stash = std::sync::Mutex::new(std::mem::replace(buffers, reuse::empty()));
         let (outcome, pool) = cpu_queue::scoped_with_progress(
             width,
-            |_| CountingWorkspace::begin_dynamic().map(Some),
+            |slot| {
+                let workspace = CountingWorkspace::begin_dynamic()?;
+                if let Some(buffer) = stash.lock().unwrap()[slot].take() {
+                    workspace.restore_backing(buffer.backing)?;
+                }
+                Ok::<_, lattica_prover_p3::block_v2::machine::program::ExecutionError>(Some(
+                    workspace,
+                ))
+            },
             |scratch, job: Job, progress| -> Result<Output, CompileError> {
                 let scratch = scratch
                     .as_mut()
                     .map_err(|_| CompileError::Shape("native workspace unavailable"))?;
                 match job {
+                    Job::Park { geometry, retain } => {
+                        let workspace = scratch
+                            .as_ref()
+                            .ok_or(CompileError::Shape("native workspace missing"))?;
+                        if !retain {
+                            workspace.trim_idle(0).map_err(workspace_error)?;
+                        }
+                        let retained = workspace.retained_bytes().map_err(workspace_error)?;
+                        stash.lock().unwrap()[progress.slot()] = workspace
+                            .take_backing()
+                            .map_err(workspace_error)?
+                            .map(|backing| reuse::Buffer { backing, geometry });
+                        Ok(Output {
+                            result: None,
+                            retained,
+                            reuses: 0,
+                            trimmed: 0,
+                            preparation_ns: 0,
+                            prepared_bytes: 0,
+                        })
+                    }
                     Job::Trim => {
                         let workspace = scratch
                             .as_ref()
@@ -381,6 +452,10 @@ pub(super) fn run_accounted<P: Send>(
             },
             |queue| -> Result<(), CompileError> {
                 let mut state = State::new();
+                for (slot, &(bytes, geometry)) in initial.iter().enumerate() {
+                    state.compiler[slot] = bytes;
+                    state.layout[slot] = geometry;
+                }
                 loop {
                     // Reclaim all completed graph and compiler credits before
                     // preparing another graph, without waiting on a live job.
@@ -398,8 +473,10 @@ pub(super) fn run_accounted<P: Send>(
                             storage,
                             &prepared,
                             stats,
+                            hints,
                         )?;
                     }
+                    hints.order(&mut indices[..ready], storage);
                     let pending = indices[..ready].iter().any(|&i| !state.dispatched[i]);
                     if pending && state.failure.is_none() {
                         let live = state.live(base)?;
@@ -408,6 +485,7 @@ pub(super) fn run_accounted<P: Send>(
                             if state.dispatched[i] {
                                 continue;
                             }
+                            desired[i] = desired[i].max(hints.cap(storage[i].unwrap(), limits));
                             // Prefer compatible public layouts and avoid shrinking a
                             // larger backing for a smaller job when another slot fits.
                             let mut best = None;
@@ -464,6 +542,8 @@ pub(super) fn run_accounted<P: Send>(
                                     },
                                 )
                                 .map_err(|_| CompileError::Shape("native queue submit"))?;
+                            stats.cost_hint_jobs +=
+                                u64::from(hints.contains(storage[i].unwrap().geometry));
                             stats.queue_refills += u64::from(state.used[slot]);
                             state.used[slot] = true;
                             state.dispatched[i] = true;
@@ -514,7 +594,57 @@ pub(super) fn run_accounted<P: Send>(
                         storage,
                         &prepared,
                         stats,
+                        hints,
                     )?;
+                }
+                if retain_limit != 0 && state.failure.is_none() {
+                    let mut retain = [true; cpu_queue::MAX_WORKERS];
+                    let mut held = state.compiler[..width]
+                        .iter()
+                        .try_fold(0, |n, &bytes| add(n, bytes))?;
+                    while held > retain_limit {
+                        let slot = (0..width)
+                            .filter(|&s| retain[s])
+                            .max_by_key(|&s| state.compiler[s])
+                            .unwrap();
+                        retain[slot] = false;
+                        held -= state.compiler[slot];
+                    }
+                    // Retire excess backing concurrently on its owning workers.
+                    // Only retained buffers cross the join; all drops remain
+                    // covered by the phase reservation until their receipts.
+
+                    // No more dispatch after this point. Credits continue to
+                    // cover both parked backing and workers until the join.
+                    for slot in 0..width {
+                        queue
+                            .submit(
+                                slot,
+                                Job::Park {
+                                    geometry: state.layout[slot],
+                                    retain: retain[slot],
+                                },
+                            )
+                            .map_err(|_| CompileError::Shape("native backing park"))?;
+                        state.tasks[slot] = Task::Trim;
+                        state.active += 1;
+                        maintenance += 1;
+                    }
+                    while state.active != 0 {
+                        let done = queue
+                            .receive_event()
+                            .map_err(|_| CompileError::Shape("native park receive"))?;
+                        state.retire(
+                            done,
+                            results,
+                            &mut desired,
+                            limits,
+                            storage,
+                            &prepared,
+                            stats,
+                            hints,
+                        )?;
+                    }
                 }
                 if let Some(error) = state.failure {
                     Err(error)
@@ -534,5 +664,8 @@ pub(super) fn run_accounted<P: Send>(
         stats.peak_workers = stats.peak_workers.max(activity.peak.load(Ordering::SeqCst));
         stats.coordinator_wait_ns += pool.coordinator_wait_ns;
         outcome?;
+        *buffers = stash
+            .into_inner()
+            .map_err(|_| CompileError::Shape("native backing mutex"))?;
     }
 }

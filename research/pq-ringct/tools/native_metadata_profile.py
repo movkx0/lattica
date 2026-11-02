@@ -19,7 +19,7 @@ def validate(content):
     def records(prefix):
         return [json.loads(line[len(prefix):]) for line in content.splitlines() if line.startswith(prefix)]
     rows, summaries = records('NATIVE_METADATA_PROFILE_ROW '), records('NATIVE_METADATA_PROFILE ')
-    require(len(rows) in (39,159) and len(summaries) == 1, 'incomplete native metadata profile')
+    require(len(rows) in (39,159,304,317) and len(summaries) == 1, 'incomplete native metadata profile')
     summary=summaries[0]
     require(summary.get('cases') == len(rows) and summary.get('gpu_used') is False, 'wrong profile scope')
     keys=set(); names=set(); families=set()
@@ -59,9 +59,9 @@ def validate(content):
             and summary.get('warm_total_ns') == sum(r['warm_total_ns'] for r in rows), 'native profile total mismatch')
     for field in ['fingerprint_cold_ns','fingerprint_warm_ns','catalogue_ns','original_host_bytes_peak']: natural(summary.get(field))
     cache=summary.get('cache',{})
-    require(cache.get('misses')==cache.get('entries')==len(rows) and cache.get('hits')==len(rows)*8
-            and cache.get('evictions')==cache.get('failed_computations')==0
-            and cache.get('reserved_host_bytes')==1 << 20, 'invalid native profile cache accounting')
+    require(cache.get('misses')==len(rows) and cache.get('entries')==min(256,len(rows)) and cache.get('hits')==len(rows)*8
+            and cache.get('evictions')==max(0,len(rows)-256) and cache.get('failed_computations')==0
+            and cache.get('reserved_host_bytes')==2 << 20, 'invalid native profile cache accounting')
     cohorts = records('NATIVE_METADATA_COHORT ')
     identities = records('NATIVE_METADATA_TABLE_IDENTITY ')
     tables = records('NATIVE_METADATA_TABLE_QUALIFICATION ')
@@ -102,8 +102,8 @@ def validate(content):
             require(row.get('cases') == len(rows) and row.get('counts_equal') is True
                     and row.get('gpu_used') is False and natural(row.get('elapsed_ns')) > 0,
                     'native queue catalogue parity')
-            require(stats.get('entries') == stats.get('misses') == len(rows)
-                    and stats.get('evictions') == stats.get('failed_computations') == stats.get('table_hits') == 0,
+            require(stats.get('misses') == len(rows) and stats.get('entries') == min(256, len(rows))
+                    and stats.get('evictions') == max(0,len(rows)-256) and stats.get('failed_computations') == stats.get('table_hits') == 0,
                     'native queue cache coverage')
             for key in ('threads_spawned', 'queue_refills', 'workspace_reuses', 'preparation_ns',
                         'coordinator_wait_ns', 'retained_worker_bytes_peak'):

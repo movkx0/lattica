@@ -19,7 +19,13 @@ pub(crate) struct BoundPermutationLeafOuter<'operation, 'plan, 'source, 'graph> 
     attempted: core::cell::Cell<bool>,
 }
 impl PreissuedPermutationLeafOuter<'_, '_, '_> {
+    /// The packet contains only inline fields and borrows its source owner.
     pub(crate) fn metadata_host_bytes() -> OwnedResult<usize> {
+        Ok(core::mem::size_of::<Self>())
+    }
+    // One complete construction/bind census stays in the serial phase owner.
+    // Packet originals keep the returned inline payload until consumption.
+    fn forwarding_host_bytes() -> OwnedResult<usize> {
         [OuterSourceEnvelope::additional_metadata_host_bytes().map_err(|_| GraphParentFailure::Resource)?,
             bytes::<Self>(8)?, bytes::<Option<Self>>(8)?,
             bytes::<BoundPermutationLeafOuter<'static, 'static, 'static, 'static>>(8)?,
@@ -30,8 +36,8 @@ impl PreissuedPermutationLeafOuter<'_, '_, '_> {
     }
     pub(crate) fn planning_scratch_requirement() -> OwnedResult<Requirements> {
         requirement(Category::PhaseScratch,
-            usize::try_from(crate::execution::retained_resources::OUTER_PLANNING_HOST_BYTES)
-                .map_err(|_| GraphParentFailure::Overflow)?)
+            add(usize::try_from(crate::execution::retained_resources::OUTER_PLANNING_HOST_BYTES)
+                .map_err(|_| GraphParentFailure::Overflow)?, Self::forwarding_host_bytes()?)?)
     }
     pub(crate) fn binding(&self) -> PhaseBinding { self.binding }
     pub(crate) fn footprint(&self) -> OuterSourceFootprint { self.backend.footprint() }

@@ -90,6 +90,8 @@ impl Failure {
     }
     fn workflow(error: &WorkflowError) -> Self {
         let code = match error {
+            #[cfg(test)]
+            WorkflowError::MetadataProfileComplete => "MetadataProfileComplete",
             WorkflowError::Policy => "Policy",
             WorkflowError::Source => "Source",
             #[cfg(all(

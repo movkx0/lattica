@@ -233,8 +233,10 @@ impl OperationContext<'_> {
             if input.len() != spec.input_words {
                 return Err("raw arithmetic input length mismatch".into());
             }
+            crate::proving::preparation_profile::arithmetic_shape(spec.metadata[0], spec.output_words);
             #[cfg(feature = "gpu")]
             {
+                if let Some(result) = self.session.prepared_arithmetic(&self.workspace, spec, input, self.run) { return result; }
                 self.session
                     .research_arithmetic_output(spec, input, self.host_allowance, self.run)
             }

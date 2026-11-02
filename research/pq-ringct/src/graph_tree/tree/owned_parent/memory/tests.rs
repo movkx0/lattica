@@ -17,7 +17,7 @@ fn parent_retained_plan_keeps_outer_metadata_and_each_temporary_scope_covers_cal
 
     let callers = caller_frames().unwrap() as u64;
     let construction = GraphParentPlan::planning_scratch_requirements().unwrap();
-    let (_, compiler) = compiler_requirements().unwrap();
+    let (_, compiler) = compiler_requirements(source::MAX_ROWS, source::MAX_ROWS).unwrap();
     let outer = super::super::outer::caller_requirements().unwrap();
     assert!(construction.get(Category::PhaseScratch).host >= planning_frames().unwrap() as u64);
     assert!(compiler.get(Category::PhaseScratch).host >= callers);

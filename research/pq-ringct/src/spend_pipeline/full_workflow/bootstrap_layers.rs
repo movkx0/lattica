@@ -23,7 +23,7 @@ fn failure(message: &'static str) -> FreshGenerationError { FreshGenerationError
 pub(crate) fn prepare_graph_layer<'scope, 'context, const N: usize>(
     scope: &'scope SourcePlanningPlan<'scope>,
     planning: &mut WorkflowPlanning<'context>,
-    startup: &CaseOwnerSlot<'_, Result<FreshPlanningContext<'_>>>,
+    startup: &crate::spend_pipeline::full_workflow::fresh_generation::case_lifetime::MetadataOwner<'_, '_, '_>,
     plans: &FixedCaseOwnerSlots<'_, GraphPlanResult<'scope>, N>,
     outputs: &FixedCaseOwnerSlots<'_, GraphSourceResult, N>,
 ) -> Result<()> {
@@ -55,7 +55,7 @@ pub(crate) fn prepare_graph_layer<'scope, 'context, const N: usize>(
 pub(crate) fn prepare_source_layer<'source: 'graph, 'graph, 'context, const N: usize>(
     scope: &SourcePlanningPlan<'source>,
     planning: &mut WorkflowPlanning<'context>,
-    startup: &CaseOwnerSlot<'_, Result<FreshPlanningContext<'_>>>,
+    startup: &crate::spend_pipeline::full_workflow::fresh_generation::case_lifetime::MetadataOwner<'_, '_, '_>,
     graphs: &'graph FixedCaseOwnerSlots<'_, GraphSourceResult, N>,
     plans: &FixedCaseOwnerSlots<'_, PreparationPlanResult<'graph>, N>,
     outputs: &FixedCaseOwnerSlots<'_, PreparedSourceResult<'graph>, N>,

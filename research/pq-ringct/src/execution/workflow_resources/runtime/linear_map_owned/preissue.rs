@@ -64,6 +64,16 @@ impl<'plan, 'context> WorkflowAdmission<'plan, 'context> {
                 .map_err(|_| WorkflowError::Planning)?;
             let source_splits = combine(plan_partition.preparation, plan_partition.verifier)?;
             if !contains(scratch_requirement, source_splits) { return Err(WorkflowError::Planning); }
+        // All backend partitions coexist with the full packet construction
+        // census. Those caller frames remain in the unsplit phase original.
+        let frames = LinearMapNativeOperationPlan::preissue_frame_requirements()
+            .map_err(|_| WorkflowError::Planning)?;
+        let held = phase.original_for_preissue()?;
+        if !contains(binding.facts().scratch, frames)
+            || !contains(held.requirements(), combine(plan_partition.complete, frames)?) {
+            return Err(WorkflowError::Planning);
+        }
+        drop(held);
             let runtime_plan = plan_partition.runtime().map_err(|_| WorkflowError::Planning)?;
             let mut partition = phase.partition_originals(plan_partition.complete)?;
             let ledger = partition.ledger().clone();

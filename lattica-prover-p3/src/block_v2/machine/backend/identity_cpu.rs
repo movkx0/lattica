@@ -15,7 +15,8 @@ use std::sync::{
 const DOMAIN: u64 = 0x4c42563210;
 pub const MAX_IDENTITY_STREAMS: usize = 16;
 pub const WORKER_STACK_BYTES: u64 = 2 << 20;
-pub const IDENTITY_PREFIX_HOST_BYTES: u64 = fingerprint::bounded::HOST_BYTES as u64 + 4096;
+pub const IDENTITY_PREFIX_HOST_BYTES: u64 = fingerprint::bounded::RETAINED_BYTES as u64 + 4096;
+const IDENTITY_PREFIX_CONSTRUCTION_BYTES: u64 = fingerprint::bounded::HOST_BYTES as u64 + 4096;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
 pub struct IdentityCpuOptions {
@@ -214,7 +215,9 @@ impl IdentityBatchFootprint {
         let retained_host_bytes = (streams as u64)
             .checked_mul(IDENTITY_PREFIX_HOST_BYTES)
             .ok_or("CPU identity retained overflow")?;
-        let host_bytes = retained_host_bytes
+        // Keep the entire previous construction allowance. Only completed
+        // prefixes use the tighter encoded-field bound in retained slots.
+        let host_bytes = (streams as u64 * IDENTITY_PREFIX_CONSTRUCTION_BYTES)
             .checked_add(crate::block_v2::machine::symbolic::HOST_BYTES)
             .and_then(|n| n.checked_add(streams as u64 * WORKER_STACK_BYTES + (1 << 20)))
             .ok_or("CPU identity footprint overflow")?;

@@ -30,7 +30,8 @@ fn raw_sampler_id_collection_carries_the_source_allocation_capacity() {
 #[test]
 fn core_operation_allowance_is_derived_inside_the_full_adapter_charge() {
     let plan = RawAdapterPlan::fixed().unwrap();
-    assert_eq!(plan.operation_host_allowance, 3_060_528);
+    let workspace = lattica_prover_p3::block_v2::native_gpu::RawPreparationWorkspaceStorage::fixed();
+    assert_eq!(plan.operation_host_allowance, 3_060_528 + workspace.host_bytes);
     assert_eq!(
         plan.host_bytes,
         plan.framing
@@ -42,7 +43,7 @@ fn core_operation_allowance_is_derived_inside_the_full_adapter_charge() {
     );
     assert!(plan.host_bytes > plan.operation_host_allowance);
     if cfg!(feature = "opencl") {
-        assert_eq!(plan.device_bytes, 1_844_280);
+        assert_eq!(plan.device_bytes, 1_844_280 + workspace.device_bytes);
     } else {
         assert_eq!(plan.device_bytes, 0);
     }

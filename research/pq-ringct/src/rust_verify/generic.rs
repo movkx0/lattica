@@ -93,6 +93,18 @@ pub trait Backend {
     {
         aut_residues(self, input)
     }
+    /// Canonical recipes preserve coefficient-major symbolic expression order.
+    fn relation_balance(&mut self, a: &Polynomial<Self::Residue>, aut: &Polynomial<Self::Residue>,
+        out0: &Polynomial<Self::Residue>, out1: &Polynomial<Self::Residue>, z0: &Polynomial<Self::Residue>)
+        -> Polynomial<Self::Residue> where Self: Sized { relation_balance_scalar(self, a, aut, out0, out1, z0) }
+    fn relation_coin_term(&mut self, aut: &Polynomial<Self::Residue>, coin0: &Polynomial<Self::Residue>,
+        coin1: &Polynomial<Self::Residue>, c: &Polynomial<Self::Residue>)
+        -> Polynomial<Self::Residue> where Self: Sized { relation_coin_term_scalar(self, aut, coin0, coin1, c) }
+    fn relation_adjust(&mut self, w: &mut Polynomial<Self::Residue>, f10: &Polynomial<Self::Residue>,
+        f11: &Polynomial<Self::Residue>) where Self: Sized { relation_adjust_scalar(self, w, f10, f11) }
+    fn inverse_challenge(&mut self, x: &Polynomial<Self::Signed>) -> Polynomial<Self::Signed> where Self: Sized {
+        inverse_challenge_scalar(self, x)
+    }
     fn constant(&mut self, value: u64, q: u64) -> Self::Residue;
     fn add(&mut self, a: Self::Residue, b: Self::Residue, q: u64) -> Self::Residue;
     fn sub(&mut self, a: Self::Residue, b: Self::Residue, q: u64) -> Self::Residue;
@@ -101,6 +113,13 @@ pub trait Backend {
     fn to_residue(&mut self, a: Self::Signed, q: u64) -> Self::Residue;
     fn signed_neg(&mut self, a: Self::Signed) -> Self::Signed;
     fn signed_sub(&mut self, a: Self::Signed, b: Self::Signed) -> Self::Signed;
+    fn signed_sub_poly(
+        &mut self,
+        a: &Polynomial<Self::Signed>,
+        b: &Polynomial<Self::Signed>,
+    ) -> Polynomial<Self::Signed> {
+        core::array::from_fn(|i| self.signed_sub(a[i], b[i]))
+    }
     fn norm(&mut self, a: &[Polynomial<Self::Signed>], maximum: u64) -> Result<(), VerifyError>;
     fn g_bound(
         &mut self,
@@ -406,9 +425,7 @@ pub fn verify_relation<B: Backend>(
     b.norm(&proof.z, 3_161_803_581_581_766)?;
     let mut f0 = proof.x;
     for f in proof.f1.iter().take(9) {
-        for j in 0..D {
-            f0[j] = b.signed_sub(f0[j], f[j]);
-        }
+        f0 = b.signed_sub_poly(&f0, f);
     }
     let mut f = vec![f0];
     f.extend_from_slice(&proof.f1);
@@ -431,13 +448,7 @@ pub fn verify_relation<B: Backend>(
     c[128..132].fill(zero);
     let x = ntt(b, &proof.x, Q);
     let x_qhat = ntt(b, &proof.x, QHAT);
-    let inv_x = std::array::from_fn(|i| {
-        if (86..171).contains(&i) {
-            b.signed_neg(proof.x[(3 * i) % D])
-        } else {
-            proof.x[(3 * i) % D]
-        }
-    });
+    let inv_x = b.inverse_challenge(&proof.x);
     let inverse_x = ntt(b, &inv_x, Q);
     let z_out: Vec<_> = proof.z_out.iter().map(|p| ntt_many(b, p, Q)).collect();
     let z0 = ntt_many(b, &proof.z0, Q);
@@ -478,38 +489,19 @@ pub fn verify_relation<B: Backend>(
     let a3z1 = auxiliary(b, &z1, &mat2, 2);
     let a3z2 = auxiliary(b, &z2, &mat2, 2);
     let aut_a3z2 = aut(b, &a3z2);
-    let mut w = std::array::from_fn(|i| {
-        let twice = b.add(aut_a3z2[i], aut_a3z2[i], Q);
-        let mut value = b.sub(a3z1[i], twice, Q);
-        value = b.add(value, z_out[0][4][i], Q);
-        value = b.add(value, z_out[1][4][i], Q);
-        b.sub(value, z0[4][i], Q)
-    });
+    let mut w = b.relation_balance(&a3z1, &aut_a3z2, &z_out[0][4], &z_out[1][4], &z0[4]);
     for i in 0..2 {
         let sum = plus(b, &z_out[0][7 + i], &z_out[1][7 + i], Q);
         let term = minus(b, &sum, &z0[7 + i], Q);
         multiply_add(b, &mut w, &mat2[i][0], &term, Q);
     }
     let aut_c = aut(b, &c);
-    let term = std::array::from_fn(|i| {
-        let mut value = b.add(aut_c[i], aut_c[i], Q);
-        value = b.sub(value, statement.coins[0][4][i], Q);
-        value = b.sub(value, statement.coins[1][4][i], Q);
-        b.sub(value, c[i], Q)
-    });
+    let term = b.relation_coin_term(&aut_c, &statement.coins[0][4], &statement.coins[1][4], &c);
     multiply_add(b, &mut w, &x, &term, Q);
     for i in 0..10 {
         multiply_add(b, &mut w, &f_ntt[i], &t_in[i][4], Q);
     }
-    for i in 0..4 {
-        let j = 124 + i;
-        let delta = b.sub(f_ntt[10][j], f_ntt[11][j], Q);
-        let twice = b.add(delta, delta, Q);
-        w[j] = b.add(w[j], twice, Q);
-        let j = 128 + i;
-        let delta = b.sub(f_ntt[11][j], f_ntt[10][j], Q);
-        w[j] = b.add(w[j], delta, Q);
-    }
+    b.relation_adjust(&mut w, &f_ntt[10], &f_ntt[11]);
     let alpha_hash = b.hash_alpha(
         &pp, statement, &w_out, &w0, &proof.v, &proof.v2, &proof.c, &w, &w1, &w2,
     );
@@ -589,4 +581,40 @@ pub fn verify_relation<B: Backend>(
     }
     let expected_x = b.hash_x(&alpha_hash, &v0, &proof.v1, &a, &proof.b, &e)?;
     b.equal_signed(&expected_x, &proof.x)
+}
+
+// These defaults are also the independent scalar reference for GPU recipes.
+pub(super) fn inverse_challenge_scalar<B: Backend>(b: &mut B, x: &Polynomial<B::Signed>) -> Polynomial<B::Signed> {
+    core::array::from_fn(|i| if (86..171).contains(&i) { b.signed_neg(x[(3*i)%D]) } else { x[(3*i)%D] })
+}
+pub(super) fn relation_balance_scalar<B: Backend>(b: &mut B, a: &Polynomial<B::Residue>, aut: &Polynomial<B::Residue>,
+    out0: &Polynomial<B::Residue>, out1: &Polynomial<B::Residue>, z0: &Polynomial<B::Residue>) -> Polynomial<B::Residue> {
+    core::array::from_fn(|i| {
+        let twice = b.add(aut[i], aut[i], Q);
+        let value = b.sub(a[i], twice, Q);
+        let value = b.add(value, out0[i], Q);
+        let value = b.add(value, out1[i], Q);
+        b.sub(value, z0[i], Q)
+    })
+}
+pub(super) fn relation_coin_term_scalar<B: Backend>(b: &mut B, aut: &Polynomial<B::Residue>, coin0: &Polynomial<B::Residue>,
+    coin1: &Polynomial<B::Residue>, c: &Polynomial<B::Residue>) -> Polynomial<B::Residue> {
+    core::array::from_fn(|i| {
+        let value = b.add(aut[i], aut[i], Q);
+        let value = b.sub(value, coin0[i], Q);
+        let value = b.sub(value, coin1[i], Q);
+        b.sub(value, c[i], Q)
+    })
+}
+pub(super) fn relation_adjust_scalar<B: Backend>(b: &mut B, w: &mut Polynomial<B::Residue>, f10: &Polynomial<B::Residue>,
+    f11: &Polynomial<B::Residue>) {
+    for i in 0..4 {
+        let j = 124+i;
+        let delta = b.sub(f10[j], f11[j], Q);
+        let twice = b.add(delta, delta, Q);
+        w[j] = b.add(w[j], twice, Q);
+        let j = 128+i;
+        let delta = b.sub(f11[j], f10[j], Q);
+        w[j] = b.add(w[j], delta, Q);
+    }
 }

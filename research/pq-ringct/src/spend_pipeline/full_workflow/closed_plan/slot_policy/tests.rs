@@ -132,3 +132,14 @@ fn compiler_union_cannot_reuse_a_live_input_or_the_failure_slot() {
     assert_eq!(first_compatible(&slots, &[false, true, true], compiler(0)), None);
     assert_eq!(first_compatible(&slots[..1], &[false], compiler(0)), None);
 }
+
+#[test]
+fn selection_minimizes_growth_and_keeps_stable_ties() {
+    let req = |n| claim(Category::SymbolicCompiler, n, 0);
+    let slots = [SlotSpec { requirements: req(100) },
+        SlotSpec { requirements: req(2) }, SlotSpec { requirements: req(8) },
+        SlotSpec { requirements: req(8) }];
+    assert_eq!(first_compatible(&slots, &[false; 4], req(10)), Some(2));
+    assert_eq!(first_compatible(&slots, &[false, false, true, false], req(10)), Some(3));
+    assert_eq!(first_compatible(&slots, &[false; 4], req(1)), Some(1));
+}

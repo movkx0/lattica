@@ -376,6 +376,7 @@ pub struct Plan {
     bounds: Bounds,
 }
 impl Plan {
+    pub(crate) fn descriptor(self) -> MulDescriptor { self.shape.kind }
     pub(super) fn for_recorded(air: &SourceAir, replay: MulSymbolicReplay) -> Result<Self> {
         let shape = Shape::new(air)?;
         let configuration = CpuVerificationConfigPlan::new()?;
@@ -782,3 +783,9 @@ impl Shape {
 
 #[cfg(all(test, not(debug_assertions), target_arch = "x86_64"))]
 mod tests;
+
+#[cfg(test)]
+pub(crate) fn recorded_test_plan(kind: MulDescriptor) -> Plan {
+    let air = SourceAir::new(kind);
+    Plan::for_recorded(&air, tests::recorded_replay(&air)).unwrap()
+}

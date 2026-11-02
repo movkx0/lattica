@@ -85,7 +85,7 @@ impl<'a> NttNativeCompilePlan<'a> {
                 || ledger.snapshot().allowance.device > 8 << 30
             { return Err(NttNativeCompileFailure::Authority); }
             let compiler = blueprint.inspect_resolved(planning, ledger, resolved).map_err(NttNativeCompileFailure::Compile)?;
-            let (output, compiler_scratch) = blueprint.compiler_requirements();
+            let (output, compiler_scratch) = compiler.compiler_requirements();
             let scratch = combine(&[compiler_scratch, Self::frame_requirements()?,
                 crate::execution::workflow_resources::ntt_native_compile_issuer_scratch_requirements()
                     .map_err(|_| NttNativeCompileFailure::Resource)?])?;
@@ -131,7 +131,10 @@ impl<'a> NttNativeCompilePlan<'a> {
         requirement(Category::PhaseScratch, Self::frame_bytes()?)
     }
     pub(crate) fn metadata_requirements() -> Result<Requirements> {
-        requirement(Category::RegisteredMetadata, Self::frame_bytes()?)
+        // This descriptor owns only inline fields and borrowed source views.
+        // Construction and runtime both require the complete frame census in
+        // their separate, original PhaseScratch reservation.
+        requirement(Category::RegisteredMetadata, size_of::<Self>())
     }
     pub(crate) fn planning_requirements(blueprint: &NttLeafBlueprint<'_, '_>) -> Result<Requirements> {
         combine(&[blueprint.planning_requirements(), Self::frame_requirements()?])
@@ -195,5 +198,17 @@ impl<'a> NttNativeCompileOperation<'_, 'a> {
             || self.plan.native.policy() != ProofCachePolicy::FreshOnly
         { return Err(NttNativeCompileFailure::Authority); }
         self.check_child()
+    }
+}
+
+#[cfg(test)]
+mod metadata_storage_tests {
+    use super::*;
+    #[test]
+    fn retained_descriptor_excludes_separately_admitted_forwarding_frames() {
+        let retained = NttNativeCompilePlan::metadata_requirements().unwrap();
+        let scratch = NttNativeCompilePlan::frame_requirements().unwrap();
+        assert!(retained.get(Category::RegisteredMetadata).host > 0);
+        assert!(scratch.get(Category::PhaseScratch).host > retained.get(Category::RegisteredMetadata).host);
     }
 }

@@ -102,6 +102,8 @@ fn advance(phase: Option<Phase>) {
 }
 pub(super) fn phase(phase: Phase) {
     advance(Some(phase));
+    #[cfg(test)]
+    super::metadata_profile::phase_started(phase);
 }
 fn write_report(out: &mut impl std::io::Write, statistics: &Statistics) -> std::io::Result<()> {
     out.write_all(b"RINGCT_METADATA_TIMING ")?;

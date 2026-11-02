@@ -205,7 +205,8 @@ impl<'source, 'graph> GraphParentPlan<'source, 'graph> {
             { return Err(GraphParentFailure::Authority); }
         }
         let source = GraphNodeSource::parent(children[0].source, children[1].source)?;
-        let (compiled, compile_scratch) = memory::compiler_requirements()?;
+        let (compiled, compile_scratch) = memory::packed_compiler_requirements(source,
+            memory::compiler_requirements(children[0].source.maximum_padded_rows, children[1].source.maximum_padded_rows)?, source::PROGRAM_BYTES)?;
         let (output, verifier) = source.output_requirements()?;
         let failure = memory::failure_requirements()?;
         let facts = |kind, output, scratch| PhaseFacts { kind, output, scratch, failure,

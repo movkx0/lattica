@@ -2,6 +2,18 @@ use super::*;
 use p3_field::PrimeCharacteristicRing;
 
 #[test]
+fn completed_prefix_bound_excludes_retired_memos_but_keeps_construction_allowance() {
+    for streams in 1..=MAX_IDENTITY_STREAMS {
+        let footprint = IdentityBatchFootprint::for_borrowed_program_bounds(streams, 123).unwrap();
+        assert_eq!(footprint.retained_host_bytes, streams as u64 * IDENTITY_PREFIX_HOST_BYTES);
+        assert_eq!(footprint.host_bytes, streams as u64 * ((32 << 20) + 4096)
+            + crate::block_v2::machine::symbolic::HOST_BYTES
+            + streams as u64 * WORKER_STACK_BYTES + (1 << 20));
+        assert!(footprint.retained_host_bytes < streams as u64 * IDENTITY_PREFIX_CONSTRUCTION_BYTES);
+    }
+}
+
+#[test]
 fn streaming_and_resumed_prefix_preserve_every_rate_boundary() {
     for n in 0..=65 {
         let values: Vec<u64> = (0..n).map(|i| (i * 1234567) as u64).collect();

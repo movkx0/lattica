@@ -64,6 +64,10 @@ impl ProvingContext {
     {
         if self.diagnostics.has_work_attempted() { return Err(Error::WorkAlreadyStarted); }
         let owner = owned.adoption_owner(self).map_err(|_| Error::EnclosingAllowance)?;
+        self.bind_planning_owner(owner)
+    }
+    pub(in crate::execution) fn bind_planning_owner(&self, owner: Rc<OriginalPlanningStartup>) -> Result<(), Error> {
+        if self.diagnostics.has_work_attempted() { return Err(Error::WorkAlreadyStarted); }
         let mut state = self.phases.state.try_borrow_mut().map_err(|_| Error::ContextBusy)?;
         if self.phases.ledger.get().is_some() || self.phases.planning_startup.get().is_some()
             || state.status != Status::Unbound || state.generation != 0

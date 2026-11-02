@@ -85,7 +85,7 @@ pub(super) fn compiler_output(merge: &MergeSource) -> OwnedResult<Requirements> 
         bytes::<RecursiveWitnessTarget>(4)?,
     ].into_iter().try_fold(0, add)?;
     let program = [
-        COMPILER_BYTES,
+        merge.retained_program_host_bytes().map_err(|_| FinalFailure::Capacity)?,
         bytes::<std::sync::atomic::AtomicUsize>(2)?,
         core::mem::align_of::<Program>(),
         bytes::<Retained<FinalCompiled<'static>>>(8)?,
@@ -128,7 +128,10 @@ pub(super) fn compiler_scratch(merge: &MergeSource) -> OwnedResult<Requirements>
     { return Err(FinalFailure::Capacity); }
     let raw_report = RawPreparationReportStorage::new().map_err(|_| FinalFailure::Source)?;
     let prefix_words = add(mul(mul(4, MAX_CHILD_CAP_ROOTS)?, 4)?, 6)?;
+    let construction_extra = COMPILER_BYTES.checked_sub(merge.retained_program_host_bytes()
+        .map_err(|_| FinalFailure::Capacity)?).ok_or(FinalFailure::Capacity)?;
     let local = [
+        construction_extra,
         // Complete compiler/template temporary owner, not unused output credit.
         AUXILIARY_BYTES,
         bytes::<Val>(mul(2, prefix_words)?)?,

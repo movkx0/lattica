@@ -40,3 +40,45 @@ __kernel void pq_operation_commit_node(
     }
     for (uint j = 0; j < 4; ++j) output[j] = gl_canon(state[j]);
 }
+
+// Independent nodes share a launch, never a sponge state. The host packs a
+// coefficient-major tile of at most 64 homogeneous nodes.
+__kernel void pq_operation_commit_node_batch(
+    __global const ulong *raw, uint kind, ulong modulus, uint nodes,
+    __global ulong *roots, __global ulong *status,
+    __global const ulong *rci, __global const ulong *rcp,
+    __global const ulong *rcf, __global const ulong *diag) {
+    uint node = get_global_id(0);
+    if (node >= nodes) return;
+    status[node] = 0;
+    if (nodes > 64 || kind > 2 ||
+        (kind == 0 && modulus != 167770241UL && modulus != 3489661057UL) ||
+        (kind != 0 && modulus != 0)) { status[node] = 1; return; }
+    uint count = kind == 2 ? 32 : 256;
+    for (uint i = 0; i < count; ++i) {
+        ulong value = raw[i * nodes + node];
+        long signed_value = as_long(value);
+        if ((kind == 0 && value >= modulus) ||
+            (kind == 1 && (signed_value < -2147483647L || signed_value > 2147483647L)) ||
+            (kind == 2 && value > 255)) { status[node] = 2; return; }
+    }
+    ulong state[8] = {0,0,0,0,0,0,0,0};
+    state[0] = kind == 0 ? 0x504f4c595f505131UL
+             : kind == 1 ? 0x5349474e50513031UL : 0x4259544550513332UL;
+    state[1] = kind == 0 ? modulus : kind == 1 ? 0 : 32;
+    state[2] = kind == 2 ? 0 : 256;
+    uint rounds = kind == 2 ? 4 : 64;
+    for (uint r = 0; r < rounds; ++r) {
+        for (uint j = 0; j < 4; ++j) {
+            if (kind == 2) {
+                state[4+j] = raw[(8*r+2*j)*nodes+node]
+                    | (raw[(8*r+2*j+1)*nodes+node] << 8);
+            } else if (kind == 1) {
+                long value = as_long(raw[(4*r+j)*nodes+node]);
+                state[4+j] = value < 0 ? gl_sub(0, (ulong)(-value)) : (ulong)value;
+            } else state[4+j] = raw[(4*r+j)*nodes+node];
+        }
+        pq_poseidon_permute(state, rci, rcp, rcf, diag);
+    }
+    for (uint j = 0; j < 4; ++j) roots[4*node+j] = gl_canon(state[j]);
+}

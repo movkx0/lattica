@@ -67,8 +67,10 @@ mod trace_audit;
 pub use trace_audit::audit_generated_trace;
 
 mod operations;
-pub use operations::{with_operations, OperationContext, WITNESS_PREPARATION_ENTRY};
+pub use operations::{with_operations, OperationContext, RawPreparationWorkspaceStorage, WITNESS_PREPARATION_ENTRY};
 pub(crate) mod operations_hash;
+pub mod operations_batch;
+pub use operations_batch::{NodeCommitment, FieldCommitment, RawCommitmentBatchStorage};
 
 mod operations_crypto;
 pub use operations_crypto::{UniformProfile, SparseProfile};

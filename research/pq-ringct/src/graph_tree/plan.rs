@@ -143,8 +143,26 @@ impl Plan {
         batches: Vec<Vec<usize>>,
     ) -> Result<Self> {
         let shape = RegisteredGraphShape::from_trusted_graph(graph).map_err(err)?;
+        Self::from_registered_graph(graph, batches, shape)
+    }
+
+    pub(crate) fn from_registered_graph(
+        graph: &UnprovedRelationGraph,
+        batches: Vec<Vec<usize>>,
+        shape: RegisteredGraphShape,
+    ) -> Result<Self> {
+        require(shape.matches(graph), "transferred registration differs from graph")?;
         let inventory = inventory::inventory(graph);
-        let counts = inventory.counts();
+        Self::from_bound_graph(graph, batches, Arc::new(shape), inventory.counts(), inventory.shape_sha3_256())
+    }
+    pub(crate) fn from_prepared(
+        structure: &crate::rust_verify::committed_backend::source_binding::prepared::PreparedGraphStructure<'_>,
+        batches: Vec<Vec<usize>>,
+    ) -> Result<Self> {
+        Self::from_bound_graph(structure.graph(), batches, structure.shape().clone(), structure.counts(), structure.digest())
+    }
+    fn from_bound_graph(graph: &UnprovedRelationGraph, batches: Vec<Vec<usize>>,
+        shape: Arc<RegisteredGraphShape>, counts: &inventory::Counts, shape_digest: [u8; 32]) -> Result<Self> {
         require(
             counts.operations == FULL_OPERATIONS && counts.polynomials == 1770 && counts.bytes == 8,
             "graph is not the complete registered MatRiCT+ N10 profile",
@@ -248,7 +266,7 @@ impl Plan {
         // Frame every exact coverage set, not just a count or family label.
         let mut hash = Sha3_256::new();
         hash.update(b"lattica/matrict/full-graph-tree/v1");
-        hash.update(inventory.shape_sha3_256());
+        hash.update(shape_digest);
         hash.update((leaves.len() as u64).to_le_bytes());
         for (index, leaf) in leaves.iter().enumerate() {
             hash.update((index as u64).to_le_bytes());

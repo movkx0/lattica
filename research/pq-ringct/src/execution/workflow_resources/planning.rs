@@ -40,6 +40,8 @@ pub(crate) use producer_constructors::{producer_constructor_requirements, produc
 /// plan establishes the bound before any source metadata allocation. All B
 /// plans consume original splits from this same context's original ledger.
 pub(crate) struct WorkflowPlanning<'context> {
+    #[cfg(not(debug_assertions))]
+    pub(super) native_session: std::cell::RefCell<crate::component_tree::native_shape::cohort::Session>,
     // The metadata case pins this original through every nested caller scope.
     // Concrete plan owners keep their own splits; source owners remain backed
     // by their original claims or the legacy enclosing subtraction.
@@ -120,6 +122,8 @@ impl<'context> WorkflowPlanning<'context> {
             closure_reserved: false,
             #[cfg(not(debug_assertions))]
             producer_metadata: None,
+            #[cfg(not(debug_assertions))]
+            native_session: Default::default(),
             failed_source_pool: None,
         })
     }

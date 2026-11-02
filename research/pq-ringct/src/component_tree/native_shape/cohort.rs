@@ -11,7 +11,9 @@ use lattica_prover_p3::block_v2::machine::{cpu_queue, program::CountingWorkspace
 /// Ready jobs share one joined pool; execution remains capped at sixteen workers.
 pub(crate) const MAX: usize = 64;
 mod phase;
+mod reuse;
 mod scheduler;
+pub(crate) use reuse::Session;
 use scheduler::run_accounted;
 // Cover caller/callee copies of every control array in the existing coordinator
 // allowance. Prepared graph and compiler heaps have separate live reservations.
@@ -27,6 +29,9 @@ const _: () = assert!(
         + std::mem::size_of::<scheduler::State>()
         + std::mem::size_of::<phase::Permit<'static>>()
         + MAX * 256)
+        // Session owner, local buffers, queue stash and transfer temporary.
+        // These are not copied with each of the eight descriptor frames.
+        + 4 * std::mem::size_of::<Session>()
         + cpu_queue::control_bytes::<scheduler::Job, Result<scheduler::Output, CompileError>>()
         <= COORDINATOR
 );
@@ -90,6 +95,8 @@ pub(super) struct Statistics {
     pub affinity_failures: u64,
     pub queue_refills: u64,
     pub workspace_reuses: u64,
+    pub restored_workspaces: u64,
+    pub cost_hint_jobs: u64,
     pub maintenance_jobs: u64,
     pub completions_drained: u64,
     pub admission_stalls: u64,
@@ -118,6 +125,8 @@ impl Default for Statistics {
             affinity_failures: 0,
             queue_refills: 0,
             workspace_reuses: 0,
+            restored_workspaces: 0,
+            cost_hint_jobs: 0,
             maintenance_jobs: 0,
             completions_drained: 0,
             admission_stalls: 0,
@@ -218,19 +227,25 @@ pub(crate) fn resolve_bounds_in_ledger(
     original: &crate::execution::retained_resources::Reservation,
     ledger: &crate::execution::retained_resources::Ledger,
 ) -> Result<[Option<ResolvedBound>; MAX], CompileError> {
-    resolve(requests, limits, Some(phase::Backing { original, ledger }))
+    resolve(
+        requests,
+        limits,
+        Some(phase::Backing { original, ledger }),
+        &mut Session::default(),
+    )
 }
 /// Preserve each original caller's auxiliary allowance in the cache key.
 pub(crate) fn resolve_bounds(
     requests: &[Request<'_>],
     limits: ConstructionLimits,
 ) -> Result<[Option<ResolvedBound>; MAX], CompileError> {
-    resolve(requests, limits, None)
+    resolve(requests, limits, None, &mut Session::default())
 }
 fn resolve(
     requests: &[Request<'_>],
     limits: ConstructionLimits,
     backing: Option<phase::Backing<'_>>,
+    session: &mut Session,
 ) -> Result<[Option<ResolvedBound>; MAX], CompileError> {
     if requests.is_empty() || requests.len() > MAX {
         return Err(CompileError::Shape("native cohort length"));
@@ -281,10 +296,19 @@ fn resolve(
         .zip(&duplicate)
         .filter(|(result, duplicate)| result.is_none() && duplicate.is_none())
         .count();
-    let phase = backing
+    let mut phase = backing
         .as_ref()
-        .map(|backing| backing.admit(original, misses, native_metadata_cpu_worker_ceiling()))
+        .map(|backing| {
+            session.admit(
+                backing,
+                original,
+                misses,
+                native_metadata_cpu_worker_ceiling(),
+            )
+        })
         .transpose()?;
+    // Declared after the permit: on errors/unwind the buffers die first.
+    let mut buffers = std::mem::replace(&mut session.buffers, reuse::empty());
     let budget = phase.as_ref().map_or(original, |phase| phase.budget());
     stats.phase_extra_bytes_peak = budget - original;
     // AES's periodic schedule is independent of domain, counters and segments
@@ -328,6 +352,9 @@ fn resolve(
         native_metadata_cpu_worker_ceiling(),
         &mut results,
         &mut stats,
+        &mut buffers,
+        &mut session.hints,
+        phase.as_ref().map_or(0, |p| p.extra_bytes()),
         |i| descriptors[i].prepare(storage[i].unwrap(), columns.as_deref()),
         |_, prepared| prepared.retained_worker_bytes(),
         |_, prepared, cap| {
@@ -354,6 +381,11 @@ fn resolve(
     // All workers have joined and their temporary owners have died. Errors
     // publish no partial cohort; successful results remain purely numerical.
     result?;
+    if let Some(permit) = phase.as_mut() {
+        let held = reuse::trim(&mut buffers, permit.extra_bytes())?;
+        session.claim = permit.retain(held)?;
+        session.buffers = buffers;
+    }
     for i in 0..descriptors.len() {
         if let Some(source) = duplicate[i] {
             results[i] = results[source];
@@ -374,7 +406,9 @@ fn resolve(
 
 // Public geometry estimates scheduling cost only; it never grants allocation.
 fn work(storage: NativePlanningStorage) -> u128 {
-    let g = storage.geometry;
+    geometry_work(storage.geometry)
+}
+fn geometry_work(g: NativeGeometry) -> u128 {
     (g.width as u128 * (g.height.ilog2() as u128 + 1)
         + g.periodic_columns as u128 * g.maximum_period as u128)
         .max(1)
@@ -419,6 +453,9 @@ fn run<P: Send>(
         ceiling,
         results,
         stats,
+        &mut reuse::empty(),
+        &mut reuse::Hints::default(),
+        0,
         prepare,
         |i, _| worker_bytes(storage[i].unwrap()),
         compile,

@@ -16,9 +16,10 @@ fn comparison(workers: usize) {
         host: 4 << 30,
         device: 0,
     });
-    let cases = catalogue();
+    let cases = base_catalogue();
     assert_eq!(cases.len(), 159);
     let mut original = 0;
+    let mut session = native_shape::cohort::Session::default();
     let started = Instant::now();
     for group in cases.chunks(native_shape::cohort::MAX) {
         let descriptors: Vec<_> = group.iter().map(Case::descriptor).collect();
@@ -44,8 +45,13 @@ fn comparison(workers: usize) {
                     auxiliary: 512 << 20,
                 })
                 .collect();
-            native_shape::cohort::bounds_exact_in_ledger(&requests, limits(), &held, &ledger)
+            session
+                .resolve(&requests, limits(), &held, &ledger)
                 .unwrap()
+                .into_iter()
+                .zip(requests.iter())
+                .map(|(b, &r)| b.map(|b| b.for_request(r, limits()).unwrap()))
+                .collect::<Vec<_>>()
         };
         for (case, bound) in group.iter().zip(result) {
             let bound = bound.unwrap();
@@ -54,6 +60,7 @@ fn comparison(workers: usize) {
             assert_eq!(values(bound)[..7], expected[..7], "{}", case.name);
         }
     }
+    drop(session);
     let elapsed_ns = started.elapsed().as_nanos();
     let stats = cache.statistics();
     assert_eq!(stats.entries, 159);

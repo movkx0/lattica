@@ -77,6 +77,9 @@ impl MergeSource {
             max_input_values: self.inputs,
         }
     }
+    pub(crate) fn retained_program_host_bytes(&self) -> Result<usize> {
+        self.operations.retained_program_host_ceiling(PUBLIC_VALUES, self.wires, self.hint_words).map_err(err)
+    }
     pub(crate) fn check_program(&self, program: &Program) -> Result<()> {
         let actual = OperationCounts::from_program(program);
         require(
@@ -87,7 +90,9 @@ impl MergeSource {
                 && program.height() <= self.padded_rows
                 && program.wire_count() <= self.wires
                 && program.witness_values() <= self.inputs
-                && program.public_values() == PUBLIC_VALUES,
+                && program.public_values() == PUBLIC_VALUES
+                && program.retained_host_bytes().map_err(err)? <= self.retained_program_host_bytes()?
+                && shape::selection_hint_words(program).map_err(err)? <= self.hint_words,
             "aggregate compiler exceeded its source closure",
         )
     }

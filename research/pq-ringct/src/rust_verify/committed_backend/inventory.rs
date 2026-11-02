@@ -91,6 +91,7 @@ struct Encoder {
     shape: Sha3_256,
     witness: Sha3_256,
     exact_shape: Option<Vec<u64>>,
+    registration: Option<Sha3_256>,
 }
 impl Encoder {
     fn new() -> Self {
@@ -106,15 +107,17 @@ impl Encoder {
             shape,
             witness,
             exact_shape: None,
+            registration: None,
         }
     }
     fn word(&mut self, word: u64) {
         if let Some(words) = &mut self.exact_shape {
             words.push(word);
-            return;
+            if self.registration.is_none() { return; }
         }
         self.shape.update(word.to_le_bytes());
-        self.witness.update(word.to_le_bytes());
+        if let Some(hash) = &mut self.registration { hash.update(word.to_le_bytes()); }
+        else { self.witness.update(word.to_le_bytes()); }
     }
     /// All integers use full LE-u64 encodings, avoiding field-reduction
     /// aliases. Count framing distinguishes records and variable-length lists.
@@ -407,6 +410,7 @@ impl<'a> Record<'a> {
 /// Stream an exhaustive canonical inventory. No native verification result is
 /// accepted as an input, and no obligation is discharged by this function.
 pub fn inventory(graph: &UnprovedRelationGraph) -> UnprovedInventory {
+    crate::preparation_options::reuse_count(crate::preparation_options::ReuseCounter::FullInventories);
     let mut encoder = Encoder::new();
     let counts = encode_graph(graph, &mut encoder);
     UnprovedInventory {
@@ -425,7 +429,21 @@ pub(super) fn exact_shape(graph: &UnprovedRelationGraph) -> Vec<u64> {
     encoder.exact_shape.expect("shape collector")
 }
 
+pub(super) const PREPARED_FRAME_BYTES: usize = core::mem::size_of::<Encoder>() + core::mem::size_of::<Counts>() + 512;
+/// Preserve both domain-separated hash framings while collecting exact words.
+pub(super) fn prepared_shape(graph: &UnprovedRelationGraph) -> (Vec<u64>, Counts, [u8; 32], [u8; 32]) {
+    let mut encoder = Encoder::new();
+    let mut label = Sha3_256::new();
+    label.update(b"lattica/matrict/registered-graph-label/v1");
+    label.update(VERSION.to_le_bytes());
+    encoder.registration = Some(label);
+    encoder.exact_shape = Some(vec![VERSION]);
+    let counts = encode_graph(graph, &mut encoder);
+    (encoder.exact_shape.unwrap(), counts, encoder.registration.unwrap().finalize().into(), encoder.shape.finalize().into())
+}
+
 fn encode_graph(graph: &UnprovedRelationGraph, encoder: &mut Encoder) -> Counts {
+    crate::preparation_options::reuse_count(crate::preparation_options::ReuseCounter::StructuralTraversals);
     // Intentionally exhaustive: adding a graph/node field must force this
     // inventory to be reviewed, even if it has no effect on today's fixture.
     let UnprovedRelationGraph {

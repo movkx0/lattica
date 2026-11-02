@@ -25,9 +25,13 @@ pub(crate) struct BoundAesOuter<'operation, 'plan, 'request> {
 }
 
 impl PreissuedAesOuter<'_, '_> {
-    /// Retained packet and every construction/bind forwarding frame. This is
-    /// charged per outer node in the immutable request's original metadata.
+    /// The packet contains only inline fields and borrows its source owner.
     pub(crate) fn metadata_host_bytes() -> Result<usize> {
+        Ok(core::mem::size_of::<Self>())
+    }
+    // One complete construction/bind census stays in the serial phase owner.
+    // Packet originals keep the returned inline payload until consumption.
+    fn forwarding_host_bytes() -> Result<usize> {
         [
             OuterSourceEnvelope::additional_metadata_host_bytes().map_err(|_| PairedFailure::Resource)?,
             bytes::<PreissuedAesOuter<'static, 'static>>(8)?,
@@ -49,8 +53,8 @@ impl PreissuedAesOuter<'_, '_> {
     /// A retains the same original scratch through all preissue calls.
     pub(crate) fn planning_scratch_requirement() -> Result<Requirements> {
         requirement(Category::PhaseScratch,
-            usize::try_from(crate::execution::retained_resources::OUTER_PLANNING_HOST_BYTES)
-                .map_err(|_| PairedFailure::Overflow)?)
+            add(usize::try_from(crate::execution::retained_resources::OUTER_PLANNING_HOST_BYTES)
+                .map_err(|_| PairedFailure::Overflow)?, Self::forwarding_host_bytes()?)?)
     }
 }
 
@@ -128,9 +132,8 @@ mod tests {
     use super::*;
     #[test]
     fn packet_census_is_additive_to_the_shared_source_planner() {
-        assert!(PreissuedAesOuter::metadata_host_bytes().unwrap()
-            > 8 * core::mem::size_of::<PreissuedOuterBackend>());
+        assert_eq!(PreissuedAesOuter::metadata_host_bytes().unwrap(), core::mem::size_of::<PreissuedAesOuter>());
         assert_eq!(PreissuedAesOuter::planning_scratch_requirement().unwrap()
-            .get(Category::PhaseScratch).host, 1 << 20);
+            .get(Category::PhaseScratch).host, (1 << 20) + PreissuedAesOuter::forwarding_host_bytes().unwrap() as u64);
     }
 }

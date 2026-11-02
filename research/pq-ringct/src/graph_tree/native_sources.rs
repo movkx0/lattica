@@ -139,6 +139,9 @@ impl NativeSourceFacts {
             || node.witness.len() != self.input_values || hints != self.selection_hint_words
             || operations.scalar > self.operations.scalar || operations.cubic > self.operations.cubic
             || operations.poseidon > self.operations.poseidon
+            || p.retained_host_bytes().map_err(|_| NativeSourceFailure::Resource)?
+                > self.operations.retained_program_host_ceiling(PUBLIC_VALUES, self.maximum_wires,
+                    self.selection_hint_words).map_err(|_| NativeSourceFailure::Resource)?
             || p.construction_host_bytes() > PROGRAM_BYTES {
             return Err(NativeSourceFailure::SourceDrift);
         }
@@ -467,18 +470,22 @@ impl<'a, 'graph> NativeSourceBlueprint<'a, 'graph> {
         if core.storage != self.storage {
             return Err(NativeSourceFailure::SourceDrift);
         }
-        Ok(NativeSourceCompilePlan {
-            blueprint: self,
-            facts: NativeSourceFacts::from_core(core, self.kind)?,
-        })
+        let facts = NativeSourceFacts::from_core(core, self.kind)?;
+        let (output, scratch) = super::compiler_storage::split(self.output, self.scratch, PROGRAM_BYTES,
+            facts.operations, PUBLIC_VALUES, facts.maximum_wires, facts.selection_hint_words)
+            .map_err(|_| NativeSourceFailure::Resource)?;
+        Ok(NativeSourceCompilePlan { blueprint: self, facts, output, scratch })
     }
 }
 
 pub(crate) struct NativeSourceCompilePlan<'plan, 'a, 'graph> {
     blueprint: &'plan NativeSourceBlueprint<'a, 'graph>,
     facts: NativeSourceFacts,
+    output: Requirements,
+    scratch: Requirements,
 }
 impl<'plan, 'a, 'graph> NativeSourceCompilePlan<'plan, 'a, 'graph> {
+    pub(crate) fn compiler_requirements(&self) -> (Requirements, Requirements) { (self.output, self.scratch) }
     pub(crate) fn facts(&self) -> NativeSourceFacts { self.facts }
     pub(crate) fn blueprint(&self) -> &NativeSourceBlueprint<'a, 'graph> { self.blueprint }
 
@@ -487,8 +494,8 @@ impl<'plan, 'a, 'graph> NativeSourceCompilePlan<'plan, 'a, 'graph> {
         -> NativeResult<CompiledNode>
     {
         let source = self.blueprint;
-        admitted(output, ledger, source.output)?;
-        admitted(scratch, ledger, source.scratch)?;
+        admitted(output, ledger, self.output)?;
+        admitted(scratch, ledger, self.scratch)?;
         if core::ptr::eq(output, scratch) || !core::ptr::eq(child.source(), source.factory)
             || !child.owned().belongs_to(ledger) || child.owned().geometry().kind() != source.kind {
             return Err(NativeSourceFailure::Authority);

@@ -129,3 +129,72 @@ mod tests {
         }
     }
 }
+
+#[cfg(test)]
+impl ScopedProgramBuilder<'_> {
+    fn reference_cubic_mul(&mut self, a: [Wire; 3], b: [Wire; 3]) -> [Wire; 3] {
+        if self.memory.failed {
+            return [Wire(0); 3];
+        }
+        // Preserve cheaper scalar multiplication when either operand is in the base field.
+        if self.known.get(&a[1]) == Some(Val::ZERO) && self.known.get(&a[2]) == Some(Val::ZERO) {
+            return b.map(|w| self.mul(a[0], w));
+        }
+        if self.known.get(&b[1]) == Some(Val::ZERO) && self.known.get(&b[2]) == Some(Val::ZERO) {
+            return a.map(|w| self.mul(b[0], w));
+        }
+        if let (Some(av), Some(bv)) = (self.known_cubic(a), self.known_cubic(b)) {
+            return self
+                .folding
+                .fold(FoldOperation::CubicMul, av, bv)
+                .unwrap()
+                .map(|v| self.constant(v));
+        }
+        let key = (0, a.min(b), a.max(b));
+        let vacant = match self.cubic_expressions.probe(key) {
+            Ok(value) => return value,
+            Err(vacant) => vacant,
+        };
+        let out = core::array::from_fn(|_| self.allocate());
+        self.push_operation(Op::CubicMul { a, b, out });
+        self.cubic_expressions
+            .insert_vacant(vacant, out, &mut self.memory);
+        out
+    }
+}
+
+#[cfg(test)]
+#[test]
+fn cubic_facts_preserve_folding_scalar_fallback_and_interning() {
+    for mask in 0u32..64 {
+        let build = |fast| {
+            let mut b = ProgramBuilder::new(0).unwrap();
+            let wires: [Wire; 6] = core::array::from_fn(|i| {
+                if mask & (1 << i) == 0 {
+                    b.input()
+                } else {
+                    b.constant([Val::ONE, Val::ZERO, Val::ZERO][i % 3])
+                }
+            });
+            let a = wires[..3].try_into().unwrap();
+            let c = wires[3..].try_into().unwrap();
+            for (a, c) in [(a, c), (c, a), (a, a), (a, c)] {
+                if fast {
+                    b.cubic_mul(a, c);
+                } else {
+                    b.reference_cubic_mul(a, c);
+                }
+            }
+            b.finish(None).unwrap()
+        };
+        let reference = build(false);
+        let actual = build(true);
+        assert_eq!(actual, reference);
+        assert_eq!(actual.manifest_fields(), reference.manifest_fields());
+        let witness = vec![Val::from_u64(7); (6 - mask.count_ones()) as usize];
+        assert_eq!(
+            actual.evaluate(&[], &witness),
+            reference.evaluate(&[], &witness)
+        );
+    }
+}

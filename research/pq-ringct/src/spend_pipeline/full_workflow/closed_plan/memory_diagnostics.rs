@@ -79,6 +79,7 @@ impl CloseMemoryStage {
 /// Observational total() errors become None, never invented zero or a new
 /// failure path; the original checked closure arithmetic keeps its own error.
 pub(super) const FRAME_BYTES: usize =
+    8 * 2048 + // fixed test-only slot, phase-maximum and summary stream frames
     size_of::<[CloseMemoryStage; 4]>() + size_of::<[&mut CloseMemoryStage; 4]>()
     + size_of::<Option<&mut CloseMemoryStage>>() + size_of::<MemoryGate>()
     + size_of::<[Option<usize>; 4]>() + size_of::<[Option<Bytes>; 64]>()
@@ -94,6 +95,70 @@ pub(super) const FRAME_BYTES: usize =
     + size_of::<[usize; 8]>()
     + size_of::<core::iter::Enumerate<core::slice::Iter<'static, PhaseStep>>>()
     + size_of::<core::iter::Enumerate<core::slice::IterMut<'static, PhaseStep>>>();
+
+#[cfg(test)]
+fn profiling() -> bool {
+    std::env::var("LATTICA_RINGCT_METADATA_STAGE_PROFILE").as_deref() == Ok("n3-paired-v1")
+}
+#[cfg(test)]
+pub(super) fn profile_slots(slots: &[crate::execution::workflow_resources::SlotSpec]) {
+    if !profiling() { return; }
+    for (index, slot) in slots.iter().enumerate() {
+        for category in super::Category::ALL {
+            let bytes = slot.requirements.get(category);
+            if bytes != Bytes::ZERO {
+                eprintln!("RINGCT_MEMORY_SLOT {{\"slot\":{index},\"category\":\"{category:?}\",\"host\":{},\"device\":{}}}", bytes.host, bytes.device);
+            }
+        }
+    }
+}
+#[cfg(test)]
+pub(super) fn profile_retained(snapshot: &crate::execution::retained_resources::Snapshot,
+    released: Requirements, transferred: Requirements) {
+    if !profiling() { return; }
+    for category in super::Category::ALL {
+        let current = snapshot.categories[category as usize].current;
+        let released = released.get(category);
+        let transferred = transferred.get(category);
+        if let Some(host) = current.host.checked_sub(released.host).and_then(|v| v.checked_sub(transferred.host)) {
+            eprintln!("RINGCT_MEMORY_RETAINED {{\"category\":\"{category:?}\",\"host\":{host}}}");
+        }
+    }
+}
+#[cfg(test)]
+pub(super) fn profile_maxima(ordinal: usize, kind: impl core::fmt::Debug, before: Requirements, after: Requirements) {
+    if !profiling() { return; }
+    for category in super::Category::ALL {
+        let old = before.get(category);
+        let new = after.get(category);
+        if old != new {
+            eprintln!("RINGCT_MEMORY_PHASE_MAX {{\"ordinal\":{ordinal},\"phase\":\"{kind:?}\",\"category\":\"{category:?}\",\"host\":{},\"device\":{}}}", new.host, new.device);
+        }
+    }
+}
+#[cfg(test)]
+pub(super) fn profile_summary(stage: &CloseMemoryStage) {
+    if !profiling() { return; }
+    #[derive(serde::Serialize)]
+    struct Report {
+        required_host: Option<u64>, required_device: Option<u64>,
+        allowance_host: Option<u64>, allowance_device: Option<u64>,
+        retained_host: Option<u64>, pool_host: Option<u64>, pool_compiler_host: Option<u64>,
+        scratch_host: Option<u64>, fixed_scratch_host: Option<u64>, shortfall_host: Option<u64>,
+    }
+    let report = Report {
+        required_host: stage.required.map(|b| b.host), required_device: stage.required.map(|b| b.device),
+        allowance_host: stage.allowance.map(|b| b.host), allowance_device: stage.allowance.map(|b| b.device),
+        retained_host: stage.projected_retained.map(|b| b.host), pool_host: stage.pool.map(|b| b.host),
+        pool_compiler_host: stage.pool_compiler.map(|b| b.host), scratch_host: stage.current_scratch.map(|b| b.host),
+        fixed_scratch_host: stage.fixed_scratch.map(|b| b.host), shortfall_host: stage.shortfall.map(|b| b.host),
+    };
+    use std::io::Write;
+    let mut out = std::io::stderr().lock();
+    out.write_all(b"RINGCT_METADATA_MEMORY ").unwrap();
+    serde_json::to_writer(&mut out, &report).unwrap();
+    out.write_all(b"\n").unwrap();
+}
 
 #[cfg(test)]
 mod tests {

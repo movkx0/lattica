@@ -4,6 +4,10 @@
 use super::*;
 use std::{cell::{Cell, RefCell}, rc::Rc};
 
+#[cfg(test)]
+mod fixture;
+#[cfg(test)]
+pub(crate) use fixture::FixturePlanningContext;
 mod memory;
 mod cleanup;
 pub(crate) use cleanup::PlanningCleanupReceipt;

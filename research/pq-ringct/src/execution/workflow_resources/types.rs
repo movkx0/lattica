@@ -328,6 +328,8 @@ pub(crate) struct PhaseStep {
 /// resource scope. Backend-owned diagnostics die while its scratch is charged.
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum WorkflowError {
+    #[cfg(test)]
+    MetadataProfileComplete,
     Policy,
     Source,
     #[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]

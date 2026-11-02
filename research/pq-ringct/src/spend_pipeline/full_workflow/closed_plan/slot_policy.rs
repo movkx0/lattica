@@ -21,6 +21,7 @@ pub(super) const SELECTION_FRAME_BYTES: usize =
     + size_of::<&[SlotSpec]>() + size_of::<&[bool]>()
     + size_of::<[Requirements; 5]>() + size_of::<Option<usize>>()
     + size_of::<[Bytes; 2]>() + size_of::<[bool; 8]>() + size_of::<[usize; 4]>()
+    + size_of::<[u128; 8]>() + size_of::<[Option<(u128, u128, usize)>; 2]>()
     + size_of::<[Requirements; 6]>() + size_of::<[Category; Category::ALL.len()]>()
     + size_of::<[Bytes; 6]>() + size_of::<[bool; 8]>() + size_of::<[usize; 4]>();
 
@@ -69,14 +70,27 @@ fn compatible(previous: Requirements, requested: Requirements) -> bool {
 /// The schedule owns equally sized slot/live vectors. Slot zero is the
 /// dedicated failure reservation. Every input is still live when called.
 pub(super) fn first_compatible(slots: &[SlotSpec], live: &[bool], output: Requirements) -> Option<usize> {
+    // Minimize the increase in the actual category-wise pool owner. Using
+    // u128 keeps comparison exact even for deliberately overflowing inputs;
+    // final reservation addition still rejects values outside u64.
+    let mut best: Option<(u128, u128, usize)> = None;
     let mut index = 1;
     while index < live.len() {
         if !live[index] && compatible(slots[index].requirements, output) {
-            return Some(index);
+            let mut host = 0u128;
+            let mut device = 0u128;
+            for category in Category::ALL {
+                let old = slots[index].requirements.get(category);
+                let new = output.get(category);
+                host += u128::from(new.host.saturating_sub(old.host));
+                device += u128::from(new.device.saturating_sub(old.device));
+            }
+            let candidate = (host, device, index);
+            if best.is_none_or(|previous| candidate < previous) { best = Some(candidate); }
         }
         index += 1;
     }
-    None
+    best.map(|(_, _, index)| index)
 }
 
 #[cfg(test)]

@@ -12,6 +12,12 @@ fn affine_bundle_on_gpu(
     count: usize,
     roots: &[AffineRoots],
 ) -> Result<[Val; 4]> {
+    let (initial, words) = affine_fields(operations, kind, modulus, count, roots)?;
+    operations.commit_field_chunks(initial, &words).map(|root| root.map(Val::from_u64)).map_err(error)
+}
+
+fn affine_fields(operations: &OperationContext<'_>, kind: AffineKind, modulus: u64,
+    count: usize, roots: &[AffineRoots]) -> Result<([u64; 4], Vec<u64>)> {
     // Descriptor validation is public metadata, not witness computation.
     crate::affine_air::RegisteredAffineAir::new(kind, modulus, count).map_err(component_error)?;
     if roots.len() != count
@@ -34,20 +40,52 @@ fn affine_bundle_on_gpu(
         }
         words.extend(roots.output.map(|v| v.as_canonical_u64()));
     }
-    operations
-        .commit_field_chunks([BUNDLE_DOMAIN, kind.code(), modulus, count as u64], &words)
-        .map(|root| root.map(Val::from_u64))
-        .map_err(error)
+    Ok(([BUNDLE_DOMAIN, kind.code(), modulus, count as u64], words))
 }
 
 impl<'a> GraphProofPlan<'a> {
+    pub(crate) fn new_with_batched_operations(registered: &RegisteredGraphShape, graph: &'a UnprovedRelationGraph,
+        limits: ResourceLimits, operations: &OperationContext<'_>) -> Result<Self> {
+        Self::prepare_batched(Self::topology(registered, graph, limits)?, operations)
+    }
+    pub(crate) fn new_prepared_operations(
+        structure: &crate::rust_verify::committed_backend::source_binding::prepared::PreparedGraphStructure<'a>,
+        limits: ResourceLimits, operations: &OperationContext<'_>, batched: bool,
+    ) -> Result<Self> {
+        let plan = Self::topology_prepared(structure, limits)?;
+        if batched { Self::prepare_batched(plan, operations) } else { Self::prepare_scalar(plan, operations) }
+    }
+    fn prepare_batched(mut plan: Self, operations: &OperationContext<'_>) -> Result<Self> {
+        let count = plan.batches.iter().filter(|b| matches!(b.kind, ComponentKind::Affine { .. })).count();
+        let mut hashes = crate::graph_tree::commitment_batches::FieldBatch::new(operations, count, true).map_err(error)?;
+        let mut patches = Vec::with_capacity(count);
+        for index in 0..plan.batches.len() {
+            if plan.batches[index].kind == ComponentKind::External { continue; }
+            let mut pending = None;
+            let public = plan.collect_expected_public_values(&plan.batches[index], |kind, modulus, count, roots| {
+                let (initial, words) = affine_fields(operations, kind, modulus, count, roots)?;
+                pending = Some(hashes.push(initial, words).map_err(error)?);
+                Ok([Val::ZERO; 4])
+            })?;
+            if let Some(slot) = pending {
+                if public.len() != 4 { return Err(error("affine batch public framing")); }
+                patches.push((index, slot));
+            }
+            plan.batches[index].expected_public = Some(public);
+        }
+        let roots = hashes.finish().map_err(error)?;
+        for (index, slot) in patches { plan.batches[index].expected_public.as_mut().unwrap().copy_from_slice(&roots[slot]); }
+        Ok(plan)
+    }
     pub fn new_with_operations(
         registered: &RegisteredGraphShape,
         graph: &'a UnprovedRelationGraph,
         limits: ResourceLimits,
         operations: &OperationContext<'_>,
     ) -> Result<Self> {
-        let mut plan = Self::topology(registered, graph, limits)?;
+        Self::prepare_scalar(Self::topology(registered, graph, limits)?, operations)
+    }
+    fn prepare_scalar(mut plan: Self, operations: &OperationContext<'_>) -> Result<Self> {
         for index in 0..plan.batches.len() {
             if plan.batches[index].kind == ComponentKind::External {
                 continue;

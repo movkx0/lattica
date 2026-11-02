@@ -1,0 +1,2210 @@
+{
+  "schema": "ringct-metadata-latency-optimization-v1",
+  "date": "2026-11-02",
+  "timezone": "America/New_York",
+  "base_commit": "98ace70932adec127d95bb6018ae457822720b79",
+  "working_tree": "Uncommitted integration on main; existing changes preserved.",
+  "scope": {
+    "transactions": 3,
+    "layout": "paired-v1",
+    "complete_workflow": false,
+    "recursive_proofs_generated": 0,
+    "timed": "Startup excluding fixture read/verification, graph construction, source preparation, metadata constructors, schedule and memory closure.",
+    "excluded": [
+      "Native transaction/proof generation",
+      "Fixture loading and verification",
+      "Runtime preissue",
+      "Recursive proving",
+      "Whole-workflow throughput"
+    ],
+    "retirement": "Incomplete case owners remain retained until isolated process teardown."
+  },
+  "implementation": [
+    "Reuse registration, exact statement and manifest bindings, and crypto input plans within one immutable source-preparation scope; retain source byte checks and failure poisoning.",
+    "Scope-owned fixed GPU scratch buffers and three existing kernel handles; exact public NTT/mul metadata reuse; original GPU fallback beyond capacity; scrub used prefixes and all buffers at scope teardown.",
+    "Expand native lookup catalog from 304 to 317 independently qualified public descriptors: five AES, two transcript, one statement and five linear-map rows.",
+    "Optional bounded operation profiling and complete N3 timeline validation, disabled for timing comparisons."
+  ],
+  "limits": {
+    "worker_host_bytes": 34359738368,
+    "native_host_bytes": 25769803776,
+    "device_bytes": 8589934592,
+    "native_lru_entries": 256,
+    "native_table_max_rows": 512,
+    "native_cache_allowance_bytes": 2097152,
+    "descriptor_recipe_heap_cap_bytes": 32768,
+    "identity_hashing": "CPU; existing automatic concurrency unchanged",
+    "gpu_metadata_compiler_port": "Deferred; no new GPU kernels."
+  },
+  "hardware": {
+    "cpu": "AMD Ryzen 9 5900XT, 16 physical cores / 32 threads",
+    "physical_cpu_affinity": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "cpu_quota": "1600%",
+    "gpu_uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+  },
+  "methodology": {
+    "repeats": 3,
+    "workers": [
+      1,
+      8,
+      16
+    ],
+    "heldout_workers": 16,
+    "process_isolation": true,
+    "descriptor_caches": "Fresh process caches; qualified static tables enabled.",
+    "ordering": "For each cohort: baseline/candidate, candidate/baseline, baseline/candidate. Cohorts 1,8,16,heldout.",
+    "metric": "timing.total_ns + generation_and_startup_ns - fixture_load_verify_ns; native generation is zero on replay.",
+    "qualification": "Metadata timing only; guard benchmark/performance_qualified flags remain false; no workflow performance receipt.",
+    "acceptance": "At least 15% reduction at 16 workers; no regression over 3% at 1 or 8 workers."
+  },
+  "fixtures": {
+    "baseline": {
+      "path": ".tools/metadata-fixtures/baseline-n3.bin",
+      "sha256": "335c1fe98e9ccea30d91042721d19d1931cc41bad94ecd60afbb85e2ee12f09d",
+      "bytes": 769585
+    },
+    "heldout": {
+      "path": ".tools/metadata-fixtures/heldout-n3.bin",
+      "sha256": "30d6f76102d048ad7f2c444335363d271d314a9e7b94c0df3c0497edc1c7a5b3",
+      "bytes": 769585
+    }
+  },
+  "fixture_randomness": "Fresh private entropy at original generation; deterministic replay of verified public seeds, contexts, statements and native proofs. No private witnesses serialized.",
+  "source_snapshots": {
+    "baseline": {
+      "path": ".tools/metadata-latency-baseline",
+      "manifest": ".tools/metadata-latency/baseline-source-manifest.json",
+      "manifest_sha256": "d3af38e43993ffd0b21f306022d55fe20fec5f7dae7aae12c07ed54761d2fc1d",
+      "build": {
+        "record": ".tools/metadata-latency-baseline/.tools/pq-opencl-opt/runs/metadata-latency-baseline-build-r1.json",
+        "sha256": "1d1fae5702383f8408cd9f9418fd953372734a72ca72a7b73eba0be2e93edf42",
+        "status": "passed",
+        "raw_log_sha256": "b1c54bed7d47f84369847627cd9623b5ec78e12e525474528fb922a983eb7320",
+        "build_label": null,
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      }
+    },
+    "candidate": {
+      "path": ".tools/metadata-latency-candidate-source",
+      "manifest": ".tools/metadata-latency/candidate-source-manifest.json",
+      "manifest_sha256": "98e0cfceb771c3f67a9f1ceeb0a7a5bd11efd7557064dc3d91ceb6d56b5a5f2e",
+      "build": {
+        "record": ".tools/pq-opencl-opt/runs/metadata-latency-final-build-r1.json",
+        "sha256": "b12119c306d5b1c013b0cc74817119b7f22b0c1a9387f77231b12004cc180865",
+        "status": "passed",
+        "raw_log_sha256": "204e889eabf9cdce7f41bb3bbf762147bd206ca3f9a1434d4ad5c43dd33ce3d4",
+        "build_label": null,
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      }
+    }
+  },
+  "medians": [
+    {
+      "cohort": 1,
+      "baseline_ns": 20856938708,
+      "candidate_ns": 14585208474,
+      "elapsed_reduction": 0.30070233804706825,
+      "ranges_ns": {
+        "baseline": [
+          20776399001,
+          20919342036
+        ],
+        "candidate": [
+          14493727898,
+          14685876269
+        ]
+      },
+      "phase_medians_ns": {
+        "baseline": {
+          "setup_ns": 2965120,
+          "graph_sources_ns": 10051891416,
+          "source_preparation_ns": 5952913785,
+          "inventory_ns": 44462583,
+          "reservation_ns": 17870,
+          "constructors_ns": 4526819721,
+          "native_constructors_ns": 1672743123,
+          "crypto_constructors_ns": 2546861078,
+          "graph_constructors_ns": 208011067,
+          "final_aggregation_ns": 98589552,
+          "total_ns": 20579058756
+        },
+        "candidate": {
+          "setup_ns": 2981751,
+          "graph_sources_ns": 6791498682,
+          "source_preparation_ns": 4070858323,
+          "inventory_ns": 44338063,
+          "reservation_ns": 16990,
+          "constructors_ns": 3487158435,
+          "native_constructors_ns": 1393661187,
+          "crypto_constructors_ns": 1985960456,
+          "graph_constructors_ns": 7371980,
+          "final_aggregation_ns": 99529009,
+          "total_ns": 14396859504
+        }
+      }
+    },
+    {
+      "cohort": 8,
+      "baseline_ns": 20331612531,
+      "candidate_ns": 14602461093,
+      "elapsed_reduction": 0.28178539352275445,
+      "ranges_ns": {
+        "baseline": [
+          20329466455,
+          20380348022
+        ],
+        "candidate": [
+          14595659778,
+          14666791372
+        ]
+      },
+      "phase_medians_ns": {
+        "baseline": {
+          "setup_ns": 2997111,
+          "graph_sources_ns": 10050253029,
+          "source_preparation_ns": 5944251491,
+          "inventory_ns": 44664709,
+          "reservation_ns": 18451,
+          "constructors_ns": 4063892270,
+          "native_constructors_ns": 1485512291,
+          "crypto_constructors_ns": 2270535321,
+          "graph_constructors_ns": 208643835,
+          "final_aggregation_ns": 98714140,
+          "total_ns": 20094585303
+        },
+        "candidate": {
+          "setup_ns": 2983151,
+          "graph_sources_ns": 6798849514,
+          "source_preparation_ns": 4084854789,
+          "inventory_ns": 44432273,
+          "reservation_ns": 17131,
+          "constructors_ns": 3429766499,
+          "native_constructors_ns": 1337443176,
+          "crypto_constructors_ns": 1986055625,
+          "graph_constructors_ns": 7419530,
+          "final_aggregation_ns": 98848168,
+          "total_ns": 14365194299
+        }
+      }
+    },
+    {
+      "cohort": 16,
+      "baseline_ns": 20394163447,
+      "candidate_ns": 14629469207,
+      "elapsed_reduction": 0.28266392269441143,
+      "ranges_ns": {
+        "baseline": [
+          20323036703,
+          20460023732
+        ],
+        "candidate": [
+          14549081807,
+          14731237829
+        ]
+      },
+      "phase_medians_ns": {
+        "baseline": {
+          "setup_ns": 2962011,
+          "graph_sources_ns": 10065668669,
+          "source_preparation_ns": 5952181176,
+          "inventory_ns": 44418919,
+          "reservation_ns": 16730,
+          "constructors_ns": 4070962680,
+          "native_constructors_ns": 1484239579,
+          "crypto_constructors_ns": 2275761148,
+          "graph_constructors_ns": 207425604,
+          "final_aggregation_ns": 99247124,
+          "total_ns": 20155891247
+        },
+        "candidate": {
+          "setup_ns": 2976912,
+          "graph_sources_ns": 6805257172,
+          "source_preparation_ns": 4077602648,
+          "inventory_ns": 44532479,
+          "reservation_ns": 18000,
+          "constructors_ns": 3428908684,
+          "native_constructors_ns": 1337851913,
+          "crypto_constructors_ns": 1985245778,
+          "graph_constructors_ns": 7276469,
+          "final_aggregation_ns": 98941804,
+          "total_ns": 14359309165
+        }
+      }
+    },
+    {
+      "cohort": "heldout",
+      "baseline_ns": 20429504480,
+      "candidate_ns": 14627396647,
+      "elapsed_reduction": 0.2840062928927193,
+      "ranges_ns": {
+        "baseline": [
+          20325429614,
+          20504136123
+        ],
+        "candidate": [
+          14541175226,
+          14662034642
+        ]
+      },
+      "phase_medians_ns": {
+        "baseline": {
+          "setup_ns": 2961872,
+          "graph_sources_ns": 10079006691,
+          "source_preparation_ns": 5952797259,
+          "inventory_ns": 44457514,
+          "reservation_ns": 18361,
+          "constructors_ns": 4071616381,
+          "native_constructors_ns": 1486567175,
+          "crypto_constructors_ns": 2276293542,
+          "graph_constructors_ns": 208361510,
+          "final_aggregation_ns": 98933235,
+          "total_ns": 20150858057
+        },
+        "candidate": {
+          "setup_ns": 2972432,
+          "graph_sources_ns": 6821071873,
+          "source_preparation_ns": 4081253361,
+          "inventory_ns": 44434073,
+          "reservation_ns": 17711,
+          "constructors_ns": 3408903469,
+          "native_constructors_ns": 1309992910,
+          "crypto_constructors_ns": 1993908396,
+          "graph_constructors_ns": 7348201,
+          "final_aggregation_ns": 98956284,
+          "total_ns": 14358216221
+        }
+      }
+    }
+  ],
+  "samples": [
+    {
+      "variant": "baseline",
+      "cohort": 1,
+      "repeat": 1,
+      "provenance": {
+        "record": ".tools/metadata-latency-baseline/.tools/pq-opencl-opt/runs/metadata-latency-baseline-1-r1.json",
+        "sha256": "4117063aa5b4d7ba62c888626cc63ca224731164da82aad0df7815d2adc50b6e",
+        "status": "passed",
+        "raw_log_sha256": "ad1a04d522e4216989a8b60e923f52f12ed1625279b565ecd968ec0f402434aa",
+        "build_label": "metadata-latency-baseline-build-r1",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      "complete_metadata_ns": 20856938708,
+      "metadata_startup_ns": 277879952,
+      "timing": {
+        "setup_ns": 2954880,
+        "graph_sources_ns": 10051891416,
+        "source_preparation_ns": 5952913785,
+        "inventory_ns": 44462583,
+        "reservation_ns": 16371,
+        "constructors_ns": 4526819721,
+        "native_constructors_ns": 1672743123,
+        "crypto_constructors_ns": 2541868760,
+        "graph_constructors_ns": 213399089,
+        "final_aggregation_ns": 98808749,
+        "total_ns": 20579058756
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 172,
+        "cold_misses": 13,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.022222222222222223,
+        "evictions": 0
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291676418,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787771924,
+        "fixed_scratch_host": 26777208264,
+        "shortfall_host": 0
+      },
+      "process_memory_peak_bytes": 524726272
+    },
+    {
+      "variant": "candidate",
+      "cohort": 1,
+      "repeat": 1,
+      "provenance": {
+        "record": ".tools/pq-opencl-opt/runs/metadata-latency-candidate-1-r1.json",
+        "sha256": "fdd6fc348d69e2f0ac9ca027ac7cf969ee90d962e8ace1863693e77e3aa44725",
+        "status": "passed",
+        "raw_log_sha256": "38306daaf83b20ce50f81aad565dc0cb7a418ebca68bd80d85686a83967156d5",
+        "build_label": "metadata-latency-final-build-r1",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      "complete_metadata_ns": 14585208474,
+      "metadata_startup_ns": 188348970,
+      "timing": {
+        "setup_ns": 2989011,
+        "graph_sources_ns": 6791498682,
+        "source_preparation_ns": 4070858323,
+        "inventory_ns": 44338063,
+        "reservation_ns": 16990,
+        "constructors_ns": 3487158435,
+        "native_constructors_ns": 1393661187,
+        "crypto_constructors_ns": 1987451649,
+        "graph_constructors_ns": 7371980,
+        "final_aggregation_ns": 98673619,
+        "total_ns": 14396859504
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 185,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291732226,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787716116,
+        "fixed_scratch_host": 26777208296,
+        "shortfall_host": 0
+      },
+      "process_memory_peak_bytes": 521744384
+    },
+    {
+      "variant": "candidate",
+      "cohort": 1,
+      "repeat": 2,
+      "provenance": {
+        "record": ".tools/pq-opencl-opt/runs/metadata-latency-candidate-1-r2.json",
+        "sha256": "15b9864ed5de6b0bfb965b78cc60e8475ae83157cc7635965fc70dd6733d976b",
+        "status": "passed",
+        "raw_log_sha256": "c0662cbf3c030fdc51b0e74fa7d9e22132fd0090f751bc79c65e89fe9ebe324c",
+        "build_label": "metadata-latency-final-build-r1",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      "complete_metadata_ns": 14685876269,
+      "metadata_startup_ns": 277949849,
+      "timing": {
+        "setup_ns": 2981751,
+        "graph_sources_ns": 6791541145,
+        "source_preparation_ns": 4072555829,
+        "inventory_ns": 46632960,
+        "reservation_ns": 16740,
+        "constructors_ns": 3494197995,
+        "native_constructors_ns": 1402062702,
+        "crypto_constructors_ns": 1985325054,
+        "graph_constructors_ns": 7281230,
+        "final_aggregation_ns": 99529009,
+        "total_ns": 14407926420
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 185,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291732226,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787716116,
+        "fixed_scratch_host": 26777208296,
+        "shortfall_host": 0
+      },
+      "process_memory_peak_bytes": 520785920
+    },
+    {
+      "variant": "baseline",
+      "cohort": 1,
+      "repeat": 2,
+      "provenance": {
+        "record": ".tools/metadata-latency-baseline/.tools/pq-opencl-opt/runs/metadata-latency-baseline-1-r2.json",
+        "sha256": "37b03e9ca5876532340fdf61483e0e05cacdd9adbb30e8907891a7b6bf2fad78",
+        "status": "passed",
+        "raw_log_sha256": "28c89e74ab9e45b13c412967b1a36c5912531c0add91803f4fa56f1503798b6a",
+        "build_label": "metadata-latency-baseline-build-r1",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      "complete_metadata_ns": 20919342036,
+      "metadata_startup_ns": 189738228,
+      "timing": {
+        "setup_ns": 3090873,
+        "graph_sources_ns": 10076693080,
+        "source_preparation_ns": 5965099328,
+        "inventory_ns": 44548210,
+        "reservation_ns": 17870,
+        "constructors_ns": 4640154447,
+        "native_constructors_ns": 1727071371,
+        "crypto_constructors_ns": 2606482457,
+        "graph_constructors_ns": 208011067,
+        "final_aggregation_ns": 98589552,
+        "total_ns": 20729603808
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 172,
+        "cold_misses": 13,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.022222222222222223,
+        "evictions": 0
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291676418,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787771924,
+        "fixed_scratch_host": 26777208264,
+        "shortfall_host": 0
+      },
+      "process_memory_peak_bytes": 522551296
+    },
+    {
+      "variant": "baseline",
+      "cohort": 1,
+      "repeat": 3,
+      "provenance": {
+        "record": ".tools/metadata-latency-baseline/.tools/pq-opencl-opt/runs/metadata-latency-baseline-1-r3.json",
+        "sha256": "d4070981eaa1b78f88c1262e28ad7191cc75a705a8a1f1ecb4c5e2e4715e45ec",
+        "status": "passed",
+        "raw_log_sha256": "7b7ef52d805625b6a849707e17f1a3f2789d6b61c10e7ee2e8e6f75d012432c5",
+        "build_label": "metadata-latency-baseline-build-r1",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      "complete_metadata_ns": 20776399001,
+      "metadata_startup_ns": 237155533,
+      "timing": {
+        "setup_ns": 2965120,
+        "graph_sources_ns": 10037084792,
+        "source_preparation_ns": 5935845236,
+        "inventory_ns": 44435728,
+        "reservation_ns": 22241,
+        "constructors_ns": 4518890351,
+        "native_constructors_ns": 1669458286,
+        "crypto_constructors_ns": 2546861078,
+        "graph_constructors_ns": 203989601,
+        "final_aggregation_ns": 98581386,
+        "total_ns": 20539243468
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 172,
+        "cold_misses": 13,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.022222222222222223,
+        "evictions": 0
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291676418,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787771924,
+        "fixed_scratch_host": 26777208264,
+        "shortfall_host": 0
+      },
+      "process_memory_peak_bytes": 524800000
+    },
+    {
+      "variant": "candidate",
+      "cohort": 1,
+      "repeat": 3,
+      "provenance": {
+        "record": ".tools/pq-opencl-opt/runs/metadata-latency-candidate-1-r3.json",
+        "sha256": "b8c2d28315a733c8e15ff8b683819ba598eb85ac8437b23606a3cfd345e72873",
+        "status": "passed",
+        "raw_log_sha256": "061c0cbca6cfc9dd84bfabaaa9fa9a9ce279bfcb29d0d211cfbd1fe352575ac3",
+        "build_label": "metadata-latency-final-build-r1",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      "complete_metadata_ns": 14493727898,
+      "metadata_startup_ns": 240297944,
+      "timing": {
+        "setup_ns": 2970271,
+        "graph_sources_ns": 6790506380,
+        "source_preparation_ns": 4059259855,
+        "inventory_ns": 44291547,
+        "reservation_ns": 17880,
+        "constructors_ns": 3356384021,
+        "native_constructors_ns": 1261218659,
+        "crypto_constructors_ns": 1985960456,
+        "graph_constructors_ns": 7763339,
+        "final_aggregation_ns": 101441567,
+        "total_ns": 14253429954
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 185,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291732226,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787716116,
+        "fixed_scratch_host": 26777208296,
+        "shortfall_host": 0
+      },
+      "process_memory_peak_bytes": 524148736
+    },
+    {
+      "variant": "baseline",
+      "cohort": 8,
+      "repeat": 1,
+      "provenance": {
+        "record": ".tools/metadata-latency-baseline/.tools/pq-opencl-opt/runs/metadata-latency-baseline-8-r1.json",
+        "sha256": "2f18ac6f553bba77bf3e6c4dbd1e45f8aadeed64fa93199e6a2eeefb9b0c8d2c",
+        "status": "passed",
+        "raw_log_sha256": "059603717ce6722b1f008a2a6b96822b39b01cb30f721727da7f98d327473b6c",
+        "build_label": "metadata-latency-baseline-build-r1",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      "complete_metadata_ns": 20329466455,
+      "metadata_startup_ns": 240460313,
+      "timing": {
+        "setup_ns": 2997111,
+        "graph_sources_ns": 10038055311,
+        "source_preparation_ns": 5944251491,
+        "inventory_ns": 44667445,
+        "reservation_ns": 18451,
+        "constructors_ns": 4059016333,
+        "native_constructors_ns": 1485512291,
+        "crypto_constructors_ns": 2262143021,
+        "graph_constructors_ns": 211704299,
+        "final_aggregation_ns": 99656722,
+        "total_ns": 20089006142
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 172,
+        "cold_misses": 13,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.022222222222222223,
+        "evictions": 0
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291676418,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787771924,
+        "fixed_scratch_host": 26777208264,
+        "shortfall_host": 0
+      },
+      "process_memory_peak_bytes": 703725568
+    },
+    {
+      "variant": "candidate",
+      "cohort": 8,
+      "repeat": 1,
+      "provenance": {
+        "record": ".tools/pq-opencl-opt/runs/metadata-latency-candidate-8-r1.json",
+        "sha256": "673b9b6a71b4c44c9b0113a7076cbab6f50e443df2de1666907a0585516ab584",
+        "status": "passed",
+        "raw_log_sha256": "13f2c7ce1b5dc271572295942af33d2ff42f49d19b7a28e7ed25bc54fc7205ca",
+        "build_label": "metadata-latency-final-build-r1",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      "complete_metadata_ns": 14602461093,
+      "metadata_startup_ns": 237266794,
+      "timing": {
+        "setup_ns": 2983151,
+        "graph_sources_ns": 6803077846,
+        "source_preparation_ns": 4084854789,
+        "inventory_ns": 44494193,
+        "reservation_ns": 17821,
+        "constructors_ns": 3429766499,
+        "native_constructors_ns": 1337443176,
+        "crypto_constructors_ns": 1986055625,
+        "graph_constructors_ns": 7419530,
+        "final_aggregation_ns": 98848168,
+        "total_ns": 14365194299
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 185,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291732226,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787716116,
+        "fixed_scratch_host": 26777208296,
+        "shortfall_host": 0
+      },
+      "process_memory_peak_bytes": 520773632
+    },
+    {
+      "variant": "candidate",
+      "cohort": 8,
+      "repeat": 2,
+      "provenance": {
+        "record": ".tools/pq-opencl-opt/runs/metadata-latency-candidate-8-r2.json",
+        "sha256": "e916084b2001fde16c89c0b7831c2d8d3ddd562bf25d877a6a0aa0a4e7b9140d",
+        "status": "passed",
+        "raw_log_sha256": "a22a9d06060cb5f4c61e02c02493d13b75232555f99d0b6dc2f11923e4ca6586",
+        "build_label": "metadata-latency-final-build-r1",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      "complete_metadata_ns": 14666791372,
+      "metadata_startup_ns": 252000260,
+      "timing": {
+        "setup_ns": 2991802,
+        "graph_sources_ns": 6798849514,
+        "source_preparation_ns": 4135663053,
+        "inventory_ns": 44432273,
+        "reservation_ns": 16890,
+        "constructors_ns": 3432837580,
+        "native_constructors_ns": 1334445490,
+        "crypto_constructors_ns": 1986650104,
+        "graph_constructors_ns": 7674279,
+        "final_aggregation_ns": 104067707,
+        "total_ns": 14414791112
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 185,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291732226,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787716116,
+        "fixed_scratch_host": 26777208296,
+        "shortfall_host": 0
+      },
+      "process_memory_peak_bytes": 523616256
+    },
+    {
+      "variant": "baseline",
+      "cohort": 8,
+      "repeat": 2,
+      "provenance": {
+        "record": ".tools/metadata-latency-baseline/.tools/pq-opencl-opt/runs/metadata-latency-baseline-8-r2.json",
+        "sha256": "17957d8ddf6da396d21826dc09e0b11e7006211038fe366ce29c44bfe9562cde",
+        "status": "passed",
+        "raw_log_sha256": "a7b4dd747983df81f79143476190dabbc1a42acd062814e41c0902adab985641",
+        "build_label": "metadata-latency-baseline-build-r1",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      "complete_metadata_ns": 20331612531,
+      "metadata_startup_ns": 237027228,
+      "timing": {
+        "setup_ns": 2948691,
+        "graph_sources_ns": 10050945729,
+        "source_preparation_ns": 5928145123,
+        "inventory_ns": 44664709,
+        "reservation_ns": 17560,
+        "constructors_ns": 4067863491,
+        "native_constructors_ns": 1491540212,
+        "crypto_constructors_ns": 2270535321,
+        "graph_constructors_ns": 207073818,
+        "final_aggregation_ns": 98714140,
+        "total_ns": 20094585303
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 172,
+        "cold_misses": 13,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.022222222222222223,
+        "evictions": 0
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291676418,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787771924,
+        "fixed_scratch_host": 26777208264,
+        "shortfall_host": 0
+      },
+      "process_memory_peak_bytes": 707993600
+    },
+    {
+      "variant": "baseline",
+      "cohort": 8,
+      "repeat": 3,
+      "provenance": {
+        "record": ".tools/metadata-latency-baseline/.tools/pq-opencl-opt/runs/metadata-latency-baseline-8-r3.json",
+        "sha256": "cbb7b5ba1709f002ad3bc2960a921f613d029995b40496387c5d8a27453559c5",
+        "status": "passed",
+        "raw_log_sha256": "646fc368b1754eabfebf1748b36d6cb89d4697ad67737b55ad3b470b4877c247",
+        "build_label": "metadata-latency-baseline-build-r1",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      "complete_metadata_ns": 20380348022,
+      "metadata_startup_ns": 274194208,
+      "timing": {
+        "setup_ns": 3005812,
+        "graph_sources_ns": 10050253029,
+        "source_preparation_ns": 5944548298,
+        "inventory_ns": 44435665,
+        "reservation_ns": 18740,
+        "constructors_ns": 4063892270,
+        "native_constructors_ns": 1484438184,
+        "crypto_constructors_ns": 2272270512,
+        "graph_constructors_ns": 208643835,
+        "final_aggregation_ns": 98539739,
+        "total_ns": 20106153814
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 172,
+        "cold_misses": 13,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.022222222222222223,
+        "evictions": 0
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291676418,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787771924,
+        "fixed_scratch_host": 26777208264,
+        "shortfall_host": 0
+      },
+      "process_memory_peak_bytes": 706662400
+    },
+    {
+      "variant": "candidate",
+      "cohort": 8,
+      "repeat": 3,
+      "provenance": {
+        "record": ".tools/pq-opencl-opt/runs/metadata-latency-candidate-8-r3.json",
+        "sha256": "bcce73e90b8d4707d7effe3076aa2dbaa7c3c1e4c73525ab29c989457ed2dd78",
+        "status": "passed",
+        "raw_log_sha256": "ba7871d843758316476465d72774637f066de34965d59ab2f8221341d6970ad7",
+        "build_label": "metadata-latency-final-build-r1",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      "complete_metadata_ns": 14595659778,
+      "metadata_startup_ns": 251116110,
+      "timing": {
+        "setup_ns": 2979611,
+        "graph_sources_ns": 6790464269,
+        "source_preparation_ns": 4078749763,
+        "inventory_ns": 44367903,
+        "reservation_ns": 17131,
+        "constructors_ns": 3427964991,
+        "native_constructors_ns": 1337935622,
+        "crypto_constructors_ns": 1984063356,
+        "graph_constructors_ns": 7205548,
+        "final_aggregation_ns": 98760465,
+        "total_ns": 14344543668
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 185,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291732226,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787716116,
+        "fixed_scratch_host": 26777208296,
+        "shortfall_host": 0
+      },
+      "process_memory_peak_bytes": 524238848
+    },
+    {
+      "variant": "baseline",
+      "cohort": 16,
+      "repeat": 1,
+      "provenance": {
+        "record": ".tools/metadata-latency-baseline/.tools/pq-opencl-opt/runs/metadata-latency-baseline-16-r1.json",
+        "sha256": "6b11fa3cac30872528ae7f100cb351a55912ab1d770cd1018f289cc372686b51",
+        "status": "passed",
+        "raw_log_sha256": "a29d2f6b6ac72a001751d073756b251f1d0369a9e61aa0d20f9c3a1cff577681",
+        "build_label": "metadata-latency-baseline-build-r1",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      "complete_metadata_ns": 20394163447,
+      "metadata_startup_ns": 238272200,
+      "timing": {
+        "setup_ns": 2958451,
+        "graph_sources_ns": 10065668669,
+        "source_preparation_ns": 5952181176,
+        "inventory_ns": 44785054,
+        "reservation_ns": 16300,
+        "constructors_ns": 4090281597,
+        "native_constructors_ns": 1484239579,
+        "crypto_constructors_ns": 2282091146,
+        "graph_constructors_ns": 220295294,
+        "final_aggregation_ns": 103655578,
+        "total_ns": 20155891247
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 172,
+        "cold_misses": 13,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.022222222222222223,
+        "evictions": 0
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291676418,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787771924,
+        "fixed_scratch_host": 26777208264,
+        "shortfall_host": 0
+      },
+      "process_memory_peak_bytes": 709042176
+    },
+    {
+      "variant": "candidate",
+      "cohort": 16,
+      "repeat": 1,
+      "provenance": {
+        "record": ".tools/pq-opencl-opt/runs/metadata-latency-candidate-16-r1.json",
+        "sha256": "b35a077008ac69817be8d048f253590b69f644b0acd01cf834f2aa259e812b91",
+        "status": "passed",
+        "raw_log_sha256": "08f0881cc0f53ad669ece9417ba7ad9f729ad795a6eb76a17ef8fb399e13a981",
+        "build_label": "metadata-latency-final-build-r1",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      "complete_metadata_ns": 14629469207,
+      "metadata_startup_ns": 270160042,
+      "timing": {
+        "setup_ns": 2989742,
+        "graph_sources_ns": 6805257172,
+        "source_preparation_ns": 4077602648,
+        "inventory_ns": 44532479,
+        "reservation_ns": 18440,
+        "constructors_ns": 3428908684,
+        "native_constructors_ns": 1337851913,
+        "crypto_constructors_ns": 1984895341,
+        "graph_constructors_ns": 7306460,
+        "final_aggregation_ns": 98854970,
+        "total_ns": 14359309165
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 185,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291732226,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787716116,
+        "fixed_scratch_host": 26777208296,
+        "shortfall_host": 0
+      },
+      "process_memory_peak_bytes": 523759616
+    },
+    {
+      "variant": "candidate",
+      "cohort": 16,
+      "repeat": 2,
+      "provenance": {
+        "record": ".tools/pq-opencl-opt/runs/metadata-latency-candidate-16-r2.json",
+        "sha256": "46d509a8308b5828039e12f77f5784d76d358c8303537a1a6cd9f7ade1367582",
+        "status": "passed",
+        "raw_log_sha256": "881cd0ae993bdb1aefa0f0953a01ac65444b6064e7165efc1b93db3916591d80",
+        "build_label": "metadata-latency-final-build-r1",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      "complete_metadata_ns": 14549081807,
+      "metadata_startup_ns": 235724727,
+      "timing": {
+        "setup_ns": 2960911,
+        "graph_sources_ns": 6794417245,
+        "source_preparation_ns": 4059856836,
+        "inventory_ns": 44343205,
+        "reservation_ns": 16991,
+        "constructors_ns": 3411761892,
+        "native_constructors_ns": 1320307511,
+        "crypto_constructors_ns": 1985245778,
+        "graph_constructors_ns": 7266799,
+        "final_aggregation_ns": 98941804,
+        "total_ns": 14313357080
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 185,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291732226,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787716116,
+        "fixed_scratch_host": 26777208296,
+        "shortfall_host": 0
+      },
+      "process_memory_peak_bytes": 521371648
+    },
+    {
+      "variant": "baseline",
+      "cohort": 16,
+      "repeat": 2,
+      "provenance": {
+        "record": ".tools/metadata-latency-baseline/.tools/pq-opencl-opt/runs/metadata-latency-baseline-16-r2.json",
+        "sha256": "7ee251b1810e6f8f08142376dad323e5f34ca7d2787ca5bf6708c4f9e06182d0",
+        "status": "passed",
+        "raw_log_sha256": "c9bce41398f23a7663cf1ebc53594b5d3e32f3858c18ae55d4066a3a7caa0a7a",
+        "build_label": "metadata-latency-baseline-build-r1",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      "complete_metadata_ns": 20323036703,
+      "metadata_startup_ns": 200100414,
+      "timing": {
+        "setup_ns": 2971901,
+        "graph_sources_ns": 10051525094,
+        "source_preparation_ns": 5962121894,
+        "inventory_ns": 44415198,
+        "reservation_ns": 16860,
+        "constructors_ns": 4061885342,
+        "native_constructors_ns": 1483411289,
+        "crypto_constructors_ns": 2272987966,
+        "graph_constructors_ns": 206744316,
+        "final_aggregation_ns": 98741771,
+        "total_ns": 20122936289
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 172,
+        "cold_misses": 13,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.022222222222222223,
+        "evictions": 0
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291676418,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787771924,
+        "fixed_scratch_host": 26777208264,
+        "shortfall_host": 0
+      },
+      "process_memory_peak_bytes": 706113536
+    },
+    {
+      "variant": "baseline",
+      "cohort": 16,
+      "repeat": 3,
+      "provenance": {
+        "record": ".tools/metadata-latency-baseline/.tools/pq-opencl-opt/runs/metadata-latency-baseline-16-r3.json",
+        "sha256": "8a5c00b6aa8f078ebdd7ca00925f1b3553bfc8da5476f920feac349e09a32171",
+        "status": "passed",
+        "raw_log_sha256": "e412e95b256f5c1434445f0d73acd87ccb496724714e1863c35ba71844d29368",
+        "build_label": "metadata-latency-baseline-build-r1",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      "complete_metadata_ns": 20460023732,
+      "metadata_startup_ns": 290682131,
+      "timing": {
+        "setup_ns": 2962011,
+        "graph_sources_ns": 10100189313,
+        "source_preparation_ns": 5950791948,
+        "inventory_ns": 44418919,
+        "reservation_ns": 16730,
+        "constructors_ns": 4070962680,
+        "native_constructors_ns": 1488528804,
+        "crypto_constructors_ns": 2275761148,
+        "graph_constructors_ns": 207425604,
+        "final_aggregation_ns": 99247124,
+        "total_ns": 20169341601
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 172,
+        "cold_misses": 13,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.022222222222222223,
+        "evictions": 0
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291676418,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787771924,
+        "fixed_scratch_host": 26777208264,
+        "shortfall_host": 0
+      },
+      "process_memory_peak_bytes": 704155648
+    },
+    {
+      "variant": "candidate",
+      "cohort": 16,
+      "repeat": 3,
+      "provenance": {
+        "record": ".tools/pq-opencl-opt/runs/metadata-latency-candidate-16-r3.json",
+        "sha256": "ff642c5908f9548420357800969925302b394df413c3acfce69f6a053c698548",
+        "status": "passed",
+        "raw_log_sha256": "2ea314c8d9d008295191a86446a828e1b1113e9799a748dae8e2b546547e7494",
+        "build_label": "metadata-latency-final-build-r1",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      "complete_metadata_ns": 14731237829,
+      "metadata_startup_ns": 237117188,
+      "timing": {
+        "setup_ns": 2976912,
+        "graph_sources_ns": 6817532465,
+        "source_preparation_ns": 4133062881,
+        "inventory_ns": 46757478,
+        "reservation_ns": 18000,
+        "constructors_ns": 3493772905,
+        "native_constructors_ns": 1394417347,
+        "crypto_constructors_ns": 1993081588,
+        "graph_constructors_ns": 7276469,
+        "final_aggregation_ns": 98997501,
+        "total_ns": 14494120641
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 185,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291732226,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787716116,
+        "fixed_scratch_host": 26777208296,
+        "shortfall_host": 0
+      },
+      "process_memory_peak_bytes": 521338880
+    },
+    {
+      "variant": "baseline",
+      "cohort": "heldout",
+      "repeat": 1,
+      "provenance": {
+        "record": ".tools/metadata-latency-baseline/.tools/pq-opencl-opt/runs/metadata-latency-baseline-heldout-r1.json",
+        "sha256": "b91804ec3dfafc43882c280062a7d9e8b608dd60f4a7a334c30bf6e160dfd477",
+        "status": "passed",
+        "raw_log_sha256": "ae38aef7d285dfe036e6e7b25d7d4abedc2b2db09dc65a5ae8918469c37b2367",
+        "build_label": "metadata-latency-baseline-build-r1",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      "complete_metadata_ns": 20325429614,
+      "metadata_startup_ns": 188863532,
+      "timing": {
+        "setup_ns": 2951771,
+        "graph_sources_ns": 10060673793,
+        "source_preparation_ns": 5948261636,
+        "inventory_ns": 44485762,
+        "reservation_ns": 18361,
+        "constructors_ns": 4080174759,
+        "native_constructors_ns": 1484313554,
+        "crypto_constructors_ns": 2286622556,
+        "graph_constructors_ns": 210094784,
+        "final_aggregation_ns": 99143865,
+        "total_ns": 20136566082
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 172,
+        "cold_misses": 13,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.022222222222222223,
+        "evictions": 0
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291676418,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787771924,
+        "fixed_scratch_host": 26777208264,
+        "shortfall_host": 0
+      },
+      "process_memory_peak_bytes": 709582848
+    },
+    {
+      "variant": "candidate",
+      "cohort": "heldout",
+      "repeat": 1,
+      "provenance": {
+        "record": ".tools/pq-opencl-opt/runs/metadata-latency-candidate-heldout-r1.json",
+        "sha256": "be936df8951720326d1ac141edfa11a4c2d11648cdbbb4887713fb5a2099f48d",
+        "status": "passed",
+        "raw_log_sha256": "77bf428bf987b1e9f9efebeb6ee2d4756e50ee106cf03bf543da036a44d81733",
+        "build_label": "metadata-latency-final-build-r1",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      "complete_metadata_ns": 14662034642,
+      "metadata_startup_ns": 275186995,
+      "timing": {
+        "setup_ns": 2963891,
+        "graph_sources_ns": 6821071873,
+        "source_preparation_ns": 4078195181,
+        "inventory_ns": 44321449,
+        "reservation_ns": 17711,
+        "constructors_ns": 3440277542,
+        "native_constructors_ns": 1339126243,
+        "crypto_constructors_ns": 1993908396,
+        "graph_constructors_ns": 7348201,
+        "final_aggregation_ns": 99894702,
+        "total_ns": 14386847647
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 185,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291732226,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787716116,
+        "fixed_scratch_host": 26777208296,
+        "shortfall_host": 0
+      },
+      "process_memory_peak_bytes": 523300864
+    },
+    {
+      "variant": "candidate",
+      "cohort": "heldout",
+      "repeat": 2,
+      "provenance": {
+        "record": ".tools/pq-opencl-opt/runs/metadata-latency-candidate-heldout-r2.json",
+        "sha256": "d2721b0a57c375c144a1e1c89f65735e9ba13f898af8e1b95ac1648199c65f53",
+        "status": "passed",
+        "raw_log_sha256": "c5442379ea3244ac302102e6ba87701765208bae302bad0d8ee13607afa1b7de",
+        "build_label": "metadata-latency-final-build-r1",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      "complete_metadata_ns": 14541175226,
+      "metadata_startup_ns": 190987521,
+      "timing": {
+        "setup_ns": 3025973,
+        "graph_sources_ns": 6821748242,
+        "source_preparation_ns": 4084628865,
+        "inventory_ns": 44536014,
+        "reservation_ns": 16991,
+        "constructors_ns": 3396231620,
+        "native_constructors_ns": 1295504594,
+        "crypto_constructors_ns": 1994368459,
+        "graph_constructors_ns": 7402283,
+        "final_aggregation_ns": 98956284,
+        "total_ns": 14350187705
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 185,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291732226,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787716116,
+        "fixed_scratch_host": 26777208296,
+        "shortfall_host": 0
+      },
+      "process_memory_peak_bytes": 522780672
+    },
+    {
+      "variant": "baseline",
+      "cohort": "heldout",
+      "repeat": 2,
+      "provenance": {
+        "record": ".tools/metadata-latency-baseline/.tools/pq-opencl-opt/runs/metadata-latency-baseline-heldout-r2.json",
+        "sha256": "7ea5495394bdf5747cbc28b339b5fece5407829e6f87f70dc7d5ec59c6ed487b",
+        "status": "passed",
+        "raw_log_sha256": "af36ed2b63b7a7c1d6a71e239f4bd5671bfb7f6a7d7654eed744858bbe098d3f",
+        "build_label": "metadata-latency-baseline-build-r1",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      "complete_metadata_ns": 20429504480,
+      "metadata_startup_ns": 278646423,
+      "timing": {
+        "setup_ns": 2961872,
+        "graph_sources_ns": 10079006691,
+        "source_preparation_ns": 5952797259,
+        "inventory_ns": 44457514,
+        "reservation_ns": 18340,
+        "constructors_ns": 4071616381,
+        "native_constructors_ns": 1499458159,
+        "crypto_constructors_ns": 2266728007,
+        "graph_constructors_ns": 206496980,
+        "final_aggregation_ns": 98933235,
+        "total_ns": 20150858057
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 172,
+        "cold_misses": 13,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.022222222222222223,
+        "evictions": 0
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291676418,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787771924,
+        "fixed_scratch_host": 26777208264,
+        "shortfall_host": 0
+      },
+      "process_memory_peak_bytes": 706564096
+    },
+    {
+      "variant": "baseline",
+      "cohort": "heldout",
+      "repeat": 3,
+      "provenance": {
+        "record": ".tools/metadata-latency-baseline/.tools/pq-opencl-opt/runs/metadata-latency-baseline-heldout-r3.json",
+        "sha256": "51b2219e027b942eec6d43357b7b840dec931fa35033a980629c9d214fff75f3",
+        "status": "passed",
+        "raw_log_sha256": "6c62c7af240b909511beaf12b85195a7ee800a909297641ae539272491c2387e",
+        "build_label": "metadata-latency-baseline-build-r1",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      "complete_metadata_ns": 20504136123,
+      "metadata_startup_ns": 242929816,
+      "timing": {
+        "setup_ns": 2985062,
+        "graph_sources_ns": 10113194312,
+        "source_preparation_ns": 6030747652,
+        "inventory_ns": 44329571,
+        "reservation_ns": 19321,
+        "constructors_ns": 4069930389,
+        "native_constructors_ns": 1486567175,
+        "crypto_constructors_ns": 2276293542,
+        "graph_constructors_ns": 208361510,
+        "final_aggregation_ns": 98708162,
+        "total_ns": 20261206307
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 172,
+        "cold_misses": 13,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.022222222222222223,
+        "evictions": 0
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291676418,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787771924,
+        "fixed_scratch_host": 26777208264,
+        "shortfall_host": 0
+      },
+      "process_memory_peak_bytes": 706760704
+    },
+    {
+      "variant": "candidate",
+      "cohort": "heldout",
+      "repeat": 3,
+      "provenance": {
+        "record": ".tools/pq-opencl-opt/runs/metadata-latency-candidate-heldout-r3.json",
+        "sha256": "27559662fc1cfab82521dcf79b4b22f69ee5ad4e69d795675f2285f4bb4a354b",
+        "status": "passed",
+        "raw_log_sha256": "4dd761cc0ccd9bd1b8430662b037a52712862102727fe5b49222474610264d30",
+        "build_label": "metadata-latency-final-build-r1",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      "complete_metadata_ns": 14627396647,
+      "metadata_startup_ns": 269180426,
+      "timing": {
+        "setup_ns": 2972432,
+        "graph_sources_ns": 6820635065,
+        "source_preparation_ns": 4081253361,
+        "inventory_ns": 44434073,
+        "reservation_ns": 17821,
+        "constructors_ns": 3408903469,
+        "native_constructors_ns": 1309992910,
+        "crypto_constructors_ns": 1992960455,
+        "graph_constructors_ns": 7295772,
+        "final_aggregation_ns": 98654332,
+        "total_ns": 14358216221
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 185,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0,
+        "evictions": 0
+      },
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291732226,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787716116,
+        "fixed_scratch_host": 26777208296,
+        "shortfall_host": 0
+      },
+      "process_memory_peak_bytes": 522448896
+    }
+  ],
+  "diagnostics": {
+    "note": "Nested metrics overlap. The bindings-only diagnostic had stale lookup tables; only graph and source-preparation phases are compared, not its total time. These are diagnostic phase comparisons, not independent whole-stage ablations.",
+    "bindings_only": {
+      "provenance": {
+        "record": ".tools/pq-opencl-opt/runs/metadata-latency-binding-detail-r1.json",
+        "sha256": "bc0e34fc880db38f65924b9f15ca6d1f8557540d4a0e77b055e9fe03c7629d6f",
+        "status": "passed",
+        "raw_log_sha256": "d34074d8be8614f0897a8f1b4334617a44aad46ff22fe3a1b8e9294419134c9d",
+        "build_label": "metadata-latency-detail-build-r1",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      "summary": {
+        "timing": {
+          "setup_ns": 2984851,
+          "graph_sources_ns": 10127695266,
+          "source_preparation_ns": 4086968575,
+          "inventory_ns": 44393115,
+          "reservation_ns": 24681,
+          "constructors_ns": 17410903892,
+          "native_constructors_ns": 2690563876,
+          "crypto_constructors_ns": 12463293759,
+          "graph_constructors_ns": 1561754168,
+          "final_aggregation_ns": 695292089,
+          "total_ns": 31672970380
+        },
+        "raw_scopes": 27,
+        "graph_allocations": 55224,
+        "graph_allocation_ns": 2690969389,
+        "graph_kernel_setup_ns": 113276793,
+        "graph_device_ns": 5659371456,
+        "graph_timelines": [
+          {
+            "steps": [
+              "input_validation",
+              "scope_startup",
+              "imports",
+              "relation",
+              "finalize"
+            ],
+            "wall_ns": [
+              110,
+              48881,
+              342805422,
+              3034189946,
+              714685
+            ],
+            "completed": 5
+          },
+          {
+            "steps": [
+              "input_validation",
+              "scope_startup",
+              "imports",
+              "relation",
+              "finalize"
+            ],
+            "wall_ns": [
+              640,
+              23181,
+              342886314,
+              3029220314,
+              721014
+            ],
+            "completed": 5
+          },
+          {
+            "steps": [
+              "input_validation",
+              "scope_startup",
+              "imports",
+              "relation",
+              "finalize"
+            ],
+            "wall_ns": [
+              930,
+              24761,
+              342801954,
+              3031180262,
+              713104
+            ],
+            "completed": 5
+          }
+        ],
+        "source_timelines": [
+          {
+            "steps": [
+              "registration",
+              "algebra",
+              "tree",
+              "statement",
+              "manifest",
+              "native",
+              "crypto",
+              "auxiliary",
+              "producer"
+            ],
+            "wall_ns": [
+              109189524,
+              249650358,
+              207243242,
+              198239270,
+              68596038,
+              6039033,
+              479230,
+              519860883,
+              5220
+            ],
+            "completed": 9
+          },
+          {
+            "steps": [
+              "registration",
+              "algebra",
+              "tree",
+              "statement",
+              "manifest",
+              "native",
+              "crypto",
+              "auxiliary",
+              "producer"
+            ],
+            "wall_ns": [
+              106015201,
+              247098875,
+              206443867,
+              198394523,
+              77449188,
+              6346390,
+              568441,
+              524221233,
+              310
+            ],
+            "completed": 9
+          },
+          {
+            "steps": [
+              "registration",
+              "algebra",
+              "tree",
+              "statement",
+              "manifest",
+              "native",
+              "crypto",
+              "auxiliary",
+              "producer"
+            ],
+            "wall_ns": [
+              108069812,
+              248537195,
+              205811444,
+              198262471,
+              68978435,
+              6040353,
+              469250,
+              520419146,
+              370
+            ],
+            "completed": 9
+          }
+        ]
+      }
+    },
+    "final": {
+      "provenance": {
+        "record": ".tools/pq-opencl-opt/runs/metadata-latency-final-detail-r1.json",
+        "sha256": "e76fcd4a958c53eff48e81104f5984ad8d0d215f65f7287825af983a41655c6d",
+        "status": "passed",
+        "raw_log_sha256": "87793d7921d476edccd38824e7585a7db7a3c8df49b0e6e7f075cc7b7db1dd9b",
+        "build_label": "metadata-latency-final-build-r1",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      "summary": {
+        "timing": {
+          "setup_ns": 2973290,
+          "graph_sources_ns": 6786667359,
+          "source_preparation_ns": 4063450748,
+          "inventory_ns": 44675484,
+          "reservation_ns": 16230,
+          "constructors_ns": 3421997300,
+          "native_constructors_ns": 1322372097,
+          "crypto_constructors_ns": 1993538518,
+          "graph_constructors_ns": 7291397,
+          "final_aggregation_ns": 98795288,
+          "total_ns": 14319780411
+        },
+        "raw_scopes": 27,
+        "graph_allocations": 252,
+        "graph_allocation_ns": 12538136,
+        "graph_kernel_setup_ns": 2622619,
+        "graph_device_ns": 5637558688,
+        "graph_timelines": [
+          {
+            "steps": [
+              "input_validation",
+              "scope_startup",
+              "imports",
+              "relation",
+              "finalize"
+            ],
+            "wall_ns": [
+              90,
+              584042,
+              305009503,
+              1954886394,
+              699934
+            ],
+            "completed": 5
+          },
+          {
+            "steps": [
+              "input_validation",
+              "scope_startup",
+              "imports",
+              "relation",
+              "finalize"
+            ],
+            "wall_ns": [
+              1140,
+              432109,
+              305029985,
+              1956378952,
+              728924
+            ],
+            "completed": 5
+          },
+          {
+            "steps": [
+              "input_validation",
+              "scope_startup",
+              "imports",
+              "relation",
+              "finalize"
+            ],
+            "wall_ns": [
+              650,
+              439039,
+              304758320,
+              1954464981,
+              705685
+            ],
+            "completed": 5
+          }
+        ],
+        "source_timelines": [
+          {
+            "steps": [
+              "registration",
+              "algebra",
+              "tree",
+              "statement",
+              "manifest",
+              "native",
+              "crypto",
+              "auxiliary",
+              "producer"
+            ],
+            "wall_ns": [
+              109294790,
+              254684269,
+              208556367,
+              197353740,
+              67733039,
+              5675685,
+              591882,
+              516108896,
+              5300
+            ],
+            "completed": 9
+          },
+          {
+            "steps": [
+              "registration",
+              "algebra",
+              "tree",
+              "statement",
+              "manifest",
+              "native",
+              "crypto",
+              "auxiliary",
+              "producer"
+            ],
+            "wall_ns": [
+              106897191,
+              245225809,
+              209125678,
+              197355361,
+              68222500,
+              5659004,
+              573072,
+              516098796,
+              350
+            ],
+            "completed": 9
+          },
+          {
+            "steps": [
+              "registration",
+              "algebra",
+              "tree",
+              "statement",
+              "manifest",
+              "native",
+              "crypto",
+              "auxiliary",
+              "producer"
+            ],
+            "wall_ns": [
+              107638977,
+              245124997,
+              208545738,
+              197347811,
+              67390503,
+              5660014,
+              563381,
+              516123469,
+              460
+            ],
+            "completed": 9
+          }
+        ]
+      }
+    }
+  },
+  "qualification": {
+    "native_rows": 317,
+    "registered_rows": 72,
+    "workers": [
+      1,
+      2,
+      4,
+      8,
+      16
+    ],
+    "mathematical_counts_equal": true,
+    "both_generated_table_checks_passed": true,
+    "public_recipe_capture": {
+      "path": ".tools/metadata-latency/remaining-descriptors.json",
+      "sha256": "0884f730eb51c85cf6e0a4a563d4f68a3c4d7efaef75fd9613d57f23f8bc5635"
+    }
+  },
+  "validation": {
+    "passed": [
+      {
+        "record": ".tools/pq-opencl-opt/runs/metadata-latency-gpu-parity-r1.json",
+        "sha256": "01493103e2326081c9fc93de0d482c66247a94232fd4ae25528fe6e2f09504fa",
+        "status": "passed",
+        "raw_log_sha256": "9cbacd8f5d6effd43088582aa1d9672a1e6df3367a171c57a4f498c9a37c5402",
+        "build_label": "metadata-latency-correctness-build-r1",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      {
+        "record": ".tools/pq-opencl-opt/runs/metadata-latency-fullgraph-parity-r1.json",
+        "sha256": "5c744196b75340dc21a3502b81f8e4fca0b914e7d787856f0e29d5a7306e72bf",
+        "status": "passed",
+        "raw_log_sha256": "7c714192ce989d1d04419038b01784f9f93983b7a91cd301f8e7df33e7f3dabe",
+        "build_label": "metadata-latency-correctness-build-r2",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      {
+        "record": ".tools/pq-opencl-opt/runs/metadata-latency-core-correctness-r1.json",
+        "sha256": "960269cc34f18dc3fd0f58381d9c932050093cca46bf25494b83ca55e3593e68",
+        "status": "passed",
+        "raw_log_sha256": "b7976fbef355d8fc9935c2103c0bc42a994ab377a320fbd4d717199927e3af1d",
+        "build_label": "metadata-latency-core-build-r2",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      {
+        "record": ".tools/pq-opencl-opt/runs/metadata-latency-adapter-correctness-r2.json",
+        "sha256": "eb3e776027ecb6817da67474250cc4df6cddc4b24f4074ede5935e955bf9f60a",
+        "status": "passed",
+        "raw_log_sha256": "8a44019f2a997096a144d6ed1b76b0c4cabafcdb4767e4067acdbb2821e5489b",
+        "build_label": "metadata-latency-correctness-build-r3",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      {
+        "record": ".tools/pq-opencl-opt/runs/metadata-latency-registered-qualification-r1.json",
+        "sha256": "55c5f001bd6e9f4e60f639aba293716effccf5f9ff877bf6b4f4f3c85e605c07",
+        "status": "passed",
+        "raw_log_sha256": "9a411299db5f8c32051e7b275adf05c00e3185bc8eda7e3374715cb34996d0b3",
+        "build_label": "metadata-latency-core-build-r3",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      {
+        "record": ".tools/pq-opencl-opt/runs/metadata-latency-native-qualification-r2.json",
+        "sha256": "a47a326ef7c2783315ecebb21aedaed500edf40a7074b7c718d53cb5f31a748d",
+        "status": "passed",
+        "raw_log_sha256": "6be56d78a95d8597bc1ba4991e797d3e8e67f0a726f5b068931542ea6da5390d",
+        "build_label": "metadata-latency-correctness-build-r3",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      {
+        "record": ".tools/pq-opencl-opt/runs/metadata-latency-native-table-use-r1.json",
+        "sha256": "e514a3b3a1efe228aaaa183616a96efc891a50c0b4ea7db97f1c18fcfa674d95",
+        "status": "passed",
+        "raw_log_sha256": "3a9611fa1efc4c8a904098f82fd9de47a10e3a956ce954f62dd1724897beb6b2",
+        "build_label": "metadata-latency-final-build-r1",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      {
+        "record": ".tools/pq-opencl-opt/runs/metadata-latency-final-build-r1.json",
+        "sha256": "b12119c306d5b1c013b0cc74817119b7f22b0c1a9387f77231b12004cc180865",
+        "status": "passed",
+        "raw_log_sha256": "204e889eabf9cdce7f41bb3bbf762147bd206ca3f9a1434d4ad5c43dd33ce3d4",
+        "build_label": null,
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      {
+        "record": ".tools/pq-opencl-opt/runs/metadata-latency-final-check-r1.json",
+        "sha256": "58f71891083ec2f76ce24c4bdd2eadc3d60ba85507818c26b8a0f510eedb81ce",
+        "status": "passed",
+        "raw_log_sha256": "d66f23b09fd9cd702c56777facb51f9f450fd002aa030c680ed338159a93fa3f",
+        "build_label": null,
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      {
+        "record": ".tools/pq-opencl-opt/runs/metadata-latency-final-detail-r1.json",
+        "sha256": "e76fcd4a958c53eff48e81104f5984ad8d0d215f65f7287825af983a41655c6d",
+        "status": "passed",
+        "raw_log_sha256": "87793d7921d476edccd38824e7585a7db7a3c8df49b0e6e7f075cc7b7db1dd9b",
+        "build_label": "metadata-latency-final-build-r1",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      }
+    ],
+    "python_tests_passed": 81,
+    "gpu_tests_passed": 4,
+    "core_tests_passed": 12,
+    "research": {
+      "initial": {
+        "record": ".tools/pq-opencl-opt/runs/metadata-latency-research-correctness-r1.json",
+        "sha256": "ff0b40b857cced19ca8443d47943ce4936a6a1523a7e220997c4bba257162deb",
+        "status": "failed_or_incomplete",
+        "raw_log_sha256": "fca2abc615f4f3efcf2851ab1c277ce43e33341b27f8a22327b72357fc2b8f0a",
+        "build_label": "metadata-latency-correctness-build-r2",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      "initial_passed": 102,
+      "initial_failed": 1,
+      "explanation": "Old hard-coded raw-adapter memory assertion omitted the newly funded workspace. Updated to assert both host and device workspace charges.",
+      "corrected_test": {
+        "record": ".tools/pq-opencl-opt/runs/metadata-latency-adapter-correctness-r2.json",
+        "sha256": "eb3e776027ecb6817da67474250cc4df6cddc4b24f4074ede5935e955bf9f60a",
+        "status": "passed",
+        "raw_log_sha256": "8a44019f2a997096a144d6ed1b76b0c4cabafcdb4767e4067acdbb2821e5489b",
+        "build_label": "metadata-latency-correctness-build-r3",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      }
+    }
+  },
+  "acceptance": {
+    "target_16_worker_reduction_passed": true,
+    "no_1_or_8_worker_regression": true,
+    "all_24_runs_complete_metadata": true,
+    "all_12_candidate_runs_zero_cold_misses": true,
+    "all_runs_no_cache_evictions": true,
+    "all_runs_fit_original_worker_and_device_limits": true
+  }
+}

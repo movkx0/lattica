@@ -23,11 +23,17 @@ use std::sync::Arc;
 #[cfg(all(feature = "owned-native-shake", target_os = "linux", target_arch = "x86_64"))]
 pub(crate) mod fixed_sources;
 #[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
+mod compiler_storage;
+#[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
 pub(crate) mod native_sources;
 #[cfg(all(feature = "full-workflow-experiment", target_os = "linux", target_arch = "x86_64"))]
 pub(crate) mod metadata;
 mod leaf;
 mod plan;
+#[cfg(feature = "opencl")]
+pub(crate) mod preparation;
+#[cfg(feature = "opencl")]
+pub(crate) mod commitment_batches;
 mod tree;
 #[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
 pub(crate) use tree::owned_parent;
@@ -69,7 +75,7 @@ fn require(condition: bool, message: &str) -> Result<()> {
 }
 
 struct PlanInner {
-    shape: RegisteredGraphShape,
+    shape: Arc<RegisteredGraphShape>,
     label: [u8; 32],
     leaves: Vec<LeafPlan>,
 }

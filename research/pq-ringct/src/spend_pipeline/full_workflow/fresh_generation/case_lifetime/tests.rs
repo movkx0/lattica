@@ -21,7 +21,7 @@ fn state(ledger: &Ledger) -> CaseRetirementState {
     CaseRetirementState {
         state: Cell::new(State::Prepared), ledger: ledger.clone(), generation_session: 7,
         transactions: 3, batch_identity: Cell::new(core::ptr::null()),
-        sealed_plan: Cell::new(core::ptr::null()), sealed_context: Cell::new(core::ptr::null()),
+        #[cfg(test)] fixture_context: None, sealed_plan: Cell::new(core::ptr::null()), sealed_context: Cell::new(core::ptr::null()),
         sealed_source: Cell::new(([0; 32], [0; 32])),
         batch_original: RefCell::new(None), planning_original: RefCell::new(None),
         planning_residual_issued: Cell::new(false), planning_residual: Cell::new(None),

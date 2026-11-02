@@ -98,7 +98,7 @@ impl<'context> WorkflowPlanning<'context> {
     /// once with the complete construction envelope; prepared source owners
     /// retain their separate original pools on this exact same ledger.
     pub(crate) fn reserve_producer_metadata<'case: 'context>(&mut self, plan: &SourceMetadataPlanningPlan<'_>,
-        planning_slot: &CaseOwnerSlot<'case, core::result::Result<FreshPlanningContext<'_>, FreshGenerationError>>)
+        planning_slot: &crate::spend_pipeline::full_workflow::fresh_generation::case_lifetime::MetadataOwner<'_, 'case, '_>)
         -> Result<(), WorkflowError>
     {
         if self.failed || self.closure_reserved || self.producer_metadata.is_some()

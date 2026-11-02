@@ -41,6 +41,8 @@ macro_rules! witness_value {
 
 mod arena;
 mod backend;
+#[cfg(feature = "opencl")]
+mod vector_arithmetic;
 #[cfg(all(test, target_pointer_width = "64"))]
 mod construction_census;
 #[cfg(feature = "opencl")]
@@ -341,6 +343,9 @@ pub struct CommittedBackend<'a> {
     #[cfg(not(feature = "opencl"))]
     _lifetime: std::marker::PhantomData<&'a ()>,
     failure: Option<String>,
+    // No root-bearing graph may escape while this private construction state
+    // is set. Raw values are used by lowering; roots are finalized afterward.
+    pending_commitments: bool,
 }
 impl CommittedBackend<'_> {
     pub fn new(setup_seed: [u8; 32]) -> Self {
@@ -361,9 +366,11 @@ impl CommittedBackend<'_> {
             #[cfg(not(feature = "opencl"))]
             _lifetime: std::marker::PhantomData,
             failure: None,
+            pending_commitments: false,
         }
     }
     pub fn into_unproved_graph(self) -> UnprovedRelationGraph {
+        assert!(!self.pending_commitments, "unfinished GPU commitments cannot return a graph");
         assert!(
             self.failure.is_none(),
             "failed GPU preparation cannot return a graph"

@@ -9,11 +9,35 @@ use sha3::{Digest, Sha3_256};
 pub(crate) trait DescriptorKey {
     fn encode(&self, hash: &mut Sha3_256);
     fn family(&self) -> usize;
+    #[cfg(test)]
+    fn portable(&self) -> Option<super::cache::PortableDescriptor> { None }
+    #[cfg(test)]
+    fn portable_heap_bytes(&self) -> Option<usize> { None }
 }
 fn word(hash: &mut Sha3_256, value: usize) {
     hash.update((value as u64).to_le_bytes());
 }
 impl DescriptorKey for NativeDescriptor<'_> {
+    #[cfg(test)]
+    fn portable_heap_bytes(&self) -> Option<usize> {
+        match self {
+            Self::Aes { .. } | Self::Shake { .. } => Some(0),
+            Self::Transcript(parts) => Some(parts.len()),
+            _ => None,
+        }
+    }
+    #[cfg(test)]
+    fn portable(&self) -> Option<super::cache::PortableDescriptor> {
+        match *self {
+            Self::Aes { descriptor, first, count } => Some(super::cache::PortableDescriptor::Aes {
+                domain: descriptor.domain, start_counter: descriptor.start_counter, output_len: descriptor.output_len, first, count }),
+            Self::Transcript(parts) => Some(super::cache::PortableDescriptor::Transcript {
+                parts: parts.iter().map(|p| match p { PartKind::Bytes32 => 0, PartKind::PolynomialQ => 1, PartKind::PolynomialQhat => 2 }).collect() }),
+            Self::Shake { descriptor, first, count } => Some(super::cache::PortableDescriptor::Shake {
+                input_len: descriptor.input_len, output_len: descriptor.output_len, first, count }),
+            _ => None,
+        }
+    }
     fn family(&self) -> usize {
         match self {
             Self::Aes { .. } => 0,
@@ -76,6 +100,25 @@ impl DescriptorKey for NativeDescriptor<'_> {
     }
 }
 impl DescriptorKey for OtherNativeDescriptor<'_> {
+    #[cfg(test)]
+    fn portable_heap_bytes(&self) -> Option<usize> {
+        match self {
+            Self::Statement { .. } | Self::Algebra { kind: ComponentKind::Affine { .. }, .. } => Some(0),
+            Self::Algebra { kind: ComponentKind::LinearMap { descriptor }, .. } => Some(descriptor.portable_heap_bytes()),
+            _ => None,
+        }
+    }
+    #[cfg(test)]
+    fn portable(&self) -> Option<super::cache::PortableDescriptor> {
+        match *self {
+            Self::Statement { setup_seed } => Some(super::cache::PortableDescriptor::Statement { setup_seed }),
+            Self::Algebra { kind: ComponentKind::LinearMap { descriptor }, count } => Some(super::cache::PortableDescriptor::Linear {
+                descriptor: Box::new(descriptor.portable()), count }),
+            Self::Algebra { kind: ComponentKind::Affine { kind, modulus }, count } => Some(super::cache::PortableDescriptor::Affine {
+                operation: kind.code(), bound: match kind { AffineKind::SignedToCanonical { bound } => *bound, _ => 0 }, modulus: *modulus, count }),
+            _ => None,
+        }
+    }
     fn family(&self) -> usize {
         match self {
             Self::Statement { .. } => 5,

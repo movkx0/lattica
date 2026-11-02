@@ -5,7 +5,13 @@ use super::{CompileError, ConstructionLimits, NativeCoreBound};
 use sha3::{Digest, Sha3_256};
 use std::{cell::RefCell, marker::PhantomData, rc::Rc, time::Instant};
 
-pub(crate) const RESERVED_BYTES: usize = 1 << 20;
+#[cfg(test)]
+mod inventory;
+#[cfg(test)]
+pub(crate) use inventory::{PortableDescriptor, emit_inventory};
+#[cfg(test)]
+pub(crate) use inventory::{PortableLinear, PortableRow};
+pub(crate) const RESERVED_BYTES: usize = 2 << 20;
 const ENTRIES: usize = 256;
 
 #[derive(Clone, Copy, Debug, Default, serde::Serialize, PartialEq, Eq)]
@@ -29,6 +35,8 @@ pub(crate) struct Statistics {
     pub affinity_failures: u64,
     pub queue_refills: u64,
     pub workspace_reuses: u64,
+    pub restored_workspaces: u64,
+    pub cost_hint_jobs: u64,
     pub maintenance_jobs: u64,
     pub completions_drained: u64,
     pub admission_stalls: u64,
@@ -79,6 +87,8 @@ struct Entry {
 struct Cache {
     source: [u8; 32],
     precomputed: bool,
+    #[cfg(test)]
+    inventory: inventory::Inventory,
     entries: [Option<Entry>; ENTRIES],
     clock: u64,
     statistics: Statistics,
@@ -86,7 +96,8 @@ struct Cache {
     expensive: [Option<Miss>; HOT_MISSES],
 }
 const _: () = assert!(
-    8 * (core::mem::size_of::<Cache>() + core::mem::size_of::<[super::precomputed::Row; 256]>())
+    8 * (core::mem::size_of::<Cache>() + core::mem::size_of::<[super::precomputed::Row; 512]>()
+        + if cfg!(test) { 32 << 10 } else { 0 })
         <= RESERVED_BYTES
 );
 thread_local! { static CACHE: RefCell<Option<Cache>> = const { RefCell::new(None) }; }
@@ -110,6 +121,7 @@ impl Scope {
             *slot = Some(Cache {
                 source,
                 precomputed,
+                #[cfg(test)] inventory: inventory::Inventory::new(),
                 entries: [None; ENTRIES],
                 clock: 0,
                 families: [FamilyStatistics::default(); 13],
@@ -173,7 +185,7 @@ pub(super) fn record_cohort(s: super::cohort::Statistics) -> Result<(), CompileE
         let mut slot = slot.try_borrow_mut().map_err(|_| busy())?;
         if let Some(c) = slot.as_mut() {
             macro_rules! add { ($($field:ident),+) => { $(c.statistics.$field = c.statistics.$field.checked_add(s.$field).ok_or_else(overflow)?;)+ }; }
-            add!(cohorts, jobs_started, periodic_preparations, budget_reductions, threads_spawned, pinned_workers, affinity_failures, queue_refills, workspace_reuses, maintenance_jobs, completions_drained, admission_stalls, trimmed_compiler_bytes, preparation_ns, coordinator_wait_ns);
+            add!(cohorts, jobs_started, periodic_preparations, budget_reductions, threads_spawned, pinned_workers, affinity_failures, queue_refills, workspace_reuses, restored_workspaces, cost_hint_jobs, maintenance_jobs, completions_drained, admission_stalls, trimmed_compiler_bytes, preparation_ns, coordinator_wait_ns);
             c.statistics.idle_compiler_bytes_peak = c.statistics.idle_compiler_bytes_peak.max(s.idle_compiler_bytes_peak);
             c.statistics.phase_extra_bytes_peak = c.statistics.phase_extra_bytes_peak.max(s.phase_extra_bytes_peak);
             c.statistics.retained_worker_bytes_peak = c.statistics.retained_worker_bytes_peak.max(s.retained_worker_bytes_peak);
@@ -349,6 +361,7 @@ pub(super) fn select<D: DescriptorKey>(
         let family_index = descriptor.family();
         c.families[family_index].requests += 1;
         let mut miss = None;
+        #[cfg(test)] let mut first_lookup = "memory_hit";
         let lookup_started = super::profiling::start();
         c.clock = c.clock.checked_add(1).ok_or_else(overflow)?;
         let value = if let Some(e) = c.entries.iter_mut().flatten().find(|e| e.key == key) {
@@ -362,6 +375,9 @@ pub(super) fn select<D: DescriptorKey>(
                 .precomputed
                 .then(|| super::precomputed::lookup(family, descriptor, limits, storage))
                 .flatten();
+            #[cfg(test)] { first_lookup = if table.is_some() { "table_hit" }
+                else if !c.precomputed { "tables_disabled" }
+                else { super::precomputed::miss_reason(family, descriptor, limits, storage) }; }
             if table.is_some() {
                 c.families[family_index].table_hits += 1;
                 c.statistics.table_hits = c
@@ -376,6 +392,7 @@ pub(super) fn select<D: DescriptorKey>(
             }
             table
         };
+        #[cfg(test)] c.inventory.record(super::key::descriptor(family, descriptor), descriptor, first_lookup);
         super::profiling::finish(super::profiling::Phase::Lookup, lookup_started);
         Ok(Pending {
             key: Some(key),

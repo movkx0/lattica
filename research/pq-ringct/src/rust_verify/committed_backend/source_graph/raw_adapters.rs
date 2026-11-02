@@ -105,7 +105,12 @@ impl RawAdapterPlan {
         // input/output/status vectors and one shaped polynomial. vec growth
         // from 4 -> 3076 -> 6152 words is below 3 * final length 3140.
         let arithmetic = add(
-            add(growing::<[u64; 4]>(768)?, growing::<[u64; 2]>(1024)?)?,
+            add(
+                add(growing::<[u64; 4]>(768)?, growing::<[u64; 2]>(1024)?)?,
+                // Four scope-owned public specs (NTT/product, Q/QHAT),
+                // including allocator growth and their inline wrappers.
+                add(growing::<u64>(2 * (3140 + 2052))?, 1024)?,
+            )?,
             add(
                 growing::<u64>(3140 + 512 + D + D)?,
                 add(
@@ -113,6 +118,11 @@ impl RawAdapterPlan {
                     6 * size_of::<Vec<u64>>()
                         + size_of::<[u64; 64]>()
                         + 3 * size_of::<RawPoly>()
+                    // Batched signed subtraction: raw staging, both operands,
+                    // returned values, bounds, and shaped reference copies.
+                    + 6 * size_of::<RawPoly>()
+                    + size_of::<[u32; D]>()
+                    + 4 * size_of::<[SignedRef; D]>()
                         + size_of::<[bool; D]>()
                         + size_of::<crate::ntt_air::NttAir>()
                         + size_of::<crate::poly_air::MulAir>()
@@ -126,6 +136,12 @@ impl RawAdapterPlan {
             .requested_bytes();
         #[cfg(not(all(feature = "opencl", target_os = "linux", target_arch = "x86_64")))]
         let wrappers = 0;
+        #[cfg(all(test, feature = "opencl"))]
+        let wrappers = add(wrappers, super::super::gpu::profiling::FRAME_BYTES)?;
+        #[cfg(feature = "opencl")]
+        let wrappers = add(wrappers, super::super::gpu::commitments::FRAME_BYTES)?;
+        #[cfg(feature = "opencl")]
+        let wrappers = add(wrappers, super::super::vector_arithmetic::FRAME_BYTES)?;
         if cfg!(feature = "opencl") && !cfg!(all(target_os = "linux", target_arch = "x86_64")) {
             return Err("owned raw graph requires Linux x86_64 OpenCL storage bounds");
         }
@@ -133,12 +149,15 @@ impl RawAdapterPlan {
         // These are the core raw API's admission checks, not estimates of the
         // complete constructor. The largest is the mat3 AES byte generator.
         let operation_host_allowance = add(32, add(mul(16, 37232 * 5 + 1)?, 80 << 10)?)?;
-        // Each byte is one device u64. All operations scrub and finish before
-        // returning; no raw device buffer survives into the next call. Hash
+        let workspace = lattica_prover_p3::block_v2::native_gpu::RawPreparationWorkspaceStorage::fixed();
+        let operation_host_allowance = add(operation_host_allowance, workspace.host_bytes)?;
+        // Each byte is one device u64. Operations scrub their used prefixes and
+        // finish before returning. The separately charged scope workspace stays
+        // live alongside transient operations that exceed its capacities. Hash
         // alpha dominates AES (32+5+256*66+186161 words), uniform mat3
         // (186160+5+1+37121), arithmetic and two-buffer node commitments.
         let device_bytes = if cfg!(feature = "opencl") {
-            backing::<u64>(add(alpha_input, 5 + 1 + 32 + 1)?)?
+            add(backing::<u64>(add(alpha_input, 5 + 1 + 32 + 1)?)?, workspace.device_bytes)?
         } else {
             0
         };

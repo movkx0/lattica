@@ -150,6 +150,16 @@ impl<'request> PairedRequestPlan<'request> {
         #[cfg(feature = "opencl")]
         {
             let started = Instant::now();
+            if let Some(endpoints) = self.request.prepared_endpoint_context(&self.context)
+                .map_err(|_| PairedFailure::Preparation)? {
+                self.source_endpoints.prepared.set(PreparedSourceEndpoints {
+                    context: self.context.clone(), endpoints, elapsed_ns: started.elapsed().as_nanos(),
+                }).map_err(|_| PairedFailure::Authority)?;
+                self.check_prepared_endpoints()?;
+                #[cfg(test)]
+                crate::preparation_options::endpoint_adopted();
+                return Ok(());
+            }
             let host = usize::try_from(backend.host).map_err(|_| PairedFailure::Overflow)?;
             let (endpoints, report) = access.context().with_witness_preparation(host, |operations| {
                 self.request.endpoint_context_hint_on_gpu(&self.context, operations)

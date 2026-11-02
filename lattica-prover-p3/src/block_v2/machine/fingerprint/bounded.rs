@@ -8,6 +8,9 @@ pub(crate) const HOST_BYTES: usize = 32 << 20;
 const MAX_NODES: usize = 1 << 17;
 const MAX_DEPTH: usize = 512;
 const SLOTS: usize = 2 * MAX_NODES;
+// Only the encoded fields survive encode(). Both memo tables, root staging
+// and traversal frames retire before the prefix can leave the analysis phase.
+pub(crate) const RETAINED_BYTES: usize = (7 + 7 * MAX_NODES) * std::mem::size_of::<u64>();
 const FIXED_BYTES: usize = 1 << 20; // stack traversal and fixed object overhead
 const _: () = assert!(HOST_BYTES as u64 <= super::super::symbolic::HOST_BYTES - (64 << 20));
 
@@ -217,6 +220,9 @@ pub(crate) fn encode(
     // writes fit these capacities; no grow/realloc overlap or per-node vectors.
     let capacity = allocation(roots_len, layout_len, allowance)?;
     let mut fields = reserve(capacity)?;
+    if fields.capacity() > capacity || capacity * std::mem::size_of::<u64>() > RETAINED_BYTES {
+        return Err("fingerprint retained capacity".into());
+    }
     fields.extend([1, 0, 0]);
     let mut encoder = Encoder {
         base: Memo::new()?,

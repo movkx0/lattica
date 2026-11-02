@@ -25,6 +25,8 @@ mod cache;
 mod factory;
 mod layout;
 mod preparation;
+#[cfg(feature = "opencl")]
+pub(crate) use preparation::ENDPOINT_FRAME_BYTES;
 mod prover;
 mod request_collection;
 mod request_owner;
@@ -174,6 +176,8 @@ pub struct Request {
     partition: Partition,
     segments: Vec<SegmentInfo>,
     memory_budget: u64,
+    #[cfg(feature = "opencl")]
+    prepared_endpoints: Option<preparation::PreparedEndpoints>,
 }
 pub enum SegmentArtifact {
     Aes(AesLaneSegmentProof),
@@ -303,6 +307,8 @@ impl Request {
                     partition,
                     segments,
                     memory_budget: policy.child_memory_budget_bytes,
+                    #[cfg(feature = "opencl")]
+                    prepared_endpoints: None,
                 });
             }
             require(

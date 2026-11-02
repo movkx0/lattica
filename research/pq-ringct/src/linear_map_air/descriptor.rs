@@ -26,6 +26,23 @@ fn centered(value: i128, modulus: u64) -> i64 {
     }
 }
 impl LinearMapDescriptor {
+    #[cfg(test)]
+    pub(crate) fn portable_heap_bytes(&self) -> usize {
+        use crate::component_tree::native_shape::cache::{PortableLinear, PortableRow};
+        core::mem::size_of::<PortableLinear>()
+            + self.inputs.len() * core::mem::size_of::<(u8, u64)>()
+            + self.coefficients.len() * core::mem::size_of::<PortableRow>()
+            + self.coefficients.iter().chain(core::iter::once(&self.constant))
+                .map(PortableRow::heap_bytes).sum::<usize>()
+    }
+    #[cfg(test)]
+    pub(crate) fn portable(&self) -> crate::component_tree::native_shape::cache::PortableLinear {
+        use crate::component_tree::native_shape::cache::{PortableLinear, PortableRow};
+        let kind = |k| match k { PolynomialKind::Canonical { modulus } => (0, modulus),
+            PolynomialKind::Signed { bound } => (1, u64::from(bound)) };
+        PortableLinear { inputs: self.inputs.iter().copied().map(kind).collect(), output: kind(self.output),
+            coefficients: self.coefficients.iter().map(PortableRow::new).collect(), constant: PortableRow::new(&self.constant) }
+    }
     pub fn new(
         inputs: Vec<PolynomialKind>,
         output: PolynomialKind,

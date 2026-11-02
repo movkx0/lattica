@@ -72,7 +72,7 @@ impl WorkflowPlanning<'_> {
 
     pub(crate) fn derive_metadata_complete<'a>(&mut self,
         plan: &'a SourceMetadataPlanningPlan<'a>,
-        planning_slot: &CaseOwnerSlot<'_, Result<FreshPlanningContext<'_>, FreshGenerationError>>,
+        planning_slot: &crate::spend_pipeline::full_workflow::fresh_generation::case_lifetime::MetadataOwner<'_, '_, '_>,
         tables: &'a CompleteProducerTables<'a>, native_cache: &'a ProofCache,
         outer_cache: &'a OuterProofCache)
         -> Result<CompleteScheduleResult<'a>, WorkflowError>
@@ -87,6 +87,11 @@ impl WorkflowPlanning<'_> {
             return Err(WorkflowError::Planning);
         }
         let required = complete_metadata_requirements(plan).map_err(|_| WorkflowError::Planning)?;
+        #[cfg(test)]
+        crate::spend_pipeline::full_workflow::metadata_planning::profile_requirements("planning_original_before_close", self.original.requirements());
+        // Native planning has finished. Retire cleared compiler storage and
+        // its supplemental claim before projecting the runtime ledger census.
+        *self.native_session.get_mut() = Default::default();
         let transition = super::super::PlanningAdmissionTransition::new(&self.scratch, &self.capability,
             plan, case, self.producer_metadata.as_ref().ok_or(WorkflowError::Identity)?, &self.original)?;
         let original = self.original.split(required)?;

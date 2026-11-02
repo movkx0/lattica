@@ -263,6 +263,13 @@ impl<'a> GraphProofPlan<'a> {
         if !registered.matches(graph) {
             return Err(error("unregistered graph shape"));
         }
+        Self::topology_bound(graph, limits, inventory::inventory(graph).shape_sha3_256())
+    }
+    pub(crate) fn topology_prepared(
+        structure: &crate::rust_verify::committed_backend::source_binding::prepared::PreparedGraphStructure<'a>,
+        limits: ResourceLimits,
+    ) -> Result<Self> { Self::topology_bound(structure.graph(), limits, structure.digest()) }
+    fn topology_bound(graph: &'a UnprovedRelationGraph, limits: ResourceLimits, shape_fingerprint: [u8; 32]) -> Result<Self> {
         if [
             limits.max_batch_count,
             limits.max_ntt_batch_count,
@@ -348,7 +355,7 @@ impl<'a> GraphProofPlan<'a> {
         let plan = Self {
             graph,
             batches,
-            shape_fingerprint: inventory::inventory(graph).shape_sha3_256(),
+            shape_fingerprint,
             source_fingerprint: compiled_source_fingerprint(),
             native_host_limit_bytes: limits.max_estimated_prover_bytes,
             resource_limits: limits,

@@ -10,6 +10,8 @@ use crate::{
     rust_verify::committed_backend::{Operation, Source},
 };
 use std::sync::Mutex;
+#[cfg(not(debug_assertions))]
+mod verifier;
 const OPERATIONS: usize = 1311;
 const POLYNOMIALS: usize = 1770;
 const NONE: u16 = u16::MAX;
@@ -152,6 +154,8 @@ pub(crate) struct GraphMetadata {
     index: Index,
     native_coverage: [bool; 2],
     footprints: Mutex<Footprints>,
+    #[cfg(not(debug_assertions))]
+    verifiers: Mutex<verifier::Cache>,
 }
 impl GraphMetadata {
     pub(crate) const fn retained_bytes() -> usize {
@@ -224,6 +228,8 @@ impl GraphMetadata {
             index,
             native_coverage,
             footprints: Mutex::new(Footprints::new()),
+            #[cfg(not(debug_assertions))]
+            verifiers: Mutex::new(verifier::Cache::new()),
         })
     }
     pub(super) fn fixed(&self) -> FixedSourceCensus {

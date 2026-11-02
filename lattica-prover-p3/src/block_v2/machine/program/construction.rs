@@ -242,6 +242,7 @@ impl<K: Copy + Eq + Hash, V: Copy> Map<K, V> {
         }
     }
 
+    #[inline(always)]
     fn index(&self, key: &K) -> (usize, u8) {
         let hash = self.hash.hash_one(key);
         let tag = ((hash >> 57) as u8) | 0x80;
@@ -249,18 +250,54 @@ impl<K: Copy + Eq + Hash, V: Copy> Map<K, V> {
             return (0, tag);
         }
         let mask = self.slots.len() - 1;
-        let mut index = hash as usize & mask;
+        let first = hash as usize & mask;
+        let control = self.control[first];
+        if control == 0
+            || (control == tag
+                && self.slots[first]
+                    .as_ref()
+                    .is_some_and(|(stored, _)| stored == key))
+        {
+            return (first, tag);
+        }
+        (self.probe_group(key, (first + 1) & mask, tag), tag)
+    }
+
+    // Keep the branchy loop out of the common scalar lookup path. The small
+    // index wrapper can inline through checked wire conversion and CSE calls.
+    #[inline(never)]
+    fn probe_group(&self, key: &K, index: usize, tag: u8) -> usize {
+        let mask = self.slots.len() - 1;
+        let mut group = index & !7;
+        let mut lanes = u64::MAX << ((index & 7) * 8);
+        // All capacities are powers of two >= 8. An aligned word never
+        // crosses the allocation, including the final group. Match eight
+        // control bytes in parallel without touching noncandidate payloads.
+        // Unlike the subtract-one zero-byte idiom, this mask is exact in
+        // every byte (no borrow can mark an adjacent lane as equal).
+        let matches = |word: u64| {
+            let low = 0x7f7f_7f7f_7f7f_7f7fu64;
+            !(((word & low).wrapping_add(low)) | word | low)
+        };
         loop {
-            let control = self.control[index];
-            if control == 0
-                || (control == tag
-                    && self.slots[index]
+            let word = u64::from_le_bytes(self.control[group..group + 8].try_into().unwrap());
+            let empty = matches(word);
+            let mut candidates =
+                (matches(word ^ u64::from(tag) * 0x0101_0101_0101_0101) | empty) & lanes;
+            while candidates != 0 {
+                let bit = candidates.trailing_zeros();
+                let index = group + bit as usize / 8;
+                if empty & (1u64 << bit) != 0
+                    || self.slots[index]
                         .as_ref()
-                        .is_some_and(|(stored, _)| stored == key))
-            {
-                return (index, tag);
+                        .is_some_and(|(stored, _)| stored == key)
+                {
+                    return index;
+                }
+                candidates &= candidates - 1;
             }
-            index = (index + 1) & mask;
+            group = (group + 8) & mask;
+            lanes = u64::MAX;
         }
     }
 
@@ -331,7 +368,9 @@ impl<K: Copy + Eq + Hash, V: Copy> Map<K, V> {
     /// builder must charge the complete capacity before using it.
     pub(super) fn reset_retained(&mut self) -> Option<usize> {
         self.generation = self.generation.checked_add(1)?;
-        self.control.fill(0);
+        if self.entries != 0 {
+            self.control.fill(0);
+        }
         self.entries = 0;
         self.retained_bytes()
     }

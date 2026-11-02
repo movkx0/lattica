@@ -250,6 +250,15 @@ impl<'a> Factory<'a> {
     /// raw-operation phase. Future native proof budgets and the original
     /// execution-context pointer remain unchanged.
     #[cfg(feature = "opencl")]
+    pub(crate) fn new_prepared(binding: &crate::graph_tree::preparation::PreparedBindings<'a, '_, '_>,
+        execution: &'a crate::execution::ProvingContext) -> Result<Self> {
+        binding.check().map_err(err)?;
+        require(execution.policy() == lattica_prover_p3::proving::Policy::GpuRequired,
+            "producer source preparation requires original GPU context")?;
+        Ok(Self { graph: binding.graph(), execution: Some(execution),
+            profile: binding.tree().label(), context: binding.context().clone() })
+    }
+    #[cfg(feature = "opencl")]
     pub(crate) fn new_with_operations(
         plan: &graph_tree::Plan,
         graph: &'a UnprovedRelationGraph,

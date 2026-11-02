@@ -298,7 +298,7 @@ fn reserve<T>(values: &mut Vec<T>, count: usize) -> Result<()> {
 
 impl<'a> ClosedWorkflowPlan<'a> {
     pub(crate) fn derive_complete_pre_reserved(metadata: &'a SourceMetadataPlanningPlan<'a>,
-        planning_slot: &CaseOwnerSlot<'_, core::result::Result<FreshPlanningContext<'_>, FreshGenerationError>>,
+        planning_slot: &crate::spend_pipeline::full_workflow::fresh_generation::case_lifetime::MetadataOwner<'_, '_, '_>,
         tables: &'a CompleteProducerTables<'a>, original: Reservation, scratch: &Reservation,
         transition: &PlanningAdmissionTransition<'_, '_>,
         native_cache: &'a crate::graph_crypto::ProofCache,
@@ -381,6 +381,8 @@ impl<'a> ClosedWorkflowPlan<'a> {
             failure.stage = CompleteStage::Gate("close_memory");
             let mut memory = CloseMemoryStage::new();
             let closed = schedule.close_memory_for_admission(ledger, transition, Some(&mut memory));
+            #[cfg(test)]
+            memory_diagnostics::profile_summary(&memory);
             failure.stage = CompleteStage::Memory { action: "close_memory", details: memory };
             admission_projection = Some(closed?);
             Ok(())

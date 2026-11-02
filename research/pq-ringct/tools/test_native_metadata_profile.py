@@ -32,7 +32,7 @@ class NativeMetadataProfileTests(unittest.TestCase):
                    original_host_bytes=2 << 30,counts_equal=True) for i in range(39)]
         summary=dict(cases=39,gpu_used=False,cold_ns=390,warm_total_ns=390,fingerprint_cold_ns=1,
                      fingerprint_warm_ns=1,catalogue_ns=1,original_host_bytes_peak=2 << 30,
-                     cache=dict(hits=312,misses=39,entries=39,evictions=0,failed_computations=0,reserved_host_bytes=1 << 20))
+                     cache=dict(hits=312,misses=39,entries=39,evictions=0,failed_computations=0,reserved_host_bytes=2 << 20))
         return rows,summary
     def text(self,rows,summary):
         return '\n'.join('NATIVE_METADATA_PROFILE_ROW '+json.dumps(r) for r in rows)+'\nNATIVE_METADATA_PROFILE '+json.dumps(summary)

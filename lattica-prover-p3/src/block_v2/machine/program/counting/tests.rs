@@ -212,3 +212,180 @@ fn dynamic_workspace_never_reclaims_an_abandoned_builder_grant() {
     assert!(fixed.deactivate().is_err());
     assert!(fixed.trim_idle(0).is_err());
 }
+
+impl Counter {
+    fn reference_observe(&mut self, op: &Op, allocated: usize) -> Result<(), ExecutionError> {
+        let valid = |wire: Wire| wire.0 < self.defined;
+        match op {
+            Op::Bit { source, bit, .. } if !valid(*source) || *bit >= 64 => {
+                return Err(ExecutionError::InvalidWire)
+            }
+            Op::SelectHint { entries, bits, .. } => {
+                if bits.len() > 24
+                    || entries.len() != 1usize << bits.len()
+                    || entries.iter().chain(bits).any(|&w| !valid(w))
+                {
+                    return Err(ExecutionError::InvalidWire);
+                }
+                self.counts.hint_words = self
+                    .counts
+                    .hint_words
+                    .checked_add(entries.len())
+                    .and_then(|n| n.checked_add(bits.len()))
+                    .ok_or(ExecutionError::TooLarge)?;
+            }
+            _ => {}
+        }
+        let reads = op.reads();
+        if reads.iter().any(|&w| !valid(w)) {
+            return Err(ExecutionError::InvalidWire);
+        }
+        // A bound on all reads also bounds every individual u32 reference
+        // count. The supported row domain is much smaller than this ceiling.
+        self.reads = self
+            .reads
+            .checked_add(reads.len() as u64)
+            .filter(|&n| n <= u32::MAX as u64)
+            .ok_or(ExecutionError::TooLarge)?;
+        for wire in op.writes() {
+            if wire.0 != self.defined || wire.0 >= allocated {
+                return Err(ExecutionError::InvalidWire);
+            }
+            self.defined += 1;
+        }
+        if self.defined != allocated {
+            return Err(ExecutionError::InvalidWire);
+        }
+        let count = match op {
+            Op::Poseidon { .. } => &mut self.counts.poseidon,
+            Op::CubicMul { .. } | Op::CubicInverse { .. } => &mut self.counts.cubic,
+            _ => &mut self.counts.scalar,
+        };
+        *count = count.checked_add(1).ok_or(ExecutionError::TooLarge)?;
+        Ok(())
+    }
+}
+
+#[test]
+fn specialized_counter_preserves_validation_and_overflow_order() {
+    let w = Wire;
+    let ops = [
+        Op::Input {
+            index: 0,
+            out: w(8),
+        },
+        Op::Constant {
+            value: Val::ONE,
+            out: w(8),
+        },
+        Op::Bit {
+            source: w(7),
+            bit: 63,
+            out: w(8),
+        },
+        Op::Bit {
+            source: w(8),
+            bit: 64,
+            out: w(8),
+        },
+        Op::SelectHint {
+            entries: vec![w(0), w(7)],
+            bits: vec![w(1)],
+            out: w(8),
+        },
+        Op::Add {
+            a: w(7),
+            b: w(0),
+            out: w(8),
+        },
+        Op::Mul {
+            a: w(8),
+            b: w(0),
+            out: w(9),
+        },
+        Op::Equal { a: w(7), b: w(0) },
+        Op::Boolean { a: w(8) },
+        Op::Inverse { a: w(0), out: w(8) },
+        Op::Select {
+            bit: w(0),
+            a: w(1),
+            b: w(7),
+            out: w(8),
+        },
+        Op::CubicMul {
+            a: [w(0); 3],
+            b: [w(7); 3],
+            out: [w(8), w(9), w(10)],
+        },
+        Op::CubicInverse {
+            a: [w(0); 3],
+            out: [w(8), w(10), w(9)],
+        },
+        Op::Poseidon {
+            input: [0; 8],
+            output: core::array::from_fn(|i| 8 + i as u32),
+        },
+    ];
+    for op in ops {
+        for allocated in 7..18 {
+            for reads in [0, u32::MAX as u64 - 2] {
+                let mut old = Counter::new(8);
+                let mut new = Counter::new(8);
+                old.reads = reads;
+                new.reads = reads;
+                assert_eq!(
+                    new.observe(&op, allocated),
+                    old.reference_observe(&op, allocated)
+                );
+                assert_eq!(
+                    (new.defined, new.reads, new.counts),
+                    (old.defined, old.reads, old.counts)
+                );
+            }
+        }
+    }
+}
+#[test]
+fn cleared_backing_moves_between_threads_under_new_admission() {
+    let backing = std::thread::spawn(|| {
+        let workspace = CountingWorkspace::begin_dynamic().unwrap();
+        workspace
+            .activate(limits().max_requested_program_bytes)
+            .unwrap();
+        let mut b = ProgramBuilder::new_counting(1, limits()).unwrap();
+        emit(&mut b);
+        b.finish_counts().unwrap();
+        assert!(workspace.take_backing().is_err());
+        let bytes = workspace.deactivate().unwrap();
+        let backing = workspace.take_backing().unwrap().unwrap();
+        assert_eq!(backing.retained_bytes().unwrap(), bytes);
+        assert_eq!(workspace.retained_bytes().unwrap(), 0);
+        backing
+    })
+    .join()
+    .unwrap();
+    let workspace = CountingWorkspace::begin_dynamic().unwrap();
+    workspace.restore_backing(backing).unwrap();
+    assert!(ProgramBuilder::new_counting(1, limits()).is_err());
+    workspace
+        .activate(limits().max_requested_program_bytes)
+        .unwrap();
+    let mut b = ProgramBuilder::new_counting(1, limits()).unwrap();
+    emit(&mut b);
+    let got = b.finish_counts().unwrap();
+    workspace.deactivate().unwrap();
+    assert_eq!(workspace.reuses(), 1);
+    drop(workspace);
+    let mut b = ProgramBuilder::new_counting(1, limits()).unwrap();
+    emit(&mut b);
+    let expected = b.finish_counts().unwrap();
+    assert_eq!(
+        (got.scalar, got.cubic, got.poseidon, got.wires),
+        (
+            expected.scalar,
+            expected.cubic,
+            expected.poseidon,
+            expected.wires
+        )
+    );
+}

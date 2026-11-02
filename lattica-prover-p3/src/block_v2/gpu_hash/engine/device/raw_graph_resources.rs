@@ -39,7 +39,9 @@ impl RawGraphOperationStorage {
             + 2 * size_of::<compute::Event>()
             + 2 * size_of::<super::super::QueueFence>()
             + pq_raw_crypto::graph_payload_inline_bytes()
-            + size_of::<Self>();
+            + size_of::<Self>()
+            + super::preparation_storage::HOST_BYTES
+            + crate::block_v2::native_gpu::RawCommitmentBatchStorage::HOST_BYTES;
         let requested_bytes = allocation_owner_bytes
             .checked_add(planner_bytes)
             .and_then(|bytes| bytes.checked_add(inline_bytes))

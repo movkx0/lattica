@@ -237,6 +237,9 @@ impl PendingBorrowedIdentityBatch<'_> {
                         cap_fields: p.cap_fields,
                         state,
                     };
+                    if token.retained_host_bytes() > IDENTITY_PREFIX_HOST_BYTES {
+                        return Err("CPU identity prefix retained capacity".into());
+                    }
                     Ok((token, report))
                 })
             })

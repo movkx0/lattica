@@ -12,6 +12,9 @@ use lattica_prover_p3::block_v2::native_gpu::{
 };
 
 mod raw_primitives;
+mod prepared;
+pub(super) mod commitments;
+pub(super) use prepared::PreparedDevice;
 #[cfg(test)]
 mod tests;
 type RawPoly = [u64; D];
@@ -30,6 +33,15 @@ fn polynomial(words: Vec<u64>) -> Result<RawPoly, String> {
 /// Object-safe boundary keeps the backend's borrow independent of the engine
 /// context's internal lifetime. All methods return raw values, never traces.
 pub(super) trait GraphDevice {
+    fn deferred_commitments(&self) -> bool { false }
+    fn commit_nodes(&self, nodes: &[lattica_prover_p3::block_v2::native_gpu::NodeCommitment<'_>]) -> Result<Vec<[Val; 4]>, String> {
+        use lattica_prover_p3::block_v2::native_gpu::NodeCommitment;
+        nodes.iter().map(|node| match node {
+            NodeCommitment::Canonical { values, modulus } => self.commit_canonical(values, *modulus),
+            NodeCommitment::Signed(values) => self.commit_signed(values),
+            NodeCommitment::Bytes(values) => self.commit_bytes(values),
+        }).collect()
+    }
     fn canonical(
         &self,
         kind: CanonicalOperation,
@@ -44,6 +56,11 @@ pub(super) trait GraphDevice {
         count: usize,
     ) -> Result<Vec<u64>, String>;
     fn convert(&self, input: &[i64], q: u64) -> Result<Vec<u64>, String>;
+    fn inverse_challenge_poly(&self, input: &RawSigned) -> Result<RawSigned, String> {
+        let mut output = [0; D];
+        for i in 0..D { output[i] = if (86..171).contains(&i) { self.signed_neg(input[(3*i)%D])? } else { input[(3*i)%D] }; }
+        Ok(output)
+    }
     fn ntt_poly(&self, input: &RawSigned, q: u64) -> Result<RawPoly, String>;
     fn mul_poly(&self, left: &RawPoly, right: &RawPoly, q: u64) -> Result<RawPoly, String>;
     fn aut_poly(&self, input: &RawPoly) -> Result<RawPoly, String>;
@@ -78,6 +95,12 @@ pub(super) trait GraphDevice {
     fn signed_sub(&self, a: i64, b: i64) -> Result<i64, String> {
         Ok(single(self.signed(SignedOperation::Subtract, &[a as u64, b as u64], 1)?)? as i64)
     }
+    fn signed_sub_poly(&self, a: &RawSigned, b: &RawSigned) -> Result<RawSigned, String> {
+        let raw = core::array::from_fn::<_, { 2 * D }, _>(|i| {
+            if i < D { a[i] as u64 } else { b[i - D] as u64 }
+        });
+        Ok(polynomial(self.signed(SignedOperation::Subtract, &raw, D)?)?.map(|v| v as i64))
+    }
     fn add_poly(&self, a: &RawPoly, b: &RawPoly, q: u64) -> Result<RawPoly, String> {
         polynomial(self.canonical(CanonicalOperation::Add, a, b, q)?)
     }
@@ -90,6 +113,14 @@ pub(super) trait GraphDevice {
 }
 
 impl GraphDevice for OperationContext<'_> {
+    fn inverse_challenge_poly(&self, input: &RawSigned) -> Result<RawSigned, String> {
+        match PermutationAir::new(PermutationKind::InverseChallenge)
+            .evaluate_gpu_operations(self, &PermutationInput::Signed(*input))? {
+            PermutationInput::Signed(output) => Ok(output),
+            _ => Err("GPU inverse challenge output kind".into()),
+        }
+    }
+
     fn canonical(
         &self,
         kind: CanonicalOperation,
@@ -187,6 +218,7 @@ impl<'a> CommittedBackend<'a> {
     pub(super) fn with_device(setup_seed: [u8; 32], device: &'a dyn GraphDevice) -> Self {
         let mut backend = Self::new(setup_seed);
         backend.device = Some(device);
+        backend.pending_commitments = device.deferred_commitments() && crate::preparation_options::node_batches();
         backend
     }
     pub(super) fn on_device<T>(
@@ -254,24 +286,42 @@ pub fn lower_unproved_on_gpu(
     execution: &crate::execution::ProvingContext,
     host_bytes: usize,
 ) -> Result<UnprovedRelationGraph, String> {
+    #[cfg(test)]
+    let mut timeline = profiling::Timeline::new();
     // Raw dimensions must be checked before importing a single graph node or
     // starting the native callback. The closure imports this exact borrow.
     let inputs = super::source_graph::inputs::FixedInputs::inspect(statement, proof)
         .map_err(str::to_owned)?;
+    #[cfg(test)]
+    timeline.mark(0);
     let (graph, _) = execution.with_witness_preparation(host_bytes, |operation| {
-        let mut backend = CommittedBackend::with_device(setup_seed, operation);
+        operation.enable_reusable_storage()?;
+        #[cfg(test)]
+        timeline.mark(1);
+        let device = PreparedDevice::new(operation);
+        let mut backend = CommittedBackend::with_device(setup_seed, &device);
         let context = backend.import_bytes(*context, Source::Context);
         let statement = backend.import_statement(inputs.statement());
         let proof = backend.import_proof(inputs.proof());
+        #[cfg(test)]
+        timeline.mark(2);
         let relation = verify_relation(&mut backend, &context, &statement, &proof);
+        #[cfg(test)]
+        timeline.mark(3);
         if let Some(error) = backend.failure.take() {
             return Err(format!("GPU graph witness preparation failed: {error}"));
         }
         relation.map_err(|e| e.to_string())?;
-        Ok(backend.into_unproved_graph())
+        backend.finish_device_commitments()?;
+        let graph = backend.into_unproved_graph();
+        #[cfg(test)]
+        timeline.mark(4);
+        Ok(graph)
     })?;
     Ok(graph)
 }
+#[cfg(test)]
+pub(in crate::rust_verify::committed_backend) mod profiling;
 
 // Ownership qualification only. The source graph token is real, but complete
 // constructor/runtime admission is not closed, so no non-test caller exists.

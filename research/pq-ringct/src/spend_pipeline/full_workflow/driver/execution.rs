@@ -19,6 +19,8 @@ pub(crate) fn execute_constructed_case<const N: usize>(
     runtimes: &RuntimeSet<'_, '_, '_>, native: &ProofCache, outer: &OuterProofCache,
     stage: &mut DriverStage,
 ) -> Result<CompletedCaseSummary> {
+    #[cfg(test)]
+    super::metadata_profile::assert_execution_allowed();
     stage.runtime(RuntimeAction::ReadBatch);
     let batch = batch_slot.get().map_err(|_| WorkflowError::Identity)?;
     stage.runtime(RuntimeAction::ReadStartup);

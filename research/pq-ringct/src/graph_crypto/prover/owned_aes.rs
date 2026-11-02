@@ -173,7 +173,6 @@ impl<'request> OwnedAesRequestPlan<'request> {
         plan.push(OwnedAesStepKind::Endpoints, PhaseKind::EndpointAttach,
             plan.slots.endpoint, requirement(Category::PhaseScratch,
                 endpoints::OUTPUT_COPY_FRAME_BYTES)?)?;
-        let parent_source = source::parent_source()?;
         let mut carry = [None; usize::BITS as usize];
         let mut live = 0usize;
         let mut maximum_live = 0usize;
@@ -204,7 +203,7 @@ impl<'request> OwnedAesRequestPlan<'request> {
                     first: u32::try_from(segment.first_unit).map_err(|_| PairedFailure::Overflow)?,
                     count: u32::try_from(segment.units).map_err(|_| PairedFailure::Overflow)?, level: 0 },
                 source: leaf_source, children: None, segment: Some(index) });
-            let (output, scratch) = blueprint.compiler_requirements()?;
+            let (output, scratch) = blueprint.compiler_requirements(leaf_source)?;
             plan.slots.compiled = maxima(plan.slots.compiled, output);
             plan.push(OwnedAesStepKind::Compile { node: id }, PhaseKind::GroupCompile, output,
                 combine(&[scratch, endpoints::group_preparation_requirements(request)?.0])?)?;
@@ -217,7 +216,7 @@ impl<'request> OwnedAesRequestPlan<'request> {
                 let slot = carry.get_mut(level).ok_or(PairedFailure::Overflow)?;
                 match slot.take() {
                     None => { *slot = Some(value); break; }
-                    Some(left) => { value = plan.merge(left, value, parent_source)?; live -= 1; level += 1; }
+                    Some(left) => { value = plan.merge(left, value)?; live -= 1; level += 1; }
                 }
             }
         }
@@ -225,7 +224,7 @@ impl<'request> OwnedAesRequestPlan<'request> {
         for left in carry.into_iter().flatten() {
             right = Some(match right {
                 None => left,
-                Some(right) => { live -= 1; plan.merge(left, right, parent_source)? }
+                Some(right) => { live -= 1; plan.merge(left, right)? }
             });
         }
         plan.root = right.ok_or(PairedFailure::Coverage)?;
@@ -257,14 +256,16 @@ impl<'request> OwnedAesRequestPlan<'request> {
                 PreissuedAesOuter::planning_scratch_requirement()?])?)
     }
 
-    fn merge(&mut self, left: usize, right: usize, source: ComponentSourceFacts) -> Result<usize> {
+    fn merge(&mut self, left: usize, right: usize) -> Result<usize> {
         let a = *self.nodes.get(left).ok_or(PairedFailure::Order)?;
         let b = *self.nodes.get(right).ok_or(PairedFailure::Order)?;
+        let rows = [a.source.maximum_padded_rows, b.source.maximum_padded_rows];
+        let source = source::parent_source(rows[0], rows[1])?;
         let id = self.nodes.len();
         if id == self.nodes.capacity() { return Err(PairedFailure::Capacity); }
         self.nodes.push(OwnedAesNodeSource { id, span: ComponentSpan::merge(a.span, b.span)?, source,
             children: Some([left, right]), segment: None });
-        let (output, scratch) = source::compiler_requirements(source, None)?;
+        let (output, scratch) = source::compiler_requirements(source, source::CompilerGeometry::Parent(rows))?;
         self.slots.compiled = maxima(self.slots.compiled, output);
         self.push(OwnedAesStepKind::Merge { node: id, left, right }, PhaseKind::ParentCompile, output, scratch)?;
         self.push_outer(id)?;

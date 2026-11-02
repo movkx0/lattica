@@ -205,7 +205,9 @@ impl Construction {
         self,
         operation: &lattica_prover_p3::block_v2::native_gpu::OperationContext<'_>,
     ) -> Result<PendingGraph> {
-        let backend = CommittedBackend::with_device(self.setup_seed, operation);
+        operation.enable_reusable_storage().map_err(|_| "source graph workspace admission failed")?;
+        let device = super::super::gpu::PreparedDevice::new(operation);
+        let backend = CommittedBackend::with_device(self.setup_seed, &device);
         self.lower(backend)
     }
 
@@ -221,6 +223,8 @@ impl Construction {
             return Err("source graph native lowering failed");
         }
         relation.map_err(|_| "source graph relation lowering failed")?;
+        #[cfg(feature = "opencl")]
+        backend.finish_device_commitments().map_err(|_| "source graph commitment finalization failed")?;
         // Imports and all backend memo maps die before a pending output can
         // escape; growth stays reserved until the outer callback also retires.
         drop(proof);

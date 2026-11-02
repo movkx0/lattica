@@ -435,6 +435,10 @@ impl<'a> SupportedSchedule<'a> {
                     .and_then(|device| device.checked_sub(transferred.device)))
                 .map(|(host, device)| Bytes { host, device });
         }
+        #[cfg(test)]
+        memory_diagnostics::profile_slots(&self.slots);
+        #[cfg(test)]
+        memory_diagnostics::profile_retained(&snapshot, planning_scratch_release, startup_transfer);
         let (pool, bookkeeping) = admission_pool_requirements(&self.slots)?;
         let pool_bytes = pool.total().map_err(|_| ClosureError::Overflow)?;
         let admission_pool = sum(pool, bookkeeping)?;
@@ -456,8 +460,11 @@ impl<'a> SupportedSchedule<'a> {
                 stage.current_scratch = scratch.total().ok();
                 stage.requested_backend = Some(backend);
             }
-            fixed = maximum(fixed, sum(scratch,
+            let next = maximum(fixed, sum(scratch,
                 Requirements::single(Category::PhaseScratch, backend))?);
+            #[cfg(test)]
+            memory_diagnostics::profile_maxima(ordinal, step.binding.kind(), fixed, next);
+            fixed = next;
         }
         if let Some(stage) = observation.as_deref_mut() {
             stage.at(MemoryGate::FixedOther, None);

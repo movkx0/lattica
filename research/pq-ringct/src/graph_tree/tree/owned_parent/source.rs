@@ -33,9 +33,12 @@ impl<'graph> GraphNodeSource<'graph> {
         let span = GraphSpan::merge(left.span, right.span, left.plan.leaves().len())?;
         // Enumerate every supported child height before any child proof exists.
         // Source graphs use28 publics; the46-public component census is inapplicable.
-        let envelope = shape::verifier_height_envelope(PUBLIC_VALUES, MAX_ROWS,
+        let envelope = shape::verifier_height_envelope(PUBLIC_VALUES, left.maximum_padded_rows,
             construction(), AUXILIARY_BYTES).map_err(|_| GraphParentFailure::Source)?;
-        if PUBLIC_VALUES != 28 || envelope.heights_enumerated != 18 {
+        let right_envelope = shape::verifier_height_envelope(PUBLIC_VALUES, right.maximum_padded_rows,
+            construction(), AUXILIARY_BYTES).map_err(|_| GraphParentFailure::Source)?;
+        if PUBLIC_VALUES != 28 || envelope.heights_enumerated != left.maximum_padded_rows.ilog2() as usize - 2
+            || right_envelope.heights_enumerated != right.maximum_padded_rows.ilog2() as usize - 2 {
             return Err(GraphParentFailure::Source);
         }
         // Exact existing public_wires + bind_merge framing: eight32-bit
@@ -43,13 +46,13 @@ impl<'graph> GraphNodeSource<'graph> {
         // first-leaf equality, adjacent interval and summed count.
         let framing = OperationCounts { scalar: 8 * 162 + (8 + 4) * 2
             + 2 * (PUBLIC_VALUES - 3) + 5, cubic: 0, poseidon: 0 };
-        let operations = envelope.operations.with_overhead(envelope.operations)
+        let operations = envelope.operations.with_overhead(right_envelope.operations)
             .and_then(|n| n.with_overhead(framing)).map_err(|_| GraphParentFailure::Overflow)?;
         let maximum_active_rows = operations.active_rows(PUBLIC_VALUES).map_err(|_| GraphParentFailure::Overflow)?;
         let maximum_padded_rows = operations.padded_rows(PUBLIC_VALUES).map_err(|_| GraphParentFailure::Overflow)?;
-        let maximum_wires = add(PUBLIC_VALUES, add(mul(2, envelope.wire_upper_bound)?, framing.scalar)?)?;
-        let maximum_inputs = mul(2, envelope.input_values_upper_bound)?;
-        let maximum_hint_words = mul(2, envelope.selection_hint_words_upper_bound)?;
+        let maximum_wires = add(PUBLIC_VALUES, add(add(envelope.wire_upper_bound, right_envelope.wire_upper_bound)?, framing.scalar)?)?;
+        let maximum_inputs = add(envelope.input_values_upper_bound, right_envelope.input_values_upper_bound)?;
+        let maximum_hint_words = add(envelope.selection_hint_words_upper_bound, right_envelope.selection_hint_words_upper_bound)?;
         if maximum_padded_rows > MAX_ROWS || maximum_wires > MAX_WIRES || maximum_inputs > INPUT_VALUES {
             return Err(GraphParentFailure::Capacity);
         }
@@ -99,6 +102,10 @@ impl<'graph> GraphNodeSource<'graph> {
             && public[LEVEL] == Val::from_u32(self.span.level)
             && public[TOTAL] == Val::from_usize(self.plan.leaves().len())
     }
+    pub(super) fn retained_program_host_bytes(self) -> OwnedResult<usize> {
+        self.operations.retained_program_host_ceiling(PUBLIC_VALUES, self.maximum_wires, self.maximum_hint_words)
+            .map_err(|_| GraphParentFailure::Capacity)
+    }
     pub(super) fn check_compiled(self, node: &CompiledNode) -> OwnedResult<()> {
         let program = &node.program; let actual = OperationCounts::from_program(program);
         let hints = shape::selection_hint_words(program).map_err(|_| GraphParentFailure::Source)?;
@@ -108,6 +115,7 @@ impl<'graph> GraphNodeSource<'graph> {
             || program.wire_count() > self.maximum_wires || program.witness_values() > self.maximum_inputs
             || node.witness.len() != program.witness_values()
             || hints > self.maximum_hint_words || program.construction_host_bytes() > PROGRAM_BYTES
+            || program.retained_host_bytes().map_err(|_| GraphParentFailure::Capacity)? > self.retained_program_host_bytes()?
             || actual.scalar > self.operations.scalar || actual.cubic > self.operations.cubic
             || actual.poseidon > self.operations.poseidon
         { return Err(GraphParentFailure::Source); }

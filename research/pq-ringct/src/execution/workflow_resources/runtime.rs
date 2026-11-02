@@ -117,6 +117,8 @@ impl<'plan, 'context> WorkflowAdmission<'plan, 'context> {
         // Source derivation has returned and all its compiler temporaries have
         // died. This original reusable source scratch is no longer live. The
         // preissued retained metadata splits remain with their source owners.
+        #[cfg(not(debug_assertions))]
+        drop(planning.native_session);
         drop(planning.scratch);
         let mut phase = planning.capability.admit_owned_with_planning_startup(requirements)?;
         let pool = SlotPool::new(&mut phase, plan.slots())?;

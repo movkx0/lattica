@@ -24,10 +24,12 @@ const COMPACTION_LANES: usize = TILE_WORDS / 2;
 pub(super) struct SecretAllocation {
     allocation: Arc<Allocation>,
     queue: compute::Queue,
+    scrubbed: bool,
 }
 
 impl SecretAllocation {
     pub(super) fn new(engine: &Engine, words: usize) -> Result<Self, String> {
+        let _profile = crate::proving::preparation_profile::metric(crate::proving::preparation_profile::ALLOCATE);
         let mut allocation = allocation(
             &engine.pq,
             &engine.accounting,
@@ -37,15 +39,20 @@ impl SecretAllocation {
             compute::flags::MEM_READ_WRITE,
         )?;
         allocation._lease.mark_device()?;
+        crate::proving::preparation_profile::allocation(words);
         Ok(Self {
             allocation: Arc::new(allocation),
             queue: engine.pq.queue().clone(),
+            scrubbed: false,
         })
     }
     pub(super) fn buffer(&self) -> &compute::Buffer<u64> {
         &self.allocation.buffer
     }
+    // Only a completed group scrub may suppress the individual Drop drain.
+    pub(super) fn group_scrubbed(&mut self) { self.scrubbed = true; }
     fn scrub(&self) {
+        let _profile = crate::proving::preparation_profile::metric(crate::proving::preparation_profile::CLEANUP);
         if let Err(error) = self.buffer().cmd().fill(0u64, None).enq() {
             super::super::fatal_cleanup("random_scrub", error);
         }
@@ -56,7 +63,7 @@ impl SecretAllocation {
 }
 impl Drop for SecretAllocation {
     fn drop(&mut self) {
-        self.scrub();
+        if !self.scrubbed { self.scrub(); }
     }
 }
 

@@ -17,9 +17,7 @@ impl MulAir {
         if left.len() != self.count || right.len() != self.count {
             return Err("raw product input count".into());
         }
-        let terms = self.gpu_operation_terms();
-        let spec = ArithmeticOperationSpec::mul(self.modulus, self.count, &terms)?;
-        drop(terms);
+        let spec = self.raw_operation_spec()?;
         ctx.admit_arithmetic_operation(&spec)?;
         let mut raw = Vec::with_capacity(spec.raw_input_words());
         for (a, b) in left.iter().zip(right) {
@@ -38,6 +36,9 @@ impl MulAir {
             .collect()
     }
 
+    pub(crate) fn raw_operation_spec(&self) -> Result<ArithmeticOperationSpec, String> {
+        ArithmeticOperationSpec::mul(self.modulus, self.count, &self.gpu_operation_terms())
+    }
     fn gpu_operation_terms(&self) -> Vec<[u64; 2]> {
         (0..64 * 16)
             .map(|k| {

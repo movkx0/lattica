@@ -54,7 +54,7 @@ impl<'source, 'a> AffineLeafOuterPlan<'source, 'a> {
         { return Err(GraphParentFailure::Authority); }
         let compiled = compiler.source_compile_plan();
         let binding = compiler.binding().map_err(|_| GraphParentFailure::Authority)?;
-        if binding.facts().output != compiled.blueprint().compiler_requirements().0 {
+        if binding.facts().output != compiled.compiler_requirements().0 {
             return Err(GraphParentFailure::Authority);
         }
         let source = GraphNodeSource::from_affine_compile(compiled)?;
@@ -114,7 +114,7 @@ impl<'source, 'a> AffineLeafOuterPlan<'source, 'a> {
         let node = compiled.node();
         if !core::ptr::eq(compiled.blueprint(), expected.blueprint())
             || compiled.facts() != facts
-            || compiled.reservation().requirements() != expected.blueprint().compiler_requirements().0
+            || compiled.reservation().requirements() != expected.compiler_requirements().0
             || node.program.witness_values() != facts.input_values
             || node.witness.len() != facts.input_values
             || shape::selection_hint_words(&node.program).map_err(|_| GraphParentFailure::Source)?

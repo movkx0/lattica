@@ -98,6 +98,10 @@ impl SourceMetadataPlanningPlan<'_> {
                     ComponentKind::External => continue,
                 };
                 self.counts.add(family, 1)?;
+            #[cfg(test)]
+            if std::env::var_os("LATTICA_RINGCT_METADATA_STAGE_PROFILE").is_some() {
+                eprintln!("RINGCT_METADATA_FAMILY_RESERVATION {{\"family\":\"{family:?}\",\"host\":{}}}", requirements.original.total().map_err(|_| ClosureError::Resource)?.host);
+            }
                 self.include(requirements)?;
             }
             for request in prepared.auxiliary_factory().requests() {

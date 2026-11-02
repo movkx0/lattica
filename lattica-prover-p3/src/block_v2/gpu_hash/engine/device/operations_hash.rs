@@ -2,6 +2,7 @@
 use super::*;
 use crate::block_v2::native_gpu::operations_hash::field_chunk_staging_bytes;
 use crate::proving::{Backend, Run, Stage};
+use crate::proving::preparation_profile as profile;
 
 impl DeviceSession {
     pub(crate) fn pq_operation_commit_fields(
@@ -11,6 +12,7 @@ impl DeviceSession {
         host_allowance: usize,
         run: &Run,
     ) -> Result<[u64; 4], String> {
+        let _operation = profile::operation(profile::FIELDS);
         if field_chunk_staging_bytes(words.len())? > host_allowance {
             return Err("raw field commitment exceeds host allowance".into());
         }
@@ -27,6 +29,7 @@ impl DeviceSession {
             // drains all commands before any referenced host slice is released.
             let mut result = [0u64; 5];
             let fence = engine.fence();
+            let upload = profile::metric(profile::UPLOAD);
             if !words.is_empty() {
                 raw.buffer().write(words).enq().map_err(|e| e.to_string())?;
             }
@@ -35,33 +38,29 @@ impl DeviceSession {
                 .write(&initial[..])
                 .enq()
                 .map_err(|e| e.to_string())?;
+            drop(upload);
             for begin in (0..words.len().max(1)).step_by(4096) {
                 let mut event = compute::Event::empty();
+                let setup = profile::metric(profile::KERNEL);
+                let kernel = engine.pq.kernel_builder("pq_operation_commit_fields")
+                    .arg(raw.buffer()).arg(words.len() as u32).arg(begin as u32)
+                    .arg(start.buffer()).arg(output.buffer())
+                    .arg(&engine.constants[0].buffer).arg(&engine.constants[1].buffer)
+                    .arg(&engine.constants[2].buffer).arg(&engine.constants[3].buffer)
+                    .global_work_size(1).build().map_err(|e| e.to_string())?;
+                drop(setup);
                 // SAFETY: the aggregate plan admits all raw and result buffers.
                 // Consecutive aligned tiles share only a five-word device state;
                 // each validates its raw fields before hashing. The first tile
                 // initializes the state, including when the stream is empty.
                 unsafe {
-                    engine
-                        .pq
-                        .kernel_builder("pq_operation_commit_fields")
-                        .arg(raw.buffer())
-                        .arg(words.len() as u32)
-                        .arg(begin as u32)
-                        .arg(start.buffer())
-                        .arg(output.buffer())
-                        .arg(&engine.constants[0].buffer)
-                        .arg(&engine.constants[1].buffer)
-                        .arg(&engine.constants[2].buffer)
-                        .arg(&engine.constants[3].buffer)
-                        .global_work_size(1)
-                        .build()
-                        .map_err(|e| e.to_string())?
+                    kernel
                         .cmd()
                         .enew(&mut event)
                         .enq()
                         .map_err(|e| e.to_string())?;
                 }
+                let wait = profile::metric(profile::DEVICE_WAIT);
                 let ns = self
                     .session
                     .record_event(
@@ -74,16 +73,20 @@ impl DeviceSession {
                         run.observation_failed();
                         error
                     })?;
+                drop(wait);
                 run.observe_device(Stage::WitnessTrace, Backend::OpenCl, 1, ns)
                     .map_err(|e| e.to_string())?;
             }
+            let readback = profile::metric(profile::READBACK);
             output
                 .buffer()
                 .read(&mut result[..])
                 .enq()
                 .map_err(|e| e.to_string())?;
             fence.finish()?;
+            drop(readback);
             let uploaded = ((words.len() + 4) * 8) as u64;
+            profile::transfer(uploaded, 40);
             engine.stats.uploaded_bytes += uploaded;
             engine.stats.downloaded_bytes += 40;
             {

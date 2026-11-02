@@ -112,6 +112,7 @@ impl<'a> LinearMapNativeOperationPlan<'a> {
                 .map_err(|_| LinearMapNativeOperationFailure::Resource)?)?)?,
             crate::execution::workflow_resources::linear_map_native_issuer_scratch_requirements()
                 .map_err(|_| LinearMapNativeOperationFailure::Resource)?,
+            Self::preissue_frame_requirements()?,
         ])?;
         let failure = requirement(Category::Report, 8 * (
             size_of::<PhaseFailure<LinearMapNativeOperationFailure>>()
@@ -165,14 +166,21 @@ impl<'a> LinearMapNativeOperationPlan<'a> {
     /// and phase output. The coordinator reserves this once per concrete source
     /// plan before constructing its preissue packet vector.
     pub(crate) fn metadata_requirements() -> Result<Requirements> {
+        // The packet is entirely inline; source, ledger and verifier views
+        // borrow already retained owners. Its construction frames belong to
+        // the single preissue/runtime phase, not every future source packet.
+        let packet = size_of::<crate::execution::workflow_resources::PreissuedLinearMapNative<'static, 'static>>();
+        requirement(Category::RegisteredMetadata, add(add(packet, LinearMapProofPlan::metadata_host_bytes())?,
+            8 * (size_of::<Self>() + size_of::<Result<Self>>() + size_of::<PhaseFacts>()
+            + size_of::<core::result::Result<Self, (LinearMapNativeOperationFailure, Reservation)>>()
+            + size_of::<Option<Reservation>>() + size_of::<(LinearMapNativeOperationFailure, Reservation)>()))?)
+    }
+    pub(crate) fn preissue_frame_requirements() -> Result<Requirements> {
         let core = lattica_prover_p3::block_v2::native_gpu::owned_linear_map::NativeLinearMapReservationPlan::preissue_metadata_host_bytes()
             .map_err(|_| LinearMapNativeOperationFailure::Resource)?;
         let issuer = crate::execution::workflow_resources::linear_map_native_packet_metadata_host_bytes()
             .map_err(|_| LinearMapNativeOperationFailure::Resource)?;
-        requirement(Category::RegisteredMetadata, add(add(add(core, issuer)?, LinearMapProofPlan::metadata_host_bytes())?,
-            8 * (size_of::<Self>() + size_of::<Result<Self>>() + size_of::<PhaseFacts>()
-                + size_of::<core::result::Result<Self, (LinearMapNativeOperationFailure, Reservation)>>()
-                + size_of::<Option<Reservation>>() + size_of::<(LinearMapNativeOperationFailure, Reservation)>()))?)
+        requirement(Category::PhaseScratch, add(core, issuer)?)
     }
     pub(crate) fn kind(&self) -> LinearMapDescriptor { self.native.preparation().geometry().kind() }
     pub(crate) fn source(&self) -> LinearMapSource<'a> { self.native.source() }
@@ -312,4 +320,22 @@ impl<'a> OwnedLinearMapOutput<'a> {
     pub(crate) fn binding(&self) -> PhaseBinding { self.binding }
     pub(crate) fn report(&self) -> &Report { self.proof.owned().report() }
     pub(crate) fn into_originals(self) -> (Reservation, Reservation) { self.proof.into_originals() }
+}
+
+#[cfg(test)]
+mod packet_retention_tests {
+    use super::*;
+    #[test]
+    fn every_packet_is_retained_but_serial_forwarding_frames_are_not_multiplied() {
+        let retained = LinearMapNativeOperationPlan::metadata_requirements().unwrap()
+            .get(Category::RegisteredMetadata).host;
+        let frames = LinearMapNativeOperationPlan::preissue_frame_requirements().unwrap()
+            .get(Category::PhaseScratch).host;
+        let packet = size_of::<crate::execution::workflow_resources::PreissuedLinearMapNative<'static, 'static>>() as u64;
+        assert!(retained >= packet + LinearMapProofPlan::metadata_host_bytes() as u64);
+        assert!(frames > packet);
+        let old_per_source = retained - packet + frames;
+        assert!(retained + frames >= old_per_source);
+        assert!(21 * retained + frames < 21 * old_per_source);
+    }
 }

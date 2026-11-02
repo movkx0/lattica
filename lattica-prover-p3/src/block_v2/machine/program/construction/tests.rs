@@ -427,3 +427,38 @@ fn control_reset_never_resurrects_stale_colliding_payloads() {
     assert_eq!(table.clear(&mut memory), held);
     assert_eq!(memory.live, 0);
 }
+
+#[test]
+fn grouped_probes_match_scalar_walks_at_wraps_and_after_reset() {
+    let mut table = Map::<u64, u64>::new();
+    let mut memory = budget(1 << 24);
+    let key = |i: u64| i.wrapping_mul(0x9e3779b97f4a7c15).rotate_left(17);
+    for round in 0..3 {
+        if round != 0 {
+            table.reset_retained().unwrap();
+        }
+        for i in 0..4096 {
+            let k = key(i + round * 4096);
+            table.insert(k, i, &mut memory);
+            if i % 31 != 0 {
+                continue;
+            }
+            for j in 0..128 {
+                let k = key(j * 29 + round * 4096);
+                let hash = table.hash.hash_one(k);
+                let tag = (hash >> 57) as u8 | 0x80;
+                let mut index = hash as usize & (table.slots.len() - 1);
+                while table.control[index] != 0
+                    && !(table.control[index] == tag
+                        && table.slots[index]
+                            .as_ref()
+                            .is_some_and(|(stored, _)| *stored == k))
+                {
+                    index = (index + 1) & (table.slots.len() - 1);
+                }
+                assert_eq!(table.index(&k), (index, tag));
+            }
+        }
+    }
+    assert!(!memory.failed);
+}

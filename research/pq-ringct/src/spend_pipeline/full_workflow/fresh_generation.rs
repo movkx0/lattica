@@ -102,6 +102,11 @@ impl<const N: usize> FreshGenerationPlan<N> {
             .and_then(|bytes| bytes.checked_add(inspection))
             .ok_or_else(|| source("fixture and inspection census overflow"))?;
         let operation = combine(native.requirements(), host(Category::PhaseScratch, fixture)?)?;
+        // One fixed report belongs to the whole case, not to every producer.
+        #[cfg(test)]
+        let profiling_frames = super::driver::profiling_frame_bytes();
+        #[cfg(not(test))]
+        let profiling_frames = 0;
         let inline = [size_of::<Self>(), size_of::<FreshGenerationBatch<N>>(),
             size_of::<GenerationHoldings<N>>(), size_of::<GenerationRetirementGuard<GenerationHoldings<N>>>(),
             size_of::<[Option<VerifiedInput>; N]>(), size_of::<Result<GenerationHoldings<N>>>(),
@@ -118,6 +123,7 @@ impl<const N: usize> FreshGenerationPlan<N> {
             // in the generated batch through source derivation and retirement.
             .and_then(|bytes| bytes.checked_add(
                 crate::execution::workflow_resources::METADATA_ENDPOINT_QUERY_FRAME_BYTES))
+            .and_then(|bytes| bytes.checked_add(profiling_frames))
             .ok_or_else(|| source("generation driver transport overflow"))?;
         let frames = host(Category::PhaseScratch, inline)?;
         let mut complete = combine(combine(shared, frames)?, operation)?;

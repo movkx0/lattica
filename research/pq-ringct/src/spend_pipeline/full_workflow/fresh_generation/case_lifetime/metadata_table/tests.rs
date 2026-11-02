@@ -7,7 +7,7 @@ fn state(ledger: &Ledger) -> CaseRetirementState {
     CaseRetirementState {
         state: Cell::new(State::Armed), ledger: ledger.clone(), generation_session: 7,
         transactions: 3, batch_identity: Cell::new(core::ptr::null()),
-        sealed_plan: Cell::new(core::ptr::null()), sealed_context: Cell::new(core::ptr::null()),
+        #[cfg(test)] fixture_context: None, sealed_plan: Cell::new(core::ptr::null()), sealed_context: Cell::new(core::ptr::null()),
         sealed_source: Cell::new(([0; 32], [0; 32])), batch_original: RefCell::new(None),
         planning_original: RefCell::new(None),
         planning_residual_issued: Cell::new(false), planning_residual: Cell::new(None),
@@ -112,6 +112,30 @@ fn empty_concrete_family_table_still_owns_its_forwarding_frames() {
     drop(state);
     assert_eq!(ledger.snapshot().current, Bytes::ZERO);
 }
+#[test]
+fn table_shares_transient_frames_but_cannot_issue_an_underfunded_standalone_slot() {
+    type Payload = [u8; 4096];
+    let one = CaseOwnerTable::<Payload>::requirements(1).unwrap().total().unwrap().host;
+    let many = CaseOwnerTable::<Payload>::requirements(64).unwrap().total().unwrap().host;
+    // Every actual array element and its independent retained original remain
+    // charged. Additional entries do not create simultaneous caller stacks.
+    assert_eq!(many - one, (63 * (size_of::<CaseOwnerSlot<'static, Payload>>()
+        + size_of::<CaseOwnerSlot<'static, ()>>())) as u64);
+    let ledger = ledger();
+    let state = state(&ledger);
+    let original = ledger.admit_phase(table_slot_requirements::<Payload>().unwrap()).unwrap();
+    let before = ledger.snapshot();
+    let original = match state.preclaim_from_original::<Payload>(original) {
+        Err((_, original)) => original,
+        Ok(_) => panic!("shared-frame claim escaped into a standalone slot"),
+    };
+    assert_eq!(ledger.snapshot().current, before.current);
+    assert_eq!(ledger.snapshot().peak, before.peak);
+    state.state.set(State::Completed);
+    drop(original);
+    drop(state);
+    assert_eq!(ledger.snapshot().current, Bytes::ZERO);
+}
 
 #[test]
 fn table_projection_requires_exact_case_and_healthy_state() {
@@ -159,6 +183,9 @@ fn table_projection_rejects_partial_backing_and_slot_originals() {
     let slots = table.slots.take();
     assert!(!table.belongs_to_case(&state));
     table.slots = slots;
+    table.slots.as_mut().unwrap()[0].shared_table_frames = false;
+    assert!(!table.belongs_to_case(&state));
+    table.slots.as_mut().unwrap()[0].shared_table_frames = true;
     let last = table.slots.as_mut().unwrap().pop().unwrap();
     assert!(!table.belongs_to_case(&state));
     table.slots.as_mut().unwrap().push(last);

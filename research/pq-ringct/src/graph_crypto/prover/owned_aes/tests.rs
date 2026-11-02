@@ -26,6 +26,18 @@ fn context() -> GraphContext {
     GraphContext { context: [11; 32], statement: [crate::graph_crypto::Val::ZERO; 4],
         node_manifest: [crate::graph_crypto::Val::ONE; 4] }
 }
+#[test]
+fn aes_compiler_retains_only_source_bounded_packed_storage() {
+    let request = request(64 * 16, 64);
+    let blueprint = source::AesBlueprint::new(&request, 0).unwrap();
+    let source = blueprint.inspect().unwrap();
+    let retained = source.retained_program_host_bytes().unwrap();
+    let (output, scratch) = blueprint.compiler_requirements(source).unwrap();
+    assert!(retained < source::PROGRAM_BYTES);
+    assert_eq!(output.get(Category::SymbolicCompiler).host,
+        (retained + core::mem::size_of::<paired_runtime::PairedCompiled<'static>>() * 8) as u64);
+    assert!(scratch.get(Category::PhaseScratch).host >= (source::PROGRAM_BYTES - retained) as u64);
+}
 
 #[test]
 fn source_endpoint_completion_is_required_before_aes_native_preissue() {

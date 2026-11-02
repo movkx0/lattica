@@ -134,6 +134,9 @@ impl GBoundLeafFacts {
             || node.witness.len() != self.input_values || hints != self.selection_hint_words
             || operations.scalar > self.operations.scalar || operations.cubic > self.operations.cubic
             || operations.poseidon > self.operations.poseidon
+            || p.retained_host_bytes().map_err(|_| GBoundLeafFailure::Resource)?
+                > self.operations.retained_program_host_ceiling(PUBLIC_VALUES, self.maximum_wires,
+                    self.selection_hint_words).map_err(|_| GBoundLeafFailure::Resource)?
             || p.construction_host_bytes() > PROGRAM_BYTES {
             return Err(GBoundLeafFailure::SourceDrift);
         }
@@ -288,15 +291,22 @@ impl<'a, 'graph> GBoundLeafBlueprint<'a, 'graph> {
             None => other_native_core_bound(self.descriptor, construction(), self.storage.auxiliary_peak_bytes),
         }.map_err(|_| GBoundLeafFailure::Compile)?;
         if core.storage != self.storage { return Err(GBoundLeafFailure::SourceDrift); }
-        Ok(GBoundLeafCompiler { blueprint: self, facts: GBoundLeafFacts::from_core(core, self.kind)? })
+        let facts = GBoundLeafFacts::from_core(core, self.kind)?;
+        let (output, scratch) = super::compiler_storage::split(self.output, self.scratch, PROGRAM_BYTES,
+            facts.operations, PUBLIC_VALUES, facts.maximum_wires, facts.selection_hint_words)
+            .map_err(|_| GBoundLeafFailure::Resource)?;
+        Ok(GBoundLeafCompiler { blueprint: self, facts, output, scratch })
     }
 }
 
 pub(crate) struct GBoundLeafCompiler<'plan, 'a, 'graph> {
     blueprint: &'plan GBoundLeafBlueprint<'a, 'graph>,
     facts: GBoundLeafFacts,
+    output: Requirements,
+    scratch: Requirements,
 }
 impl<'plan, 'a, 'graph> GBoundLeafCompiler<'plan, 'a, 'graph> {
+    pub(crate) fn compiler_requirements(&self) -> (Requirements, Requirements) { (self.output, self.scratch) }
     pub(crate) fn facts(&self) -> GBoundLeafFacts { self.facts }
     pub(crate) fn blueprint(&self) -> &GBoundLeafBlueprint<'a, 'graph> { self.blueprint }
 
@@ -305,8 +315,8 @@ impl<'plan, 'a, 'graph> GBoundLeafCompiler<'plan, 'a, 'graph> {
         -> GBoundResult<CompiledNode>
     {
         let source = self.blueprint;
-        admitted(output, ledger, source.output)?;
-        admitted(scratch, ledger, source.scratch)?;
+        admitted(output, ledger, self.output)?;
+        admitted(scratch, ledger, self.scratch)?;
         if core::ptr::eq(output, scratch) || !child.source().same_source(source.source)
             || !child.owned().belongs_to(ledger) || child.owned().geometry().kind() != source.kind {
             return Err(GBoundLeafFailure::Authority);

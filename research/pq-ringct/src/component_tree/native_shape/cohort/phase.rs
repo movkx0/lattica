@@ -1,7 +1,8 @@
 //! A supplement is an actual claim in the caller's original ledger. The
-//! compiler allowance is unchanged, and no optional claim outlives its cohort.
+//! compiler allowance is unchanged. Only cleared compiler backing may retain
+//! a split of the supplemental claim across windows; original scratch stays borrowed.
 use super::*;
-use crate::execution::retained_resources::{Bytes, Category, Ledger, Reservation};
+use crate::execution::retained_resources::{Bytes, Category, Ledger, Requirements, Reservation};
 
 const TARGET_BYTES: usize = 3 << 30;
 const MAX_EXTRA_BYTES: usize = 1 << 30;
@@ -37,8 +38,32 @@ impl Backing<'_> {
         ready: usize,
         workers: usize,
     ) -> Result<Permit<'_>, CompileError> {
+        self.admit_reusing(bytes, ready, workers, None)
+    }
+    pub fn admit_reusing(
+        &self,
+        bytes: usize,
+        ready: usize,
+        workers: usize,
+        retained: Option<Reservation>,
+    ) -> Result<Permit<'_>, CompileError> {
         self.validate(bytes)?;
-        let requested = TARGET_BYTES.saturating_sub(bytes).min(MAX_EXTRA_BYTES);
+        let held = retained.as_ref().map_or(0, |c| {
+            c.requirements().get(Category::PhaseScratch).host as usize
+        });
+        if retained
+            .as_ref()
+            .is_some_and(|c| !c.belongs_to(self.ledger))
+            || held > TARGET_BYTES.saturating_sub(bytes).min(MAX_EXTRA_BYTES)
+        {
+            return Err(CompileError::ResourceAdmission(
+                "native retained reservation",
+            ));
+        }
+        let requested = TARGET_BYTES
+            .saturating_sub(bytes)
+            .min(MAX_EXTRA_BYTES)
+            .saturating_sub(held);
         let available = usize::try_from(self.ledger.remaining().host).unwrap_or(usize::MAX);
         let requested = requested.min(available);
         let extra = if ready > 8 && workers > 8 && requested != 0 {
@@ -56,6 +81,13 @@ impl Backing<'_> {
         } else {
             None
         };
+        let extra = match (retained, extra) {
+            (Some(old), Some(new)) => Some(
+                old.reunite(new)
+                    .map_err(|_| CompileError::Shape("native claim transfer"))?,
+            ),
+            (old, new) => old.or(new),
+        };
         Ok(Permit {
             _original: self.original,
             extra,
@@ -64,6 +96,28 @@ impl Backing<'_> {
     }
 }
 impl Permit<'_> {
+    pub fn extra_bytes(&self) -> usize {
+        self.extra.as_ref().map_or(0, |c| {
+            c.requirements().get(Category::PhaseScratch).host as usize
+        })
+    }
+    pub fn retain(&mut self, bytes: usize) -> Result<Option<Reservation>, CompileError> {
+        if bytes == 0 {
+            return Ok(None);
+        }
+        self.extra
+            .as_mut()
+            .ok_or(CompileError::Shape("native backing claim"))?
+            .split(Requirements::single(
+                Category::PhaseScratch,
+                Bytes {
+                    host: bytes as u64,
+                    device: 0,
+                },
+            ))
+            .map(Some)
+            .map_err(|_| CompileError::Shape("native backing split"))
+    }
     pub fn budget(&self) -> usize {
         self.original_bytes
             + self.extra.as_ref().map_or(0, |claim| {

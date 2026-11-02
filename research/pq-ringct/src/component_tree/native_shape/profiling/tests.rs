@@ -25,6 +25,7 @@ fn limits() -> ConstructionLimits {
 }
 enum Descriptor {
     Native(NativeDescriptor<'static>),
+    Transcript(Vec<PartKind>),
     Statement([u8; 32]),
     Private,
     Algebra(ComponentKind, usize),
@@ -39,6 +40,7 @@ impl Case {
         use native_shape::cohort::Descriptor as D;
         match &self.descriptor {
             Descriptor::Native(d) => D::Native(*d),
+            Descriptor::Transcript(parts) => D::Native(NativeDescriptor::Transcript(parts)),
             Descriptor::Statement(seed) => {
                 D::Other(unchanged::OtherNativeDescriptor::Statement { setup_seed: *seed })
             }
@@ -54,6 +56,7 @@ impl Case {
     fn bound(&self) -> Result<NativeCoreBound, CompileError> {
         match &self.descriptor {
             Descriptor::Native(d) => native_shape::native_core_bound(*d, limits(), 512 << 20),
+            Descriptor::Transcript(parts) => native_shape::native_core_bound(NativeDescriptor::Transcript(parts), limits(), 512 << 20),
             Descriptor::Statement(setup_seed) => unchanged::other_native_core_bound(
                 unchanged::OtherNativeDescriptor::Statement {
                     setup_seed: *setup_seed,
@@ -79,6 +82,7 @@ impl Case {
     fn key(&self, source: [u8; 32]) -> [u8; 32] {
         match &self.descriptor {
             Descriptor::Native(d) => cache::key(source, 0, d, limits(), 512 << 20),
+            Descriptor::Transcript(parts) => cache::key(source, 0, &NativeDescriptor::Transcript(parts), limits(), 512 << 20),
             Descriptor::Statement(setup_seed) => cache::key(
                 source,
                 1,
@@ -108,7 +112,7 @@ impl Case {
         }
     }
 }
-fn catalogue() -> Vec<Case> {
+fn base_catalogue() -> Vec<Case> {
     let mut cases = Vec::with_capacity(159);
     let mut native = |name: &str, family, d| {
         cases.push(Case {
@@ -327,6 +331,29 @@ fn values(bound: NativeCoreBound) -> [usize; 8] {
         c.planner_requested_program_bytes_peak,
     ]
 }
+mod workload;
+mod workload_remaining;
+fn catalogue() -> Vec<Case> {
+    let mut cases = base_catalogue();
+    let mut keys: HashSet<_> = cases.iter().map(|case| case.descriptor().key()).collect();
+    let mut add = |case: Case| { if keys.insert(case.descriptor().key()) { cases.push(case); } };
+    for &(input_len, output_len, first, count) in workload::SHAKE {
+        add(Case { name: format!("n3-shake-{input_len}-{output_len}-{first}-{count}"), family: "shake",
+            descriptor: Descriptor::Native(NativeDescriptor::Shake {
+                descriptor: shake_air::Descriptor { input_len, output_len }, first, count }) });
+    }
+    for &(operation, bound, modulus, count) in workload::AFFINE {
+        let kind = match operation { 1 => AffineKind::Add, 2 => AffineKind::Sub,
+            3 => AffineKind::SignedToCanonical { bound }, _ => panic!("unsupported workload affine opcode") };
+        add(Case { name: format!("n3-affine-{operation}-{bound}-{modulus}-{count}"), family: "affine",
+            descriptor: Descriptor::Algebra(ComponentKind::Affine { kind, modulus }, count) });
+    }
+    for case in workload_remaining::catalogue() { add(case); }
+    assert_eq!(cases.len(), 317);
+    assert!(cases.len() <= 512);
+    cases
+}
+
 #[test]
 #[ignore = "metadata-only CPU profiling; serialized native metadata guard required"]
 fn native_metadata_profile() {
@@ -348,7 +375,7 @@ fn native_metadata_profile() {
     let mut total_cold_ns = 0;
     let mut total_warm_ns = 0;
     let mut peak = 0;
-    let mut expected = [None; 256];
+    let mut expected = [None; 512];
     for (index, case) in cases.iter().enumerate() {
         let key = case.key(source);
         assert!(keys.insert(key), "duplicate profile descriptor");
@@ -408,7 +435,8 @@ fn native_metadata_profile() {
                     .unwrap();
             let cache = cache::Scope::begin(source).unwrap();
             let ledger = Ledger::new(WorkerAllowance { host: 4 << 30, device: 0 });
-            let mut original_peak = 0;
+            let mut session = cohort::Session::default();
+        let mut original_peak = 0;
             let start = Instant::now();
             for (group, cases) in cases[..case_count].chunks(cohort::MAX).enumerate() {
                 let mut descriptors =
@@ -426,7 +454,8 @@ fn native_metadata_profile() {
                 for (request, descriptor) in requests.iter_mut().zip(descriptors) {
                     request.descriptor = descriptor;
                 }
-                let result = cohort::bounds_exact_in_ledger(&requests[..cases.len()], limits(), &original, &ledger).unwrap();
+                let result = session.resolve(&requests[..cases.len()], limits(), &original, &ledger).unwrap()
+                .into_iter().zip(requests.iter()).map(|(b, &r)| b.map(|b| b.for_request(r, limits()).unwrap())).collect::<Vec<_>>();
                 drop(original);
                 for (i, bound) in result[..cases.len()].iter().enumerate() {
                     assert_eq!(
@@ -443,12 +472,13 @@ fn native_metadata_profile() {
                     );
                 }
             }
+            drop(session);
             let elapsed = start.elapsed().as_nanos();
             let s = cache.statistics();
             let phase_peak = ledger.snapshot().peak.host as usize;
             assert_eq!(ledger.snapshot().current, Bytes::ZERO);
             assert!(s.peak_workers <= workers && s.admitted_host_bytes_peak <= phase_peak);
-            assert_eq!(s.entries, case_count);
+            assert_eq!(s.entries, case_count.min(256));
             if case_count == 39 {
                 assert_eq!(s.periodic_preparations, 1);
             }

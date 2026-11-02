@@ -1,0 +1,4503 @@
+{
+  "schema": "ringct-complete-metadata-optimization-v1",
+  "date": "2026-11-01",
+  "timezone": "America/New_York",
+  "base_commit": "98ace70932adec127d95bb6018ae457822720b79",
+  "working_tree": "Uncommitted integration on main; existing compiler/cohort changes preserved.",
+  "scope": {
+    "transactions": 3,
+    "layout": "paired-v1",
+    "timed": "Startup excluding fixture read/verification, graph sources, source preparation, metadata inventory/reservation, producer constructors, final metadata schedule and memory closure.",
+    "stop": "After derive_metadata_complete and metadata installation; before execute_constructed_case, runtime preissue and recursive proof execution.",
+    "excluded": [
+      "Native transaction/proof generation",
+      "Fixture read and native verification",
+      "Runtime preissue and recursive proofs",
+      "Whole transaction/proof throughput"
+    ],
+    "complete_workflow": false,
+    "recursive_proofs_generated": 0,
+    "retirement": "Incomplete metadata case owners stay live until isolated process teardown; no case completion receipt is minted."
+  },
+  "implementation": [
+    "Select compatible idle reservation slots by minimum additional host/device growth; preserve live inputs and failure owners.",
+    "Use authenticated child heights and source-derived packed program, proof-input and identity-prefix retained bounds; enforce actual retained capacities.",
+    "Charge frozen owner-table payload backing once and sequential forwarding frames as phase scratch; keep full construction/growth-overlap and preissue allowances.",
+    "Expand independently qualified native tables from 159 to 304 rows, including 120 SHAKE and 25 new affine recipes; bound table capacity at 512 rows.",
+    "Keep the native LRU at 256 entries; increase its source-bound allowance from 1 to 2 MiB for bounded inventory, and report explicit lookup/fallback reasons.",
+    "Batch f0 signed subtraction through the existing GPU vector operation and reuse scope-owned public NTT/multiplication layouts; preserve owner checks and scope poisoning.",
+    "Add verified public N3 fixture replay, detailed stage/source-preparation timing, cache rates and strict metadata-only acceptance."
+  ],
+  "hardware": {
+    "cpu": "AMD Ryzen 9 5900XT, 16 physical cores / 32 threads",
+    "physical_cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "cpu_quota": "1600%",
+    "gpu_uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+  },
+  "methodology": {
+    "fresh_processes_per_worker_configuration": 3,
+    "metadata_workers": [
+      1,
+      8,
+      16
+    ],
+    "identity_hashing": "CPU; existing automatic concurrency and 16-physical-core affinity unchanged while metadata worker counts vary.",
+    "cache": "Empty process caches at startup with qualified static numeric tables enabled.",
+    "fixtures": "Fresh native inputs generated once, public statements and native proofs captured, then deterministic replay. Private randomness and witnesses are not serialized.",
+    "baseline": "Frozen integrated compiler/cohort baseline plus replay instrumentation; all nine attempts stop at CombinedAdmission.",
+    "optimized": "All nine runs and one independently generated heldout fixture complete the metadata boundary.",
+    "order": "Baseline nine runs precede optimization; optimized repeats ordered 1/8/16, 16/8/1, 1/8/16, then heldout 16.",
+    "metric": "metadata_elapsed_ns = timing.total_ns + generation_and_startup_ns - fixture_load_verify_ns; no native input generation in replay.",
+    "qualification": "Local scoped metadata timings; guard performance_qualified and benchmark fields remain false. These are not full-workflow performance receipts."
+  },
+  "fixtures": {
+    "baseline": {
+      "path": ".tools/metadata-fixtures/baseline-n3.bin",
+      "sha256": "335c1fe98e9ccea30d91042721d19d1931cc41bad94ecd60afbb85e2ee12f09d",
+      "bytes": 769585
+    },
+    "heldout": {
+      "path": ".tools/metadata-fixtures/heldout-n3.bin",
+      "sha256": "30d6f76102d048ad7f2c444335363d271d314a9e7b94c0df3c0497edc1c7a5b3",
+      "bytes": 769585
+    }
+  },
+  "comparisons": [
+    {
+      "metadata_workers": 1,
+      "repeats": 3,
+      "baseline_completed": 0,
+      "optimized_completed": 3,
+      "baseline_attempt_seconds": [
+        41.67875502,
+        40.145996268,
+        40.015355642
+      ],
+      "optimized_complete_seconds": [
+        20.856284603,
+        20.867256341,
+        20.935026023
+      ],
+      "baseline_attempt_median_seconds": 40.145996268,
+      "optimized_complete_median_seconds": 20.867256341,
+      "elapsed_reduction_vs_baseline_attempt": 0.4802157554716584,
+      "baseline_phase_medians_ns": {
+        "setup_ns": 2985944,
+        "graph_sources_ns": 12299097864,
+        "source_preparation_ns": 5965259798,
+        "inventory_ns": 42201793,
+        "reservation_ns": 22210,
+        "constructors_ns": 21649226154,
+        "native_constructors_ns": 3566294326,
+        "crypto_constructors_ns": 17778503917,
+        "graph_constructors_ns": 207822914,
+        "final_aggregation_ns": 98153108,
+        "total_ns": 39959014267
+      },
+      "optimized_phase_medians_ns": {
+        "setup_ns": 2967472,
+        "graph_sources_ns": 10058911032,
+        "source_preparation_ns": 5935074566,
+        "inventory_ns": 44526126,
+        "reservation_ns": 17371,
+        "constructors_ns": 4550636750,
+        "native_constructors_ns": 1681386731,
+        "crypto_constructors_ns": 2563201191,
+        "graph_constructors_ns": 216082451,
+        "final_aggregation_ns": 98254319,
+        "total_ns": 20596870248
+      }
+    },
+    {
+      "metadata_workers": 8,
+      "repeats": 3,
+      "baseline_completed": 0,
+      "optimized_completed": 3,
+      "baseline_attempt_seconds": [
+        32.913306842,
+        33.35512264,
+        32.911980469
+      ],
+      "optimized_complete_seconds": [
+        20.345835424,
+        20.356271462,
+        20.284928039
+      ],
+      "baseline_attempt_median_seconds": 32.913306842,
+      "optimized_complete_median_seconds": 20.345835424,
+      "elapsed_reduction_vs_baseline_attempt": 0.38183557423536996,
+      "baseline_phase_medians_ns": {
+        "setup_ns": 2988193,
+        "graph_sources_ns": 12232093528,
+        "source_preparation_ns": 5952724754,
+        "inventory_ns": 42447681,
+        "reservation_ns": 23241,
+        "constructors_ns": 14506637280,
+        "native_constructors_ns": 1962306351,
+        "crypto_constructors_ns": 12246475296,
+        "graph_constructors_ns": 223347504,
+        "final_aggregation_ns": 103150550,
+        "total_ns": 32727661943
+      },
+      "optimized_phase_medians_ns": {
+        "setup_ns": 2958852,
+        "graph_sources_ns": 10050544709,
+        "source_preparation_ns": 5938916939,
+        "inventory_ns": 44406705,
+        "reservation_ns": 19391,
+        "constructors_ns": 4067190505,
+        "native_constructors_ns": 1490213752,
+        "crypto_constructors_ns": 2265857183,
+        "graph_constructors_ns": 215586735,
+        "final_aggregation_ns": 98224668,
+        "total_ns": 20106355201
+      }
+    },
+    {
+      "metadata_workers": 16,
+      "repeats": 3,
+      "baseline_completed": 0,
+      "optimized_completed": 3,
+      "baseline_attempt_seconds": [
+        33.122038497,
+        32.992871766,
+        33.914841041
+      ],
+      "optimized_complete_seconds": [
+        20.45305915,
+        20.313374434,
+        20.361988299
+      ],
+      "baseline_attempt_median_seconds": 33.122038497,
+      "optimized_complete_median_seconds": 20.361988299,
+      "elapsed_reduction_vs_baseline_attempt": 0.38524350483910375,
+      "baseline_phase_medians_ns": {
+        "setup_ns": 2993355,
+        "graph_sources_ns": 12244925718,
+        "source_preparation_ns": 5963936264,
+        "inventory_ns": 42122371,
+        "reservation_ns": 18831,
+        "constructors_ns": 14679311165,
+        "native_constructors_ns": 1938074208,
+        "crypto_constructors_ns": 12444646130,
+        "graph_constructors_ns": 213185385,
+        "final_aggregation_ns": 98435052,
+        "total_ns": 32933268063
+      },
+      "optimized_phase_medians_ns": {
+        "setup_ns": 2967033,
+        "graph_sources_ns": 10046506869,
+        "source_preparation_ns": 5953662441,
+        "inventory_ns": 44406967,
+        "reservation_ns": 18540,
+        "constructors_ns": 4052442157,
+        "native_constructors_ns": 1476877668,
+        "crypto_constructors_ns": 2270816867,
+        "graph_constructors_ns": 204752399,
+        "final_aggregation_ns": 98190246,
+        "total_ns": 20100004007
+      }
+    }
+  ],
+  "cache_coverage": {
+    "baseline_native": {
+      "requests": 585,
+      "memory_hits": 400,
+      "table_hits": 27,
+      "cold_misses": 158,
+      "evictions": 0,
+      "memory_miss_rate": 0.3162393162393162,
+      "cold_miss_rate": 0.27008547008547007
+    },
+    "optimized_native": {
+      "requests": 585,
+      "memory_hits": 400,
+      "table_hits": 172,
+      "cold_misses": 13,
+      "evictions": 0,
+      "memory_miss_rate": 0.3162393162393162,
+      "cold_miss_rate": 0.022222222222222223
+    },
+    "baseline_registered": {
+      "requests": 314,
+      "memory_hits": 309,
+      "table_hits": 5,
+      "cold_misses": 0,
+      "evictions": 0,
+      "memory_miss_rate": 0.01592356687898089,
+      "cold_miss_rate": 0.0
+    },
+    "optimized_registered": {
+      "requests": 971,
+      "memory_hits": 962,
+      "table_hits": 9,
+      "cold_misses": 0,
+      "evictions": 0,
+      "memory_miss_rate": 0.009268795056642637,
+      "cold_miss_rate": 0.0
+    },
+    "repeated_and_heldout_counts_identical": true,
+    "remaining_native_cold_families": {
+      "aes": 5,
+      "transcript": 2,
+      "statement": 1,
+      "linear_map": 5
+    },
+    "meaning": "misses counts LRU misses, including static table hits; cold compilation misses = misses - table_hits. These are software descriptor-cache rates, not hardware cache-miss counters.",
+    "registered_request_change": "Authenticated child heights introduce more exact registered lookups; all are memory or qualified-table hits."
+  },
+  "memory": {
+    "worker_host_ceiling_bytes": 34359738368,
+    "native_host_ceiling_bytes": 25769803776,
+    "device_ceiling_bytes": 8589934592,
+    "cgroup": {
+      "name": "standard",
+      "worker_host_bytes": 34359738368,
+      "memory_max_bytes": 50465865728,
+      "memory_high_bytes": 48318382080,
+      "fresh_memavailable_required_bytes": 52613349376
+    },
+    "baseline": {
+      "required_host": 38774515056,
+      "required_device": 8589934592,
+      "allowance_host": 34359738368,
+      "allowance_device": 8589934592,
+      "retained_host": 3424351478,
+      "pool_host": 8579060074,
+      "pool_compiler_host": 6095922176,
+      "scratch_host": 26771089480,
+      "fixed_scratch_host": 26771089480,
+      "shortfall_host": 4414776688
+    },
+    "optimized": {
+      "required_host": 34359738368,
+      "required_device": 8589934592,
+      "allowance_host": 34359738368,
+      "allowance_device": 8589934592,
+      "retained_host": 1291676418,
+      "pool_host": 6280276002,
+      "pool_compiler_host": 4407133136,
+      "scratch_host": 26787771924,
+      "fixed_scratch_host": 26777208264,
+      "shortfall_host": 0
+    },
+    "interpretation": "Source-bound future reservation accounting, not measured RSS. The baseline is 4.111581 GiB over the 32 GiB worker limit. The optimized outer-backend residual deliberately fills the remaining allowance, so required_host equals the cap; this does not imply actual peak usage or spare runtime capacity."
+  },
+  "numeric_qualification": {
+    "native_rows": 304,
+    "registered_rows": 72,
+    "native_worker_cohorts": 5,
+    "native": {
+      "available": false,
+      "profile": [
+        76,
+        65,
+        84,
+        84,
+        73,
+        67,
+        65,
+        45,
+        66,
+        76,
+        79,
+        67,
+        75,
+        45,
+        86,
+        50,
+        45,
+        67,
+        65,
+        78,
+        68,
+        73,
+        68,
+        65,
+        84,
+        69,
+        45,
+        48,
+        48,
+        48,
+        48,
+        49
+      ],
+      "source": [
+        15,
+        253,
+        69,
+        58,
+        185,
+        221,
+        163,
+        3,
+        182,
+        103,
+        97,
+        130,
+        168,
+        239,
+        8,
+        103,
+        59,
+        136,
+        112,
+        189,
+        124,
+        31,
+        31,
+        33,
+        39,
+        7,
+        69,
+        90,
+        73,
+        167,
+        5,
+        14
+      ]
+    },
+    "registered": {
+      "available": false,
+      "profile_id": [
+        76,
+        65,
+        84,
+        84,
+        73,
+        67,
+        65,
+        45,
+        66,
+        76,
+        79,
+        67,
+        75,
+        45,
+        86,
+        50,
+        45,
+        67,
+        65,
+        78,
+        68,
+        73,
+        68,
+        65,
+        84,
+        69,
+        45,
+        48,
+        48,
+        48,
+        48,
+        49
+      ],
+      "signature": [
+        23,
+        7,
+        32,
+        94,
+        4,
+        6,
+        128,
+        4,
+        16,
+        191,
+        67108864,
+        1048576
+      ],
+      "source_digest": [
+        181,
+        72,
+        227,
+        91,
+        35,
+        103,
+        92,
+        159,
+        18,
+        131,
+        12,
+        111,
+        19,
+        227,
+        55,
+        139,
+        230,
+        95,
+        181,
+        217,
+        221,
+        11,
+        151,
+        219,
+        186,
+        220,
+        36,
+        63,
+        59,
+        70,
+        186,
+        219
+      ]
+    },
+    "numeric_counts_equal": true,
+    "generation": "Both tables regenerated from these independent CPU compilation records. Both generator --check commands passed; final lookup-use test and all ten optimized fixtures hit the source-qualified tables.",
+    "files": [
+      {
+        "path": "research/pq-ringct/src/component_tree/native_shape/precomputed/data.rs",
+        "sha256": "7039eff5294009910811e7105342ac468e786f63f5903171adc7538f11d95db0"
+      },
+      {
+        "path": "lattica-prover-p3/src/block_v2/machine/verifier/batch/shape/precomputed/data.rs",
+        "sha256": "353d42444c4306530c1797f0612a61470ceca367bcf9a53cd2a41478e4b19d51"
+      }
+    ]
+  },
+  "validation": {
+    "guarded": [
+      {
+        "record": {
+          "path": ".tools/pq-opencl-opt/runs/metadata-final-research-correctness-r1.json",
+          "sha256": "e34106b81f8eb200cfeb5a1c4b713f7cdb25e2398fea45156d8ee5b01b7790bd"
+        },
+        "log": {
+          "path": ".tools/pq-opencl-opt/runs/metadata-final-research-correctness-r1.log",
+          "sha256": "2171a45b8ff6e56c21cd4cfc65cfa2e7e02425e0346a0db7e2e55893609edd2e"
+        },
+        "status": "passed",
+        "started_utc": "2026-11-02T02:53:01.232024+00:00",
+        "finished_utc": "2026-11-02T02:56:08.126550+00:00",
+        "command": [
+          "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+          "rust_verify::committed_backend::gpu::tests",
+          "rust_verify::committed_backend::source_graph::raw_adapters::tests",
+          "component_tree::paired_runtime::source::retained_tests",
+          "component_tree::native_shape::cache::tests",
+          "component_tree::native_shape::precomputed::tests",
+          "graph_tree::compiler_storage::tests",
+          "graph_tree::tree::owned_parent::memory::tests",
+          "graph_tree::tree::owned_parent::parameters_pp::source::tests",
+          "spend_pipeline::full_workflow::closed_plan::slot_policy::tests",
+          "spend_pipeline::full_workflow::fresh_generation::case_lifetime",
+          "spend_pipeline::full_workflow::driver::metadata_profile::tests::profiling_stops_once",
+          "spend_pipeline::full_workflow::driver::metadata_profile::fixture::tests",
+          "graph_crypto::prover::owned_aes::tests",
+          "graph_crypto::prover::paired::tests",
+          "graph_crypto::prover::paired::identity_cohorts::tests",
+          "metadata_storage_tests",
+          "packet_retention_tests",
+          "source_preparation::retention_tests",
+          "--test-threads=1",
+          "--nocapture"
+        ],
+        "build_label": "metadata-final-lookup-build-r1",
+        "executable": {
+          "path": "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+          "resolved_path": "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+          "sha256": "6b0ab0ccb6904ecece155886bca1139e0c6a1af127adf86ab936233cd1fb85a8",
+          "build_record": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/metadata-final-lookup-build-r1.json",
+          "build_record_sha256": "7a8eb062495c3bae682c77df03401aa146c125dc14a480c9759bb263649e5ffb"
+        },
+        "input_manifest_sha256": "fe1ebd0cf2f87cf0059cbff45557a1f996c43ff30d3c4b332501127d9a1c8a15",
+        "input_manifest_files": 3064,
+        "validation": {
+          "source_inputs_unchanged": true,
+          "executable_unchanged": true,
+          "all_subprocesses_terminal_and_reaped": true,
+          "service_stop_completed": true
+        },
+        "test_results": [
+          "test result: ok. 99 passed; 0 failed; 9 ignored; 0 measured; 904 filtered out; finished in 184.97s"
+        ]
+      },
+      {
+        "record": {
+          "path": ".tools/pq-opencl-opt/runs/metadata-final-core-correctness-r1.json",
+          "sha256": "ee8c0cd18c919cabfec747298db655afbb5ff19887eb37c7a8c00187bc3e4735"
+        },
+        "log": {
+          "path": ".tools/pq-opencl-opt/runs/metadata-final-core-correctness-r1.log",
+          "sha256": "8de724f96fc8e03d39bfae972f42a8799b1ddf6b9e9a577facc54a580ec6921f"
+        },
+        "status": "passed",
+        "started_utc": "2026-11-02T02:47:40.997351+00:00",
+        "finished_utc": "2026-11-02T02:47:43.239358+00:00",
+        "command": [
+          "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_prover_p3-e318725a125f56a5",
+          "block_v2::machine::backend::identity_cpu",
+          "block_v2::machine::fingerprint::bounded",
+          "block_v2::machine::verifier::batch::shape::retained",
+          "--test-threads=1",
+          "--nocapture"
+        ],
+        "build_label": "metadata-final-core-build-r1",
+        "executable": {
+          "path": "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_prover_p3-e318725a125f56a5",
+          "resolved_path": "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_prover_p3-e318725a125f56a5",
+          "sha256": "e52a5fbf1fc8cf6aaa94ee912cd84ffa665892fe95c032515130baa3bda278b4",
+          "build_record": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/metadata-final-core-build-r1.json",
+          "build_record_sha256": "adf72f4ba6c0847e3a2e2396a83c0b760c6d7238c73a950782db3b6530685ea9"
+        },
+        "input_manifest_sha256": "43b210dfa4cad8985a44676bd0ec9294e4888d0fb0d78b854e796c4ad766ec50",
+        "input_manifest_files": 3064,
+        "validation": {
+          "source_inputs_unchanged": true,
+          "executable_unchanged": true,
+          "all_subprocesses_terminal_and_reaped": true,
+          "service_stop_completed": true
+        },
+        "test_results": [
+          "test result: ok. 11 passed; 0 failed; 1 ignored; 0 measured; 2033 filtered out; finished in 0.13s"
+        ]
+      },
+      {
+        "record": {
+          "path": ".tools/pq-opencl-opt/runs/metadata-final-lookup-use-r1.json",
+          "sha256": "d5f38c4241c0253b5bcc50745d3a3b38f07dbf9a214bb50b18fa5274682e0e84"
+        },
+        "log": {
+          "path": ".tools/pq-opencl-opt/runs/metadata-final-lookup-use-r1.log",
+          "sha256": "059497079aa76c5a099996256503e5746eb5c3868b88ad81fa024235c6a89e61"
+        },
+        "status": "passed",
+        "started_utc": "2026-11-02T02:56:20.738007+00:00",
+        "finished_utc": "2026-11-02T02:56:22.982802+00:00",
+        "command": [
+          "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+          "component_tree::native_shape::cache::tests::qualified_registered_tables_are_used_by_workflow_profile",
+          "--exact",
+          "--ignored",
+          "--test-threads=1",
+          "--nocapture"
+        ],
+        "build_label": "metadata-final-lookup-build-r1",
+        "executable": {
+          "path": "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+          "resolved_path": "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+          "sha256": "6b0ab0ccb6904ecece155886bca1139e0c6a1af127adf86ab936233cd1fb85a8",
+          "build_record": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/metadata-final-lookup-build-r1.json",
+          "build_record_sha256": "7a8eb062495c3bae682c77df03401aa146c125dc14a480c9759bb263649e5ffb"
+        },
+        "input_manifest_sha256": "fe1ebd0cf2f87cf0059cbff45557a1f996c43ff30d3c4b332501127d9a1c8a15",
+        "input_manifest_files": 3064,
+        "validation": {
+          "source_inputs_unchanged": true,
+          "executable_unchanged": true,
+          "all_subprocesses_terminal_and_reaped": true,
+          "service_stop_completed": true
+        },
+        "test_results": [
+          "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1011 filtered out; finished in 0.00s"
+        ]
+      },
+      {
+        "record": {
+          "path": ".tools/pq-opencl-opt/runs/metadata-prepared-gpu-parity-r2.json",
+          "sha256": "48e51330b5f184ae27202587a7427a08018e810ccd1814f2d9bcee590c7e3aac"
+        },
+        "log": {
+          "path": ".tools/pq-opencl-opt/runs/metadata-prepared-gpu-parity-r2.log",
+          "sha256": "736a27cb3e03043730e06eb8e3b76ff3e1664bb00140df7dd159e5d3b35e44e7"
+        },
+        "status": "passed",
+        "started_utc": "2026-11-02T01:48:12.261269+00:00",
+        "finished_utc": "2026-11-02T01:48:14.506063+00:00",
+        "command": [
+          "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+          "rust_verify::committed_backend::gpu::tests::prepared_layouts_and_signed_batches_match_cpu_and_keep_scope_poisoning",
+          "--exact",
+          "--ignored",
+          "--test-threads=1",
+          "--nocapture"
+        ],
+        "build_label": "metadata-owner-storage-build-r1",
+        "executable": {
+          "path": "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+          "resolved_path": "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+          "sha256": "6996ee48a4d6b837c1c5e4b737eb63e68e307c025728846b9f2113ba4e462023",
+          "build_record": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/metadata-owner-storage-build-r1.json",
+          "build_record_sha256": "4c84e2cb14530706a28e7002969a50eb0edaba9d16b0f81e20caf397b00c4e0f"
+        },
+        "input_manifest_sha256": "2bbe0a96563beab62732e52f812bff700b747ff8654084029faf86c1ad655a75",
+        "input_manifest_files": 3064,
+        "validation": {
+          "source_inputs_unchanged": true,
+          "executable_unchanged": true,
+          "all_subprocesses_terminal_and_reaped": true,
+          "service_stop_completed": true
+        },
+        "test_results": [
+          "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1001 filtered out; finished in 0.35s"
+        ]
+      },
+      {
+        "record": {
+          "path": ".tools/pq-opencl-opt/runs/metadata-final-native-qualification-r1.json",
+          "sha256": "eb3ddaaa14bac00e17486b8ccdbe253ca051e035123842ac71776d379ec339b5"
+        },
+        "log": {
+          "path": ".tools/pq-opencl-opt/runs/metadata-final-native-qualification-r1.log",
+          "sha256": "af8788fc429d815d02851046da0c6d7987ec548c0e4db9e1fe6c3bc668b82934"
+        },
+        "status": "passed",
+        "started_utc": "2026-11-02T02:38:15.403369+00:00",
+        "finished_utc": "2026-11-02T02:40:46.267979+00:00",
+        "command": [
+          "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+          "component_tree::native_shape::profiling::tests::native_metadata_profile",
+          "--exact",
+          "--ignored",
+          "--test-threads=1",
+          "--nocapture"
+        ],
+        "build_label": "metadata-final-memory-build-r2",
+        "executable": {
+          "path": "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+          "resolved_path": "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+          "sha256": "7e912ce97057fc8dfe379a5b4e758018b032799df0af2b641301e71fda6b7f4e",
+          "build_record": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/metadata-final-memory-build-r2.json",
+          "build_record_sha256": "69b6271d23a45c8959db6eb63906c9d8ba7da8b4718baeb086436dcc265a3e7a"
+        },
+        "input_manifest_sha256": "43b210dfa4cad8985a44676bd0ec9294e4888d0fb0d78b854e796c4ad766ec50",
+        "input_manifest_files": 3064,
+        "validation": {
+          "source_inputs_unchanged": true,
+          "executable_unchanged": true,
+          "all_subprocesses_terminal_and_reaped": true,
+          "service_stop_completed": true
+        },
+        "test_results": [
+          "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1011 filtered out; finished in 149.40s"
+        ]
+      },
+      {
+        "record": {
+          "path": ".tools/pq-opencl-opt/runs/metadata-final-registered-qualification-r1.json",
+          "sha256": "3468fdd55311c299a23a5c86f1a22e8424637bd991cd9d27946e47c491772d79"
+        },
+        "log": {
+          "path": ".tools/pq-opencl-opt/runs/metadata-final-registered-qualification-r1.log",
+          "sha256": "3b17c2fde0396b2d8cec1eaff3782e84256f3eee9e4e027f5bc024597b6070ce"
+        },
+        "status": "passed",
+        "started_utc": "2026-11-02T02:48:18.750723+00:00",
+        "finished_utc": "2026-11-02T02:48:53.109857+00:00",
+        "command": [
+          "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_prover_p3-e318725a125f56a5",
+          "block_v2::machine::verifier::batch::shape::metadata_planning::tests::metadata_cpu_worker_qualification",
+          "--exact",
+          "--ignored",
+          "--test-threads=1",
+          "--nocapture"
+        ],
+        "build_label": "metadata-final-core-build-r1",
+        "executable": {
+          "path": "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_prover_p3-e318725a125f56a5",
+          "resolved_path": "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_prover_p3-e318725a125f56a5",
+          "sha256": "e52a5fbf1fc8cf6aaa94ee912cd84ffa665892fe95c032515130baa3bda278b4",
+          "build_record": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/metadata-final-core-build-r1.json",
+          "build_record_sha256": "adf72f4ba6c0847e3a2e2396a83c0b760c6d7238c73a950782db3b6530685ea9"
+        },
+        "input_manifest_sha256": "43b210dfa4cad8985a44676bd0ec9294e4888d0fb0d78b854e796c4ad766ec50",
+        "input_manifest_files": 3064,
+        "validation": {
+          "source_inputs_unchanged": true,
+          "executable_unchanged": true,
+          "all_subprocesses_terminal_and_reaped": true,
+          "service_stop_completed": true
+        },
+        "test_results": [
+          "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2044 filtered out; finished in 32.76s"
+        ]
+      },
+      {
+        "record": {
+          "path": ".tools/pq-opencl-opt/runs/metadata-final-all-targets-check-r1.json",
+          "sha256": "eb3d6a1442251f39f27a9ed53abba02aa1e0b04ea5a48cd6cceeaddfb3601447"
+        },
+        "log": {
+          "path": ".tools/pq-opencl-opt/runs/metadata-final-all-targets-check-r1.log",
+          "sha256": "a28e1c2a51728e6b7a4e3ad905a7f219c85c37da99104a2f513210c7d3c661eb"
+        },
+        "status": "passed",
+        "started_utc": "2026-11-02T03:02:45.291569+00:00",
+        "finished_utc": "2026-11-02T03:03:09.608765+00:00",
+        "command": [
+          "/home/access/code/lattica/.tools/rust-1.96.0/bin/cargo",
+          "check",
+          "--release",
+          "--locked",
+          "--offline",
+          "--manifest-path",
+          "research/pq-ringct/Cargo.toml",
+          "--features",
+          "full-workflow-experiment",
+          "--all-targets",
+          "-j2"
+        ],
+        "build_label": null,
+        "executable": {
+          "path": "/home/access/code/lattica/.tools/rust-1.96.0/bin/cargo",
+          "resolved_path": "/home/access/code/lattica/.tools/rust-1.96.0/bin/cargo",
+          "sha256": "f30f9fd1b1d0b8fd10dc33219eb4cd4bec3543f40e434ac71f5a03fd0359063f",
+          "cargo_version": "cargo 1.96.0 (30a34c682 2026-05-25)"
+        },
+        "input_manifest_sha256": "fe1ebd0cf2f87cf0059cbff45557a1f996c43ff30d3c4b332501127d9a1c8a15",
+        "input_manifest_files": 3064,
+        "validation": {
+          "source_inputs_unchanged": true,
+          "executable_unchanged": true,
+          "all_subprocesses_terminal_and_reaped": true,
+          "service_stop_completed": true
+        },
+        "test_results": []
+      }
+    ],
+    "python": {
+      "passed": 80,
+      "command": "PYTHONPATH=research/pq-ringct/tools python3 -m unittest test_metadata_stage_profile test_native_metadata_profile test_native_metadata_tables test_generate_metadata_tables test_metadata_cpu_qualification test_opencl_private_spend_validate test_full_workflow_case_guard",
+      "result": "OK"
+    },
+    "final_profile_source_files_match_current_before_documentation": true,
+    "real_gpu_parity": "Existing NTT, multiplication and signed subtraction match CPU, with scope poisoning after checked failure; zero recursive proofs.",
+    "note": "GPU parity and core qualification precede final table regeneration. Tables are checked against their qualification records; the final research binary verifies active table use."
+  },
+  "provenance": {
+    "raw_records": "Raw logs, receipt hashes, build/executable identities and complete source manifests are retained in local .tools paths referenced by each run.",
+    "initial_integration": [
+      {
+        "path": ".tools/metadata-optimization/integration-baseline.patch",
+        "sha256": "4420cf2536d1468ad0cedfac101cbbe7982f9f07c1022055ca300b8ffb0736fd"
+      },
+      {
+        "path": ".tools/metadata-optimization/profiler-integration.json",
+        "sha256": "5acf4c85f08d7d841fe201a5c2b5b677c8ef24c6b75942c9499c277f467acb1e"
+      },
+      {
+        "path": ".tools/metadata-optimization/baseline-replay-files.txt",
+        "sha256": "84fc1520f05a12db8f5f0cdf210f67f6e826ed1b136874ac69207692313c1e87"
+      },
+      {
+        "path": ".tools/metadata-optimization/baseline-replay-integration.json",
+        "sha256": "413ac9d06f61028ad82a20285c76f055a74823c3de6719a199aa98489c1c11af"
+      }
+    ]
+  },
+  "limitations": [
+    "Baseline timings are incomplete attempts, not successful complete-stage measurements.",
+    "The synthetic N3 fixtures qualify these public descriptors and this host, not every RingCT layout or production workload.",
+    "No ablation run isolates the speedup of each change.",
+    "The GPU metadata compiler port remains deferred; no new GPU kernels were introduced.",
+    "Recursive proving and runtime ownership retirement were not exercised by the metadata-only benchmark."
+  ],
+  "baseline_runs": [
+    {
+      "record": {
+        "path": ".tools/metadata-stage-source/.tools/pq-opencl-opt/runs/metadata-baseline-w1-r1.json",
+        "sha256": "67ad7955b6840d5326674d515b5aa33c16bb55c4bb4dbf258f40fd250c7dfd3f"
+      },
+      "log": {
+        "path": ".tools/metadata-stage-source/.tools/pq-opencl-opt/runs/metadata-baseline-w1-r1.log",
+        "sha256": "a257ac308f40db5cd95a20a45ad2820ca979add86b6969f5b8be89eb0f5fa489"
+      },
+      "status": "failed_or_incomplete",
+      "started_utc": "2026-11-02T01:25:43.902130+00:00",
+      "finished_utc": "2026-11-02T01:26:26.295441+00:00",
+      "command": [
+        "/home/access/code/lattica/.tools/metadata-stage-source/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f173d102d687edad",
+        "spend_pipeline::full_workflow::driver::metadata_profile::tests::complete_n3_metadata_stage",
+        "--exact",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "build_label": "metadata-baseline-replay-build-r1",
+      "executable": {
+        "path": "/home/access/code/lattica/.tools/metadata-stage-source/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f173d102d687edad",
+        "resolved_path": "/home/access/code/lattica/.tools/metadata-stage-source/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f173d102d687edad",
+        "sha256": "20b3eb10ef2d72c2962d8cfa14835e60fd628244d094b3724714a0a3448a2342",
+        "build_record": "/home/access/code/lattica/.tools/metadata-stage-source/.tools/pq-opencl-opt/runs/metadata-baseline-replay-build-r1.json",
+        "build_record_sha256": "e2b8ad160f2539d03312a4ff8d0002f209cedc5546187ff194837a5d977e810f"
+      },
+      "input_manifest_sha256": "22f932826f30222fa4069fa280d2d816ac4b78106101b95f5c01e06c5d7ec310",
+      "input_manifest_files": 3060,
+      "validation": {
+        "source_inputs_unchanged": true,
+        "executable_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "service_stop_completed": true
+      },
+      "workers": 1,
+      "complete_metadata": false,
+      "complete_workflow": false,
+      "recursive_proofs_generated": 0,
+      "fixture_sha256": "335c1fe98e9ccea30d91042721d19d1931cc41bad94ecd60afbb85e2ee12f09d",
+      "metadata_elapsed_ns": 41678755020,
+      "startup_excluding_fixture_ns": 278358719,
+      "fixture_load_verify_ns": 14058011,
+      "timing": {
+        "setup_ns": 2997454,
+        "graph_sources_ns": 12365284867,
+        "source_preparation_ns": 5924808744,
+        "inventory_ns": 42100112,
+        "reservation_ns": 22920,
+        "constructors_ns": 23065182204,
+        "native_constructors_ns": 3592559611,
+        "crypto_constructors_ns": 19162232070,
+        "graph_constructors_ns": 212305611,
+        "final_aggregation_ns": 98084912,
+        "total_ns": 41400396301
+      },
+      "source_preparation_steps_ns": {
+        "registration": 320642214,
+        "algebra": 737884619,
+        "tree": 851801550,
+        "statement": 594539636,
+        "manifest": 207475457,
+        "native": 818760783,
+        "crypto": 208571061,
+        "auxiliary": 1974997719,
+        "producer": 207379796
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 27,
+        "cold_misses": 158,
+        "evictions": 0,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.27008547008547007
+      },
+      "registered": {
+        "requests": 314,
+        "memory_hits": 309,
+        "table_hits": 5,
+        "cold_misses": 0,
+        "evictions": 0,
+        "memory_miss_rate": 0.01592356687898089,
+        "cold_miss_rate": 0.0
+      },
+      "native_families": {
+        "aes": {
+          "requests": 42,
+          "cache_hits": 33,
+          "table_hits": 4,
+          "cold_misses": 5,
+          "compile_ns": 576970206
+        },
+        "shake": {
+          "requests": 360,
+          "cache_hits": 240,
+          "table_hits": 0,
+          "cold_misses": 120,
+          "compile_ns": 16533452943
+        },
+        "transcript": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 0,
+          "cold_misses": 2,
+          "compile_ns": 204538873
+        },
+        "sparse": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "uniform": {
+          "requests": 9,
+          "cache_hits": 7,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "statement": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 0,
+          "cold_misses": 1,
+          "compile_ns": 121593067
+        },
+        "private": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 1,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "affine": {
+          "requests": 90,
+          "cache_hits": 62,
+          "table_hits": 3,
+          "cold_misses": 25,
+          "compile_ns": 1891073136
+        },
+        "ntt": {
+          "requests": 18,
+          "cache_hits": 12,
+          "table_hits": 6,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "mul": {
+          "requests": 21,
+          "cache_hits": 16,
+          "table_hits": 5,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "g_bound": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "permutation": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "linear_map": {
+          "requests": 15,
+          "cache_hits": 10,
+          "table_hits": 0,
+          "cold_misses": 5,
+          "compile_ns": 307160984
+        }
+      },
+      "native_peak_workers": 1,
+      "memory": {
+        "required_host": 38774515056,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 3424351478,
+        "pool_host": 8579060074,
+        "pool_compiler_host": 6095922176,
+        "scratch_host": 26771089480,
+        "fixed_scratch_host": 26771089480,
+        "shortfall_host": 4414776688
+      },
+      "retirement": "process-teardown-incomplete-case-owners-retained"
+    },
+    {
+      "record": {
+        "path": ".tools/metadata-stage-source/.tools/pq-opencl-opt/runs/metadata-baseline-w1-r2.json",
+        "sha256": "847727c26f3ae3c6b8364bb73732e677eb6213137e17b421b01e8909041adf5e"
+      },
+      "log": {
+        "path": ".tools/metadata-stage-source/.tools/pq-opencl-opt/runs/metadata-baseline-w1-r2.log",
+        "sha256": "ae48fa21bdc15c36357058f0c35466d0ee97f570e43a6871de2fd619765e70dc"
+      },
+      "status": "failed_or_incomplete",
+      "started_utc": "2026-11-02T01:28:45.169115+00:00",
+      "finished_utc": "2026-11-02T01:29:27.542062+00:00",
+      "command": [
+        "/home/access/code/lattica/.tools/metadata-stage-source/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f173d102d687edad",
+        "spend_pipeline::full_workflow::driver::metadata_profile::tests::complete_n3_metadata_stage",
+        "--exact",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "build_label": "metadata-baseline-replay-build-r1",
+      "executable": {
+        "path": "/home/access/code/lattica/.tools/metadata-stage-source/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f173d102d687edad",
+        "resolved_path": "/home/access/code/lattica/.tools/metadata-stage-source/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f173d102d687edad",
+        "sha256": "20b3eb10ef2d72c2962d8cfa14835e60fd628244d094b3724714a0a3448a2342",
+        "build_record": "/home/access/code/lattica/.tools/metadata-stage-source/.tools/pq-opencl-opt/runs/metadata-baseline-replay-build-r1.json",
+        "build_record_sha256": "e2b8ad160f2539d03312a4ff8d0002f209cedc5546187ff194837a5d977e810f"
+      },
+      "input_manifest_sha256": "22f932826f30222fa4069fa280d2d816ac4b78106101b95f5c01e06c5d7ec310",
+      "input_manifest_files": 3060,
+      "validation": {
+        "source_inputs_unchanged": true,
+        "executable_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "service_stop_completed": true
+      },
+      "workers": 1,
+      "complete_metadata": false,
+      "complete_workflow": false,
+      "recursive_proofs_generated": 0,
+      "fixture_sha256": "335c1fe98e9ccea30d91042721d19d1931cc41bad94ecd60afbb85e2ee12f09d",
+      "metadata_elapsed_ns": 40145996268,
+      "startup_excluding_fixture_ns": 186982001,
+      "fixture_load_verify_ns": 15492532,
+      "timing": {
+        "setup_ns": 2983163,
+        "graph_sources_ns": 12299097864,
+        "source_preparation_ns": 5965259798,
+        "inventory_ns": 42425248,
+        "reservation_ns": 22040,
+        "constructors_ns": 21649226154,
+        "native_constructors_ns": 3566294326,
+        "crypto_constructors_ns": 17778503917,
+        "graph_constructors_ns": 206007556,
+        "final_aggregation_ns": 98420355,
+        "total_ns": 39959014267
+      },
+      "source_preparation_steps_ns": {
+        "registration": 322217253,
+        "algebra": 741441221,
+        "tree": 853464898,
+        "statement": 597683355,
+        "manifest": 209983271,
+        "native": 824060478,
+        "crypto": 213596770,
+        "auxiliary": 1989084540,
+        "producer": 210988183
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 27,
+        "cold_misses": 158,
+        "evictions": 0,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.27008547008547007
+      },
+      "registered": {
+        "requests": 314,
+        "memory_hits": 309,
+        "table_hits": 5,
+        "cold_misses": 0,
+        "evictions": 0,
+        "memory_miss_rate": 0.01592356687898089,
+        "cold_miss_rate": 0.0
+      },
+      "native_families": {
+        "aes": {
+          "requests": 42,
+          "cache_hits": 33,
+          "table_hits": 4,
+          "cold_misses": 5,
+          "compile_ns": 558546446
+        },
+        "shake": {
+          "requests": 360,
+          "cache_hits": 240,
+          "table_hits": 0,
+          "cold_misses": 120,
+          "compile_ns": 15168959403
+        },
+        "transcript": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 0,
+          "cold_misses": 2,
+          "compile_ns": 198357892
+        },
+        "sparse": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "uniform": {
+          "requests": 9,
+          "cache_hits": 7,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "statement": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 0,
+          "cold_misses": 1,
+          "compile_ns": 115214745
+        },
+        "private": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 1,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "affine": {
+          "requests": 90,
+          "cache_hits": 62,
+          "table_hits": 3,
+          "cold_misses": 25,
+          "compile_ns": 1874859676
+        },
+        "ntt": {
+          "requests": 18,
+          "cache_hits": 12,
+          "table_hits": 6,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "mul": {
+          "requests": 21,
+          "cache_hits": 16,
+          "table_hits": 5,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "g_bound": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "permutation": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "linear_map": {
+          "requests": 15,
+          "cache_hits": 10,
+          "table_hits": 0,
+          "cold_misses": 5,
+          "compile_ns": 302722373
+        }
+      },
+      "native_peak_workers": 1,
+      "memory": {
+        "required_host": 38774515056,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 3424351478,
+        "pool_host": 8579060074,
+        "pool_compiler_host": 6095922176,
+        "scratch_host": 26771089480,
+        "fixed_scratch_host": 26771089480,
+        "shortfall_host": 4414776688
+      },
+      "retirement": "process-teardown-incomplete-case-owners-retained"
+    },
+    {
+      "record": {
+        "path": ".tools/metadata-stage-source/.tools/pq-opencl-opt/runs/metadata-baseline-w1-r3.json",
+        "sha256": "16cb22db2fb79c1b2225885ab2c8aea0a3140c7f5c3913423187a5da0c570575"
+      },
+      "log": {
+        "path": ".tools/metadata-stage-source/.tools/pq-opencl-opt/runs/metadata-baseline-w1-r3.log",
+        "sha256": "209fbfea291298741d36483066d0e344ff8947e48581e1ebf3d51d54b4d8b7a1"
+      },
+      "status": "failed_or_incomplete",
+      "started_utc": "2026-11-02T01:29:27.827790+00:00",
+      "finished_utc": "2026-11-02T01:30:08.195696+00:00",
+      "command": [
+        "/home/access/code/lattica/.tools/metadata-stage-source/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f173d102d687edad",
+        "spend_pipeline::full_workflow::driver::metadata_profile::tests::complete_n3_metadata_stage",
+        "--exact",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "build_label": "metadata-baseline-replay-build-r1",
+      "executable": {
+        "path": "/home/access/code/lattica/.tools/metadata-stage-source/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f173d102d687edad",
+        "resolved_path": "/home/access/code/lattica/.tools/metadata-stage-source/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f173d102d687edad",
+        "sha256": "20b3eb10ef2d72c2962d8cfa14835e60fd628244d094b3724714a0a3448a2342",
+        "build_record": "/home/access/code/lattica/.tools/metadata-stage-source/.tools/pq-opencl-opt/runs/metadata-baseline-replay-build-r1.json",
+        "build_record_sha256": "e2b8ad160f2539d03312a4ff8d0002f209cedc5546187ff194837a5d977e810f"
+      },
+      "input_manifest_sha256": "22f932826f30222fa4069fa280d2d816ac4b78106101b95f5c01e06c5d7ec310",
+      "input_manifest_files": 3060,
+      "validation": {
+        "source_inputs_unchanged": true,
+        "executable_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "service_stop_completed": true
+      },
+      "workers": 1,
+      "complete_metadata": false,
+      "complete_workflow": false,
+      "recursive_proofs_generated": 0,
+      "fixture_sha256": "335c1fe98e9ccea30d91042721d19d1931cc41bad94ecd60afbb85e2ee12f09d",
+      "metadata_elapsed_ns": 40015355642,
+      "startup_excluding_fixture_ns": 271393614,
+      "fixture_load_verify_ns": 14242795,
+      "timing": {
+        "setup_ns": 2985944,
+        "graph_sources_ns": 12273220852,
+        "source_preparation_ns": 5973805269,
+        "inventory_ns": 42201793,
+        "reservation_ns": 22210,
+        "constructors_ns": 21451725960,
+        "native_constructors_ns": 3551609082,
+        "crypto_constructors_ns": 17594140856,
+        "graph_constructors_ns": 207822914,
+        "final_aggregation_ns": 98153108,
+        "total_ns": 39743962028
+      },
+      "source_preparation_steps_ns": {
+        "registration": 321388153,
+        "algebra": 749432676,
+        "tree": 856009894,
+        "statement": 597713230,
+        "manifest": 209922659,
+        "native": 823054890,
+        "crypto": 213399384,
+        "auxiliary": 1988348257,
+        "producer": 211867330
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 27,
+        "cold_misses": 158,
+        "evictions": 0,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.27008547008547007
+      },
+      "registered": {
+        "requests": 314,
+        "memory_hits": 309,
+        "table_hits": 5,
+        "cold_misses": 0,
+        "evictions": 0,
+        "memory_miss_rate": 0.01592356687898089,
+        "cold_miss_rate": 0.0
+      },
+      "native_families": {
+        "aes": {
+          "requests": 42,
+          "cache_hits": 33,
+          "table_hits": 4,
+          "cold_misses": 5,
+          "compile_ns": 562614756
+        },
+        "shake": {
+          "requests": 360,
+          "cache_hits": 240,
+          "table_hits": 0,
+          "cold_misses": 120,
+          "compile_ns": 14981063209
+        },
+        "transcript": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 0,
+          "cold_misses": 2,
+          "compile_ns": 200249592
+        },
+        "sparse": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "uniform": {
+          "requests": 9,
+          "cache_hits": 7,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "statement": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 0,
+          "cold_misses": 1,
+          "compile_ns": 119470204
+        },
+        "private": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 1,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "affine": {
+          "requests": 90,
+          "cache_hits": 62,
+          "table_hits": 3,
+          "cold_misses": 25,
+          "compile_ns": 1851171314
+        },
+        "ntt": {
+          "requests": 18,
+          "cache_hits": 12,
+          "table_hits": 6,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "mul": {
+          "requests": 21,
+          "cache_hits": 16,
+          "table_hits": 5,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "g_bound": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "permutation": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "linear_map": {
+          "requests": 15,
+          "cache_hits": 10,
+          "table_hits": 0,
+          "cold_misses": 5,
+          "compile_ns": 308183297
+        }
+      },
+      "native_peak_workers": 1,
+      "memory": {
+        "required_host": 38774515056,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 3424351478,
+        "pool_host": 8579060074,
+        "pool_compiler_host": 6095922176,
+        "scratch_host": 26771089480,
+        "fixed_scratch_host": 26771089480,
+        "shortfall_host": 4414776688
+      },
+      "retirement": "process-teardown-incomplete-case-owners-retained"
+    },
+    {
+      "record": {
+        "path": ".tools/metadata-stage-source/.tools/pq-opencl-opt/runs/metadata-baseline-w8-r1.json",
+        "sha256": "a6855a423d4b9ca68c460c78fd64e03bd28c4bcb6bdd50758689f5b2fe8bf439"
+      },
+      "log": {
+        "path": ".tools/metadata-stage-source/.tools/pq-opencl-opt/runs/metadata-baseline-w8-r1.log",
+        "sha256": "b36ee4fc8efb106332d495e2cb62c775350e33ce4dc7be835134571644436205"
+      },
+      "status": "failed_or_incomplete",
+      "started_utc": "2026-11-02T01:26:26.581024+00:00",
+      "finished_utc": "2026-11-02T01:27:00.935008+00:00",
+      "command": [
+        "/home/access/code/lattica/.tools/metadata-stage-source/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f173d102d687edad",
+        "spend_pipeline::full_workflow::driver::metadata_profile::tests::complete_n3_metadata_stage",
+        "--exact",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "build_label": "metadata-baseline-replay-build-r1",
+      "executable": {
+        "path": "/home/access/code/lattica/.tools/metadata-stage-source/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f173d102d687edad",
+        "resolved_path": "/home/access/code/lattica/.tools/metadata-stage-source/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f173d102d687edad",
+        "sha256": "20b3eb10ef2d72c2962d8cfa14835e60fd628244d094b3724714a0a3448a2342",
+        "build_record": "/home/access/code/lattica/.tools/metadata-stage-source/.tools/pq-opencl-opt/runs/metadata-baseline-replay-build-r1.json",
+        "build_record_sha256": "e2b8ad160f2539d03312a4ff8d0002f209cedc5546187ff194837a5d977e810f"
+      },
+      "input_manifest_sha256": "22f932826f30222fa4069fa280d2d816ac4b78106101b95f5c01e06c5d7ec310",
+      "input_manifest_files": 3060,
+      "validation": {
+        "source_inputs_unchanged": true,
+        "executable_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "service_stop_completed": true
+      },
+      "workers": 8,
+      "complete_metadata": false,
+      "complete_workflow": false,
+      "recursive_proofs_generated": 0,
+      "fixture_sha256": "335c1fe98e9ccea30d91042721d19d1931cc41bad94ecd60afbb85e2ee12f09d",
+      "metadata_elapsed_ns": 32913306842,
+      "startup_excluding_fixture_ns": 185644899,
+      "fixture_load_verify_ns": 14249275,
+      "timing": {
+        "setup_ns": 2988154,
+        "graph_sources_ns": 12232093528,
+        "source_preparation_ns": 5945037285,
+        "inventory_ns": 42169273,
+        "reservation_ns": 23241,
+        "constructors_ns": 14505350462,
+        "native_constructors_ns": 1962306351,
+        "crypto_constructors_ns": 12216546057,
+        "graph_constructors_ns": 223347504,
+        "final_aggregation_ns": 103150550,
+        "total_ns": 32727661943
+      },
+      "source_preparation_steps_ns": {
+        "registration": 322702804,
+        "algebra": 738558013,
+        "tree": 853709612,
+        "statement": 594561329,
+        "manifest": 208360065,
+        "native": 822303407,
+        "crypto": 211690595,
+        "auxiliary": 1980240357,
+        "producer": 210147743
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 27,
+        "cold_misses": 158,
+        "evictions": 0,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.27008547008547007
+      },
+      "registered": {
+        "requests": 314,
+        "memory_hits": 309,
+        "table_hits": 5,
+        "cold_misses": 0,
+        "evictions": 0,
+        "memory_miss_rate": 0.01592356687898089,
+        "cold_miss_rate": 0.0
+      },
+      "native_families": {
+        "aes": {
+          "requests": 42,
+          "cache_hits": 33,
+          "table_hits": 4,
+          "cold_misses": 5,
+          "compile_ns": 772233223
+        },
+        "shake": {
+          "requests": 360,
+          "cache_hits": 240,
+          "table_hits": 0,
+          "cold_misses": 120,
+          "compile_ns": 19268331398
+        },
+        "transcript": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 0,
+          "cold_misses": 2,
+          "compile_ns": 214847432
+        },
+        "sparse": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "uniform": {
+          "requests": 9,
+          "cache_hits": 7,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "statement": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 0,
+          "cold_misses": 1,
+          "compile_ns": 116871253
+        },
+        "private": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 1,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "affine": {
+          "requests": 90,
+          "cache_hits": 62,
+          "table_hits": 3,
+          "cold_misses": 25,
+          "compile_ns": 3512642012
+        },
+        "ntt": {
+          "requests": 18,
+          "cache_hits": 12,
+          "table_hits": 6,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "mul": {
+          "requests": 21,
+          "cache_hits": 16,
+          "table_hits": 5,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "g_bound": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "permutation": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "linear_map": {
+          "requests": 15,
+          "cache_hits": 10,
+          "table_hits": 0,
+          "cold_misses": 5,
+          "compile_ns": 607960864
+        }
+      },
+      "native_peak_workers": 8,
+      "memory": {
+        "required_host": 38774515056,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 3424351478,
+        "pool_host": 8579060074,
+        "pool_compiler_host": 6095922176,
+        "scratch_host": 26771089480,
+        "fixed_scratch_host": 26771089480,
+        "shortfall_host": 4414776688
+      },
+      "retirement": "process-teardown-incomplete-case-owners-retained"
+    },
+    {
+      "record": {
+        "path": ".tools/metadata-stage-source/.tools/pq-opencl-opt/runs/metadata-baseline-w8-r2.json",
+        "sha256": "107ef829ebca5f87c6641ddba19252a62e3dbf04b6e5cb129232418655b6ed54"
+      },
+      "log": {
+        "path": ".tools/metadata-stage-source/.tools/pq-opencl-opt/runs/metadata-baseline-w8-r2.log",
+        "sha256": "5e3cd87ea0a43b4468b4cc18220efbcdd813d8baaf86125d0d30c404fdb21067"
+      },
+      "status": "failed_or_incomplete",
+      "started_utc": "2026-11-02T01:28:10.530818+00:00",
+      "finished_utc": "2026-11-02T01:28:44.885151+00:00",
+      "command": [
+        "/home/access/code/lattica/.tools/metadata-stage-source/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f173d102d687edad",
+        "spend_pipeline::full_workflow::driver::metadata_profile::tests::complete_n3_metadata_stage",
+        "--exact",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "build_label": "metadata-baseline-replay-build-r1",
+      "executable": {
+        "path": "/home/access/code/lattica/.tools/metadata-stage-source/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f173d102d687edad",
+        "resolved_path": "/home/access/code/lattica/.tools/metadata-stage-source/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f173d102d687edad",
+        "sha256": "20b3eb10ef2d72c2962d8cfa14835e60fd628244d094b3724714a0a3448a2342",
+        "build_record": "/home/access/code/lattica/.tools/metadata-stage-source/.tools/pq-opencl-opt/runs/metadata-baseline-replay-build-r1.json",
+        "build_record_sha256": "e2b8ad160f2539d03312a4ff8d0002f209cedc5546187ff194837a5d977e810f"
+      },
+      "input_manifest_sha256": "22f932826f30222fa4069fa280d2d816ac4b78106101b95f5c01e06c5d7ec310",
+      "input_manifest_files": 3060,
+      "validation": {
+        "source_inputs_unchanged": true,
+        "executable_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "service_stop_completed": true
+      },
+      "workers": 8,
+      "complete_metadata": false,
+      "complete_workflow": false,
+      "recursive_proofs_generated": 0,
+      "fixture_sha256": "335c1fe98e9ccea30d91042721d19d1931cc41bad94ecd60afbb85e2ee12f09d",
+      "metadata_elapsed_ns": 33355122640,
+      "startup_excluding_fixture_ns": 200558663,
+      "fixture_load_verify_ns": 14853048,
+      "timing": {
+        "setup_ns": 2988393,
+        "graph_sources_ns": 12319132008,
+        "source_preparation_ns": 5981192543,
+        "inventory_ns": 44628905,
+        "reservation_ns": 24291,
+        "constructors_ns": 14806597837,
+        "native_constructors_ns": 1987216344,
+        "crypto_constructors_ns": 12465250497,
+        "graph_constructors_ns": 249657171,
+        "final_aggregation_ns": 104473825,
+        "total_ns": 33154563977
+      },
+      "source_preparation_steps_ns": {
+        "registration": 321202753,
+        "algebra": 749834298,
+        "tree": 859362260,
+        "statement": 597846572,
+        "manifest": 211631820,
+        "native": 825219738,
+        "crypto": 212391505,
+        "auxiliary": 1987742397,
+        "producer": 213248274
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 27,
+        "cold_misses": 158,
+        "evictions": 0,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.27008547008547007
+      },
+      "registered": {
+        "requests": 314,
+        "memory_hits": 309,
+        "table_hits": 5,
+        "cold_misses": 0,
+        "evictions": 0,
+        "memory_miss_rate": 0.01592356687898089,
+        "cold_miss_rate": 0.0
+      },
+      "native_families": {
+        "aes": {
+          "requests": 42,
+          "cache_hits": 33,
+          "table_hits": 4,
+          "cold_misses": 5,
+          "compile_ns": 749028967
+        },
+        "shake": {
+          "requests": 360,
+          "cache_hits": 240,
+          "table_hits": 0,
+          "cold_misses": 120,
+          "compile_ns": 19664035528
+        },
+        "transcript": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 0,
+          "cold_misses": 2,
+          "compile_ns": 241346624
+        },
+        "sparse": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "uniform": {
+          "requests": 9,
+          "cache_hits": 7,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "statement": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 0,
+          "cold_misses": 1,
+          "compile_ns": 120429737
+        },
+        "private": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 1,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "affine": {
+          "requests": 90,
+          "cache_hits": 62,
+          "table_hits": 3,
+          "cold_misses": 25,
+          "compile_ns": 3525715560
+        },
+        "ntt": {
+          "requests": 18,
+          "cache_hits": 12,
+          "table_hits": 6,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "mul": {
+          "requests": 21,
+          "cache_hits": 16,
+          "table_hits": 5,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "g_bound": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "permutation": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "linear_map": {
+          "requests": 15,
+          "cache_hits": 10,
+          "table_hits": 0,
+          "cold_misses": 5,
+          "compile_ns": 606270314
+        }
+      },
+      "native_peak_workers": 8,
+      "memory": {
+        "required_host": 38774515056,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 3424351478,
+        "pool_host": 8579060074,
+        "pool_compiler_host": 6095922176,
+        "scratch_host": 26771089480,
+        "fixed_scratch_host": 26771089480,
+        "shortfall_host": 4414776688
+      },
+      "retirement": "process-teardown-incomplete-case-owners-retained"
+    },
+    {
+      "record": {
+        "path": ".tools/metadata-stage-source/.tools/pq-opencl-opt/runs/metadata-baseline-w8-r3.json",
+        "sha256": "fe337b3a829ca3e113e1a7717162a12ddf3cd0d6f31d8359bc778d571bf171a0"
+      },
+      "log": {
+        "path": ".tools/metadata-stage-source/.tools/pq-opencl-opt/runs/metadata-baseline-w8-r3.log",
+        "sha256": "dce5b55d8304395bbcf4f090969920b3822147a04f287478977c1bac1782a308"
+      },
+      "status": "failed_or_incomplete",
+      "started_utc": "2026-11-02T01:30:08.487007+00:00",
+      "finished_utc": "2026-11-02T01:30:42.832788+00:00",
+      "command": [
+        "/home/access/code/lattica/.tools/metadata-stage-source/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f173d102d687edad",
+        "spend_pipeline::full_workflow::driver::metadata_profile::tests::complete_n3_metadata_stage",
+        "--exact",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "build_label": "metadata-baseline-replay-build-r1",
+      "executable": {
+        "path": "/home/access/code/lattica/.tools/metadata-stage-source/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f173d102d687edad",
+        "resolved_path": "/home/access/code/lattica/.tools/metadata-stage-source/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f173d102d687edad",
+        "sha256": "20b3eb10ef2d72c2962d8cfa14835e60fd628244d094b3724714a0a3448a2342",
+        "build_record": "/home/access/code/lattica/.tools/metadata-stage-source/.tools/pq-opencl-opt/runs/metadata-baseline-replay-build-r1.json",
+        "build_record_sha256": "e2b8ad160f2539d03312a4ff8d0002f209cedc5546187ff194837a5d977e810f"
+      },
+      "input_manifest_sha256": "22f932826f30222fa4069fa280d2d816ac4b78106101b95f5c01e06c5d7ec310",
+      "input_manifest_files": 3060,
+      "validation": {
+        "source_inputs_unchanged": true,
+        "executable_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "service_stop_completed": true
+      },
+      "workers": 8,
+      "complete_metadata": false,
+      "complete_workflow": false,
+      "recursive_proofs_generated": 0,
+      "fixture_sha256": "335c1fe98e9ccea30d91042721d19d1931cc41bad94ecd60afbb85e2ee12f09d",
+      "metadata_elapsed_ns": 32911980469,
+      "startup_excluding_fixture_ns": 189090243,
+      "fixture_load_verify_ns": 14157833,
+      "timing": {
+        "setup_ns": 2988193,
+        "graph_sources_ns": 12218073147,
+        "source_preparation_ns": 5952724754,
+        "inventory_ns": 42447681,
+        "reservation_ns": 19171,
+        "constructors_ns": 14506637280,
+        "native_constructors_ns": 1954712108,
+        "crypto_constructors_ns": 12246475296,
+        "graph_constructors_ns": 207252019,
+        "final_aggregation_ns": 98197857,
+        "total_ns": 32722890226
+      },
+      "source_preparation_steps_ns": {
+        "registration": 321588264,
+        "algebra": 738962743,
+        "tree": 853347188,
+        "statement": 597713140,
+        "manifest": 207030034,
+        "native": 825715257,
+        "crypto": 210288513,
+        "auxiliary": 1985765877,
+        "producer": 209613880
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 27,
+        "cold_misses": 158,
+        "evictions": 0,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.27008547008547007
+      },
+      "registered": {
+        "requests": 314,
+        "memory_hits": 309,
+        "table_hits": 5,
+        "cold_misses": 0,
+        "evictions": 0,
+        "memory_miss_rate": 0.01592356687898089,
+        "cold_miss_rate": 0.0
+      },
+      "native_families": {
+        "aes": {
+          "requests": 42,
+          "cache_hits": 33,
+          "table_hits": 4,
+          "cold_misses": 5,
+          "compile_ns": 750043907
+        },
+        "shake": {
+          "requests": 360,
+          "cache_hits": 240,
+          "table_hits": 0,
+          "cold_misses": 120,
+          "compile_ns": 19338812422
+        },
+        "transcript": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 0,
+          "cold_misses": 2,
+          "compile_ns": 199437980
+        },
+        "sparse": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "uniform": {
+          "requests": 9,
+          "cache_hits": 7,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "statement": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 0,
+          "cold_misses": 1,
+          "compile_ns": 120642910
+        },
+        "private": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 1,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "affine": {
+          "requests": 90,
+          "cache_hits": 62,
+          "table_hits": 3,
+          "cold_misses": 25,
+          "compile_ns": 3457892994
+        },
+        "ntt": {
+          "requests": 18,
+          "cache_hits": 12,
+          "table_hits": 6,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "mul": {
+          "requests": 21,
+          "cache_hits": 16,
+          "table_hits": 5,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "g_bound": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "permutation": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "linear_map": {
+          "requests": 15,
+          "cache_hits": 10,
+          "table_hits": 0,
+          "cold_misses": 5,
+          "compile_ns": 604311321
+        }
+      },
+      "native_peak_workers": 8,
+      "memory": {
+        "required_host": 38774515056,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 3424351478,
+        "pool_host": 8579060074,
+        "pool_compiler_host": 6095922176,
+        "scratch_host": 26771089480,
+        "fixed_scratch_host": 26771089480,
+        "shortfall_host": 4414776688
+      },
+      "retirement": "process-teardown-incomplete-case-owners-retained"
+    },
+    {
+      "record": {
+        "path": ".tools/metadata-stage-source/.tools/pq-opencl-opt/runs/metadata-baseline-w16-r1.json",
+        "sha256": "1f71a33bdf6c86cb090aba44e1cec323b4365976694a36e2c21df8d49d113489"
+      },
+      "log": {
+        "path": ".tools/metadata-stage-source/.tools/pq-opencl-opt/runs/metadata-baseline-w16-r1.log",
+        "sha256": "ecd0300d54dab4153a038814179f6316f1d2e1d4806ed2b59a9bea2c83e309cb"
+      },
+      "status": "failed_or_incomplete",
+      "started_utc": "2026-11-02T01:27:01.221573+00:00",
+      "finished_utc": "2026-11-02T01:27:35.597431+00:00",
+      "command": [
+        "/home/access/code/lattica/.tools/metadata-stage-source/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f173d102d687edad",
+        "spend_pipeline::full_workflow::driver::metadata_profile::tests::complete_n3_metadata_stage",
+        "--exact",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "build_label": "metadata-baseline-replay-build-r1",
+      "executable": {
+        "path": "/home/access/code/lattica/.tools/metadata-stage-source/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f173d102d687edad",
+        "resolved_path": "/home/access/code/lattica/.tools/metadata-stage-source/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f173d102d687edad",
+        "sha256": "20b3eb10ef2d72c2962d8cfa14835e60fd628244d094b3724714a0a3448a2342",
+        "build_record": "/home/access/code/lattica/.tools/metadata-stage-source/.tools/pq-opencl-opt/runs/metadata-baseline-replay-build-r1.json",
+        "build_record_sha256": "e2b8ad160f2539d03312a4ff8d0002f209cedc5546187ff194837a5d977e810f"
+      },
+      "input_manifest_sha256": "22f932826f30222fa4069fa280d2d816ac4b78106101b95f5c01e06c5d7ec310",
+      "input_manifest_files": 3060,
+      "validation": {
+        "source_inputs_unchanged": true,
+        "executable_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "service_stop_completed": true
+      },
+      "workers": 16,
+      "complete_metadata": false,
+      "complete_workflow": false,
+      "recursive_proofs_generated": 0,
+      "fixture_sha256": "335c1fe98e9ccea30d91042721d19d1931cc41bad94ecd60afbb85e2ee12f09d",
+      "metadata_elapsed_ns": 33122038497,
+      "startup_excluding_fixture_ns": 188770434,
+      "fixture_load_verify_ns": 14565832,
+      "timing": {
+        "setup_ns": 2992224,
+        "graph_sources_ns": 12244925718,
+        "source_preparation_ns": 5963936264,
+        "inventory_ns": 42083861,
+        "reservation_ns": 18831,
+        "constructors_ns": 14679311165,
+        "native_constructors_ns": 1923183365,
+        "crypto_constructors_ns": 12444646130,
+        "graph_constructors_ns": 213185385,
+        "final_aggregation_ns": 98296285,
+        "total_ns": 32933268063
+      },
+      "source_preparation_steps_ns": {
+        "registration": 321925903,
+        "algebra": 740943798,
+        "tree": 854318428,
+        "statement": 597680499,
+        "manifest": 209694131,
+        "native": 825273784,
+        "crypto": 211582602,
+        "auxiliary": 1989345323,
+        "producer": 210425027
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 27,
+        "cold_misses": 158,
+        "evictions": 0,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.27008547008547007
+      },
+      "registered": {
+        "requests": 314,
+        "memory_hits": 309,
+        "table_hits": 5,
+        "cold_misses": 0,
+        "evictions": 0,
+        "memory_miss_rate": 0.01592356687898089,
+        "cold_miss_rate": 0.0
+      },
+      "native_families": {
+        "aes": {
+          "requests": 42,
+          "cache_hits": 33,
+          "table_hits": 4,
+          "cold_misses": 5,
+          "compile_ns": 819075438
+        },
+        "shake": {
+          "requests": 360,
+          "cache_hits": 240,
+          "table_hits": 0,
+          "cold_misses": 120,
+          "compile_ns": 19504066740
+        },
+        "transcript": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 0,
+          "cold_misses": 2,
+          "compile_ns": 205295576
+        },
+        "sparse": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "uniform": {
+          "requests": 9,
+          "cache_hits": 7,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "statement": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 0,
+          "cold_misses": 1,
+          "compile_ns": 122137536
+        },
+        "private": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 1,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "affine": {
+          "requests": 90,
+          "cache_hits": 62,
+          "table_hits": 3,
+          "cold_misses": 25,
+          "compile_ns": 4901776055
+        },
+        "ntt": {
+          "requests": 18,
+          "cache_hits": 12,
+          "table_hits": 6,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "mul": {
+          "requests": 21,
+          "cache_hits": 16,
+          "table_hits": 5,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "g_bound": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "permutation": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "linear_map": {
+          "requests": 15,
+          "cache_hits": 10,
+          "table_hits": 0,
+          "cold_misses": 5,
+          "compile_ns": 868753223
+        }
+      },
+      "native_peak_workers": 16,
+      "memory": {
+        "required_host": 38774515056,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 3424351478,
+        "pool_host": 8579060074,
+        "pool_compiler_host": 6095922176,
+        "scratch_host": 26771089480,
+        "fixed_scratch_host": 26771089480,
+        "shortfall_host": 4414776688
+      },
+      "retirement": "process-teardown-incomplete-case-owners-retained"
+    },
+    {
+      "record": {
+        "path": ".tools/metadata-stage-source/.tools/pq-opencl-opt/runs/metadata-baseline-w16-r2.json",
+        "sha256": "67d2c21ceeec843344e2005b7bd70691219cd5d948d54efc1f406e83cd444150"
+      },
+      "log": {
+        "path": ".tools/metadata-stage-source/.tools/pq-opencl-opt/runs/metadata-baseline-w16-r2.log",
+        "sha256": "46c903b28ce146600df1787be43bc4858370514032dba0a183e6af7ca63f4c30"
+      },
+      "status": "failed_or_incomplete",
+      "started_utc": "2026-11-02T01:27:35.885675+00:00",
+      "finished_utc": "2026-11-02T01:28:10.238592+00:00",
+      "command": [
+        "/home/access/code/lattica/.tools/metadata-stage-source/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f173d102d687edad",
+        "spend_pipeline::full_workflow::driver::metadata_profile::tests::complete_n3_metadata_stage",
+        "--exact",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "build_label": "metadata-baseline-replay-build-r1",
+      "executable": {
+        "path": "/home/access/code/lattica/.tools/metadata-stage-source/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f173d102d687edad",
+        "resolved_path": "/home/access/code/lattica/.tools/metadata-stage-source/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f173d102d687edad",
+        "sha256": "20b3eb10ef2d72c2962d8cfa14835e60fd628244d094b3724714a0a3448a2342",
+        "build_record": "/home/access/code/lattica/.tools/metadata-stage-source/.tools/pq-opencl-opt/runs/metadata-baseline-replay-build-r1.json",
+        "build_record_sha256": "e2b8ad160f2539d03312a4ff8d0002f209cedc5546187ff194837a5d977e810f"
+      },
+      "input_manifest_sha256": "22f932826f30222fa4069fa280d2d816ac4b78106101b95f5c01e06c5d7ec310",
+      "input_manifest_files": 3060,
+      "validation": {
+        "source_inputs_unchanged": true,
+        "executable_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "service_stop_completed": true
+      },
+      "workers": 16,
+      "complete_metadata": false,
+      "complete_workflow": false,
+      "recursive_proofs_generated": 0,
+      "fixture_sha256": "335c1fe98e9ccea30d91042721d19d1931cc41bad94ecd60afbb85e2ee12f09d",
+      "metadata_elapsed_ns": 32992871766,
+      "startup_excluding_fixture_ns": 242853160,
+      "fixture_load_verify_ns": 14088052,
+      "timing": {
+        "setup_ns": 3063265,
+        "graph_sources_ns": 12221961399,
+        "source_preparation_ns": 5961301576,
+        "inventory_ns": 42122371,
+        "reservation_ns": 18801,
+        "constructors_ns": 14521551194,
+        "native_constructors_ns": 1938074208,
+        "crypto_constructors_ns": 12275620518,
+        "graph_constructors_ns": 209056293,
+        "final_aggregation_ns": 98800175,
+        "total_ns": 32750018606
+      },
+      "source_preparation_steps_ns": {
+        "registration": 321817709,
+        "algebra": 739978551,
+        "tree": 857164990,
+        "statement": 597680865,
+        "manifest": 209372641,
+        "native": 823242413,
+        "crypto": 212181514,
+        "auxiliary": 1986658269,
+        "producer": 210471805
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 27,
+        "cold_misses": 158,
+        "evictions": 0,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.27008547008547007
+      },
+      "registered": {
+        "requests": 314,
+        "memory_hits": 309,
+        "table_hits": 5,
+        "cold_misses": 0,
+        "evictions": 0,
+        "memory_miss_rate": 0.01592356687898089,
+        "cold_miss_rate": 0.0
+      },
+      "native_families": {
+        "aes": {
+          "requests": 42,
+          "cache_hits": 33,
+          "table_hits": 4,
+          "cold_misses": 5,
+          "compile_ns": 833601463
+        },
+        "shake": {
+          "requests": 360,
+          "cache_hits": 240,
+          "table_hits": 0,
+          "cold_misses": 120,
+          "compile_ns": 19211478511
+        },
+        "transcript": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 0,
+          "cold_misses": 2,
+          "compile_ns": 201167506
+        },
+        "sparse": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "uniform": {
+          "requests": 9,
+          "cache_hits": 7,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "statement": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 0,
+          "cold_misses": 1,
+          "compile_ns": 116599666
+        },
+        "private": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 1,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "affine": {
+          "requests": 90,
+          "cache_hits": 62,
+          "table_hits": 3,
+          "cold_misses": 25,
+          "compile_ns": 4953694261
+        },
+        "ntt": {
+          "requests": 18,
+          "cache_hits": 12,
+          "table_hits": 6,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "mul": {
+          "requests": 21,
+          "cache_hits": 16,
+          "table_hits": 5,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "g_bound": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "permutation": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "linear_map": {
+          "requests": 15,
+          "cache_hits": 10,
+          "table_hits": 0,
+          "cold_misses": 5,
+          "compile_ns": 834518485
+        }
+      },
+      "native_peak_workers": 16,
+      "memory": {
+        "required_host": 38774515056,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 3424351478,
+        "pool_host": 8579060074,
+        "pool_compiler_host": 6095922176,
+        "scratch_host": 26771089480,
+        "fixed_scratch_host": 26771089480,
+        "shortfall_host": 4414776688
+      },
+      "retirement": "process-teardown-incomplete-case-owners-retained"
+    },
+    {
+      "record": {
+        "path": ".tools/metadata-stage-source/.tools/pq-opencl-opt/runs/metadata-baseline-w16-r3.json",
+        "sha256": "657c153cc9a279e234cdc35e933970bc155e955fbbc08a085ac75fa939d78897"
+      },
+      "log": {
+        "path": ".tools/metadata-stage-source/.tools/pq-opencl-opt/runs/metadata-baseline-w16-r3.log",
+        "sha256": "1d73e5a4b219a06badb175247ed3b965bb6ffcaf3e522f7971f5e681f773b4cc"
+      },
+      "status": "failed_or_incomplete",
+      "started_utc": "2026-11-02T01:30:43.114176+00:00",
+      "finished_utc": "2026-11-02T01:31:17.484634+00:00",
+      "command": [
+        "/home/access/code/lattica/.tools/metadata-stage-source/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f173d102d687edad",
+        "spend_pipeline::full_workflow::driver::metadata_profile::tests::complete_n3_metadata_stage",
+        "--exact",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "build_label": "metadata-baseline-replay-build-r1",
+      "executable": {
+        "path": "/home/access/code/lattica/.tools/metadata-stage-source/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f173d102d687edad",
+        "resolved_path": "/home/access/code/lattica/.tools/metadata-stage-source/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f173d102d687edad",
+        "sha256": "20b3eb10ef2d72c2962d8cfa14835e60fd628244d094b3724714a0a3448a2342",
+        "build_record": "/home/access/code/lattica/.tools/metadata-stage-source/.tools/pq-opencl-opt/runs/metadata-baseline-replay-build-r1.json",
+        "build_record_sha256": "e2b8ad160f2539d03312a4ff8d0002f209cedc5546187ff194837a5d977e810f"
+      },
+      "input_manifest_sha256": "22f932826f30222fa4069fa280d2d816ac4b78106101b95f5c01e06c5d7ec310",
+      "input_manifest_files": 3060,
+      "validation": {
+        "source_inputs_unchanged": true,
+        "executable_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "service_stop_completed": true
+      },
+      "workers": 16,
+      "complete_metadata": false,
+      "complete_workflow": false,
+      "recursive_proofs_generated": 0,
+      "fixture_sha256": "335c1fe98e9ccea30d91042721d19d1931cc41bad94ecd60afbb85e2ee12f09d",
+      "metadata_elapsed_ns": 33914841041,
+      "startup_excluding_fixture_ns": 247469091,
+      "fixture_load_verify_ns": 13957339,
+      "timing": {
+        "setup_ns": 2993355,
+        "graph_sources_ns": 12464674814,
+        "source_preparation_ns": 5967534409,
+        "inventory_ns": 42386049,
+        "reservation_ns": 25781,
+        "constructors_ns": 15189757542,
+        "native_constructors_ns": 1945874898,
+        "crypto_constructors_ns": 12926000155,
+        "graph_constructors_ns": 219447437,
+        "final_aggregation_ns": 98435052,
+        "total_ns": 33667371950
+      },
+      "source_preparation_steps_ns": {
+        "registration": 324323099,
+        "algebra": 738749490,
+        "tree": 852696366,
+        "statement": 597722774,
+        "manifest": 210848424,
+        "native": 826786991,
+        "crypto": 213766375,
+        "auxiliary": 1988345852,
+        "producer": 211575199
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 27,
+        "cold_misses": 158,
+        "evictions": 0,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.27008547008547007
+      },
+      "registered": {
+        "requests": 314,
+        "memory_hits": 309,
+        "table_hits": 5,
+        "cold_misses": 0,
+        "evictions": 0,
+        "memory_miss_rate": 0.01592356687898089,
+        "cold_miss_rate": 0.0
+      },
+      "native_families": {
+        "aes": {
+          "requests": 42,
+          "cache_hits": 33,
+          "table_hits": 4,
+          "cold_misses": 5,
+          "compile_ns": 742894973
+        },
+        "shake": {
+          "requests": 360,
+          "cache_hits": 240,
+          "table_hits": 0,
+          "cold_misses": 120,
+          "compile_ns": 20592224752
+        },
+        "transcript": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 0,
+          "cold_misses": 2,
+          "compile_ns": 211616839
+        },
+        "sparse": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "uniform": {
+          "requests": 9,
+          "cache_hits": 7,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "statement": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 0,
+          "cold_misses": 1,
+          "compile_ns": 116849507
+        },
+        "private": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 1,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "affine": {
+          "requests": 90,
+          "cache_hits": 62,
+          "table_hits": 3,
+          "cold_misses": 25,
+          "compile_ns": 4924226726
+        },
+        "ntt": {
+          "requests": 18,
+          "cache_hits": 12,
+          "table_hits": 6,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "mul": {
+          "requests": 21,
+          "cache_hits": 16,
+          "table_hits": 5,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "g_bound": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "permutation": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "linear_map": {
+          "requests": 15,
+          "cache_hits": 10,
+          "table_hits": 0,
+          "cold_misses": 5,
+          "compile_ns": 866471190
+        }
+      },
+      "native_peak_workers": 16,
+      "memory": {
+        "required_host": 38774515056,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 3424351478,
+        "pool_host": 8579060074,
+        "pool_compiler_host": 6095922176,
+        "scratch_host": 26771089480,
+        "fixed_scratch_host": 26771089480,
+        "shortfall_host": 4414776688
+      },
+      "retirement": "process-teardown-incomplete-case-owners-retained"
+    }
+  ],
+  "optimized_runs": [
+    {
+      "record": {
+        "path": ".tools/pq-opencl-opt/runs/metadata-optimized-w1-r1.json",
+        "sha256": "93d7ba08375806fe5312c2751166dec6c2648a0c07a0fcab34bd8b52a0d4e8ca"
+      },
+      "log": {
+        "path": ".tools/pq-opencl-opt/runs/metadata-optimized-w1-r1.log",
+        "sha256": "551ce45f8ab7b414591135a2e58ce2bbf2c88d53583947a6103b31a8addc7c5a"
+      },
+      "status": "passed",
+      "started_utc": "2026-11-02T02:58:01.625633+00:00",
+      "finished_utc": "2026-11-02T02:58:23.939031+00:00",
+      "command": [
+        "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+        "spend_pipeline::full_workflow::driver::metadata_profile::tests::complete_n3_metadata_stage",
+        "--exact",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "build_label": "metadata-final-lookup-build-r1",
+      "executable": {
+        "path": "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+        "resolved_path": "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+        "sha256": "6b0ab0ccb6904ecece155886bca1139e0c6a1af127adf86ab936233cd1fb85a8",
+        "build_record": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/metadata-final-lookup-build-r1.json",
+        "build_record_sha256": "7a8eb062495c3bae682c77df03401aa146c125dc14a480c9759bb263649e5ffb"
+      },
+      "input_manifest_sha256": "fe1ebd0cf2f87cf0059cbff45557a1f996c43ff30d3c4b332501127d9a1c8a15",
+      "input_manifest_files": 3064,
+      "validation": {
+        "source_inputs_unchanged": true,
+        "executable_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "service_stop_completed": true
+      },
+      "workers": 1,
+      "complete_metadata": true,
+      "complete_workflow": false,
+      "recursive_proofs_generated": 0,
+      "fixture_sha256": "335c1fe98e9ccea30d91042721d19d1931cc41bad94ecd60afbb85e2ee12f09d",
+      "metadata_elapsed_ns": 20856284603,
+      "startup_excluding_fixture_ns": 287358286,
+      "fixture_load_verify_ns": 14718310,
+      "timing": {
+        "setup_ns": 2954152,
+        "graph_sources_ns": 10041006010,
+        "source_preparation_ns": 5936751076,
+        "inventory_ns": 44526126,
+        "reservation_ns": 19370,
+        "constructors_ns": 4543669583,
+        "native_constructors_ns": 1674925730,
+        "crypto_constructors_ns": 2563201191,
+        "graph_constructors_ns": 207362279,
+        "final_aggregation_ns": 98180383,
+        "total_ns": 20568926317
+      },
+      "source_preparation_steps_ns": {
+        "registration": 326197425,
+        "algebra": 744472995,
+        "tree": 864452894,
+        "statement": 594506015,
+        "manifest": 204957076,
+        "native": 817011409,
+        "crypto": 206232824,
+        "auxiliary": 1968497687,
+        "producer": 207792337
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 172,
+        "cold_misses": 13,
+        "evictions": 0,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.022222222222222223
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "evictions": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0
+      },
+      "native_families": {
+        "aes": {
+          "requests": 42,
+          "cache_hits": 33,
+          "table_hits": 4,
+          "cold_misses": 5,
+          "compile_ns": 578457457
+        },
+        "shake": {
+          "requests": 360,
+          "cache_hits": 240,
+          "table_hits": 120,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "transcript": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 0,
+          "cold_misses": 2,
+          "compile_ns": 199426842
+        },
+        "sparse": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "uniform": {
+          "requests": 9,
+          "cache_hits": 7,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "statement": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 0,
+          "cold_misses": 1,
+          "compile_ns": 116583480
+        },
+        "private": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 1,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "affine": {
+          "requests": 90,
+          "cache_hits": 62,
+          "table_hits": 28,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "ntt": {
+          "requests": 18,
+          "cache_hits": 12,
+          "table_hits": 6,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "mul": {
+          "requests": 21,
+          "cache_hits": 16,
+          "table_hits": 5,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "g_bound": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "permutation": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "linear_map": {
+          "requests": 15,
+          "cache_hits": 10,
+          "table_hits": 0,
+          "cold_misses": 5,
+          "compile_ns": 297644944
+        }
+      },
+      "native_peak_workers": 1,
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291676418,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787771924,
+        "fixed_scratch_host": 26777208264,
+        "shortfall_host": 0
+      },
+      "retirement": "process-teardown-incomplete-case-owners-retained"
+    },
+    {
+      "record": {
+        "path": ".tools/pq-opencl-opt/runs/metadata-optimized-w1-r2.json",
+        "sha256": "8ea70b3c660e3badea32b906c95fd395d83423f89cfe05ae69dc1afff697b69c"
+      },
+      "log": {
+        "path": ".tools/pq-opencl-opt/runs/metadata-optimized-w1-r2.log",
+        "sha256": "2ff0c88b037c6edc5bebb1c77f0ff91d3d6e7ce1e6307d7e9517677ea307ea4b"
+      },
+      "status": "passed",
+      "started_utc": "2026-11-02T02:59:54.580353+00:00",
+      "finished_utc": "2026-11-02T03:00:16.889438+00:00",
+      "command": [
+        "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+        "spend_pipeline::full_workflow::driver::metadata_profile::tests::complete_n3_metadata_stage",
+        "--exact",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "build_label": "metadata-final-lookup-build-r1",
+      "executable": {
+        "path": "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+        "resolved_path": "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+        "sha256": "6b0ab0ccb6904ecece155886bca1139e0c6a1af127adf86ab936233cd1fb85a8",
+        "build_record": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/metadata-final-lookup-build-r1.json",
+        "build_record_sha256": "7a8eb062495c3bae682c77df03401aa146c125dc14a480c9759bb263649e5ffb"
+      },
+      "input_manifest_sha256": "fe1ebd0cf2f87cf0059cbff45557a1f996c43ff30d3c4b332501127d9a1c8a15",
+      "input_manifest_files": 3064,
+      "validation": {
+        "source_inputs_unchanged": true,
+        "executable_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "service_stop_completed": true
+      },
+      "workers": 1,
+      "complete_metadata": true,
+      "complete_workflow": false,
+      "recursive_proofs_generated": 0,
+      "fixture_sha256": "335c1fe98e9ccea30d91042721d19d1931cc41bad94ecd60afbb85e2ee12f09d",
+      "metadata_elapsed_ns": 20867256341,
+      "startup_excluding_fixture_ns": 270386093,
+      "fixture_load_verify_ns": 15585428,
+      "timing": {
+        "setup_ns": 2967472,
+        "graph_sources_ns": 10063320325,
+        "source_preparation_ns": 5935074566,
+        "inventory_ns": 44854185,
+        "reservation_ns": 16950,
+        "constructors_ns": 4550636750,
+        "native_constructors_ns": 1681386731,
+        "crypto_constructors_ns": 2554913249,
+        "graph_constructors_ns": 216082451,
+        "final_aggregation_ns": 98254319,
+        "total_ns": 20596870248
+      },
+      "source_preparation_steps_ns": {
+        "registration": 326309211,
+        "algebra": 743058238,
+        "tree": 864161738,
+        "statement": 594567801,
+        "manifest": 203814972,
+        "native": 816161418,
+        "crypto": 208874679,
+        "auxiliary": 1968849382,
+        "producer": 206614371
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 172,
+        "cold_misses": 13,
+        "evictions": 0,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.022222222222222223
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "evictions": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0
+      },
+      "native_families": {
+        "aes": {
+          "requests": 42,
+          "cache_hits": 33,
+          "table_hits": 4,
+          "cold_misses": 5,
+          "compile_ns": 569686476
+        },
+        "shake": {
+          "requests": 360,
+          "cache_hits": 240,
+          "table_hits": 120,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "transcript": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 0,
+          "cold_misses": 2,
+          "compile_ns": 207929630
+        },
+        "sparse": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "uniform": {
+          "requests": 9,
+          "cache_hits": 7,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "statement": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 0,
+          "cold_misses": 1,
+          "compile_ns": 118627278
+        },
+        "private": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 1,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "affine": {
+          "requests": 90,
+          "cache_hits": 62,
+          "table_hits": 28,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "ntt": {
+          "requests": 18,
+          "cache_hits": 12,
+          "table_hits": 6,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "mul": {
+          "requests": 21,
+          "cache_hits": 16,
+          "table_hits": 5,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "g_bound": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "permutation": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "linear_map": {
+          "requests": 15,
+          "cache_hits": 10,
+          "table_hits": 0,
+          "cold_misses": 5,
+          "compile_ns": 298185920
+        }
+      },
+      "native_peak_workers": 1,
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291676418,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787771924,
+        "fixed_scratch_host": 26777208264,
+        "shortfall_host": 0
+      },
+      "retirement": "process-teardown-incomplete-case-owners-retained"
+    },
+    {
+      "record": {
+        "path": ".tools/pq-opencl-opt/runs/metadata-optimized-w1-r3.json",
+        "sha256": "0ef81c46ec292ad48b8ef291f988c37599c854753dff03b6215fff826773d4c5"
+      },
+      "log": {
+        "path": ".tools/pq-opencl-opt/runs/metadata-optimized-w1-r3.log",
+        "sha256": "95f947b1e7f0accafe36dd3ca75576a81522114a87edd16d1b904dff13b80051"
+      },
+      "status": "passed",
+      "started_utc": "2026-11-02T03:00:17.168794+00:00",
+      "finished_utc": "2026-11-02T03:00:39.471785+00:00",
+      "command": [
+        "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+        "spend_pipeline::full_workflow::driver::metadata_profile::tests::complete_n3_metadata_stage",
+        "--exact",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "build_label": "metadata-final-lookup-build-r1",
+      "executable": {
+        "path": "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+        "resolved_path": "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+        "sha256": "6b0ab0ccb6904ecece155886bca1139e0c6a1af127adf86ab936233cd1fb85a8",
+        "build_record": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/metadata-final-lookup-build-r1.json",
+        "build_record_sha256": "7a8eb062495c3bae682c77df03401aa146c125dc14a480c9759bb263649e5ffb"
+      },
+      "input_manifest_sha256": "fe1ebd0cf2f87cf0059cbff45557a1f996c43ff30d3c4b332501127d9a1c8a15",
+      "input_manifest_files": 3064,
+      "validation": {
+        "source_inputs_unchanged": true,
+        "executable_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "service_stop_completed": true
+      },
+      "workers": 1,
+      "complete_metadata": true,
+      "complete_workflow": false,
+      "recursive_proofs_generated": 0,
+      "fixture_sha256": "335c1fe98e9ccea30d91042721d19d1931cc41bad94ecd60afbb85e2ee12f09d",
+      "metadata_elapsed_ns": 20935026023,
+      "startup_excluding_fixture_ns": 241812723,
+      "fixture_load_verify_ns": 13947474,
+      "timing": {
+        "setup_ns": 3007873,
+        "graph_sources_ns": 10058911032,
+        "source_preparation_ns": 5931378034,
+        "inventory_ns": 44512188,
+        "reservation_ns": 17371,
+        "constructors_ns": 4655386802,
+        "native_constructors_ns": 1761281987,
+        "crypto_constructors_ns": 2570936737,
+        "graph_constructors_ns": 223566829,
+        "final_aggregation_ns": 99601249,
+        "total_ns": 20693213300
+      },
+      "source_preparation_steps_ns": {
+        "registration": 324993105,
+        "algebra": 741966581,
+        "tree": 863163224,
+        "statement": 594567376,
+        "manifest": 203468736,
+        "native": 827241807,
+        "crypto": 203902856,
+        "auxiliary": 1964641789,
+        "producer": 204782464
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 172,
+        "cold_misses": 13,
+        "evictions": 0,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.022222222222222223
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "evictions": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0
+      },
+      "native_families": {
+        "aes": {
+          "requests": 42,
+          "cache_hits": 33,
+          "table_hits": 4,
+          "cold_misses": 5,
+          "compile_ns": 570634932
+        },
+        "shake": {
+          "requests": 360,
+          "cache_hits": 240,
+          "table_hits": 120,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "transcript": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 0,
+          "cold_misses": 2,
+          "compile_ns": 215004640
+        },
+        "sparse": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "uniform": {
+          "requests": 9,
+          "cache_hits": 7,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "statement": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 0,
+          "cold_misses": 1,
+          "compile_ns": 141945319
+        },
+        "private": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 1,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "affine": {
+          "requests": 90,
+          "cache_hits": 62,
+          "table_hits": 28,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "ntt": {
+          "requests": 18,
+          "cache_hits": 12,
+          "table_hits": 6,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "mul": {
+          "requests": 21,
+          "cache_hits": 16,
+          "table_hits": 5,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "g_bound": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "permutation": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "linear_map": {
+          "requests": 15,
+          "cache_hits": 10,
+          "table_hits": 0,
+          "cold_misses": 5,
+          "compile_ns": 357722157
+        }
+      },
+      "native_peak_workers": 1,
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291676418,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787771924,
+        "fixed_scratch_host": 26777208264,
+        "shortfall_host": 0
+      },
+      "retirement": "process-teardown-incomplete-case-owners-retained"
+    },
+    {
+      "record": {
+        "path": ".tools/pq-opencl-opt/runs/metadata-optimized-w8-r1.json",
+        "sha256": "d028856674204c3c60657fb9dcf9377bc79c31c2bf2bc1c1c66568c99555b57e"
+      },
+      "log": {
+        "path": ".tools/pq-opencl-opt/runs/metadata-optimized-w8-r1.log",
+        "sha256": "7dee4adffbf0cac877f79474b43548ab866ab1defb7a5ccf998416063e9fc68a"
+      },
+      "status": "passed",
+      "started_utc": "2026-11-02T02:58:24.222662+00:00",
+      "finished_utc": "2026-11-02T02:58:46.524931+00:00",
+      "command": [
+        "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+        "spend_pipeline::full_workflow::driver::metadata_profile::tests::complete_n3_metadata_stage",
+        "--exact",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "build_label": "metadata-final-lookup-build-r1",
+      "executable": {
+        "path": "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+        "resolved_path": "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+        "sha256": "6b0ab0ccb6904ecece155886bca1139e0c6a1af127adf86ab936233cd1fb85a8",
+        "build_record": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/metadata-final-lookup-build-r1.json",
+        "build_record_sha256": "7a8eb062495c3bae682c77df03401aa146c125dc14a480c9759bb263649e5ffb"
+      },
+      "input_manifest_sha256": "fe1ebd0cf2f87cf0059cbff45557a1f996c43ff30d3c4b332501127d9a1c8a15",
+      "input_manifest_files": 3064,
+      "validation": {
+        "source_inputs_unchanged": true,
+        "executable_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "service_stop_completed": true
+      },
+      "workers": 8,
+      "complete_metadata": true,
+      "complete_workflow": false,
+      "recursive_proofs_generated": 0,
+      "fixture_sha256": "335c1fe98e9ccea30d91042721d19d1931cc41bad94ecd60afbb85e2ee12f09d",
+      "metadata_elapsed_ns": 20345835424,
+      "startup_excluding_fixture_ns": 239480223,
+      "fixture_load_verify_ns": 13716489,
+      "timing": {
+        "setup_ns": 3001173,
+        "graph_sources_ns": 10050544709,
+        "source_preparation_ns": 5947162073,
+        "inventory_ns": 44250980,
+        "reservation_ns": 15461,
+        "constructors_ns": 4061380805,
+        "native_constructors_ns": 1485862860,
+        "crypto_constructors_ns": 2265857183,
+        "graph_constructors_ns": 211785224,
+        "final_aggregation_ns": 97875538,
+        "total_ns": 20106355201
+      },
+      "source_preparation_steps_ns": {
+        "registration": 325973353,
+        "algebra": 752946968,
+        "tree": 864987016,
+        "statement": 594588481,
+        "manifest": 205860998,
+        "native": 816478816,
+        "crypto": 206193585,
+        "auxiliary": 1969852615,
+        "producer": 207637325
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 172,
+        "cold_misses": 13,
+        "evictions": 0,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.022222222222222223
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "evictions": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0
+      },
+      "native_families": {
+        "aes": {
+          "requests": 42,
+          "cache_hits": 33,
+          "table_hits": 4,
+          "cold_misses": 5,
+          "compile_ns": 740311196
+        },
+        "shake": {
+          "requests": 360,
+          "cache_hits": 240,
+          "table_hits": 120,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "transcript": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 0,
+          "cold_misses": 2,
+          "compile_ns": 203942348
+        },
+        "sparse": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "uniform": {
+          "requests": 9,
+          "cache_hits": 7,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "statement": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 0,
+          "cold_misses": 1,
+          "compile_ns": 116651202
+        },
+        "private": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 1,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "affine": {
+          "requests": 90,
+          "cache_hits": 62,
+          "table_hits": 28,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "ntt": {
+          "requests": 18,
+          "cache_hits": 12,
+          "table_hits": 6,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "mul": {
+          "requests": 21,
+          "cache_hits": 16,
+          "table_hits": 5,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "g_bound": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "permutation": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "linear_map": {
+          "requests": 15,
+          "cache_hits": 10,
+          "table_hits": 0,
+          "cold_misses": 5,
+          "compile_ns": 452496365
+        }
+      },
+      "native_peak_workers": 5,
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291676418,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787771924,
+        "fixed_scratch_host": 26777208264,
+        "shortfall_host": 0
+      },
+      "retirement": "process-teardown-incomplete-case-owners-retained"
+    },
+    {
+      "record": {
+        "path": ".tools/pq-opencl-opt/runs/metadata-optimized-w8-r2.json",
+        "sha256": "a6ff1030db704701793c37f5a18e0e40a44ceb18be9b04165b391d1a3706666c"
+      },
+      "log": {
+        "path": ".tools/pq-opencl-opt/runs/metadata-optimized-w8-r2.log",
+        "sha256": "35b9e5f342e8cd07295d2f96bb41bda72e0fd9d2632c377bf045333cab6dcaa5"
+      },
+      "status": "passed",
+      "started_utc": "2026-11-02T02:59:31.995820+00:00",
+      "finished_utc": "2026-11-02T02:59:54.299860+00:00",
+      "command": [
+        "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+        "spend_pipeline::full_workflow::driver::metadata_profile::tests::complete_n3_metadata_stage",
+        "--exact",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "build_label": "metadata-final-lookup-build-r1",
+      "executable": {
+        "path": "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+        "resolved_path": "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+        "sha256": "6b0ab0ccb6904ecece155886bca1139e0c6a1af127adf86ab936233cd1fb85a8",
+        "build_record": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/metadata-final-lookup-build-r1.json",
+        "build_record_sha256": "7a8eb062495c3bae682c77df03401aa146c125dc14a480c9759bb263649e5ffb"
+      },
+      "input_manifest_sha256": "fe1ebd0cf2f87cf0059cbff45557a1f996c43ff30d3c4b332501127d9a1c8a15",
+      "input_manifest_files": 3064,
+      "validation": {
+        "source_inputs_unchanged": true,
+        "executable_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "service_stop_completed": true
+      },
+      "workers": 8,
+      "complete_metadata": true,
+      "complete_workflow": false,
+      "recursive_proofs_generated": 0,
+      "fixture_sha256": "335c1fe98e9ccea30d91042721d19d1931cc41bad94ecd60afbb85e2ee12f09d",
+      "metadata_elapsed_ns": 20356271462,
+      "startup_excluding_fixture_ns": 242114926,
+      "fixture_load_verify_ns": 13715808,
+      "timing": {
+        "setup_ns": 2958852,
+        "graph_sources_ns": 10060662315,
+        "source_preparation_ns": 5938916939,
+        "inventory_ns": 44406705,
+        "reservation_ns": 21220,
+        "constructors_ns": 4067190505,
+        "native_constructors_ns": 1490213752,
+        "crypto_constructors_ns": 2260833577,
+        "graph_constructors_ns": 217918508,
+        "final_aggregation_ns": 98224668,
+        "total_ns": 20114156536
+      },
+      "source_preparation_steps_ns": {
+        "registration": 325584074,
+        "algebra": 743424399,
+        "tree": 867733177,
+        "statement": 594518815,
+        "manifest": 206124938,
+        "native": 816150931,
+        "crypto": 207058890,
+        "auxiliary": 1969610091,
+        "producer": 206036957
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 172,
+        "cold_misses": 13,
+        "evictions": 0,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.022222222222222223
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "evictions": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0
+      },
+      "native_families": {
+        "aes": {
+          "requests": 42,
+          "cache_hits": 33,
+          "table_hits": 4,
+          "cold_misses": 5,
+          "compile_ns": 727646208
+        },
+        "shake": {
+          "requests": 360,
+          "cache_hits": 240,
+          "table_hits": 120,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "transcript": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 0,
+          "cold_misses": 2,
+          "compile_ns": 209747976
+        },
+        "sparse": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "uniform": {
+          "requests": 9,
+          "cache_hits": 7,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "statement": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 0,
+          "cold_misses": 1,
+          "compile_ns": 116042503
+        },
+        "private": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 1,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "affine": {
+          "requests": 90,
+          "cache_hits": 62,
+          "table_hits": 28,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "ntt": {
+          "requests": 18,
+          "cache_hits": 12,
+          "table_hits": 6,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "mul": {
+          "requests": 21,
+          "cache_hits": 16,
+          "table_hits": 5,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "g_bound": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "permutation": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "linear_map": {
+          "requests": 15,
+          "cache_hits": 10,
+          "table_hits": 0,
+          "cold_misses": 5,
+          "compile_ns": 456875118
+        }
+      },
+      "native_peak_workers": 5,
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291676418,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787771924,
+        "fixed_scratch_host": 26777208264,
+        "shortfall_host": 0
+      },
+      "retirement": "process-teardown-incomplete-case-owners-retained"
+    },
+    {
+      "record": {
+        "path": ".tools/pq-opencl-opt/runs/metadata-optimized-w8-r3.json",
+        "sha256": "d18f37daaaa1943257945b2d5f9580ef14bc3ca27dde1f515f3674d48dcd0678"
+      },
+      "log": {
+        "path": ".tools/pq-opencl-opt/runs/metadata-optimized-w8-r3.log",
+        "sha256": "13a0cb4186d59eb5ecbbebdf9ab95c5dd9d65c13087ae7686929630030794240"
+      },
+      "status": "passed",
+      "started_utc": "2026-11-02T03:00:39.762849+00:00",
+      "finished_utc": "2026-11-02T03:01:02.078766+00:00",
+      "command": [
+        "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+        "spend_pipeline::full_workflow::driver::metadata_profile::tests::complete_n3_metadata_stage",
+        "--exact",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "build_label": "metadata-final-lookup-build-r1",
+      "executable": {
+        "path": "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+        "resolved_path": "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+        "sha256": "6b0ab0ccb6904ecece155886bca1139e0c6a1af127adf86ab936233cd1fb85a8",
+        "build_record": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/metadata-final-lookup-build-r1.json",
+        "build_record_sha256": "7a8eb062495c3bae682c77df03401aa146c125dc14a480c9759bb263649e5ffb"
+      },
+      "input_manifest_sha256": "fe1ebd0cf2f87cf0059cbff45557a1f996c43ff30d3c4b332501127d9a1c8a15",
+      "input_manifest_files": 3064,
+      "validation": {
+        "source_inputs_unchanged": true,
+        "executable_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "service_stop_completed": true
+      },
+      "workers": 8,
+      "complete_metadata": true,
+      "complete_workflow": false,
+      "recursive_proofs_generated": 0,
+      "fixture_sha256": "335c1fe98e9ccea30d91042721d19d1931cc41bad94ecd60afbb85e2ee12f09d",
+      "metadata_elapsed_ns": 20284928039,
+      "startup_excluding_fixture_ns": 200477194,
+      "fixture_load_verify_ns": 15465536,
+      "timing": {
+        "setup_ns": 2957532,
+        "graph_sources_ns": 10041973961,
+        "source_preparation_ns": 5920562691,
+        "inventory_ns": 44671921,
+        "reservation_ns": 19391,
+        "constructors_ns": 4074265349,
+        "native_constructors_ns": 1490391920,
+        "crypto_constructors_ns": 2269849549,
+        "graph_constructors_ns": 215586735,
+        "final_aggregation_ns": 98437145,
+        "total_ns": 20084450845
+      },
+      "source_preparation_steps_ns": {
+        "registration": 325113113,
+        "algebra": 742511827,
+        "tree": 861314102,
+        "statement": 594602971,
+        "manifest": 202915595,
+        "native": 815745022,
+        "crypto": 204895667,
+        "auxiliary": 1965295278,
+        "producer": 205484250
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 172,
+        "cold_misses": 13,
+        "evictions": 0,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.022222222222222223
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "evictions": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0
+      },
+      "native_families": {
+        "aes": {
+          "requests": 42,
+          "cache_hits": 33,
+          "table_hits": 4,
+          "cold_misses": 5,
+          "compile_ns": 732478338
+        },
+        "shake": {
+          "requests": 360,
+          "cache_hits": 240,
+          "table_hits": 120,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "transcript": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 0,
+          "cold_misses": 2,
+          "compile_ns": 207521234
+        },
+        "sparse": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "uniform": {
+          "requests": 9,
+          "cache_hits": 7,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "statement": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 0,
+          "cold_misses": 1,
+          "compile_ns": 112781747
+        },
+        "private": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 1,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "affine": {
+          "requests": 90,
+          "cache_hits": 62,
+          "table_hits": 28,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "ntt": {
+          "requests": 18,
+          "cache_hits": 12,
+          "table_hits": 6,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "mul": {
+          "requests": 21,
+          "cache_hits": 16,
+          "table_hits": 5,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "g_bound": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "permutation": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "linear_map": {
+          "requests": 15,
+          "cache_hits": 10,
+          "table_hits": 0,
+          "cold_misses": 5,
+          "compile_ns": 457883559
+        }
+      },
+      "native_peak_workers": 5,
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291676418,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787771924,
+        "fixed_scratch_host": 26777208264,
+        "shortfall_host": 0
+      },
+      "retirement": "process-teardown-incomplete-case-owners-retained"
+    },
+    {
+      "record": {
+        "path": ".tools/pq-opencl-opt/runs/metadata-optimized-w16-r1.json",
+        "sha256": "47b0837bd57aed4b68b69e23ea1945730dd44bcd00b8f8279c175ec3f5e75e5c"
+      },
+      "log": {
+        "path": ".tools/pq-opencl-opt/runs/metadata-optimized-w16-r1.log",
+        "sha256": "455999e9a9287dbf76f1789be4c5100f0c2908e1f507fd1ff30d6640c980ecbc"
+      },
+      "status": "passed",
+      "started_utc": "2026-11-02T02:58:46.806605+00:00",
+      "finished_utc": "2026-11-02T02:59:09.117297+00:00",
+      "command": [
+        "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+        "spend_pipeline::full_workflow::driver::metadata_profile::tests::complete_n3_metadata_stage",
+        "--exact",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "build_label": "metadata-final-lookup-build-r1",
+      "executable": {
+        "path": "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+        "resolved_path": "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+        "sha256": "6b0ab0ccb6904ecece155886bca1139e0c6a1af127adf86ab936233cd1fb85a8",
+        "build_record": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/metadata-final-lookup-build-r1.json",
+        "build_record_sha256": "7a8eb062495c3bae682c77df03401aa146c125dc14a480c9759bb263649e5ffb"
+      },
+      "input_manifest_sha256": "fe1ebd0cf2f87cf0059cbff45557a1f996c43ff30d3c4b332501127d9a1c8a15",
+      "input_manifest_files": 3064,
+      "validation": {
+        "source_inputs_unchanged": true,
+        "executable_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "service_stop_completed": true
+      },
+      "workers": 16,
+      "complete_metadata": true,
+      "complete_workflow": false,
+      "recursive_proofs_generated": 0,
+      "fixture_sha256": "335c1fe98e9ccea30d91042721d19d1931cc41bad94ecd60afbb85e2ee12f09d",
+      "metadata_elapsed_ns": 20453059150,
+      "startup_excluding_fixture_ns": 269299023,
+      "fixture_load_verify_ns": 13923263,
+      "timing": {
+        "setup_ns": 2974842,
+        "graph_sources_ns": 10120702450,
+        "source_preparation_ns": 5957644919,
+        "inventory_ns": 44503356,
+        "reservation_ns": 19800,
+        "constructors_ns": 4057914760,
+        "native_constructors_ns": 1479860949,
+        "crypto_constructors_ns": 2270816867,
+        "graph_constructors_ns": 208827114,
+        "final_aggregation_ns": 98409830,
+        "total_ns": 20183760127
+      },
+      "source_preparation_steps_ns": {
+        "registration": 332126296,
+        "algebra": 746721035,
+        "tree": 876170639,
+        "statement": 594752909,
+        "manifest": 207485284,
+        "native": 817251941,
+        "crypto": 205912631,
+        "auxiliary": 1968388841,
+        "producer": 206107546
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 172,
+        "cold_misses": 13,
+        "evictions": 0,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.022222222222222223
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "evictions": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0
+      },
+      "native_families": {
+        "aes": {
+          "requests": 42,
+          "cache_hits": 33,
+          "table_hits": 4,
+          "cold_misses": 5,
+          "compile_ns": 731746321
+        },
+        "shake": {
+          "requests": 360,
+          "cache_hits": 240,
+          "table_hits": 120,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "transcript": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 0,
+          "cold_misses": 2,
+          "compile_ns": 200791694
+        },
+        "sparse": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "uniform": {
+          "requests": 9,
+          "cache_hits": 7,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "statement": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 0,
+          "cold_misses": 1,
+          "compile_ns": 116549702
+        },
+        "private": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 1,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "affine": {
+          "requests": 90,
+          "cache_hits": 62,
+          "table_hits": 28,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "ntt": {
+          "requests": 18,
+          "cache_hits": 12,
+          "table_hits": 6,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "mul": {
+          "requests": 21,
+          "cache_hits": 16,
+          "table_hits": 5,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "g_bound": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "permutation": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "linear_map": {
+          "requests": 15,
+          "cache_hits": 10,
+          "table_hits": 0,
+          "cold_misses": 5,
+          "compile_ns": 451652881
+        }
+      },
+      "native_peak_workers": 5,
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291676418,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787771924,
+        "fixed_scratch_host": 26777208264,
+        "shortfall_host": 0
+      },
+      "retirement": "process-teardown-incomplete-case-owners-retained"
+    },
+    {
+      "record": {
+        "path": ".tools/pq-opencl-opt/runs/metadata-optimized-w16-r2.json",
+        "sha256": "1fdbd03feda96586ded959af9457a86942d2c26a0ecc826cd0b348e7628bd8a0"
+      },
+      "log": {
+        "path": ".tools/pq-opencl-opt/runs/metadata-optimized-w16-r2.log",
+        "sha256": "5c72e1a5680e773e8ffab4faed7518ee71362590089ccfa6bcd68720684498e9"
+      },
+      "status": "passed",
+      "started_utc": "2026-11-02T02:59:09.403051+00:00",
+      "finished_utc": "2026-11-02T02:59:31.711517+00:00",
+      "command": [
+        "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+        "spend_pipeline::full_workflow::driver::metadata_profile::tests::complete_n3_metadata_stage",
+        "--exact",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "build_label": "metadata-final-lookup-build-r1",
+      "executable": {
+        "path": "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+        "resolved_path": "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+        "sha256": "6b0ab0ccb6904ecece155886bca1139e0c6a1af127adf86ab936233cd1fb85a8",
+        "build_record": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/metadata-final-lookup-build-r1.json",
+        "build_record_sha256": "7a8eb062495c3bae682c77df03401aa146c125dc14a480c9759bb263649e5ffb"
+      },
+      "input_manifest_sha256": "fe1ebd0cf2f87cf0059cbff45557a1f996c43ff30d3c4b332501127d9a1c8a15",
+      "input_manifest_files": 3064,
+      "validation": {
+        "source_inputs_unchanged": true,
+        "executable_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "service_stop_completed": true
+      },
+      "workers": 16,
+      "complete_metadata": true,
+      "complete_workflow": false,
+      "recursive_proofs_generated": 0,
+      "fixture_sha256": "335c1fe98e9ccea30d91042721d19d1931cc41bad94ecd60afbb85e2ee12f09d",
+      "metadata_elapsed_ns": 20313374434,
+      "startup_excluding_fixture_ns": 268711003,
+      "fixture_load_verify_ns": 14665109,
+      "timing": {
+        "setup_ns": 2957952,
+        "graph_sources_ns": 10040641487,
+        "source_preparation_ns": 5917628510,
+        "inventory_ns": 44353103,
+        "reservation_ns": 16131,
+        "constructors_ns": 4039066248,
+        "native_constructors_ns": 1476877668,
+        "crypto_constructors_ns": 2259245935,
+        "graph_constructors_ns": 204752399,
+        "final_aggregation_ns": 98190246,
+        "total_ns": 20044663431
+      },
+      "source_preparation_steps_ns": {
+        "registration": 323832394,
+        "algebra": 743326240,
+        "tree": 861121401,
+        "statement": 594539701,
+        "manifest": 202055891,
+        "native": 814598390,
+        "crypto": 205736520,
+        "auxiliary": 1965806626,
+        "producer": 203923960
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 172,
+        "cold_misses": 13,
+        "evictions": 0,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.022222222222222223
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "evictions": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0
+      },
+      "native_families": {
+        "aes": {
+          "requests": 42,
+          "cache_hits": 33,
+          "table_hits": 4,
+          "cold_misses": 5,
+          "compile_ns": 731186817
+        },
+        "shake": {
+          "requests": 360,
+          "cache_hits": 240,
+          "table_hits": 120,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "transcript": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 0,
+          "cold_misses": 2,
+          "compile_ns": 196750972
+        },
+        "sparse": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "uniform": {
+          "requests": 9,
+          "cache_hits": 7,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "statement": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 0,
+          "cold_misses": 1,
+          "compile_ns": 116388009
+        },
+        "private": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 1,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "affine": {
+          "requests": 90,
+          "cache_hits": 62,
+          "table_hits": 28,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "ntt": {
+          "requests": 18,
+          "cache_hits": 12,
+          "table_hits": 6,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "mul": {
+          "requests": 21,
+          "cache_hits": 16,
+          "table_hits": 5,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "g_bound": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "permutation": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "linear_map": {
+          "requests": 15,
+          "cache_hits": 10,
+          "table_hits": 0,
+          "cold_misses": 5,
+          "compile_ns": 455759560
+        }
+      },
+      "native_peak_workers": 5,
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291676418,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787771924,
+        "fixed_scratch_host": 26777208264,
+        "shortfall_host": 0
+      },
+      "retirement": "process-teardown-incomplete-case-owners-retained"
+    },
+    {
+      "record": {
+        "path": ".tools/pq-opencl-opt/runs/metadata-optimized-w16-r3.json",
+        "sha256": "931dae72fb4b522c62e7d3c2270f15a539a74569124ae6bd46efa827774ec2cf"
+      },
+      "log": {
+        "path": ".tools/pq-opencl-opt/runs/metadata-optimized-w16-r3.log",
+        "sha256": "e956ce79c4725cff8b5d47f7c744cc7bbda1ce010f49a166c3c740f94b65e4b1"
+      },
+      "status": "passed",
+      "started_utc": "2026-11-02T03:01:02.366071+00:00",
+      "finished_utc": "2026-11-02T03:01:24.674650+00:00",
+      "command": [
+        "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+        "spend_pipeline::full_workflow::driver::metadata_profile::tests::complete_n3_metadata_stage",
+        "--exact",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "build_label": "metadata-final-lookup-build-r1",
+      "executable": {
+        "path": "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+        "resolved_path": "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+        "sha256": "6b0ab0ccb6904ecece155886bca1139e0c6a1af127adf86ab936233cd1fb85a8",
+        "build_record": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/metadata-final-lookup-build-r1.json",
+        "build_record_sha256": "7a8eb062495c3bae682c77df03401aa146c125dc14a480c9759bb263649e5ffb"
+      },
+      "input_manifest_sha256": "fe1ebd0cf2f87cf0059cbff45557a1f996c43ff30d3c4b332501127d9a1c8a15",
+      "input_manifest_files": 3064,
+      "validation": {
+        "source_inputs_unchanged": true,
+        "executable_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "service_stop_completed": true
+      },
+      "workers": 16,
+      "complete_metadata": true,
+      "complete_workflow": false,
+      "recursive_proofs_generated": 0,
+      "fixture_sha256": "335c1fe98e9ccea30d91042721d19d1931cc41bad94ecd60afbb85e2ee12f09d",
+      "metadata_elapsed_ns": 20361988299,
+      "startup_excluding_fixture_ns": 261984292,
+      "fixture_load_verify_ns": 15673450,
+      "timing": {
+        "setup_ns": 2967033,
+        "graph_sources_ns": 10046506869,
+        "source_preparation_ns": 5953662441,
+        "inventory_ns": 44406967,
+        "reservation_ns": 18540,
+        "constructors_ns": 4052442157,
+        "native_constructors_ns": 1473637808,
+        "crypto_constructors_ns": 2276169659,
+        "graph_constructors_ns": 204558282,
+        "final_aggregation_ns": 98076408,
+        "total_ns": 20100004007
+      },
+      "source_preparation_steps_ns": {
+        "registration": 326627146,
+        "algebra": 755210151,
+        "tree": 865516797,
+        "statement": 594641906,
+        "manifest": 205977322,
+        "native": 817619176,
+        "crypto": 209497947,
+        "auxiliary": 1971239226,
+        "producer": 204681526
+      },
+      "native": {
+        "requests": 585,
+        "memory_hits": 400,
+        "table_hits": 172,
+        "cold_misses": 13,
+        "evictions": 0,
+        "memory_miss_rate": 0.3162393162393162,
+        "cold_miss_rate": 0.022222222222222223
+      },
+      "registered": {
+        "requests": 971,
+        "memory_hits": 962,
+        "table_hits": 9,
+        "cold_misses": 0,
+        "evictions": 0,
+        "memory_miss_rate": 0.009268795056642637,
+        "cold_miss_rate": 0.0
+      },
+      "native_families": {
+        "aes": {
+          "requests": 42,
+          "cache_hits": 33,
+          "table_hits": 4,
+          "cold_misses": 5,
+          "compile_ns": 753420444
+        },
+        "shake": {
+          "requests": 360,
+          "cache_hits": 240,
+          "table_hits": 120,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "transcript": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 0,
+          "cold_misses": 2,
+          "compile_ns": 196597434
+        },
+        "sparse": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "uniform": {
+          "requests": 9,
+          "cache_hits": 7,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "statement": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 0,
+          "cold_misses": 1,
+          "compile_ns": 112890150
+        },
+        "private": {
+          "requests": 3,
+          "cache_hits": 2,
+          "table_hits": 1,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "affine": {
+          "requests": 90,
+          "cache_hits": 62,
+          "table_hits": 28,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "ntt": {
+          "requests": 18,
+          "cache_hits": 12,
+          "table_hits": 6,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "mul": {
+          "requests": 21,
+          "cache_hits": 16,
+          "table_hits": 5,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "g_bound": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "permutation": {
+          "requests": 6,
+          "cache_hits": 4,
+          "table_hits": 2,
+          "cold_misses": 0,
+          "compile_ns": 0
+        },
+        "linear_map": {
+          "requests": 15,
+          "cache_hits": 10,
+          "table_hits": 0,
+          "cold_misses": 5,
+          "compile_ns": 440372294
+        }
+      },
+      "native_peak_workers": 5,
+      "memory": {
+        "required_host": 34359738368,
+        "required_device": 8589934592,
+        "allowance_host": 34359738368,
+        "allowance_device": 8589934592,
+        "retained_host": 1291676418,
+        "pool_host": 6280276002,
+        "pool_compiler_host": 4407133136,
+        "scratch_host": 26787771924,
+        "fixed_scratch_host": 26777208264,
+        "shortfall_host": 0
+      },
+      "retirement": "process-teardown-incomplete-case-owners-retained"
+    }
+  ],
+  "heldout": {
+    "record": {
+      "path": ".tools/pq-opencl-opt/runs/metadata-optimized-heldout-r1.json",
+      "sha256": "6bc53f3ae9293a9ebb1060660634f05a35178010164f0bed7349858dd397822a"
+    },
+    "log": {
+      "path": ".tools/pq-opencl-opt/runs/metadata-optimized-heldout-r1.log",
+      "sha256": "4d4e680a2f8bee61fc62be29b82c57411866884c3edd92d42a2f343f48419392"
+    },
+    "status": "passed",
+    "started_utc": "2026-11-02T03:01:24.961975+00:00",
+    "finished_utc": "2026-11-02T03:01:47.265730+00:00",
+    "command": [
+      "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+      "spend_pipeline::full_workflow::driver::metadata_profile::tests::complete_n3_metadata_stage",
+      "--exact",
+      "--ignored",
+      "--test-threads=1",
+      "--nocapture"
+    ],
+    "build_label": "metadata-final-lookup-build-r1",
+    "executable": {
+      "path": "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+      "resolved_path": "/home/access/code/lattica/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f71aaed85c6e7848",
+      "sha256": "6b0ab0ccb6904ecece155886bca1139e0c6a1af127adf86ab936233cd1fb85a8",
+      "build_record": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/metadata-final-lookup-build-r1.json",
+      "build_record_sha256": "7a8eb062495c3bae682c77df03401aa146c125dc14a480c9759bb263649e5ffb"
+    },
+    "input_manifest_sha256": "fe1ebd0cf2f87cf0059cbff45557a1f996c43ff30d3c4b332501127d9a1c8a15",
+    "input_manifest_files": 3064,
+    "validation": {
+      "source_inputs_unchanged": true,
+      "executable_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "service_stop_completed": true
+    },
+    "workers": 16,
+    "complete_metadata": true,
+    "complete_workflow": false,
+    "recursive_proofs_generated": 0,
+    "fixture_sha256": "30d6f76102d048ad7f2c444335363d271d314a9e7b94c0df3c0497edc1c7a5b3",
+    "metadata_elapsed_ns": 20254434431,
+    "startup_excluding_fixture_ns": 241157605,
+    "fixture_load_verify_ns": 14079007,
+    "timing": {
+      "setup_ns": 2949532,
+      "graph_sources_ns": 10002902619,
+      "source_preparation_ns": 5925806495,
+      "inventory_ns": 44422527,
+      "reservation_ns": 18320,
+      "constructors_ns": 4037177333,
+      "native_constructors_ns": 1479644356,
+      "crypto_constructors_ns": 2256173092,
+      "graph_constructors_ns": 203344408,
+      "final_aggregation_ns": 98015477,
+      "total_ns": 20013276826
+    },
+    "source_preparation_steps_ns": {
+      "registration": 323490061,
+      "algebra": 750379975,
+      "tree": 863116731,
+      "statement": 594647590,
+      "manifest": 202939040,
+      "native": 813856153,
+      "crypto": 204633535,
+      "auxiliary": 1965716623,
+      "producer": 204369500
+    },
+    "native": {
+      "requests": 585,
+      "memory_hits": 400,
+      "table_hits": 172,
+      "cold_misses": 13,
+      "evictions": 0,
+      "memory_miss_rate": 0.3162393162393162,
+      "cold_miss_rate": 0.022222222222222223
+    },
+    "registered": {
+      "requests": 971,
+      "memory_hits": 962,
+      "table_hits": 9,
+      "cold_misses": 0,
+      "evictions": 0,
+      "memory_miss_rate": 0.009268795056642637,
+      "cold_miss_rate": 0.0
+    },
+    "native_families": {
+      "aes": {
+        "requests": 42,
+        "cache_hits": 33,
+        "table_hits": 4,
+        "cold_misses": 5,
+        "compile_ns": 723913178
+      },
+      "shake": {
+        "requests": 360,
+        "cache_hits": 240,
+        "table_hits": 120,
+        "cold_misses": 0,
+        "compile_ns": 0
+      },
+      "transcript": {
+        "requests": 6,
+        "cache_hits": 4,
+        "table_hits": 0,
+        "cold_misses": 2,
+        "compile_ns": 195424191
+      },
+      "sparse": {
+        "requests": 6,
+        "cache_hits": 4,
+        "table_hits": 2,
+        "cold_misses": 0,
+        "compile_ns": 0
+      },
+      "uniform": {
+        "requests": 9,
+        "cache_hits": 7,
+        "table_hits": 2,
+        "cold_misses": 0,
+        "compile_ns": 0
+      },
+      "statement": {
+        "requests": 3,
+        "cache_hits": 2,
+        "table_hits": 0,
+        "cold_misses": 1,
+        "compile_ns": 113057754
+      },
+      "private": {
+        "requests": 3,
+        "cache_hits": 2,
+        "table_hits": 1,
+        "cold_misses": 0,
+        "compile_ns": 0
+      },
+      "affine": {
+        "requests": 90,
+        "cache_hits": 62,
+        "table_hits": 28,
+        "cold_misses": 0,
+        "compile_ns": 0
+      },
+      "ntt": {
+        "requests": 18,
+        "cache_hits": 12,
+        "table_hits": 6,
+        "cold_misses": 0,
+        "compile_ns": 0
+      },
+      "mul": {
+        "requests": 21,
+        "cache_hits": 16,
+        "table_hits": 5,
+        "cold_misses": 0,
+        "compile_ns": 0
+      },
+      "g_bound": {
+        "requests": 6,
+        "cache_hits": 4,
+        "table_hits": 2,
+        "cold_misses": 0,
+        "compile_ns": 0
+      },
+      "permutation": {
+        "requests": 6,
+        "cache_hits": 4,
+        "table_hits": 2,
+        "cold_misses": 0,
+        "compile_ns": 0
+      },
+      "linear_map": {
+        "requests": 15,
+        "cache_hits": 10,
+        "table_hits": 0,
+        "cold_misses": 5,
+        "compile_ns": 437456805
+      }
+    },
+    "native_peak_workers": 5,
+    "memory": {
+      "required_host": 34359738368,
+      "required_device": 8589934592,
+      "allowance_host": 34359738368,
+      "allowance_device": 8589934592,
+      "retained_host": 1291676418,
+      "pool_host": 6280276002,
+      "pool_compiler_host": 4407133136,
+      "scratch_host": 26787771924,
+      "fixed_scratch_host": 26777208264,
+      "shortfall_host": 0
+    },
+    "retirement": "process-teardown-incomplete-case-owners-retained"
+  }
+}

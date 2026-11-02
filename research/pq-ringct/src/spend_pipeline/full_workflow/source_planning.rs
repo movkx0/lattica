@@ -73,6 +73,8 @@ struct SourceEnvironment<'source> {
     generation: Option<OriginalGeneration<'source>>,
     #[cfg(not(debug_assertions))]
     fresh_context: Option<&'source FreshPlanningContext<'source>>,
+    #[cfg(test)]
+    fixture_context: Option<&'source crate::execution::generation_terminal::planning_startup::FixturePlanningContext>,
 }
 
 /// The fixed array constructors make the complete retained native inventory
@@ -95,6 +97,8 @@ pub(crate) struct SourcePlanningPlan<'source> {
     original_generation: Option<OriginalGeneration<'source>>,
     #[cfg(not(debug_assertions))]
     fresh_context: Option<&'source FreshPlanningContext<'source>>,
+    #[cfg(test)]
+    fixture_context: Option<&'source crate::execution::generation_terminal::planning_startup::FixturePlanningContext>,
     #[cfg(not(debug_assertions))]
     descriptor_original: Option<Reservation>,
 }
@@ -126,13 +130,25 @@ impl<'source> SourcePlanningPlan<'source> {
         }
         Self::derive(natives, layout, SourceEnvironment { context: context.context(),
             enclosing: 0, already_owned: fresh_owned_host_with_limit(live, startup, generation.current_bytes()?, context.context().host_bytes())?, backend_device,
-            owned_inputs: true, generation: Some(generation), fresh_context: Some(context) })
+            owned_inputs: true, generation: Some(generation), fresh_context: Some(context), #[cfg(test)] fixture_context: None })
     }
     #[cfg(not(debug_assertions))]
     pub(crate) fn fresh_context(&self) -> Option<&'source FreshPlanningContext<'source>> {
         self.fresh_context
     }
 
+    #[cfg(test)]
+    pub(crate) fn fixture_n3(context: &'source crate::execution::generation_terminal::planning_startup::FixturePlanningContext,
+        natives: &'source [InitialNativeSource<'source>; 3], layout: ShakeWrapperLayout) -> Result<Self> {
+        let owned = context.ledger().snapshot().current;
+        Self::derive(natives, layout, SourceEnvironment { context: context.context(), enclosing: 0,
+            already_owned: owned.host, backend_device: context.source_backend_device_bytes().map_err(|_| SourcePreparationError::Resource)?,
+            owned_inputs: true, generation: None, fresh_context: None, fixture_context: Some(context) })
+    }
+    #[cfg(test)]
+    pub(crate) fn fixture_context(&self) -> Option<&'source crate::execution::generation_terminal::planning_startup::FixturePlanningContext> {
+        self.fixture_context
+    }
     pub(crate) fn n3(context: &'source ProvingContext,
         natives: &'source [InitialNativeSource<'source>; 3], layout: ShakeWrapperLayout,
     ) -> Result<Self> { Self::new(context, natives, layout) }
@@ -151,7 +167,7 @@ impl<'source> SourcePlanningPlan<'source> {
             enclosing: add(footprint.enclosing_host_bytes, REGISTRY_HOST)?, already_owned: 0,
             backend_device: MANAGED_DEVICE, owned_inputs: false,
             #[cfg(not(debug_assertions))] generation: None,
-            #[cfg(not(debug_assertions))] fresh_context: None })
+            #[cfg(not(debug_assertions))] fresh_context: None, #[cfg(test)] fixture_context: None })
     }
     fn derive<const N: usize>(natives: &'source [InitialNativeSource<'source>; N],
         layout: ShakeWrapperLayout, environment: SourceEnvironment<'source>,
@@ -264,7 +280,15 @@ impl<'source> SourcePlanningPlan<'source> {
         let descriptor_original = match environment.generation.as_ref() {
             Some(generation) => Some(generation.reserve_descriptor(
                 Requirements::single(Category::RegisteredMetadata, host(descriptor_bytes)))?),
-            None => None,
+            None => {
+                #[cfg(test)]
+                if let Some(fixture) = environment.fixture_context {
+                    Some(fixture.ledger().admit_phase(Requirements::single(Category::RegisteredMetadata, host(descriptor_bytes)))
+                        .map_err(|_| SourcePreparationError::Resource)?)
+                } else { None }
+                #[cfg(not(test))]
+                { None }
+            },
         };
         Ok(Self { context, natives, source: digest.finalize().into(), compiled_source,
             enclosing: host(enclosing), planning, scratch,
@@ -272,7 +296,7 @@ impl<'source> SourcePlanningPlan<'source> {
             identity_limits: Default::default(),
             #[cfg(not(debug_assertions))] original_generation: environment.generation,
             #[cfg(not(debug_assertions))] fresh_context: environment.fresh_context,
-            #[cfg(not(debug_assertions))] descriptor_original })
+            #[cfg(not(debug_assertions))] descriptor_original, #[cfg(test)] fixture_context: environment.fixture_context })
     }
 
     pub(crate) fn validate_initial_source(&self, native: &InitialNativeSource<'_>) -> Result<()> {

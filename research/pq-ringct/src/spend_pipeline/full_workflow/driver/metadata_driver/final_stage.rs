@@ -45,8 +45,8 @@ fn graph_root<'view, 'graph: 'view>(metadata: &SourceMetadataPlanningPlan<'_>,
 
 pub(super) fn run<'view, 'case, 'graph: 'view, const N: usize>(
     planning: WorkflowPlanning<'_>, metadata: &SourceMetadataPlanningPlan<'_>,
-    startup: &CaseOwnerSlot<'_, core::result::Result<FreshPlanningContext<'_>, FreshGenerationError>>,
-    batch: &CaseOwnerSlot<'_, FreshGenerationBatch<N>>, case: &'case CaseRetirementState,
+    startup: &crate::spend_pipeline::full_workflow::fresh_generation::case_lifetime::MetadataOwner<'_, '_, '_>,
+    batch: Option<&CaseOwnerSlot<'_, FreshGenerationBatch<N>>>, case: &'case CaseRetirementState,
     native_cache: &ProofCache, outer_cache: &OuterProofCache,
     leaves: LeafPlanTables<'view>, _children: LeafViews<'view, 'graph>,
     ordinary: OrdinaryRuntimes<'view>,
@@ -160,9 +160,13 @@ pub(super) fn run<'view, 'case, 'graph: 'view, const N: usize>(
     // owning locals in every scope are still alive. Artifact and mutation
     // qualification remain separately reported by that continuation.
     super::super::metadata_timing::finish();
+    #[cfg(test)]
+    if super::super::metadata_profile::stop_before_execution() {
+        return Err(WorkflowError::MetadataProfileComplete);
+    }
     *stage = DriverStage::Call("execute_constructed_case");
     let outcome = super::super::execution::execute_constructed_case(planning.into_inner()?, metadata,
-        startup, batch, case, complete_slot, &runtimes, native_cache, outer_cache, stage);
+        startup.fresh_slot().map_err(|_| WorkflowError::Identity)?, batch.ok_or(WorkflowError::Identity)?, case, complete_slot, &runtimes, native_cache, outer_cache, stage);
     if outcome.is_ok() { *stage = DriverStage::Complete; }
     outcome
 }

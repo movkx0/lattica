@@ -12,15 +12,15 @@ mod construction;
 mod counting;
 mod lanes;
 pub(super) use compiler_memo::CompilerMemo;
-pub use counting::CountingWorkspace;
+pub use counting::{CountingBacking, CountingWorkspace};
 mod host_evaluation;
 mod manifest;
 mod ports;
 pub(crate) use manifest::ManifestCursor;
 mod proof_inputs;
 mod storage;
+use construction::packed::{KnownConstants, Map as CompactMap, Set as ConstructionSet};
 use construction::{Budget as ConstructionBudget, Map as ConstructionMap};
-use construction::packed::{Map as CompactMap, Set as ConstructionSet};
 use ports::WirePorts;
 pub use proof_inputs::ProofInputs;
 
@@ -408,7 +408,7 @@ pub struct ScopedProgramBuilder<'a> {
     counter: Option<counting::Counter>,
     counting_workspace: Option<u64>,
     constants: CompactMap<u64, Wire>,
-    known: CompactMap<Wire, Val>,
+    known: KnownConstants,
     expressions: CompactMap<(u8, Wire, Wire), Wire>,
     booleans: ConstructionSet,
     cubic_expressions: CompactMap<(u8, [Wire; 3], [Wire; 3]), [Wire; 3]>,
@@ -464,7 +464,7 @@ impl<'a> ScopedProgramBuilder<'a> {
             counter: None,
             counting_workspace: None,
             constants: CompactMap::new(),
-            known: CompactMap::new(),
+            known: KnownConstants::new(),
             expressions: CompactMap::new(),
             booleans: ConstructionSet::new(),
             cubic_expressions: CompactMap::new(),
@@ -490,6 +490,7 @@ impl<'a> ScopedProgramBuilder<'a> {
         self.wires += 1;
         w
     }
+    #[inline]
     fn push_operation(&mut self, op: Op) {
         if self.counter.is_some() {
             self.count_operation(&op);
@@ -705,13 +706,25 @@ impl<'a> ScopedProgramBuilder<'a> {
             return [Wire(0); 3];
         }
         // Preserve cheaper scalar multiplication when either operand is in the base field.
-        if self.known.get(&a[1]) == Some(Val::ZERO) && self.known.get(&a[2]) == Some(Val::ZERO) {
-            return b.map(|w| self.mul(a[0], w));
+        // None means unqueried; Some(None) means a nonconstant wire. Cache
+        // only the facts requested by the scalar and constant-folding paths.
+        let mut av = [None; 3];
+        let mut bv = [None; 3];
+        let fact = |w: [Wire; 3], facts: &mut [Option<Option<Val>>; 3], i: usize| {
+            *facts[i].get_or_insert_with(|| self.known.get(&w[i]))
+        };
+        if fact(a, &mut av, 1) == Some(Val::ZERO) && fact(a, &mut av, 2) == Some(Val::ZERO) {
+            let scalar = fact(a, &mut av, 0);
+            return b.map(|w| self.mul_known(a[0], w, scalar, self.known.get(&w)));
         }
-        if self.known.get(&b[1]) == Some(Val::ZERO) && self.known.get(&b[2]) == Some(Val::ZERO) {
-            return a.map(|w| self.mul(b[0], w));
+        if fact(b, &mut bv, 1) == Some(Val::ZERO) && fact(b, &mut bv, 2) == Some(Val::ZERO) {
+            let scalar = fact(b, &mut bv, 0);
+            return a.map(|w| self.mul_known(b[0], w, scalar, self.known.get(&w)));
         }
-        if let (Some(av), Some(bv)) = (self.known_cubic(a), self.known_cubic(b)) {
+        let known = |w, facts: &mut [Option<Option<Val>>; 3]| {
+            Some([fact(w, facts, 0)?, fact(w, facts, 1)?, fact(w, facts, 2)?])
+        };
+        if let (Some(av), Some(bv)) = (known(a, &mut av), known(b, &mut bv)) {
             return self
                 .folding
                 .fold(FoldOperation::CubicMul, av, bv)

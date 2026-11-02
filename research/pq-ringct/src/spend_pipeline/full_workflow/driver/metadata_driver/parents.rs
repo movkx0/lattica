@@ -5,8 +5,8 @@ use super::*;
 /// and every invariant runtime table retain their original lifetimes.
 pub(super) fn run<'context, 'view, 'case, 'graph: 'view, const N: usize>(
     planning: WorkflowPlanning<'context>, metadata: &SourceMetadataPlanningPlan<'_>,
-    startup: &CaseOwnerSlot<'_, core::result::Result<FreshPlanningContext<'_>, FreshGenerationError>>,
-    batch: &CaseOwnerSlot<'_, FreshGenerationBatch<N>>, case: &'case CaseRetirementState,
+    startup: &crate::spend_pipeline::full_workflow::fresh_generation::case_lifetime::MetadataOwner<'_, '_, '_>,
+    batch: Option<&CaseOwnerSlot<'_, FreshGenerationBatch<N>>>, case: &'case CaseRetirementState,
     native_cache: &ProofCache, outer_cache: &OuterProofCache,
     leaves: LeafPlanTables<'view>, children: LeafViews<'view, 'graph>,
     ordinary: OrdinaryRuntimes<'view>,

@@ -71,14 +71,38 @@ pub(crate) fn producer_constructor_retained_requirements() -> Result<Requirement
     let mut total = final_aggregation::retained_requirements()?;
     let driver = super::super::runtime::driver_retained_requirements()?;
     for category in Category::ALL { total.add(category, driver.get(category))?; }
-    total = sum(total, crate::spend_pipeline::full_workflow::driver::crypto_runtime::retained_requirements()?)?;
-    total = sum(total, crate::spend_pipeline::full_workflow::driver::final_runtime::retained_requirements()?)?;
-    total = sum(total, crate::spend_pipeline::full_workflow::driver::runtime_inputs::retained_requirements()?)?;
-    total = sum(total, crate::spend_pipeline::full_workflow::driver::native_runtime::retained_requirements()?)?;
-    total = sum(total, crate::spend_pipeline::full_workflow::driver::graph_runtime::retained_requirements()?)?;
-    total = sum(total, crate::spend_pipeline::full_workflow::driver::runtime_dispatch::retained_requirements()?)?;
-    total = sum(total, crate::spend_pipeline::full_workflow::driver::execution::retained_requirements()?)?;
-    total = sum(total, crate::spend_pipeline::full_workflow::driver::metadata_driver::retained_requirements()?)?;
+    let extra = crate::spend_pipeline::full_workflow::driver::crypto_runtime::retained_requirements()?;
+    #[cfg(test)]
+    crate::spend_pipeline::full_workflow::metadata_planning::profile_requirements("crypto_runtime", extra);
+    total = sum(total, extra)?;
+    let extra = crate::spend_pipeline::full_workflow::driver::final_runtime::retained_requirements()?;
+    #[cfg(test)]
+    crate::spend_pipeline::full_workflow::metadata_planning::profile_requirements("final_runtime", extra);
+    total = sum(total, extra)?;
+    let extra = crate::spend_pipeline::full_workflow::driver::runtime_inputs::retained_requirements()?;
+    #[cfg(test)]
+    crate::spend_pipeline::full_workflow::metadata_planning::profile_requirements("runtime_inputs", extra);
+    total = sum(total, extra)?;
+    let extra = crate::spend_pipeline::full_workflow::driver::native_runtime::retained_requirements()?;
+    #[cfg(test)]
+    crate::spend_pipeline::full_workflow::metadata_planning::profile_requirements("native_runtime", extra);
+    total = sum(total, extra)?;
+    let extra = crate::spend_pipeline::full_workflow::driver::graph_runtime::retained_requirements()?;
+    #[cfg(test)]
+    crate::spend_pipeline::full_workflow::metadata_planning::profile_requirements("graph_runtime", extra);
+    total = sum(total, extra)?;
+    let extra = crate::spend_pipeline::full_workflow::driver::runtime_dispatch::retained_requirements()?;
+    #[cfg(test)]
+    crate::spend_pipeline::full_workflow::metadata_planning::profile_requirements("runtime_dispatch", extra);
+    total = sum(total, extra)?;
+    let extra = crate::spend_pipeline::full_workflow::driver::execution::retained_requirements()?;
+    #[cfg(test)]
+    crate::spend_pipeline::full_workflow::metadata_planning::profile_requirements("execution", extra);
+    total = sum(total, extra)?;
+    let extra = crate::spend_pipeline::full_workflow::driver::metadata_driver::retained_requirements()?;
+    #[cfg(test)]
+    crate::spend_pipeline::full_workflow::metadata_planning::profile_requirements("metadata_driver", extra);
+    total = sum(total, extra)?;
     Ok(total)
 }
 

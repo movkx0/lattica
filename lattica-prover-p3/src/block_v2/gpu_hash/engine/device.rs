@@ -895,6 +895,8 @@ pub(super) use pq_operations::KERNEL_SRC as PQ_OPERATIONS_KERNEL_SRC;
 #[cfg(feature = "gpu")]
 mod operations_hash;
 #[cfg(feature = "gpu")]
+pub(crate) mod preparation_storage;
+#[cfg(feature = "gpu")]
 pub(super) const OPERATIONS_HASH_KERNEL_SRC: &str = include_str!("device/operations_hash.cl");
 
 #[cfg(feature = "gpu")]

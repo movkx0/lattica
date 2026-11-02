@@ -5,7 +5,7 @@ use lattica_prover_p3::block_v2::native_gpu::{
     permutation_recording::{self, PermutationRecorder},
 };
 
-fn recorded_replay(air: &SourceAir) -> PermutationSymbolicReplay {
+pub(super) fn recorded_replay(air: &SourceAir) -> PermutationSymbolicReplay {
     let source = PermutationPreparationPlan::new(air.kind()).unwrap();
     let ledger = ResourceLedger::new(WorkerAllowance { host: 32 << 30, device: 0 });
     let symbolic = source.host().prepared_partition_bytes().unwrap();

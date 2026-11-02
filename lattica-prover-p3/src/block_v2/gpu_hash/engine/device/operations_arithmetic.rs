@@ -3,6 +3,7 @@ use super::random::SecretAllocation;
 use super::*;
 use crate::block_v2::native_gpu::operations_arithmetic::ArithmeticOperationSpec;
 use crate::proving::{Backend, Run, Stage};
+use crate::proving::preparation_profile as profile;
 
 impl DeviceSession {
     pub(crate) fn research_arithmetic_output(
@@ -12,6 +13,7 @@ impl DeviceSession {
         host_allowance: usize,
         run: &Run,
     ) -> Result<Vec<u64>, String> {
+        let _operation = profile::operation(profile::ARITHMETIC);
         run.check_device_stage(Stage::WitnessTrace, Backend::OpenCl)
             .map_err(|error| error.to_string())?;
         if input.len() != spec.input_words || spec.staging_bytes()? > host_allowance {
@@ -37,6 +39,7 @@ impl DeviceSession {
             let status = SecretAllocation::new(engine, counts[3])?;
             let mut invalid = vec![0u64; spec.work_items];
             let fence = engine.fence();
+            let upload = profile::metric(profile::UPLOAD);
             raw.buffer().write(input).enq().map_err(|e| e.to_string())?;
             metadata
                 .buffer()
@@ -49,26 +52,24 @@ impl DeviceSession {
                 .fill(0u64, None)
                 .enq()
                 .map_err(|e| e.to_string())?;
+            drop(upload);
             let mut event = compute::Event::empty();
+            let setup = profile::metric(profile::KERNEL);
+            let kernel = engine.pq.kernel_builder("pq_graph_arithmetic")
+                .arg(raw.buffer()).arg(metadata.buffer()).arg(output.buffer()).arg(status.buffer())
+                .global_work_size(spec.work_items).build().map_err(|e| e.to_string())?;
+            drop(setup);
             // SAFETY: private descriptor fields can only be produced by bounded
             // constructors. Schedule indices and factors are admitted there;
             // raw value validity/overflow is checked by each disjoint GPU writer.
             unsafe {
-                engine
-                    .pq
-                    .kernel_builder("pq_graph_arithmetic")
-                    .arg(raw.buffer())
-                    .arg(metadata.buffer())
-                    .arg(output.buffer())
-                    .arg(status.buffer())
-                    .global_work_size(spec.work_items)
-                    .build()
-                    .map_err(|e| e.to_string())?
+                kernel
                     .cmd()
                     .enew(&mut event)
                     .enq()
                     .map_err(|e| e.to_string())?;
             }
+            let wait = profile::metric(profile::DEVICE_WAIT);
             let elapsed = self
                 .session
                 .record_event(engine, Stage::WitnessTrace, "pq_graph_arithmetic", &event)
@@ -76,16 +77,20 @@ impl DeviceSession {
                     run.observation_failed();
                     error
                 })?;
+            drop(wait);
             run.observe_device(Stage::WitnessTrace, Backend::OpenCl, 1, elapsed)
                 .map_err(|error| error.to_string())?;
+            let readback = profile::metric(profile::READBACK);
             status
                 .buffer()
                 .read(invalid.as_mut_slice())
                 .enq()
                 .map_err(|e| e.to_string())?;
             fence.finish()?;
+            drop(readback);
             let uploaded = ((spec.input_words + spec.metadata.len()) * 8) as u64;
             let status_bytes = (spec.work_items * 8) as u64;
+            profile::transfer(uploaded, status_bytes);
             engine.stats.uploaded_bytes += uploaded;
             engine.stats.downloaded_bytes += status_bytes;
             {
@@ -103,13 +108,16 @@ impl DeviceSession {
             // Buffer<u64> preserves i64 bit patterns; no field decoding occurs.
             let mut result = vec![0u64; spec.output_words];
             let fence = engine.fence();
+            let readback = profile::metric(profile::READBACK);
             output
                 .buffer()
                 .read(result.as_mut_slice())
                 .enq()
                 .map_err(|e| e.to_string())?;
             fence.finish()?;
+            drop(readback);
             let downloaded = (spec.output_words * 8) as u64;
+            profile::transfer(0, downloaded);
             engine.stats.downloaded_bytes += downloaded;
             self.session.stats.lock().unwrap().downloaded_bytes += downloaded;
             Ok(result)

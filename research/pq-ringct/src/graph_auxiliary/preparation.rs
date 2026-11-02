@@ -2,6 +2,8 @@
 use super::*;
 use lattica_prover_p3::block_v2::native_gpu::OperationContext;
 use p3_field::PrimeCharacteristicRing;
+mod shared;
+pub(crate) use shared::FRAME_BYTES as BATCH_FRAME_BYTES;
 
 fn commit_bytes_on_gpu(
     operations: &OperationContext<'_>,
@@ -90,13 +92,27 @@ impl AuxiliaryFactory {
         memory_budget: u64,
         operations: &OperationContext<'_>,
     ) -> Result<Self> {
+        Self::prepare_bound(tree, graph, context, memory_budget, operations, None)
+    }
+    pub(crate) fn new_prepared(crypto: &crate::graph_tree::preparation::PreparedCrypto<'_, '_, '_, '_>,
+        memory_budget: u64) -> Result<Self> {
+        let binding = crypto.binding();
+        binding.check().map_err(err)?;
+        Self::prepare_bound(binding.tree(), binding.graph(), binding.context(), memory_budget,
+            binding.operations(), Some(crypto.plan()))
+    }
+    fn prepare_bound(tree: &graph_tree::Plan, graph: &UnprovedRelationGraph,
+        context: &graph_tree::GraphContext, memory_budget: u64,
+        operations: &OperationContext<'_>, shared_crypto: Option<&graph_crypto::Plan>) -> Result<Self> {
         require(memory_budget > 0, "zero auxiliary memory budget")?;
+        if shared_crypto.is_none() {
         require(
             tree.node_manifest_hint_on_gpu(graph, operations)
                 .map_err(err)?
                 == context.node_manifest,
             "auxiliary graph manifest mismatch",
         )?;
+        }
         for node in graph.bytes() {
             match node.source {
                 Source::Context => require(
@@ -110,13 +126,20 @@ impl AuxiliaryFactory {
                 _ => {}
             }
         }
-        let crypto = graph_crypto::Plan::new_with_operations(
+        let owned_crypto;
+        let crypto = if let Some(crypto) = shared_crypto { crypto } else {
+        owned_crypto = graph_crypto::Plan::new_with_operations(
             tree,
             graph,
             graph_crypto::Policy::default(),
             operations,
         )
         .map_err(err)?;
+        &owned_crypto
+        };
+        if shared_crypto.is_some() && (crate::preparation_options::endpoint_reuse() || crate::preparation_options::field_batches()) {
+            return Self::prepare_shared(tree, graph, context, memory_budget, operations, crypto);
+        }
         let stream = |operation: usize, subrequest: u32| -> Result<Vec<u8>> {
             crypto
                 .requests()

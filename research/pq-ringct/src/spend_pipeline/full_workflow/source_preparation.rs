@@ -7,6 +7,8 @@
 //! worker/process guards. All arithmetic and graph scans finish before any
 //! allocating constructor or raw GPU operation is entered.
 use super::{InitialNativeSource, PreparedGraphSources, SourcePlanningPlan, SourcePreparationError};
+#[cfg(test)]
+mod profiling;
 use crate::{
     aes_lane_air::AesLaneAir,
     execution::{
@@ -63,7 +65,8 @@ fn host(bytes: usize) -> Result<Bytes> {
 
 // Rust 1.96 push/collect/exact-sized construction, including old/new backing.
 // The factor three also covers doubling from a non-power-of-two initial Vec.
-// A retained owner keeps this conservative growth allowance until destruction.
+// Construction keeps the complete old/new overlap. Finished vector owners use
+// the separate final-capacity bounds below; their saved overlap stays scratch.
 fn vector<T>(count: usize) -> Result<usize> {
     if count == 0 || size_of::<T>() == 0 { return Ok(0); }
     mul(mul(3, count.checked_next_power_of_two().ok_or(SourcePreparationError::Resource)?.max(4))?, size_of::<T>())
@@ -73,6 +76,24 @@ fn vector<T>(count: usize) -> Result<usize> {
 // logical element counts and rounding once would undercount leaf assignments.
 fn vectors<T>(elements: usize, owners: usize) -> Result<usize> {
     mul(mul(3, add(mul(2, elements)?, mul(4, owners)?)?)?, size_of::<T>())
+}
+
+// For the pinned Vec push/extend/collect paths, the final allocation is at
+// most twice the maximum logical length (or the small minimum capacity).
+// Exact-sized constructors fit too, including later growth from a non-power
+// of two capacity. These are source bounds, never observed allocator/RSS data.
+fn retained_vector<T>(count: usize, growth: &mut usize) -> Result<usize> {
+    let complete = vector::<T>(count)?;
+    let retained = if count == 0 || size_of::<T>() == 0 { 0 }
+        else { mul(mul(2, count.max(4))?, size_of::<T>())? };
+    *growth = add(*growth, complete.checked_sub(retained).ok_or(SourcePreparationError::Resource)?)?;
+    Ok(retained)
+}
+fn retained_vectors<T>(elements: usize, owners: usize, growth: &mut usize) -> Result<usize> {
+    let complete = vectors::<T>(elements, owners)?;
+    let retained = mul(add(mul(2, elements)?, mul(4, owners)?)?, size_of::<T>())?;
+    *growth = add(*growth, complete.checked_sub(retained).ok_or(SourcePreparationError::Resource)?)?;
+    Ok(retained)
 }
 
 // alloc/collections/btree/node.rs in the pinned Rust 1.96 source uses B=6:
@@ -182,6 +203,7 @@ struct Census {
 
 impl Census {
     fn from_source(graph: &UnprovedRelationGraph, native: &InitialNativeSource<'_>) -> Result<Self> {
+        let mut growth = 0usize;
         if size_of::<usize>() != 8 || D != 256 || graph.polynomials().len() != 1770
             || graph.bytes().len() != 8 || graph.operations().len() != 1311
         { return Err(SourcePreparationError::Geometry); }
@@ -209,6 +231,7 @@ impl Census {
         let mut grouped_indices = 0usize;
         let mut request_count = 0usize;
         let mut crypto_payloads = 0usize;
+        let mut endpoint_outputs = 0usize;
         let mut crypto_partitions = 0usize;
         let mut largest_partition = 0usize;
         let mut auxiliary_count = 0usize;
@@ -245,7 +268,11 @@ impl Census {
                         }
                         map_inputs = map_inputs.max(inputs.len());
                         let heap = descriptor_heap(inputs.len())?;
-                        descriptor_retained = add(descriptor_retained, heap)?;
+                        descriptor_retained = add(descriptor_retained, sum([
+                            retained_vector::<PolynomialKind>(inputs.len(), &mut growth)?,
+                            retained_vector::<[i64; D]>(inputs.len(), &mut growth)?,
+                            retained_vector::<u32>(add(inputs.len(), 2)?, &mut growth)?,
+                        ])?)?;
                         descriptor_temporary = descriptor_temporary.max(add(heap, vector::<PolyId>(inputs.len())?)?);
                     }
                     public_values = add(public_values, mul(4, add(inputs.len(), 1)?)?.max(8))?;
@@ -259,12 +286,15 @@ impl Census {
                         input = add(input, match part { TranscriptPart::Bytes(_) => 32, TranscriptPart::Polynomial(_) => 4 * D })?;
                     }
                     let output = if matches!(operation, Operation::HashAlpha { .. }) { 32 } else { 137 };
+                endpoint_outputs = add(endpoint_outputs, vector::<u8>(output)?)?;
                     let units = crate::shake_air::Descriptor { input_len: input, output_len: output }
                         .permutations().map_err(|_| SourcePreparationError::Geometry)?;
                     let partition = add(vector::<ShakeSegmentAir>(units)?, vector::<SegmentInfo>(units)?)?;
                     request_count = add(request_count, 1)?;
-                    crypto_payloads = add(crypto_payloads, vector::<u8>(input)?)?;
-                    crypto_partitions = add(crypto_partitions, partition)?;
+                    crypto_payloads = add(crypto_payloads, retained_vector::<u8>(input, &mut growth)?)?;
+                    crypto_partitions = add(crypto_partitions, add(
+                        retained_vector::<ShakeSegmentAir>(units, &mut growth)?,
+                        retained_vector::<SegmentInfo>(units, &mut growth)?)?)?;
                     largest_partition = largest_partition.max(partition);
                     let heap = transcript_heap(parts.len())?;
                     largest_transcript = largest_transcript.max(heap);
@@ -272,10 +302,14 @@ impl Census {
                         size_of::<TranscriptAir>(), heap, vector::<[Val; 4]>(parts.len())?,
                         vector::<u8>(input)?, vector::<u32>(D)?,
                     ])?);
-                    auxiliary_payloads = add(auxiliary_payloads, heap)?;
+                    auxiliary_payloads = add(auxiliary_payloads, sum([
+                        retained_vector::<PartKind>(parts.len(), &mut growth)?,
+                        retained_vector::<[usize; 3]>(parts.len(), &mut growth)?,
+                        retained_vector::<PartValues>(parts.len(), &mut growth)?,
+                    ])?)?;
                     auxiliary_count = add(auxiliary_count, 1)?;
                     if matches!(operation, Operation::HashX { .. }) {
-                        auxiliary_payloads = add(auxiliary_payloads, vector::<u8>(output)?)?;
+                        auxiliary_payloads = add(auxiliary_payloads, retained_vector::<u8>(output, &mut growth)?)?;
                         auxiliary_count = add(auxiliary_count, 1)?;
                     }
                     raw_host = raw_host.max(raw_crypto(input, output)?);
@@ -283,13 +317,16 @@ impl Census {
                     (add(2, mul(2, parts.len())?)?, add(parts.len(), 1)?)
                 }
                 Operation::ParametersPp { .. } => {
+                endpoint_outputs = add(endpoint_outputs, vector::<u8>(32)?)?;
                     let input = add(b"lattica/pq-ringct/matrict-plus-n10/fixture-v1".len(), 64)?;
                     let units = crate::shake_air::Descriptor { input_len: input, output_len: 32 }
                         .permutations().map_err(|_| SourcePreparationError::Geometry)?;
                     let partition = add(vector::<ShakeSegmentAir>(units)?, vector::<SegmentInfo>(units)?)?;
                     request_count = add(request_count, 1)?;
-                    crypto_payloads = add(crypto_payloads, vector::<u8>(input)?)?;
-                    crypto_partitions = add(crypto_partitions, partition)?;
+                    crypto_payloads = add(crypto_payloads, retained_vector::<u8>(input, &mut growth)?)?;
+                    crypto_partitions = add(crypto_partitions, add(
+                        retained_vector::<ShakeSegmentAir>(units, &mut growth)?,
+                        retained_vector::<SegmentInfo>(units, &mut growth)?)?)?;
                     largest_partition = largest_partition.max(partition);
                     raw_host = raw_host.max(raw_crypto(input, 32)?);
                     field_words = field_words.max(input.div_ceil(2));
@@ -302,13 +339,16 @@ impl Census {
                         [mul(crate::uniform_air::Kind::ExpandAlpha2.draws(), 4)?, 127]
                     };
                     for output in outputs.into_iter().filter(|&n| n != 0) {
+                    endpoint_outputs = add(endpoint_outputs, vector::<u8>(output)?)?;
                         let units = output.div_ceil(16);
                         let partition = add(vector::<AesLaneAir>(units)?, vector::<SegmentInfo>(units)?)?;
                         request_count = add(request_count, 1)?;
-                        crypto_partitions = add(crypto_partitions, partition)?;
+                        crypto_partitions = add(crypto_partitions, add(
+                        retained_vector::<AesLaneAir>(units, &mut growth)?,
+                        retained_vector::<SegmentInfo>(units, &mut growth)?)?)?;
                         largest_partition = largest_partition.max(partition);
                         auxiliary_count = add(auxiliary_count, 1)?;
-                        auxiliary_payloads = add(auxiliary_payloads, vector::<u8>(output)?)?;
+                        auxiliary_payloads = add(auxiliary_payloads, retained_vector::<u8>(output, &mut growth)?)?;
                         raw_host = raw_host.max(raw_crypto(32, output)?);
                         field_words = field_words.max(output.div_ceil(2));
                     }
@@ -332,39 +372,43 @@ impl Census {
         raw_host = raw_host.max(mul(add(field_words.max(1), 9)?, size_of::<u64>())?);
         let fixed_polynomials = graph.polynomials().iter().filter(|node| node.source == Source::Fixed).count();
         let fixed_bytes = graph.bytes().iter().filter(|node| node.source == Source::Fixed).count();
+        let before_registered_growth = growth;
         let registered_heap = sum([
-            vector::<u64>(shape_words)?, vector::<(usize, [Val; 4])>(fixed_polynomials)?,
-            vector::<(usize, [Val; 4])>(fixed_bytes)?,
+            retained_vector::<u64>(shape_words, &mut growth)?, retained_vector::<(usize, [Val; 4])>(fixed_polynomials, &mut growth)?,
+            retained_vector::<(usize, [Val; 4])>(fixed_bytes, &mut growth)?,
         ])?;
-        // Arc<PlanInner>: two reference counts, RegisteredGraphShape, label,
+        let registered_construction_heap = add(registered_heap,
+            growth.checked_sub(before_registered_growth).ok_or(SourcePreparationError::Resource)?)?;
+        // Arc<PlanInner> and Arc<RegisteredGraphShape>: reference counts and
+        // shared registration pointer, RegisteredGraphShape, label,
         // leaves Vec and field-alignment slack; the shape's inline source
         // arrays are included by size_of rather than reconstructed manually.
         let tree_owner = sum([
-            2 * size_of::<usize>(), size_of::<RegisteredGraphShape>(), 32,
+            6 * size_of::<usize>(), size_of::<RegisteredGraphShape>(), 32,
             size_of::<Vec<LeafPlan>>(), 5 * align_of::<RegisteredGraphShape>(),
         ])?;
         let tree_heap = sum([
-            tree_owner, registered_heap, vector::<LeafPlan>(leaves)?,
-            vectors::<usize>(polynomials, leaves)?, vectors::<usize>(operations, leaves)?,
-            vectors::<usize>(add(bytes, mul(2, leaves)?)?, leaves)?,
+            tree_owner, registered_heap, retained_vector::<LeafPlan>(leaves, &mut growth)?,
+            retained_vectors::<usize>(polynomials, leaves, &mut growth)?, retained_vectors::<usize>(operations, leaves, &mut growth)?,
+            retained_vectors::<usize>(add(bytes, mul(2, leaves)?)?, leaves, &mut growth)?,
         ])?;
         let algebra_heap = sum([
-            vector::<PlannedBatch>(batches)?, vectors::<usize>(batches, batches)?,
-            vectors::<Val>(public_values, batches)?, descriptor_retained,
+            retained_vector::<PlannedBatch>(batches, &mut growth)?, retained_vectors::<usize>(batches, batches, &mut growth)?,
+            retained_vectors::<Val>(public_values, batches, &mut growth)?, descriptor_retained,
         ])?;
         let crypto_heap = sum([
-            vector::<Request>(request_count)?, crypto_payloads, crypto_partitions,
+            retained_vector::<Request>(request_count, &mut growth)?, crypto_payloads, crypto_partitions,
         ])?;
-        let auxiliary_heap = add(vector::<AuxiliaryRequest>(auxiliary_count)?, auxiliary_payloads)?;
-        let source_heap = vector::<[i64; D]>(crate::proof_air::POLYNOMIALS)?;
+        let auxiliary_heap = add(retained_vector::<AuxiliaryRequest>(auxiliary_count, &mut growth)?, auxiliary_payloads)?;
+        let source_heap = retained_vector::<[i64; D]>(crate::proof_air::POLYNOMIALS, &mut growth)?;
         let retained = sum([tree_heap, algebra_heap, crypto_heap, auxiliary_heap, source_heap,
             crate::graph_tree::metadata::GraphMetadata::retained_bytes()])?;
 
         let registration_temporary = sum([
-            // The initial RegisteredGraphShape is dropped before tree creation;
+            // Registration is shared with the tree in the prepared path;
             // nevertheless reserve two complete copies plus match/inventory
             // scratch so no exact-shape reallocation overlaps an unclaimed one.
-            mul(2, add(size_of::<RegisteredGraphShape>(), registered_heap)?)?,
+            mul(2, add(size_of::<RegisteredGraphShape>(), registered_construction_heap)?)?,
             vector::<u64>(record_words.max(41))?, vector::<[Val; 4]>(record_roots)?,
             vector::<usize>(crate::statement_air::POLYNOMIALS)?,
             vector::<usize>(crate::proof_air::POLYNOMIALS)?,
@@ -413,10 +457,23 @@ impl Census {
             vector::<u64>(statement_words)?, vector::<u64>(source_statement_words)?,
             vector::<u64>(source_proof_words)?, vector::<u64>(field_words)?,
         ])?;
+        let workspace = lattica_prover_p3::block_v2::native_gpu::RawPreparationWorkspaceStorage::fixed();
+        #[cfg(feature = "opencl")]
+        let batch_frames = sum([
+            crate::graph_crypto::ENDPOINT_FRAME_BYTES,
+            crate::graph_auxiliary::BATCH_FRAME_BYTES,
+            crate::graph_tree::commitment_batches::HOST_BYTES,
+            mul(2, endpoint_outputs)?,
+        ])?;
+        #[cfg(not(feature = "opencl"))]
+        let batch_frames = 0;
+        raw_host = raw_host.max(lattica_prover_p3::block_v2::native_gpu::RawCommitmentBatchStorage::HOST_BYTES);
         Ok(Self { retained, temporary: sum([
-            registration_temporary, group_temporary, expression_temporary,
+            workspace.host_bytes, batch_frames,
+            crate::rust_verify::committed_backend::source_binding::prepared::FRAME_BYTES,
+            growth, registration_temporary, group_temporary, expression_temporary,
             crypto_temporary, source_temporary,
-        ])?, packing, backend_host: raw_host })
+        ])?, packing, backend_host: add(raw_host, workspace.host_bytes)? })
     }
 }
 
@@ -470,6 +527,15 @@ impl<'graph> SourcePreparationPlan<'graph> {
         scratch.add(Category::CompilerInputs, host(census.packing)?)
             .map_err(|_| SourcePreparationError::Resource)?;
         let frames = mul(4, sum([
+            size_of::<[usize; 64]>(), // retained/growth census and helper forwarding
+            #[cfg(feature = "opencl")]
+            size_of::<graph_tree::preparation::PreparedStatement<'_, '_, '_>>(),
+            #[cfg(feature = "opencl")]
+            size_of::<graph_tree::preparation::PreparedBindings<'_, '_, '_>>(),
+            #[cfg(feature = "opencl")]
+            size_of::<graph_tree::preparation::PreparedCrypto<'_, '_, '_, '_>>(),
+            #[cfg(test)]
+            profiling::FRAME_BYTES,
             size_of::<Self>(), size_of::<SourcePreparationOperation<'_, 'graph>>(),
             size_of::<PreparedWorkflowSources<'graph>>(),
             size_of::<SourceRetained<PreparedWorkflowSources<'graph>>>(),
@@ -532,35 +598,75 @@ impl<'graph> SourcePreparationOperation<'_, 'graph> {
             let execution = self.plan.context();
             let budgets = self.plan.budgets;
             let host = usize::try_from(self.plan.backend.host).map_err(|_| SourcePreparationError::Resource)?;
-            let (prepared, report) = execution.with_witness_preparation(host, |operations| {
+            let (mut prepared, report) = execution.with_witness_preparation(host, |operations| {
+                operations.enable_reusable_storage()?;
+                #[cfg(test)]
+                let mut timeline = profiling::Timeline::new();
                 // Fixed static errors prevent graph-dependent diagnostic
                 // expansion across the raw-operation/report boundary.
-                let registered = RegisteredGraphShape::from_trusted_graph(graph)
-                    .map_err(|_| "source registration failed".to_owned())?;
-                let algebra = GraphProofPlan::new_with_operations(
-                    &registered, graph, self.plan.algebra_limits, operations,
-                ).map_err(|_| "algebra source preparation failed".to_owned())?;
-                drop(registered);
-                let tree = graph_tree::Plan::from_trusted_graph(graph, algebra.operation_batches())
-                    .map_err(|_| "graph tree preparation failed".to_owned())?;
-                let statement = LeafStatement::from_bytes_on_gpu(
+                let structure = if crate::preparation_options::structural_reuse() {
+                    Some(crate::rust_verify::committed_backend::source_binding::prepared::PreparedGraphStructure::new(graph)
+                        .map_err(|_| "source registration failed".to_owned())?)
+                } else { None };
+                let registered = if structure.is_none() {
+                    Some(RegisteredGraphShape::from_trusted_graph(graph)
+                        .map_err(|_| "source registration failed".to_owned())?)
+                } else { None };
+                #[cfg(test)]
+                timeline.mark(0);
+                let algebra = if let Some(structure) = &structure {
+                    GraphProofPlan::new_prepared_operations(structure, self.plan.algebra_limits, operations,
+                        crate::preparation_options::field_batches())
+                } else if crate::preparation_options::field_batches() {
+                    GraphProofPlan::new_with_batched_operations(
+                        registered.as_ref().unwrap(), graph, self.plan.algebra_limits, operations,
+                    )
+                } else { GraphProofPlan::new_with_operations(
+                    registered.as_ref().unwrap(), graph, self.plan.algebra_limits, operations,
+                ) }.map_err(|_| "algebra source preparation failed".to_owned())?;
+                #[cfg(test)]
+                timeline.mark(1);
+                let tree = match &structure {
+                    Some(structure) => graph_tree::Plan::from_prepared(structure, algebra.operation_batches()),
+                    None => graph_tree::Plan::from_registered_graph(graph, algebra.operation_batches(), registered.unwrap()),
+                }.map_err(|_| "graph tree preparation failed".to_owned())?;
+                #[cfg(test)]
+                timeline.mark(2);
+                let statement = graph_tree::preparation::PreparedStatement::new(
                     tree.label(), *native.context(), native.statement_bytes(), operations,
                 ).map_err(|_| "statement source preparation failed".to_owned())?;
-                let context = GraphContext {
-                    context: *native.context(), statement: statement.digest.map(Val::from_u64),
-                    node_manifest: tree.node_manifest_hint_on_gpu(graph, operations)
-                        .map_err(|_| "graph manifest preparation failed".to_owned())?,
-                };
-                let source = SourceFactory::new_on_gpu(
-                    &tree, graph, &context, native.statement_bytes(), native.proof_bytes(),
-                    budgets.native_bytes, operations,
+                #[cfg(test)]
+                timeline.mark(3);
+                let bindings = match &structure {
+                    Some(structure) => statement.bind_structure(&tree, structure),
+                    None => statement.bind(&tree, graph),
+                }.map_err(|_| "graph manifest preparation failed".to_owned())?;
+                #[cfg(test)]
+                timeline.mark(4);
+                let source = SourceFactory::new_prepared(
+                    &bindings, native.proof_bytes(), budgets.native_bytes,
                 ).map_err(|_| "native source preparation failed".to_owned())?;
-                let crypto = graph_crypto::Plan::new_with_operations(&tree, graph, budgets.crypto_policy, operations)
+                #[cfg(test)]
+                timeline.mark(5);
+                let mut crypto = bindings.crypto(budgets.crypto_policy)
                     .map_err(|_| "crypto source preparation failed".to_owned())?;
-                let auxiliary = AuxiliaryFactory::new_on_gpu(&tree, graph, &context, budgets.native_bytes, operations)
+                if crate::preparation_options::endpoint_reuse() {
+                    crypto.prepare_endpoints(crate::preparation_options::field_batches())
+                        .map_err(|_| "crypto endpoint preparation failed".to_owned())?;
+                }
+                #[cfg(test)]
+                timeline.mark(6);
+                let auxiliary = AuxiliaryFactory::new_prepared(&crypto, budgets.native_bytes)
                     .map_err(|_| "auxiliary source preparation failed".to_owned())?;
-                let branch = producer_branch::Factory::new_with_operations(&tree, graph, &context, execution, operations)
+                #[cfg(test)]
+                timeline.mark(7);
+                let branch = producer_branch::Factory::new_prepared(&bindings, execution)
                     .map_err(|_| "producer source preparation failed".to_owned())?;
+                #[cfg(test)]
+                timeline.mark(8);
+                let crypto = crypto.into_plan();
+                let context = bindings.context().clone();
+                drop(bindings);
                 Ok(PreparedWorkflowSources {
                     graph: self.plan.graph, native, tree, context, algebra, crypto, source, auxiliary, branch,
                     metadata: std::sync::OnceLock::new(),
@@ -569,6 +675,8 @@ impl<'graph> SourcePreparationOperation<'_, 'graph> {
             // The report's complete backing stays under the source phase's
             // scratch claim until it has been destroyed; A then drains it.
             drop(report);
+            prepared.crypto.publish_endpoint_facts(&prepared.context)
+                .map_err(|_| SourcePreparationError::Preparation)?;
             Ok(prepared)
         }
     }
@@ -606,4 +714,46 @@ impl<'graph> PreparedWorkflowSources<'graph> {
     pub(crate) fn source_factory(&self) -> &SourceFactory<'graph> { &self.source }
     pub(crate) fn auxiliary_factory(&self) -> &AuxiliaryFactory { &self.auxiliary }
     pub(crate) fn branch_factory(&self) -> &producer_branch::Factory<'graph> { &self.branch }
+}
+
+#[cfg(test)]
+mod retention_tests {
+    use super::*;
+
+    #[test]
+    fn final_vector_bounds_cover_non_power_of_two_growth_and_preserve_total() {
+        for initial in [0, 1, 3, 5, 17, 65] {
+            let mut values = Vec::<u64>::with_capacity(initial);
+            for count in 1..=257 {
+                values.push(count as u64);
+                // The source census includes the initial allocation even
+                // when the current logical prefix has not filled it yet.
+                let source_maximum = count.max(initial);
+                let mut growth = 0;
+                let retained = retained_vector::<u64>(source_maximum, &mut growth).unwrap();
+                assert!(values.capacity() * size_of::<u64>() <= retained);
+                assert_eq!(retained + growth, vector::<u64>(source_maximum).unwrap());
+            }
+        }
+        let mut growth = 0;
+        assert_eq!(retained_vector::<u64>(0, &mut growth).unwrap(), 0);
+        assert_eq!(retained_vector::<()>(17, &mut growth).unwrap(), 0);
+        assert!(retained_vector::<u64>(usize::MAX, &mut growth).is_err());
+    }
+
+    #[test]
+    fn independent_small_vectors_keep_minimum_capacity_and_all_growth_scratch() {
+        let lengths = [0, 1, 3, 5, 17, 65];
+        let values: Vec<Vec<u64>> = lengths.iter().map(|&n| {
+            let mut values = Vec::new();
+            for _ in 0..n { values.push(0); }
+            values
+        }).collect();
+        let elements = lengths.iter().sum();
+        let mut growth = 0;
+        let retained = retained_vectors::<u64>(elements, values.len(), &mut growth).unwrap();
+        assert!(values.iter().map(|v| v.capacity() * size_of::<u64>()).sum::<usize>() <= retained);
+        assert_eq!(retained + growth, vectors::<u64>(elements, values.len()).unwrap());
+        assert!(retained_vectors::<u64>(usize::MAX, 1, &mut growth).is_err());
+    }
 }

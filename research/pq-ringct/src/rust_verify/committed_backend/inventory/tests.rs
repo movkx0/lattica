@@ -160,3 +160,25 @@ fn complete_fixture_inventory_retains_every_relation_and_stable_shape() {
     eprintln!("complete_graph_inventory_counts={:?}", a.counts());
     eprintln!("complete_graph_shape_sha3_256={:02x?}", a.shape_sha3_256());
 }
+
+#[test]
+fn prepared_encoding_preserves_exact_words_counts_and_separate_hash_frames() {
+    let mut graph = example();
+    for mutation in 0..4 {
+        match mutation {
+            1 => graph.polynomials[0].commitment[0] += Val::ONE,
+            2 => graph.polynomials[2].commitment[0] += Val::ONE,
+            3 => graph.operations.swap(0, 1),
+            _ => {}
+        }
+        let (words, counts, label, shape) = prepared_shape(&graph);
+        let reference = inventory(&graph);
+        assert_eq!(words, exact_shape(&graph));
+        assert_eq!(&counts, reference.counts());
+        assert_eq!(shape, reference.shape_sha3_256());
+        let mut hash = Sha3_256::new();
+        hash.update(b"lattica/matrict/registered-graph-label/v1");
+        for word in words { hash.update(word.to_le_bytes()); }
+        assert_eq!(label, <[u8; 32]>::from(hash.finalize()));
+    }
+}

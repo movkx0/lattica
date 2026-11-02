@@ -13,6 +13,7 @@ use std::{
 
 mod composition;
 pub mod operation_storage;
+pub(crate) mod preparation_profile;
 #[cfg(all(feature = "block-v2", feature = "gpu", feature = "stream", feature = "note-research-quota"))]
 pub(crate) mod note_storage;
 pub(crate) use composition::CachedScope;
@@ -551,6 +552,9 @@ impl Run {
         device_ns: u128,
     ) -> Result<(), Error> {
         self.check_device_stage(stage, backend)?;
+        if stage == Stage::WitnessTrace {
+            preparation_profile::device(completed_calls, device_ns);
+        }
         let Ok(mut state) = self.state.lock() else {
             return Err(Error::Finished);
         };

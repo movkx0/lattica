@@ -11,6 +11,15 @@ use lattica_prover_p3::block_v2::native_gpu::OperationContext;
 use p3_field::PrimeField64;
 
 impl<'a> SourceFactory<'a> {
+    #[cfg(test)]
+    pub(crate) fn assert_preparation_equivalent(&self, other: &Self) {
+        assert_eq!(self.expected_statement, other.expected_statement);
+        assert_eq!(self.expected_private, other.expected_private);
+        assert_eq!(self.identity, other.identity);
+        assert_eq!(self.setup_seed, other.setup_seed);
+        assert_eq!(self.private.polynomials, other.private.polynomials);
+        assert_eq!(self.private.alpha, other.private.alpha);
+    }
     pub(crate) fn new_on_gpu(
         plan: &Plan,
         graph: &UnprovedRelationGraph,
@@ -20,14 +29,28 @@ impl<'a> SourceFactory<'a> {
         memory_budget: u64,
         operations: &OperationContext<'_>,
     ) -> Result<Self> {
+        Self::prepare_bound(plan, graph, context, statement, proof, memory_budget, operations, false)
+    }
+    pub(crate) fn new_prepared(binding: &crate::graph_tree::preparation::PreparedBindings<'a, '_, '_>,
+        proof: &[u8], memory_budget: u64) -> Result<Self> {
+        binding.check().map_err(err)?;
+        Self::prepare_bound(binding.tree(), binding.graph(), binding.context(), binding.statement(),
+            proof, memory_budget, binding.operations(), true)
+    }
+    // Only the token-checked wrapper may reuse these two graph-bound hashes.
+    fn prepare_bound(plan: &Plan, graph: &UnprovedRelationGraph, context: &GraphContext,
+        statement: &'a [u8], proof: &[u8], memory_budget: u64,
+        operations: &OperationContext<'_>, prepared: bool) -> Result<Self> {
         require(memory_budget != 0, "zero source proof memory budget")?;
         require(statement.len() == STATEMENT_BYTES, "statement length")?;
+        if !prepared {
         require(
             plan.node_manifest_hint_on_gpu(graph, operations)
                 .map_err(err)?
                 == context.node_manifest,
             "source graph manifest mismatch",
         )?;
+        }
         let setup_seed: [u8; 32] = statement[..32].try_into().map_err(err)?;
         require(
             setup_seed == graph.setup_seed(),
@@ -132,6 +155,7 @@ impl<'a> SourceFactory<'a> {
             require(node.values == expected, "source bytes mismatch")?;
         }
 
+        let digest = if prepared { context.statement } else {
         let digest_count = 1 + statement.len().div_ceil(4);
         operations.admit_field_chunks(digest_count).map_err(err)?;
         let mut fields = Vec::with_capacity(digest_count);
@@ -154,6 +178,8 @@ impl<'a> SourceFactory<'a> {
             .map_err(err)?
             .map(Val::from_u64);
         drop(fields);
+        digest
+        };
         require(
             digest == context.statement,
             "source statement digest mismatch",

@@ -1,6 +1,50 @@
 use super::*;
 use crate::graph_tree::tests::{fixture, singles};
 
+#[test]
+#[ignore = "guarded CPU source constructor regression; no recursive proofs"]
+fn parameters_pp_compiler_scratch_uses_the_authenticated_child_height() {
+    use crate::{graph_proofs::{GraphProofPlan, ResourceLimits},
+        rust_verify::committed_backend::source_binding::RegisteredGraphShape,
+        execution::retained_resources::WorkerAllowance,
+        graph_crypto::{Admission, ShakeWrapperLayout}};
+    let (graph, statement) = fixture();
+    let registered = RegisteredGraphShape::from_trusted_graph(&graph).unwrap();
+    let algebra = GraphProofPlan::new(&registered, &graph, ResourceLimits {
+        max_batch_count: 64, max_ntt_batch_count: 32, max_mul_batch_count: 32,
+        max_trace_cells: 1 << 27, max_estimated_prover_bytes: 24 << 30,
+    }).unwrap();
+    let tree = Plan::from_trusted_graph(&graph, algebra.operation_batches()).unwrap();
+    let context = crate::graph_tree::tests::context(&tree, &graph, &statement);
+    let crypto = crate::graph_crypto::Plan::new(&tree, &graph, crate::graph_crypto::Policy {
+        maximum_aes_blocks: 64, maximum_shake_permutations: 32,
+        child_memory_budget_bytes: 24 << 30, admission: Admission::Estimated,
+    }).unwrap();
+    let ordinal = pp_ordinal(&tree);
+    let operation = tree.leaves()[ordinal].operation_indices()[0];
+    let request = crypto.requests().iter().find(|r| r.operation_index() == operation).unwrap();
+    validate_request_leaf(&tree, &graph, &crypto, request, ordinal).unwrap();
+    let ledger = Ledger::new(WorkerAllowance { host: 32 << 30, device: 8 << 30 });
+    let layout = ShakeWrapperLayout::PairedV1;
+    let original = ledger.admit_phase(PairedRequestPlan::planning_requirements(request, layout).unwrap()).unwrap();
+    let scratch = ledger.admit_phase(PairedRequestPlan::planning_scratch_requirements(request, layout).unwrap()).unwrap();
+    let request_plan = PairedRequestPlan::derive_pre_reserved(request, context, layout, original, &scratch, &ledger).unwrap();
+    let root = request_plan.root_source();
+    eprintln!("parameters_pp_child_bound height={} publics={}", root.maximum_padded_rows, root.public_values);
+    assert_eq!(root.public_values, PUBLICS);
+    assert!(root.maximum_padded_rows < super::super::super::source::MAX_ROWS);
+    let (_, actual) = compiler_requirements_for_graph(&graph, root.maximum_padded_rows).unwrap();
+    let actual = actual.total().unwrap().host;
+    let cap = super::super::super::source::AUXILIARY_BYTES as u64;
+    assert!(actual <= cap);
+    assert!(matches!(compiler_requirements_for_graph(&graph, super::super::super::source::MAX_ROWS),
+        Err(GraphParentFailure::Capacity)));
+    eprintln!("parameters_pp_actual_compiler_scratch bytes={actual} cap={cap}");
+    drop(request_plan);
+    drop(scratch);
+    assert_eq!(ledger.snapshot().current, Bytes::ZERO);
+}
+
 /// Source-pinned budget diagnostic, not complete constructor admission. The
 /// real compiler_requirements takes a genuine PreparedWorkflowSources owner;
 /// this probe mirrors only its pure graph census without fabricating that owner.
