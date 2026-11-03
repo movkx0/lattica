@@ -116,3 +116,63 @@ fn pending_graph_roots_cannot_escape_finalization() {
         Ok(())
     }).is_err());
 }
+
+#[test]
+#[ignore = "exclusive admitted OpenCL; CPU/scalar/cooperative parity and collective failure"]
+fn cooperative_fields_match_cpu_at_tile_boundaries_and_refuse_every_lane() {
+    use p3_field::{PrimeCharacteristicRing, PrimeField64};
+    use lattica_prover_p3::block_v2::commitment::MODULUS;
+    let worker = crate::execution::ProvingContext::opencl(crate::opencl::Limits {
+        host_bytes: 8 << 30, device_bytes: 8 << 30, max_rows: 4096 }).unwrap();
+    let lengths = [0, 1, 2, 3, 4, 5, 7, 8, 9, 4095, 4096, 4097, 8193];
+    let values: Vec<Vec<u64>> = lengths.iter().map(|&n| (0..n).map(|i| [0, 1, MODULUS-1, MODULUS-2, i as u64][i%5]).collect()).collect();
+    let inputs: Vec<_> = values.iter().map(|words| FieldCommitment { initial: [MODULUS-1, 17, words.len() as u64, 1], words }).collect();
+    let expected: Vec<_> = inputs.iter().map(|input| {
+        let mut state = input.initial;
+        for chunk in input.words.chunks(4) {
+            let mut block = [Val::ZERO; 8];
+            for i in 0..4 { block[i] = Val::from_u64(state[i]); }
+            for (i, &word) in chunk.iter().enumerate() { block[4+i] = Val::from_u64(word); }
+            let result = lattica_prover_p3::poseidon2_air::native_permute(block);
+            state = core::array::from_fn(|i| result[i].as_canonical_u64());
+        }
+        state
+    }).collect();
+    for cooperative in [false, true] {
+        worker.with_witness_preparation(16 << 20, |op| {
+            if cooperative { op.enable_reusable_storage()?; }
+            else { op.enable_scalar_field_storage_for_qualification()?; }
+            for (input, root) in inputs.iter().zip(&expected) {
+                assert_eq!(op.commit_field_chunks(input.initial, input.words)?, *root);
+            }
+            assert_eq!(op.commit_field_batch(&inputs)?, expected);
+            Ok(())
+        }).unwrap();
+        // Invalid words in each participating lane and the second tile must
+        // fail collectively, never hang at a shuffle or publish partial roots.
+        for index in (0..8).chain([4096, 4103]) {
+            for batch in [false, true] {
+                assert!(worker.with_witness_preparation(16 << 20, |op| {
+                    if cooperative { op.enable_reusable_storage()?; }
+                    else { op.enable_scalar_field_storage_for_qualification()?; }
+                    let mut words = vec![0; 4104]; words[index] = MODULUS;
+                    let rejected = if batch {
+                        op.commit_field_batch(&[inputs[0], FieldCommitment { initial: [0; 4], words: &words }, inputs[3]]).map(|_| ())
+                    } else { op.commit_field_chunks([0; 4], &words).map(|_| ()) };
+                    assert!(rejected.is_err());
+                    assert!(op.commit_field_chunks([0; 4], &[]).is_err());
+                    Ok(())
+                }).is_err());
+            }
+        }
+        for lane in 0..4 {
+            assert!(worker.with_witness_preparation(16 << 20, |op| {
+                if cooperative { op.enable_reusable_storage()?; }
+                else { op.enable_scalar_field_storage_for_qualification()?; }
+                let mut initial = [0; 4]; initial[lane] = MODULUS;
+                op.commit_field_chunks(initial, &[])
+            }).is_err());
+        }
+    }
+    assert_eq!(worker.report()["operations"]["prove_calls"], 0);
+}

@@ -115,12 +115,22 @@ impl Drop for RawNode {
 
 impl OperationContext<'_> {
     pub fn enable_reusable_storage(&self) -> Result<(), String> {
+        self.enable_reusable_storage_with(true)
+    }
+    /// GPU scalar reference for source-bound research qualification only.
+    #[cfg(feature = "ringct-research-quota")]
+    pub fn enable_scalar_field_storage_for_qualification(&self) -> Result<(), String> {
+        self.enable_reusable_storage_with(false)
+    }
+    fn enable_reusable_storage_with(&self, cooperative_fields: bool) -> Result<(), String> {
+        #[cfg(not(feature = "gpu"))]
+        let _ = cooperative_fields;
         self.execute(|| {
             #[cfg(feature = "gpu")]
             {
                 if self.workspace.try_borrow().map_err(|_| "reentrant preparation workspace")?.is_some() { return Ok(()); }
                 self.admit_host_bytes(RawPreparationWorkspaceStorage::fixed().host_bytes)?;
-                let workspace = self.session.preparation_workspace()?;
+                let workspace = self.session.preparation_workspace(cooperative_fields)?;
                 *self.workspace.try_borrow_mut().map_err(|_| "reentrant preparation workspace")? = Some(workspace);
                 Ok(())
             }

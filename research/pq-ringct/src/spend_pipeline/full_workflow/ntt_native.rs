@@ -71,6 +71,7 @@ impl<'a> NttNativeOperationPlan<'a> {
             size_of::<[Reservation; 8]>(), size_of::<[Requirements; 8]>(),
             size_of::<PhaseFacts>(), size_of::<PhaseBinding>(), size_of::<Sha3_256>(),
             crate::graph_tree::metadata::GraphMetadata::construction_bytes(),
+            crate::graph_tree::metadata::verifier::VerifierCache::lookup_frame_bytes(),
         ].into_iter().try_fold(0, add)?.checked_mul(8).ok_or(NttNativeOperationFailure::Overflow)
     }
     pub(crate) fn new(scope: &SourcePlanningPlan<'a>,
@@ -101,9 +102,9 @@ impl<'a> NttNativeOperationPlan<'a> {
             || recording.requirements() != Self::verification_planning_requirements(native.source().kind())? {
             return Err(NttNativeOperationFailure::Authority);
         }
-        let verification = sources.get().metadata()
-                .map_err(|_| NttNativeOperationFailure::Preparation)?
-                .verifier_ntt(native.source().kind(), || native.record(recording, ledger)
+        let metadata = sources.get().metadata()
+            .map_err(|_| NttNativeOperationFailure::Preparation)?;
+        let verification = scope.verifier_cache(metadata).verifier_ntt(native.source().kind(), || native.record(recording, ledger)
                     .map(|recorded| recorded.verification_plan()).map_err(|_| ()))
                 .map_err(|_| NttNativeOperationFailure::Preparation)?;
         let reservations = NativeNttReservationPlan::outer_host_v1(native.preparation(), 1)

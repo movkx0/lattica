@@ -44,6 +44,7 @@ const SOURCES: &[&str] = &[
     device::WALLET_KERNEL_SRC,
     device::PQ_POSEIDON_KERNEL_SRC,
     device::PQ_OPERATIONS_KERNEL_SRC,
+    device::PUBLIC_HASH_KERNEL_SRC,
     device::OPERATIONS_HASH_KERNEL_SRC,
     device::PQ_CRYPTO_KERNEL_SRC,
     device::PQ_RAW_CRYPTO_KERNEL_SRC,
@@ -61,7 +62,6 @@ const SOURCES: &[&str] = &[
     device::SCALARS_KERNEL_SRC,
     device::COMPILER_CONSTANTS_KERNEL_SRC,
     device::COMPILER_FOLDING_KERNEL_SRC,
-    device::PUBLIC_HASH_KERNEL_SRC,
     device::EVALUATIONS_KERNEL_SRC,
 ];
 

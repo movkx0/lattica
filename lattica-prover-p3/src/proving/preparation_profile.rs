@@ -37,6 +37,7 @@ struct Statistics {
     complete: bool,
     arithmetic_shapes: [ArithmeticCounts; 32],
     arithmetic_overflow: u64,
+    field_kernels: [u64; 2], // scalar, cooperative device dispatches
     #[serde(skip)]
     current: usize,
 }
@@ -56,7 +57,7 @@ impl Scope {
                 families: ["node_commitment", "field_commitment", "arithmetic", "other"],
                 metrics: ["allocation", "kernel_setup", "upload_enqueue", "readback_wait", "cleanup", "device_wait"],
                 counters: [Counters::default(); 4], complete: false, current: OTHER,
-                arithmetic_shapes: [ArithmeticCounts::default(); 32], arithmetic_overflow: 0 });
+                arithmetic_shapes: [ArithmeticCounts::default(); 32], arithmetic_overflow: 0, field_kernels: [0; 2] });
         }); }
         Self { enabled }
     }
@@ -133,5 +134,11 @@ pub(crate) fn arithmetic_shape(opcode: u64, output_words: usize) {
         if let Some(row) = s.arithmetic_shapes.iter_mut().find(|row| row.calls == 0 || (row.opcode == opcode && row.output_words == output_words)) {
             row.opcode = opcode; row.output_words = output_words; row.calls += 1;
         } else { s.arithmetic_overflow += 1; }
+    } });
+}
+
+pub(crate) fn field_kernel(cooperative: bool) {
+    CURRENT.with(|slot| { if let Some(s) = slot.borrow_mut().as_mut() {
+        s.field_kernels[usize::from(cooperative)] += 1;
     } });
 }

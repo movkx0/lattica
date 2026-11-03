@@ -81,6 +81,8 @@ struct SourceEnvironment<'source> {
 /// explicit; spare capacity in encoded/decoded owners is charged by each view.
 /// The enclosing deduction persists for this whole case, through aggregation.
 pub(crate) struct SourcePlanningPlan<'source> {
+    #[cfg(not(debug_assertions))]
+    verifiers: crate::graph_tree::metadata::verifier::VerifierCache,
     context: &'source ProvingContext,
     natives: &'source [InitialNativeSource<'source>],
     source: [u8; 32],
@@ -290,7 +292,10 @@ impl<'source> SourcePlanningPlan<'source> {
                 { None }
             },
         };
-        Ok(Self { context, natives, source: digest.finalize().into(), compiled_source,
+        Ok(Self {
+            #[cfg(not(debug_assertions))]
+            verifiers: crate::graph_tree::metadata::verifier::VerifierCache::new(true),
+            context, natives, source: digest.finalize().into(), compiled_source,
             enclosing: host(enclosing), planning, scratch,
             backend: Bytes { host: raw_host, device: environment.backend_device }, layout, budgets, algebra_limits,
             identity_limits: Default::default(),
@@ -299,6 +304,14 @@ impl<'source> SourcePlanningPlan<'source> {
             #[cfg(not(debug_assertions))] descriptor_original, #[cfg(test)] fixture_context: environment.fixture_context })
     }
 
+    #[cfg(not(debug_assertions))]
+    pub(crate) fn verifier_cache<'a>(&'a self, graph: &'a crate::graph_tree::metadata::GraphMetadata)
+        -> &'a crate::graph_tree::metadata::verifier::VerifierCache {
+        #[cfg(test)]
+        if !crate::preparation_options::case_verifier_cache() { return &graph.verifiers; }
+        let _ = graph;
+        &self.verifiers
+    }
     pub(crate) fn validate_initial_source(&self, native: &InitialNativeSource<'_>) -> Result<()> {
         if self.natives.iter().any(|original| core::ptr::eq(original, native)) {
             Ok(())

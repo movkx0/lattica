@@ -889,6 +889,9 @@ def build_plan(args):
     metadata_preparation_detail = getattr(args, 'metadata_preparation_detail', False)
     hash_variant = getattr(args, 'metadata_hash_variant', None)
     reuse_variant = getattr(args, 'metadata_reuse_variant', None)
+    next_variant = getattr(args, 'metadata_next_variant', None)
+    require(next_variant in (None, 'baseline', 'field_hash', 'encoding', 'case_cache', 'all'), 'invalid next variant')
+    require(next_variant is None or metadata_stage_profile, 'next variant requires metadata-stage profile')
     require(reuse_variant in (None, 'baseline', 'structure', 'verifier', 'arithmetic', 'all'), 'invalid reuse variant')
     require(reuse_variant is None or metadata_stage_profile, 'reuse variant requires metadata-stage profile')
     require(hash_variant in (None, 'reference', 'nodes', 'endpoints', 'fields', 'all'), 'invalid hash variant')
@@ -1173,6 +1176,7 @@ def build_plan(args):
         environment['LATTICA_RINGCT_METADATA_WORKERS'] = str(metadata_workers)
         environment['LATTICA_RINGCT_METADATA_HASH_VARIANT'] = hash_variant or 'all'
         environment['LATTICA_RINGCT_METADATA_REUSE_VARIANT'] = reuse_variant or 'all'
+        environment['LATTICA_RINGCT_METADATA_NEXT_VARIANT'] = next_variant or 'all'
         if metadata_preparation_detail:
             environment['LATTICA_RINGCT_METADATA_PREPARATION_DETAIL'] = '1'
         if fixture_in is not None:
@@ -1219,6 +1223,7 @@ def build_plan(args):
             'metadata_preparation_detail': metadata_preparation_detail,
         'metadata_hash_variant': hash_variant or 'all',
         'metadata_reuse_variant': reuse_variant or 'all',
+        'metadata_next_variant': next_variant or 'all',
             'metadata_fixture_out': fixture_out, 'metadata_fixture_in': fixture_in,
             'metadata_fixture_sha256': sha(Path(fixture_in)) if fixture_in else None, 'metadata_workers': metadata_workers if metadata_stage_profile else None,
             'cpu_scaling_profile': scaling_selection,
@@ -1904,6 +1909,7 @@ def validate_output(log, plan):
             content, require_preparation_detail=plan.get('metadata_preparation_detail', False))
         require(plan['metadata_stage_profile_acceptance']['hash_variant'] == plan.get('metadata_hash_variant', 'all'), 'metadata hash variant mismatch')
         require(plan['metadata_stage_profile_acceptance']['reuse_variant'] == plan.get('metadata_reuse_variant', 'all'), 'metadata reuse variant mismatch')
+        require(plan['metadata_stage_profile_acceptance']['next_variant'] == plan.get('metadata_next_variant', 'all'), 'metadata next variant mismatch')
     if plan.get('metadata_cpu_qualification'):
         from metadata_cpu_qualification import validate
         plan['metadata_cpu_qualification_acceptance'] = validate(content)
@@ -2236,6 +2242,7 @@ def main():
     parser.add_argument('--metadata-workers', type=int, choices=(1, 8, 16))
     parser.add_argument('--metadata-hash-variant', choices=('reference', 'nodes', 'endpoints', 'fields', 'all'))
     parser.add_argument('--metadata-reuse-variant', choices=('baseline', 'structure', 'verifier', 'arithmetic', 'all'))
+    parser.add_argument('--metadata-next-variant', choices=('baseline', 'field_hash', 'encoding', 'case_cache', 'all'))
     parser.add_argument('--metadata-preparation-detail', action='store_true',
                         help='bounded raw-operation attribution; separate from timing comparisons')
     parser.add_argument('--native-metadata-profile', action='store_true')

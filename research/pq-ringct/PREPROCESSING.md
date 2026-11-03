@@ -750,3 +750,103 @@ Frozen sources are in `.tools/metadata-reuse-baseline` and
 fixture/source/build hashes, and acceptance checks are saved in
 [metadata reuse evidence](../../docs/evidence/ringct-metadata-reuse-2026-11-02.json).
 This documentation and evidence were added after the measured source snapshot.
+
+## Cooperative field hashing, buffered encoding, and case-wide verifier reuse (2026-11-02)
+
+This pass implements the next three priorities against commit `b19e96d`. All
+previous hash batching, structural reuse, and vector arithmetic remain enabled.
+
+Raw field commitments now use one eight-lane GPU workgroup per stream, with one
+Poseidon state word per lane. They reuse the existing register-shuffle helpers
+and immutable round constants. Workspace creation selects this path on NVIDIA
+SM 7 or newer with 32-thread warps; other devices and oversized single streams
+retain the scalar GPU path. The scalar reference retains its original batch
+launch layout. Initial states, canonicalization, rate-four padding, ordered
+4096-word tiles, and the 64-stream / 131072-word batch limits are unchanged.
+Canonical validation is collective, so every lane follows the same error path
+before any shuffle-dependent hashing. An execution error poisons the scope;
+the existing queue fences and scrubbing remain in force.
+
+Registration encoding uses a four-word expression buffer, reuses node and
+operation scratch, and reserves shape storage from the already admitted census.
+That census is an upper bound, not an expected exact length. An overrun is
+refused before the shape vector can grow beyond it. An 8 KiB buffer combines
+structural LE-u64 hash updates; it flushes before witness-only roots and hash
+finalization. Exact words, both inventory hash domains, and registration labels
+remain identical. Ordinary public shape validation remains exact.
+
+The 64-entry numeric verifier cache now belongs to `SourcePlanningPlan`, shared
+by all transactions in one N3/N4 case. The graph-local version exists only in
+tests as an independent reference. Keys still include the full typed NTT, Mul,
+or permutation descriptor, numeric source identity, and profile. Source and
+ownership validation, exact reservations, runtime recording, and `same_census`
+checks remain per request. Failed recordings are uncached, a full cache uses
+the original recorder without eviction, and linear maps are unchanged. Inline
+cache ownership, lookup frames, the encoder buffer, and reporting storage are
+included in admission before allocation. CPU identity hashing is unchanged;
+numeric metadata compilation remains on CPU.
+
+Three alternating fresh-process pairs per configuration produced these complete
+N3 metadata-stage medians on the Ryzen 9 5900XT / RTX 5080:
+
+| Metadata workers / fixture | Frozen baseline | Updated median | Elapsed reduction |
+|---|---:|---:|---:|
+| 1 / baseline N3 | 4.928 s | 3.365 s | 31.7% |
+| 8 / baseline N3 | 4.927 s | 3.370 s | 31.6% |
+| 16 / baseline N3 | 4.915 s | 3.388 s | 31.1% |
+| 16 / held-out N3 | 4.875 s | 3.420 s | 29.8% |
+
+These timings include startup and metadata schedule/memory closure for three
+transactions. They exclude fixture loading/verification and native input
+generation, and stop before recursive proof generation and runtime preissue.
+The target of at least 20% improvement and at most 3.97 seconds at 16 workers
+passed. All other configurations passed the 3% regression limit. At 16 workers,
+source preparation fell from 2.877 to 1.538 seconds; native constructors now
+account for 0.346 seconds. Phase medians are calculated independently.
+
+Separate instrumented single-process ablations used the final binary:
+
+| Enabled in this pass | Complete stage | Field GPU time | Expression allocations | Shape allocations | Verifier recordings |
+|---|---:|---:|---:|---:|---:|
+| Baseline | 5.005 s | 2.207 s | 1,515,483 | 69 | 39 |
+| Cooperative field hashing | 3.853 s | 0.994 s | 1,515,483 | 69 | 39 |
+| Buffered encoding | 4.795 s | 2.207 s | 0 | 3 | 39 |
+| Case-wide verifier cache | 4.816 s | 2.207 s | 1,515,483 | 69 | 13 |
+| All three | 3.441 s | 0.994 s | 0 | 3 | 13 |
+
+The combined run used 147 cooperative field-kernel events and zero scalar field
+kernel events. Field commitments retained zero GPU allocations during execution.
+Verifier reuse served 68 hits from 81 requests, versus 42 hits previously, with
+no overflow. Shape allocation counts include initial backing and growth; the
+optimized path makes one admitted allocation per graph. These diagnostic
+single-run effects overlap and are not additive.
+
+All 24 paired runs had zero cold descriptor compilations, descriptor-cache
+evictions, and memory shortfall. The native descriptor cache still served 400
+memory hits and 185 table hits from 585 requests; the registered cache served
+962 memory hits and nine table hits from 971 requests. These software descriptor
+caches are separate from the numeric verifier cache. The worker/native/device
+limits remain 32/24/8 GiB. All 317 native descriptors and 72 registered shapes
+were requalified at 1, 2, 4, 8, and 16 workers, with matching counts and exactly
+reproducible generated tables.
+
+Validation passed 137 CPU regression tests, seven GPU parity/failure tests,
+12 core resource/descriptor tests, one shared public-hash GPU parity test,
+85 Python tests, and a release all-target compilation check. Coverage includes
+CPU/scalar/cooperative roots at tile boundaries, invalid fields in every lane,
+unequal and empty streams, scope poisoning and cleanup, all expression variants,
+buffer flushes before witness roots, shape-capacity refusal, concurrent cache
+misses, source/profile/key separation, and isolation between case owners.
+
+The new test-only selector is
+`--metadata-next-variant baseline|field_hash|encoding|case_cache|all`.
+Both older selectors stay `all` throughout these comparisons. Detail reports
+include `field_kernels` in scalar/cooperative order and `next_counters` in
+expression allocations, shape allocations, case hits, case recordings order.
+Production enables the qualified optimizations without an environment selector.
+
+Frozen sources are in `.tools/metadata-cooperative-baseline` and
+`.tools/metadata-cooperative-candidate-source`. Per-run source/build hashes,
+fixtures, timings, ablations, memory plans, and acceptance checks are in
+[cooperative metadata evidence](../../docs/evidence/ringct-metadata-cooperative-2026-11-02.json).
+This documentation and evidence were added after the measured source snapshot.

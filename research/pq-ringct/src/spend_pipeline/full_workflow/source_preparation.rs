@@ -195,6 +195,7 @@ fn raw_crypto(input: usize, output: usize) -> Result<usize> {
 
 #[derive(Clone, Copy)]
 struct Census {
+    shape_words: usize,
     retained: usize,
     temporary: usize,
     packing: usize,
@@ -468,7 +469,7 @@ impl Census {
         #[cfg(not(feature = "opencl"))]
         let batch_frames = 0;
         raw_host = raw_host.max(lattica_prover_p3::block_v2::native_gpu::RawCommitmentBatchStorage::HOST_BYTES);
-        Ok(Self { retained, temporary: sum([
+        Ok(Self { shape_words, retained, temporary: sum([
             workspace.host_bytes, batch_frames,
             crate::rust_verify::committed_backend::source_binding::prepared::FRAME_BYTES,
             growth, registration_temporary, group_temporary, expression_temporary,
@@ -478,6 +479,7 @@ impl Census {
 }
 
 pub(crate) struct SourcePreparationPlan<'graph> {
+    shape_words: usize,
     context: &'graph ProvingContext,
     source_fingerprint: [u8; 32],
     compiled_source_fingerprint: [u8; 32],
@@ -551,7 +553,7 @@ impl<'graph> SourcePreparationPlan<'graph> {
         // exact initial-source pointer membership before copying these facts.
         // Neither bootstrap nor this descriptor must outlive its operation.
         Ok(Self {
-            context: scope.context(), source_fingerprint: scope.source_fingerprint(),
+            shape_words: census.shape_words, context: scope.context(), source_fingerprint: scope.source_fingerprint(),
             compiled_source_fingerprint: scope.compiled_source_fingerprint(),
             native_identity: native.identity(), budgets: scope.budgets(),
             algebra_limits: scope.algebra_limits(), graph, native,
@@ -599,13 +601,17 @@ impl<'graph> SourcePreparationOperation<'_, 'graph> {
             let budgets = self.plan.budgets;
             let host = usize::try_from(self.plan.backend.host).map_err(|_| SourcePreparationError::Resource)?;
             let (mut prepared, report) = execution.with_witness_preparation(host, |operations| {
-                operations.enable_reusable_storage()?;
+                #[cfg(test)]
+            if !crate::preparation_options::cooperative_fields() {
+                operations.enable_scalar_field_storage_for_qualification()?;
+            }
+            operations.enable_reusable_storage()?;
                 #[cfg(test)]
                 let mut timeline = profiling::Timeline::new();
                 // Fixed static errors prevent graph-dependent diagnostic
                 // expansion across the raw-operation/report boundary.
                 let structure = if crate::preparation_options::structural_reuse() {
-                    Some(crate::rust_verify::committed_backend::source_binding::prepared::PreparedGraphStructure::new(graph)
+                    Some(crate::rust_verify::committed_backend::source_binding::prepared::PreparedGraphStructure::with_capacity(graph, Some(self.plan.shape_words))
                         .map_err(|_| "source registration failed".to_owned())?)
                 } else { None };
                 let registered = if structure.is_none() {

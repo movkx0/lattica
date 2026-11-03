@@ -71,6 +71,7 @@ impl<'a> MulNativeOperationPlan<'a> {
             size_of::<[Reservation; 8]>(), size_of::<[Requirements; 8]>(),
             size_of::<PhaseFacts>(), size_of::<PhaseBinding>(), size_of::<Sha3_256>(),
             crate::graph_tree::metadata::GraphMetadata::construction_bytes(),
+            crate::graph_tree::metadata::verifier::VerifierCache::lookup_frame_bytes(),
         ].into_iter().try_fold(0, add)?.checked_mul(8).ok_or(MulNativeOperationFailure::Overflow)
     }
     pub(crate) fn new(scope: &SourcePlanningPlan<'a>,
@@ -101,9 +102,9 @@ impl<'a> MulNativeOperationPlan<'a> {
             || recording.requirements() != Self::verification_planning_requirements(native.source().kind())? {
             return Err(MulNativeOperationFailure::Authority);
         }
-        let verification = sources.get().metadata()
-                .map_err(|_| MulNativeOperationFailure::Preparation)?
-                .verifier_mul(native.source().kind(), || native.record(recording, ledger)
+        let metadata = sources.get().metadata()
+            .map_err(|_| MulNativeOperationFailure::Preparation)?;
+        let verification = scope.verifier_cache(metadata).verifier_mul(native.source().kind(), || native.record(recording, ledger)
                     .map(|recorded| recorded.verification_plan()).map_err(|_| ()))
                 .map_err(|_| MulNativeOperationFailure::Preparation)?;
         let reservations = NativeMulReservationPlan::outer_host_v1(native.preparation(), 1)

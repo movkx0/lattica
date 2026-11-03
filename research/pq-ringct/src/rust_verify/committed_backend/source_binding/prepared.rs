@@ -15,8 +15,12 @@ pub(crate) const FRAME_BYTES: usize = 8
 
 impl<'graph> PreparedGraphStructure<'graph> {
     pub(crate) fn new(graph: &'graph UnprovedRelationGraph) -> Result<Self> {
+        Self::with_capacity(graph, None)
+    }
+    pub(crate) fn with_capacity(graph: &'graph UnprovedRelationGraph, capacity: Option<usize>) -> Result<Self> {
         let plan = SourcePlan::from_graph(graph)?;
-        let (exact_shape, counts, label, digest) = inventory::prepared_shape(graph);
+        let (exact_shape, counts, label, digest) = inventory::prepared_shape_with_capacity(graph, capacity)
+            .ok_or_else(|| error("registered shape exceeds admitted word census"))?;
         crate::preparation_options::reuse_count(
             crate::preparation_options::ReuseCounter::PreparedStructures,
         );

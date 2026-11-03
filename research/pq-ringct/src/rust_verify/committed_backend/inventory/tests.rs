@@ -114,7 +114,7 @@ fn framing_keeps_full_integers_record_lengths_and_root_order() {
         for (index, (kind, words, roots)) in records.iter().enumerate() {
             encoder.record(*kind, index, words, &[], roots);
         }
-        <[u8; 32]>::from(encoder.witness.finalize())
+        { encoder.flush(); <[u8; 32]>::from(encoder.witness.finalize()) }
     };
     let empty = vec![];
     assert_ne!(
@@ -180,5 +180,59 @@ fn prepared_encoding_preserves_exact_words_counts_and_separate_hash_frames() {
         hash.update(b"lattica/matrict/registered-graph-label/v1");
         for word in words { hash.update(word.to_le_bytes()); }
         assert_eq!(label, <[u8; 32]>::from(hash.finalize()));
+    }
+}
+
+#[test]
+fn buffered_encoding_matches_reference_across_flushes_and_witness_roots() {
+    for length in [0, 1, 1023, 1024, 1025, 2048, 2049] {
+        let mut buffered = Encoder::with_optimization(true);
+        let mut reference = Encoder::with_optimization(false);
+        for encoder in [&mut buffered, &mut reference] {
+            for word in 0..length { encoder.word(word); }
+            encoder.record(3, 9, &[17, 18], &[[Val::ONE; 4]], &[[Val::from_u64(23); 4]]);
+            encoder.record(4, 10, &[19], &[], &[]);
+            encoder.flush();
+        }
+        assert_eq!(buffered.shape.finalize(), reference.shape.finalize());
+        assert_eq!(buffered.witness.finalize(), reference.witness.finalize());
+    }
+    let graph = example();
+    let mut buffered = Encoder::with_optimization(true);
+    let mut reference = Encoder::with_optimization(false);
+    for encoder in [&mut buffered, &mut reference] {
+        encoder.exact_shape = Some(vec![VERSION]);
+        encoder.registration = Some(Sha3_256::new());
+    }
+    assert_eq!(encode_graph(&graph, &mut buffered), encode_graph(&graph, &mut reference));
+    buffered.flush(); reference.flush();
+    assert_eq!(buffered.exact_shape, reference.exact_shape);
+    assert_eq!(buffered.registration.unwrap().finalize(), reference.registration.unwrap().finalize());
+    assert_eq!(buffered.shape.finalize(), reference.shape.finalize());
+    let length = buffered.exact_shape.unwrap().len();
+    assert!(prepared_shape_with_capacity(&graph, Some(length)).is_some());
+    assert!(prepared_shape_with_capacity(&graph, Some(length+128)).is_some());
+    assert!(prepared_shape_with_capacity(&graph, Some(length-1)).is_none());
+    assert!(prepared_shape_with_capacity(&graph, Some(0)).is_none());
+}
+
+#[test]
+fn stack_expression_words_match_every_reference_variant() {
+    let mut backend = CommittedBackend::new([0; 32]);
+    let polynomial = backend.signed_node([0; D], 7, Source::Fixed);
+    let expressions = [
+        Expression::CanonicalInput { polynomial, index: 255 },
+        Expression::SignedInput { polynomial, index: 0 },
+        Expression::CanonicalConstant { modulus: Q, value: Q-1 },
+        Expression::Add { left: 1, right: 2, modulus: Q },
+        Expression::Sub { left: 2, right: 1, modulus: QHAT },
+        Expression::Scale { input: 4, factor: QHAT-1, modulus: QHAT },
+        Expression::SignedNeg { input: 5, bound: 7 },
+        Expression::SignedSub { left: 6, right: 7, bound: 14 },
+        Expression::ConvertCoefficient { input: 8, bound: 14, modulus: Q },
+    ];
+    for item in &expressions {
+        let (words, len) = expression(item);
+        assert_eq!(&words[..len], expression_reference(item));
     }
 }

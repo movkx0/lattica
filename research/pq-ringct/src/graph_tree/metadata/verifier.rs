@@ -1,4 +1,4 @@
-//! Fixed, graph-owned numeric plans. No replay, witness, reservation or proof
+//! Fixed, case-owned numeric plans (graph-owned reference in tests). No replay, witness, reservation or proof
 //! authority is retained; the issuer still records and checks its own census.
 use crate::graph_proofs::{owned_mul, owned_ntt, owned_permutation};
 use crate::preparation_options::{reuse_count, ReuseCounter};
@@ -28,6 +28,7 @@ pub(super) struct Cache {
     profile: [u8; 32],
     entries: [Option<(Key, Value)>; CAPACITY],
     len: usize,
+    case_owned: bool,
 }
 impl Cache {
     pub(super) fn new() -> Self {
@@ -36,6 +37,7 @@ impl Cache {
             profile: profile::CANDIDATE_PROFILE_ID,
             entries: [None; CAPACITY],
             len: 0,
+            case_owned: false,
         }
     }
     fn resolve(
@@ -55,10 +57,12 @@ impl Cache {
                 .find(|(k, _)| *k == key)
             {
                 reuse_count(ReuseCounter::VerifierHits);
+                if self.case_owned { crate::preparation_options::next_count(crate::preparation_options::NextCounter::CaseHits); }
                 return Ok(*value);
             }
         }
         reuse_count(ReuseCounter::VerifierRecordings);
+        if self.case_owned { crate::preparation_options::next_count(crate::preparation_options::NextCounter::CaseRecordings); }
         let value = record()?;
         let actual = match value {
             Value::Ntt(plan) => Key::Ntt(plan.descriptor()),
@@ -87,7 +91,7 @@ macro_rules! method {
             record: impl FnOnce() -> Result<$plan, ()>,
         ) -> Result<$plan, ()> {
             // The lock also makes a concurrent miss record at most once. The
-            // closed recorder does not access this graph's metadata cache.
+            // closed recorder does not access the case's metadata cache.
             let mut cache = self.verifiers.lock().map_err(|_| ())?;
             match cache.resolve(Key::$variant(descriptor), || record().map(Value::$variant))? {
                 Value::$variant(plan) => Ok(plan),
@@ -96,7 +100,23 @@ macro_rules! method {
         }
     };
 }
-impl super::GraphMetadata {
+// Inline bounded backing: SourcePlanningPlan's descriptor census includes
+// this whole owner and its construction/result frames BEFORE initialization.
+// No reservations, private data, proofs or replay authority enter this cache.
+pub(crate) struct VerifierCache { verifiers: std::sync::Mutex<Cache> }
+impl VerifierCache {
+    // Caller multiplies these lookup/return/lock frames by its normal overlap
+    // factor. The inline entries themselves belong to the case descriptor.
+    pub(crate) const fn lookup_frame_bytes() -> usize {
+        core::mem::size_of::<Key>() + 2 * core::mem::size_of::<Value>()
+            + core::mem::size_of::<Result<Value, ()>>()
+            + core::mem::size_of::<std::sync::MutexGuard<'static, Cache>>() + 64
+    }
+    pub(crate) fn new(case_owned: bool) -> Self {
+        let mut cache = Cache::new();
+        cache.case_owned = case_owned;
+        Self { verifiers: std::sync::Mutex::new(cache) }
+    }
     method!(
         verifier_ntt,
         Ntt,
@@ -127,6 +147,28 @@ mod tests {
             (Value::Permutation(a), Value::Permutation(b)) => a.same_census(b),
             _ => false,
         }
+    }
+    #[test]
+    fn case_cache_records_once_across_threads_and_never_crosses_case_owners() {
+        let descriptor = NttDescriptor::new(crate::rust_verify::Q, 3).unwrap();
+        let expected = owned_ntt::verification_memory::recorded_test_plan(descriptor);
+        let cache = VerifierCache::new(true);
+        let recordings = std::sync::atomic::AtomicUsize::new(0);
+        std::thread::scope(|scope| {
+            for _ in 0..8 {
+                scope.spawn(|| {
+                    let actual = cache.verifier_ntt(descriptor, || {
+                        recordings.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        Ok(expected)
+                    }).unwrap();
+                    assert!(actual.same_census(expected));
+                });
+            }
+        });
+        assert_eq!(recordings.load(std::sync::atomic::Ordering::Relaxed), 1);
+        let other_case = VerifierCache::new(true);
+        assert!(other_case.verifier_ntt(descriptor, || Err(())).is_err());
+        assert!(other_case.verifiers.lock().unwrap().entries.iter().all(Option::is_none));
     }
     #[test]
     fn numeric_cache_matches_fresh_recordings_and_rejects_wrong_keys_and_source() {

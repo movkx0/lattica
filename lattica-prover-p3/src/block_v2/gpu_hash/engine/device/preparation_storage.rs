@@ -24,6 +24,7 @@ pub(crate) struct Workspace {
     // Drop kernels before the buffers their OpenCL memory arguments retain.
     kernels: Option<[compute::Kernel; 5]>,
     metadata: [Vec<u64>; 4],
+    cooperative_fields: bool,
     buffers: [SecretAllocation; 8],
     queue: compute::Queue,
     session: Arc<Session>,
@@ -88,7 +89,7 @@ impl Use<'_> {
 }
 
 impl DeviceSession {
-    pub(crate) fn preparation_workspace(&self) -> Result<Workspace, String> {
+    pub(crate) fn preparation_workspace(&self, allow_cooperative_fields: bool) -> Result<Workspace, String> {
         self.with_engine(|engine| {
             let shapes = COUNTS.map(|n| MatrixSpec::new(0, n, Extension::Base, RowOrder::Natural, 1))
                 .into_iter().collect::<Result<Vec<_>, _>>()?;
@@ -101,11 +102,17 @@ impl DeviceSession {
             node.arg(buffers[0].buffer()).arg(0u32).arg(167_770_241u64).arg(buffers[2].buffer());
             for constant in &engine.constants { node.arg(&constant.buffer); }
             let node = node.global_work_size(1).build().map_err(|e| e.to_string())?;
-            let fields = engine.pq.kernel_builder("pq_operation_commit_fields")
+            // Selection is immutable for the entire scope. An execution error
+            // poisons the scope; it never triggers a scalar retry.
+            let cooperative_fields = allow_cooperative_fields && engine.nvidia_shuffle;
+            let lanes = if cooperative_fields { 8 } else { 1 };
+            let fields_name = if cooperative_fields { "pq_operation_commit_fields_cooperative" } else { "pq_operation_commit_fields" };
+            let batch_name = if cooperative_fields { "pq_operation_commit_fields_batch_cooperative" } else { "pq_operation_commit_fields_batch" };
+            let fields = engine.pq.kernel_builder(fields_name)
                 .arg(buffers[0].buffer()).arg(0u32).arg(0u32).arg(buffers[1].buffer()).arg(buffers[2].buffer())
                 .arg(&engine.constants[0].buffer).arg(&engine.constants[1].buffer)
                 .arg(&engine.constants[2].buffer).arg(&engine.constants[3].buffer)
-                .global_work_size(1).build().map_err(|e| e.to_string())?;
+                .global_work_size(lanes).local_work_size(lanes).build().map_err(|e| e.to_string())?;
             let arithmetic = engine.pq.kernel_builder("pq_graph_arithmetic")
                 .arg(buffers[0].buffer()).arg(buffers[1].buffer()).arg(buffers[2].buffer()).arg(buffers[3].buffer())
                 .global_work_size(1).build().map_err(|e| e.to_string())?;
@@ -115,15 +122,19 @@ impl DeviceSession {
                 .arg(&engine.constants[0].buffer).arg(&engine.constants[1].buffer)
                 .arg(&engine.constants[2].buffer).arg(&engine.constants[3].buffer)
                 .global_work_size(1).build().map_err(|e| e.to_string())?;
-            let field_batch = engine.pq.kernel_builder("pq_operation_commit_fields_batch")
-                .arg(buffers[0].buffer()).arg(buffers[1].buffer()).arg(0u32).arg(0u32)
+            let mut field_batch = engine.pq.kernel_builder(batch_name);
+            field_batch.arg(buffers[0].buffer()).arg(buffers[1].buffer()).arg(0u32).arg(0u32)
                 .arg(buffers[2].buffer()).arg(buffers[3].buffer())
                 .arg(&engine.constants[0].buffer).arg(&engine.constants[1].buffer)
                 .arg(&engine.constants[2].buffer).arg(&engine.constants[3].buffer)
-                .global_work_size(1).build().map_err(|e| e.to_string())?;
+                .global_work_size(lanes);
+            // Preserve the scalar kernel's driver-selected batch workgroup.
+            // Only the collective kernel requires exactly eight local lanes.
+            if cooperative_fields { field_batch.local_work_size(8); }
+            let field_batch = field_batch.build().map_err(|e| e.to_string())?;
             drop(setup);
             Ok(Workspace { kernels: Some([node, fields, arithmetic, node_batch, field_batch]), metadata: core::array::from_fn(|_| Vec::new()),
-                buffers, queue: engine.pq.queue().clone(), session: self.session.clone() })
+                cooperative_fields, buffers, queue: engine.pq.queue().clone(), session: self.session.clone() })
         })
     }
     fn with_prepared<T>(&self, workspace: &RefCell<Option<Workspace>>, counts: [usize; 4], family: usize,
@@ -194,6 +205,7 @@ impl DeviceSession {
             if !words.is_empty() { use_.buffer(0).write(words).enq().map_err(|e| e.to_string())?; }
             use_.buffer(1).write(&initial[..]).enq().map_err(|e| e.to_string())?;
             drop(upload);
+            let cooperative = use_.workspace.cooperative_fields;
             let kernel = use_.kernel(1);
             for begin in (0..words.len().max(1)).step_by(4096) {
                 let setup = profile::metric(profile::KERNEL);
@@ -204,7 +216,8 @@ impl DeviceSession {
                 // SAFETY: original bounded serial hash kernel and unchanged tile
                 // order; fixed state and source buffers remain owned by use_.
                 unsafe { kernel.cmd().enew(&mut event).enq().map_err(|e| e.to_string())?; }
-                self.prepared_event(engine, run, "pq_operation_commit_fields", &event)?;
+                profile::field_kernel(cooperative);
+                self.prepared_event(engine, run, if cooperative { "pq_operation_commit_fields_cooperative" } else { "pq_operation_commit_fields" }, &event)?;
             }
             let readback = profile::metric(profile::READBACK);
             use_.buffer(2).read(&mut result[..]).enq().map_err(|e| e.to_string())?;

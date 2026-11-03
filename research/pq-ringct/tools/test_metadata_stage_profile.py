@@ -10,6 +10,29 @@ from metadata_stage_profile import SELECTOR, PREFIX, cache_rates, preparation_de
 
 
 class MetadataStageTests(unittest.TestCase):
+    def test_next_counters_and_selector_are_complete_and_profile_only(self):
+        options = dict(profile='full', expect_tests=True, build_label='build',
+            command=['/tmp/profile', SELECTOR, '--exact', '--ignored', '--test-threads=1', '--nocapture'],
+            metadata_stage_profile=True, retained_tree_storage='host',
+            device_uuid='GPU-11111111-2222-3333-4444-555555555555')
+        with patch.object(runner, 'identity_physical_cpus', return_value=list(range(16))):
+            for variant in ('baseline', 'field_hash', 'encoding', 'case_cache', 'all'):
+                plan = runner.build_plan(arguments(**options, metadata_next_variant=variant))
+                self.assertEqual(plan['environment']['LATTICA_RINGCT_METADATA_NEXT_VARIANT'], variant)
+                r = self.fixture()
+                r.update(reuse_variant='all', reuse_counters=[3, 0, 0, 3, 68, 13, 0, 12],
+                    next_variant=variant, next_counters=[0 if variant in ('encoding', 'all') else 1515486,
+                        3, *([68, 13] if variant in ('case_cache', 'all') else [0, 0])])
+                self.assertEqual(validate(self.text(r))['next_variant'], variant)
+                for index in (0, 1, 2, 3):
+                    bad = copy.deepcopy(r)
+                    bad['next_counters'][index] = 0 if bad['next_counters'][index] else 1
+                    with self.assertRaises(ValueError): validate(self.text(bad))
+            with self.assertRaises(ValueError):
+                runner.build_plan(arguments(**{**options, 'metadata_stage_profile': False}, metadata_next_variant='all'))
+            with self.assertRaises(ValueError):
+                runner.build_plan(arguments(**options, metadata_next_variant='invalid'))
+
     def test_reuse_counters_and_variant_require_complete_scope(self):
         for variant in ('baseline', 'structure', 'verifier', 'arithmetic', 'all'):
             r = self.fixture()

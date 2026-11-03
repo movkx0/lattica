@@ -50,6 +50,10 @@ def preparation_detail(content, timing, required, variant='reference'):
                 and record['complete'] is True and record['families'] == families
                 and record['metrics'] == metrics and len(record['counters']) == 4,
                 'invalid raw preparation detail')
+        if 'field_kernels' in record:
+            require(len(record['field_kernels']) == 2 and
+                    sum(natural(n) for n in record['field_kernels']) == record['counters'][1]['device_calls'],
+                    'incomplete field kernel counters')
         if 'arithmetic_shapes' in record:
             require(len(record['arithmetic_shapes']) == 32 and record['arithmetic_overflow'] == 0,
                     'incomplete arithmetic shape counters')
@@ -123,6 +127,19 @@ def validate(content, require_preparation_detail=False):
         require(reuse[7] == (12 if reuse_variant in ('all', 'arithmetic') else 0), 'incomplete vector recipes')
         require(reuse[6] == 0, 'numeric verifier cache overflow')
         require((reuse[4] > 0) == (reuse_variant in ('all', 'verifier')), 'incorrect verifier reuse')
+    next_variant = r.get('next_variant', 'baseline')
+    require(next_variant in ('baseline', 'field_hash', 'encoding', 'case_cache', 'all'), 'invalid next variant')
+    next_counts = r.get('next_counters')
+    if 'next_variant' in r:
+        require(type(next_counts) is list and len(next_counts) == 4, 'incomplete next counters')
+        for value in next_counts: natural(value)
+        require(reuse is not None, 'next counters require reuse counters')
+        require((next_counts[0] == 0) == (next_variant in ('encoding', 'all')), 'incorrect expression allocations')
+        require(next_counts[1] > 0, 'missing shape allocation counts')
+        if next_variant in ('case_cache', 'all'):
+            require(next_counts[2:] == reuse[4:6], 'incomplete case cache counters')
+        else:
+            require(next_counts[2:] == [0, 0], 'unexpected case cache use')
     timing = r['timing']
     for value in timing.values():
         natural(value)
@@ -153,7 +170,7 @@ def validate(content, require_preparation_detail=False):
     combined = {key: registered[key] + native[key] for key in ('requests', 'memory_hits', 'table_hits', 'cold_misses')}
     combined['cold_miss_rate'] = combined['cold_misses'] / combined['requests']
     metadata_startup_ns = r['generation_and_startup_ns'] - input_ns
-    return dict(reuse_variant=reuse_variant, reuse_counters=reuse, hash_variant=variant, endpoint_adoptions=r.get('endpoint_adoptions', 0), metadata_workers=r['metadata_workers'], fixture_load_verify_ns=r.get('fixture_load_verify_ns', 0), complete_metadata=True, complete_workflow=False, recursive_proofs_generated=0,
+    return dict(next_variant=next_variant, next_counters=next_counts, reuse_variant=reuse_variant, reuse_counters=reuse, hash_variant=variant, endpoint_adoptions=r.get('endpoint_adoptions', 0), metadata_workers=r['metadata_workers'], fixture_load_verify_ns=r.get('fixture_load_verify_ns', 0), complete_metadata=True, complete_workflow=False, recursive_proofs_generated=0,
                 timing=timing, native_input_generation_ns=r['native_input_generation_ns'],
                 generation_and_startup_ns=r['generation_and_startup_ns'],
                 metadata_startup_ns=metadata_startup_ns,

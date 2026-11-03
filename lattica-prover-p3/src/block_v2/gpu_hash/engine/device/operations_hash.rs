@@ -49,6 +49,7 @@ impl DeviceSession {
                     .arg(&engine.constants[2].buffer).arg(&engine.constants[3].buffer)
                     .global_work_size(1).build().map_err(|e| e.to_string())?;
                 drop(setup);
+            profile::field_kernel(false);
                 // SAFETY: the aggregate plan admits all raw and result buffers.
                 // Consecutive aligned tiles share only a five-word device state;
                 // each validates its raw fields before hashing. The first tile

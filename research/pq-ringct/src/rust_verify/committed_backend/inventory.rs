@@ -92,9 +92,15 @@ struct Encoder {
     witness: Sha3_256,
     exact_shape: Option<Vec<u64>>,
     registration: Option<Sha3_256>,
+    optimized: bool,
+    buffered: [u8; 8192],
+    used: usize,
+    shape_limit: Option<usize>,
+    shape_overflow: bool,
 }
 impl Encoder {
-    fn new() -> Self {
+    fn new() -> Self { Self::with_optimization(crate::preparation_options::buffered_encoding()) }
+    fn with_optimization(optimized: bool) -> Self {
         let mut shape = Sha3_256::new();
         let mut witness = Sha3_256::new();
         for (hash, role) in [(&mut shape, 0u64), (&mut witness, 1u64)] {
@@ -108,16 +114,41 @@ impl Encoder {
             witness,
             exact_shape: None,
             registration: None,
+            optimized, buffered: [0; 8192], used: 0,
+            shape_limit: None, shape_overflow: false,
         }
+    }
+    fn flush(&mut self) {
+        if self.used == 0 { return; }
+        let bytes = &self.buffered[..self.used];
+        self.shape.update(bytes);
+        if let Some(hash) = &mut self.registration { hash.update(bytes); }
+        else { self.witness.update(bytes); }
+        self.used = 0;
     }
     fn word(&mut self, word: u64) {
         if let Some(words) = &mut self.exact_shape {
-            words.push(word);
+            // The admitted census is an upper bound. Refuse before any push
+            // could grow past it; never treat a truncated shape as successful.
+            if self.shape_limit.is_some_and(|limit| words.len() >= limit) {
+                self.shape_overflow = true;
+            } else {
+                if words.len() == words.capacity() {
+                    crate::preparation_options::next_count(crate::preparation_options::NextCounter::ShapeAllocations);
+                }
+                words.push(word);
+            }
             if self.registration.is_none() { return; }
         }
-        self.shape.update(word.to_le_bytes());
-        if let Some(hash) = &mut self.registration { hash.update(word.to_le_bytes()); }
-        else { self.witness.update(word.to_le_bytes()); }
+        if self.optimized {
+            self.buffered[self.used..self.used+8].copy_from_slice(&word.to_le_bytes());
+            self.used += 8;
+            if self.used == self.buffered.len() { self.flush(); }
+        } else {
+            self.shape.update(word.to_le_bytes());
+            if let Some(hash) = &mut self.registration { hash.update(word.to_le_bytes()); }
+            else { self.witness.update(word.to_le_bytes()); }
+        }
     }
     /// All integers use full LE-u64 encodings, avoiding field-reduction
     /// aliases. Count framing distinguishes records and variable-length lists.
@@ -145,6 +176,7 @@ impl Encoder {
         if self.exact_shape.is_some() {
             return;
         }
+        if !roots.is_empty() { self.flush(); }
         for root in roots {
             for field in root {
                 self.witness.update(field.as_canonical_u64().to_le_bytes());
@@ -166,7 +198,7 @@ fn source(source: &Source, words: &mut Vec<u64>) {
     }
 }
 
-fn expression(expression: &Expression) -> Vec<u64> {
+fn expression_reference(expression: &Expression) -> Vec<u64> {
     match *expression {
         Expression::CanonicalInput { polynomial, index } => {
             vec![1, polynomial.index() as u64, index as u64]
@@ -202,6 +234,19 @@ fn expression(expression: &Expression) -> Vec<u64> {
     }
 }
 
+fn expression(expression: &Expression) -> ([u64; 4], usize) {
+    match *expression {
+        Expression::CanonicalInput { polynomial, index } => ([1, polynomial.index() as u64, index as u64, 0], 3),
+        Expression::SignedInput { polynomial, index } => ([2, polynomial.index() as u64, index as u64, 0], 3),
+        Expression::CanonicalConstant { modulus, value } => ([3, modulus, value, 0], 3),
+        Expression::Add { left, right, modulus } => ([4, left as u64, right as u64, modulus], 4),
+        Expression::Sub { left, right, modulus } => ([5, left as u64, right as u64, modulus], 4),
+        Expression::Scale { input, factor, modulus } => ([6, input as u64, factor, modulus], 4),
+        Expression::SignedNeg { input, bound } => ([7, input as u64, bound as u64, 0], 3),
+        Expression::SignedSub { left, right, bound } => ([8, left as u64, right as u64, bound as u64], 4),
+        Expression::ConvertCoefficient { input, bound, modulus } => ([9, input as u64, bound as u64, modulus], 4),
+    }
+}
 struct Record<'a> {
     graph: &'a UnprovedRelationGraph,
     words: Vec<u64>,
@@ -413,6 +458,7 @@ pub fn inventory(graph: &UnprovedRelationGraph) -> UnprovedInventory {
     crate::preparation_options::reuse_count(crate::preparation_options::ReuseCounter::FullInventories);
     let mut encoder = Encoder::new();
     let counts = encode_graph(graph, &mut encoder);
+    encoder.flush();
     UnprovedInventory {
         counts,
         shape_sha3_256: encoder.shape.finalize().into(),
@@ -425,6 +471,7 @@ pub fn inventory(graph: &UnprovedRelationGraph) -> UnprovedInventory {
 pub(super) fn exact_shape(graph: &UnprovedRelationGraph) -> Vec<u64> {
     let mut encoder = Encoder::new();
     encoder.exact_shape = Some(vec![VERSION]);
+    crate::preparation_options::next_count(crate::preparation_options::NextCounter::ShapeAllocations);
     encode_graph(graph, &mut encoder);
     encoder.exact_shape.expect("shape collector")
 }
@@ -432,14 +479,26 @@ pub(super) fn exact_shape(graph: &UnprovedRelationGraph) -> Vec<u64> {
 pub(super) const PREPARED_FRAME_BYTES: usize = core::mem::size_of::<Encoder>() + core::mem::size_of::<Counts>() + 512;
 /// Preserve both domain-separated hash framings while collecting exact words.
 pub(super) fn prepared_shape(graph: &UnprovedRelationGraph) -> (Vec<u64>, Counts, [u8; 32], [u8; 32]) {
+    prepared_shape_with_capacity(graph, None).expect("unbounded shape encoding")
+}
+pub(super) fn prepared_shape_with_capacity(graph: &UnprovedRelationGraph, capacity: Option<usize>)
+    -> Option<(Vec<u64>, Counts, [u8; 32], [u8; 32])> {
     let mut encoder = Encoder::new();
     let mut label = Sha3_256::new();
     label.update(b"lattica/matrict/registered-graph-label/v1");
     label.update(VERSION.to_le_bytes());
     encoder.registration = Some(label);
-    encoder.exact_shape = Some(vec![VERSION]);
+    let capacity = capacity.filter(|_| encoder.optimized);
+    if capacity == Some(0) { return None; }
+    let mut words = Vec::with_capacity(capacity.unwrap_or(1));
+    crate::preparation_options::next_count(crate::preparation_options::NextCounter::ShapeAllocations);
+    words.push(VERSION);
+    encoder.exact_shape = Some(words);
+    encoder.shape_limit = capacity;
     let counts = encode_graph(graph, &mut encoder);
-    (encoder.exact_shape.unwrap(), counts, encoder.registration.unwrap().finalize().into(), encoder.shape.finalize().into())
+    encoder.flush();
+    if encoder.shape_overflow { return None; }
+    Some((encoder.exact_shape.unwrap(), counts, encoder.registration.unwrap().finalize().into(), encoder.shape.finalize().into()))
 }
 
 fn encode_graph(graph: &UnprovedRelationGraph, encoder: &mut Encoder) -> Counts {
@@ -461,7 +520,7 @@ fn encode_graph(graph: &UnprovedRelationGraph, encoder: &mut Encoder) -> Counts 
         operations: operations.len(),
         operation_kinds: [0; 18],
     };
-    let mut header = vec![
+    let mut words = vec![
         D as u64,
         POLYNOMIAL_DOMAIN,
         SIGNED_POLYNOMIAL_DOMAIN,
@@ -472,8 +531,8 @@ fn encode_graph(graph: &UnprovedRelationGraph, encoder: &mut Encoder) -> Counts 
         operations.len() as u64,
         setup_seed.len() as u64,
     ];
-    header.extend(setup_seed.iter().map(|&byte| byte as u64));
-    encoder.record(1, 0, &header, &[], &[]);
+    words.extend(setup_seed.iter().map(|&byte| byte as u64));
+    encoder.record(1, 0, &words, &[], &[]);
     for (index, node) in polynomials.iter().enumerate() {
         let PolynomialNode {
             kind,
@@ -482,10 +541,11 @@ fn encode_graph(graph: &UnprovedRelationGraph, encoder: &mut Encoder) -> Counts 
             values: _values,
             expressions: coefficient_ids,
         } = node;
-        let mut words = match *kind {
-            PolynomialKind::Canonical { modulus } => vec![1, modulus],
-            PolynomialKind::Signed { bound } => vec![2, bound as u64],
-        };
+        if encoder.optimized { words.clear(); } else { words = Vec::new(); }
+        words.extend(match *kind {
+            PolynomialKind::Canonical { modulus } => [1, modulus],
+            PolynomialKind::Signed { bound } => [2, bound as u64],
+        });
         source(origin, &mut words);
         words.push(coefficient_ids.len() as u64);
         words.extend(coefficient_ids.iter().map(|&id| id as u64));
@@ -502,7 +562,7 @@ fn encode_graph(graph: &UnprovedRelationGraph, encoder: &mut Encoder) -> Counts 
             commitment,
             values: _values,
         } = node;
-        let mut words = vec![];
+        if encoder.optimized { words.clear(); } else { words = Vec::new(); }
         source(origin, &mut words);
         let fixed = if matches!(origin, Source::Fixed) {
             std::slice::from_ref(commitment)
@@ -520,10 +580,21 @@ fn encode_graph(graph: &UnprovedRelationGraph, encoder: &mut Encoder) -> Counts 
         {
             graph.polynomial(*polynomial);
         }
-        encoder.record(4, index, &expression(item), &[], &[]);
+        if encoder.optimized {
+            let (words, len) = expression(item);
+            encoder.record(4, index, &words[..len], &[], &[]);
+        } else {
+            crate::preparation_options::next_count(crate::preparation_options::NextCounter::ExpressionAllocations);
+            encoder.record(4, index, &expression_reference(item), &[], &[]);
+        }
     }
+    // Reuse the node backing for operation words; roots retain one bounded
+    // scratch allocation across operations. Existing census covers growth.
+    words.clear();
+    let mut record = Record { graph, words, roots: Vec::new() };
     for (index, item) in operations.iter().enumerate() {
-        let mut record = Record::new(graph);
+        if encoder.optimized { record.words.clear(); record.roots.clear(); }
+        else { record = Record::new(graph); }
         let kind = record.operation(item);
         counts.operation_kinds[kind as usize] += 1;
         record.words.insert(0, kind as u64 + 1);

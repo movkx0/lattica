@@ -11,7 +11,7 @@ use crate::{
 };
 use std::sync::Mutex;
 #[cfg(not(debug_assertions))]
-mod verifier;
+pub(crate) mod verifier;
 const OPERATIONS: usize = 1311;
 const POLYNOMIALS: usize = 1770;
 const NONE: u16 = u16::MAX;
@@ -154,8 +154,8 @@ pub(crate) struct GraphMetadata {
     index: Index,
     native_coverage: [bool; 2],
     footprints: Mutex<Footprints>,
-    #[cfg(not(debug_assertions))]
-    verifiers: Mutex<verifier::Cache>,
+    #[cfg(all(test, not(debug_assertions)))]
+    pub(crate) verifiers: verifier::VerifierCache,
 }
 impl GraphMetadata {
     pub(crate) const fn retained_bytes() -> usize {
@@ -228,8 +228,8 @@ impl GraphMetadata {
             index,
             native_coverage,
             footprints: Mutex::new(Footprints::new()),
-            #[cfg(not(debug_assertions))]
-            verifiers: Mutex::new(verifier::Cache::new()),
+            #[cfg(all(test, not(debug_assertions)))]
+            verifiers: verifier::VerifierCache::new(false),
         })
     }
     pub(super) fn fixed(&self) -> FixedSourceCensus {

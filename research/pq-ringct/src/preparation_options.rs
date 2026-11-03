@@ -52,3 +52,34 @@ pub(crate) fn reuse_count(counter: ReuseCounter) {
 }
 #[cfg(test)]
 pub(crate) fn reuse_counts() -> [u64; 8] { core::array::from_fn(|i| REUSE_COUNTS[i].load(std::sync::atomic::Ordering::Relaxed)) }
+
+#[cfg(test)]
+pub(crate) fn next_variant() -> &'static str {
+    match std::env::var("LATTICA_RINGCT_METADATA_NEXT_VARIANT").as_deref() {
+        Err(_) | Ok("all") => "all", Ok("baseline") => "baseline",
+        Ok("field_hash") => "field_hash", Ok("encoding") => "encoding",
+        Ok("case_cache") => "case_cache", _ => panic!("invalid metadata next variant"),
+    }
+}
+fn next_enabled(name: &str) -> bool {
+    #[cfg(test)] { let selected = next_variant(); selected == "all" || selected == name }
+    #[cfg(not(test))] { let _ = name; true }
+}
+#[cfg(test)]
+pub(crate) fn cooperative_fields() -> bool { next_enabled("field_hash") }
+pub(crate) fn buffered_encoding() -> bool { next_enabled("encoding") }
+#[cfg(test)]
+pub(crate) fn case_verifier_cache() -> bool { next_enabled("case_cache") }
+#[derive(Clone, Copy)]
+#[repr(usize)]
+pub(crate) enum NextCounter { ExpressionAllocations, ShapeAllocations, CaseHits, CaseRecordings }
+#[cfg(test)]
+static NEXT_COUNTS: [std::sync::atomic::AtomicU64; 4] = [const { std::sync::atomic::AtomicU64::new(0) }; 4];
+pub(crate) fn next_count(counter: NextCounter) {
+    #[cfg(test)] { NEXT_COUNTS[counter as usize].fetch_add(1, std::sync::atomic::Ordering::Relaxed); }
+    #[cfg(not(test))] { let _ = counter; }
+}
+#[cfg(test)]
+pub(crate) fn next_counts() -> [u64; 4] {
+    core::array::from_fn(|i| NEXT_COUNTS[i].load(std::sync::atomic::Ordering::Relaxed))
+}
