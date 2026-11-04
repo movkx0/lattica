@@ -45,7 +45,7 @@ pub(super) fn endpoint_scratch(request: &Request) -> Result<Requirements> {
         add(vectors, paired_runtime::caller_bytes()?)?)?)
 }
 
-pub(super) fn native_requirements(request: &Request, index: usize) -> Result<(Requirements, Requirements)> {
+pub(in crate::graph_crypto::prover) fn native_requirements(request: &Request, index: usize) -> Result<(Requirements, Requirements)> {
     let (output, scratch) = operations::native::OwnedShakeNativeSource::new(request, index)?
         .source_requirements()?;
     Ok((combine(&[output,

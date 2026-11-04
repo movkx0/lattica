@@ -122,12 +122,16 @@ pub(crate) struct NttProofPlan<'a> {
 impl<'a> NttProofPlan<'a> {
     pub(crate) fn new(sources: &'a SourceRetained<PreparedWorkflowSources<'a>>, batch: usize, original: &Reservation, ledger: &Ledger)
         -> Result<Self>
+    { Self::new_resolved(sources, batch, original, ledger, None) }
+    pub(crate) fn new_resolved(sources: &'a SourceRetained<PreparedWorkflowSources<'a>>, batch: usize, original: &Reservation, ledger: &Ledger, prepared: Option<metadata::Prepared<'a>>)
+        -> Result<Self>
     {
         if !original.belongs_to(ledger) || !sources.belongs_to(ledger)
             || original.requirements().get(crate::execution::retained_resources::Category::RegisteredMetadata).host
                 < Self::metadata_host_bytes() as u64
         { return Err(NttFailure::Resource); }
         let source = NttSource::from_original(sources, batch)?;
+        if let Some(prepared) = prepared { return prepared.into_plan(source); }
         let preparation = NttPreparationPlan::new(source.kind).map_err(|_| NttFailure::Resource)?;
         let output = NttOutputPlan::new(preparation).map_err(|_| NttFailure::Resource)?;
         let geometry = preparation.geometry(); let air = source.air();
@@ -141,6 +145,12 @@ impl<'a> NttProofPlan<'a> {
     // required before serialize; the raw owner lives in the operation plan.
     pub(crate) const fn metadata_host_bytes() -> usize {
         NttSource::planning_view_host_bytes() + 2 * 128 * 256 * 8 + (64 << 10) }
+    /// Additional preparation is private to the admitted worker phase. Its
+    /// forwarding frames must not become retained proof metadata.
+    pub(crate) const fn metadata_worker_host_bytes() -> usize {
+        Self::metadata_host_bytes() + 8 * (size_of::<metadata::View<'static>>()
+            + size_of::<metadata::Data<'static>>() + size_of::<metadata::Prepared<'static>>())
+    }
     pub(crate) fn source(&self) -> NttSource<'a> { self.source }
     pub(crate) fn preparation(&self) -> NttPreparationPlan { self.preparation }
     pub(crate) fn output_plan(&self) -> NttOutputPlan { self.output }
@@ -240,3 +250,5 @@ impl<'a> VerifiedNttProof<'a> {
     pub(crate) fn receipt(&self) -> &VerificationReceipt { &self.receipt }
     pub(crate) fn into_originals(self) -> (Reservation, Reservation) { self.original.into_originals() }
 }
+
+pub(crate) mod metadata;

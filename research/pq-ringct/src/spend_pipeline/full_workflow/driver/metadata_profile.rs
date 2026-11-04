@@ -75,6 +75,8 @@ struct Report {
     reuse_counters: [u64; 8],
     pipeline_variant: &'static str,
     parallel_variant: &'static str,
+    concurrency_variant: &'static str,
+    native_reference_checks: [u64; 6],
     pipeline_counters: [u64; 4],
     #[serde(serialize_with = "serialize_array")]
     constructor_families: [&'static str; 111],
@@ -132,6 +134,8 @@ pub(super) fn record(
         reuse_counters: crate::preparation_options::reuse_counts(),
         pipeline_variant: crate::preparation_options::pipeline_variant(),
         parallel_variant: crate::preparation_options::parallel_variant(),
+        concurrency_variant: crate::preparation_options::concurrency_variant(),
+        native_reference_checks: crate::preparation_options::metadata_reference_checks(),
         pipeline_counters: crate::preparation_options::pipeline_counts(),
         constructor_families: crate::preparation_options::CONSTRUCTOR_NAMES,
         constructor_ns: crate::preparation_options::constructor_ns(),

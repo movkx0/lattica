@@ -95,3 +95,6 @@ pub(crate) mod bootstrap_layers;
 
 #[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
 pub(crate) mod driver;
+
+#[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
+pub(crate) mod native_numbers;

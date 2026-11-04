@@ -44,17 +44,21 @@ macro_rules! auxiliary_constructor {
 }
 
 macro_rules! algebra_constructor {
-    ($method:ident, $family:ident, $plan:ident, $result:ident) => {
+    ($method:ident, $resolved:ident, $numbers:ident, $family:ident, $plan:ident, $result:ident) => {
         pub(crate) fn $method<'a>(&mut self, inventory: &SourceMetadataPlanningPlan<'a>,
             member: MetadataMember<'_, 'a>, source_ordinal: usize)
+            -> Result<table::$result<'a>, WorkflowError>
+        { self.$resolved(inventory, member, source_ordinal, None) }
+        pub(crate) fn $resolved<'a>(&mut self, inventory: &SourceMetadataPlanningPlan<'a>,
+            member: MetadataMember<'_, 'a>, source_ordinal: usize, numbers: Option<crate::spend_pipeline::full_workflow::$numbers::MetadataNumbers<'a>>)
             -> Result<table::$result<'a>, WorkflowError>
         {
             self.begin_metadata_constructor(inventory, member, ProducerFamily::$family, source_ordinal, 0)?;
             self.check_native_constructor_scratch(inventory, Requirements::default())?;
             let required = $plan::metadata_requirements().map_err(|_| WorkflowError::Planning)?;
             let original = self.original.split(required)?;
-            let result = $plan::new(inventory.scope(), member.prepared(), source_ordinal,
-                original, self.capability.ledger());
+            let result = $plan::new_resolved(inventory.scope(), member.prepared(), source_ordinal,
+                original, self.capability.ledger(), numbers);
             if result.is_ok() { self.finish_metadata_constructor_success(); }
             Ok(result)
         }
@@ -62,9 +66,13 @@ macro_rules! algebra_constructor {
 }
 
 macro_rules! recording_constructor {
-    ($method:ident, $family:ident, $source:ident, $plan:ident, $result:ident) => {
+    ($method:ident, $resolved:ident, $numbers:ident, $family:ident, $source:ident, $plan:ident, $result:ident) => {
         pub(crate) fn $method<'a>(&mut self, inventory: &SourceMetadataPlanningPlan<'a>,
             member: MetadataMember<'_, 'a>, source_ordinal: usize)
+            -> Result<table::$result<'a>, WorkflowError>
+        { self.$resolved(inventory, member, source_ordinal, None) }
+        pub(crate) fn $resolved<'a>(&mut self, inventory: &SourceMetadataPlanningPlan<'a>,
+            member: MetadataMember<'_, 'a>, source_ordinal: usize, numbers: Option<crate::spend_pipeline::full_workflow::$numbers::MetadataNumbers<'a>>)
             -> Result<table::$result<'a>, WorkflowError>
         {
             self.begin_metadata_constructor(inventory, member, ProducerFamily::$family, source_ordinal, 0)?;
@@ -79,7 +87,7 @@ macro_rules! recording_constructor {
             let required = $plan::metadata_requirements().map_err(|_| WorkflowError::Planning)?;
             let original = self.original.split(required)?;
             let result = self.with_metadata_recording(recording, |recording, _remaining, ledger|
-                $plan::new(inventory.scope(), member.prepared(), source_ordinal, original, recording, ledger))?;
+                $plan::new_resolved(inventory.scope(), member.prepared(), source_ordinal, original, recording, ledger, numbers))?;
             // An inner error owns the exact original. Never flatten that error
             // into WorkflowError or clear the failed constructor cursor.
             if result.is_ok() { self.finish_metadata_constructor_success(); }
@@ -107,12 +115,12 @@ impl WorkflowPlanning<'_> {
     auxiliary_constructor!(derive_metadata_uniform_native, Uniform, UniformNativeOperationPlan, UniformPlanResult);
     auxiliary_constructor!(derive_metadata_sparse_native, Sparse, SparseNativeOperationPlan, SparsePlanResult);
     auxiliary_constructor!(derive_metadata_transcript_native, Transcript, TranscriptNativeOperationPlan, TranscriptPlanResult);
-    algebra_constructor!(derive_metadata_affine_native, Affine, AffineNativeOperationPlan, AffinePlanResult);
-    algebra_constructor!(derive_metadata_g_bound_native, GBound, GBoundNativeOperationPlan, GBoundPlanResult);
-    recording_constructor!(derive_metadata_ntt_native, Ntt, NttSource, NttNativeOperationPlan, NttPlanResult);
-    recording_constructor!(derive_metadata_mul_native, Mul, MulSource, MulNativeOperationPlan, MulPlanResult);
-    recording_constructor!(derive_metadata_permutation_native, Permutation, PermutationSource,
+    algebra_constructor!(derive_metadata_affine_native, derive_metadata_affine_native_resolved, affine_native, Affine, AffineNativeOperationPlan, AffinePlanResult);
+    algebra_constructor!(derive_metadata_g_bound_native, derive_metadata_g_bound_native_resolved, g_bound_native, GBound, GBoundNativeOperationPlan, GBoundPlanResult);
+    recording_constructor!(derive_metadata_ntt_native, derive_metadata_ntt_native_resolved, ntt_native, Ntt, NttSource, NttNativeOperationPlan, NttPlanResult);
+    recording_constructor!(derive_metadata_mul_native, derive_metadata_mul_native_resolved, mul_native, Mul, MulSource, MulNativeOperationPlan, MulPlanResult);
+    recording_constructor!(derive_metadata_permutation_native, derive_metadata_permutation_native_resolved, permutation_native, Permutation, PermutationSource,
         PermutationNativeOperationPlan, PermutationPlanResult);
-    recording_constructor!(derive_metadata_linear_map_native, LinearMap, LinearMapSource,
+    recording_constructor!(derive_metadata_linear_map_native, derive_metadata_linear_map_native_resolved, linear_map_native, LinearMap, LinearMapSource,
         LinearMapNativeOperationPlan, LinearMapPlanResult);
 }

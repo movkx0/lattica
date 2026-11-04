@@ -1071,3 +1071,105 @@ source/build/fixture hashes, every comparison sample, memory observations and
 gate outcomes are indexed in
 [parallel metadata evidence](../../docs/evidence/ringct-metadata-parallel-2026-11-03.json).
 Documentation and evidence were added after the measured source snapshot.
+
+## Overlapping native metadata and finer crypto jobs (2026-11-04)
+
+This pass extends the previous case-level parallel implementation in checkpoint
+`021411b`. Native payload packing, numeric plans and metadata identity hashes now
+run in admitted CPU jobs. Immutable graph views identify the exact original
+graph, batch, ordinal and descriptor; the coordinator checks those bindings and
+the compiled source before attaching each result to its ordinary reservation.
+The six supported families are affine, NTT, multiplication, bounds, permutation
+and linear map. Original serialization remains the reference path.
+
+Large SHAKE and AES requests also split into independent numeric leaf jobs.
+The planner repeatedly splits the largest range, targeting four jobs per worker
+and at most 64 jobs. Exact request bindings, leaf order, identity framing and the
+original carry/merge tree assembly remain unchanged. Identity hashing, leaf
+planning and ordered request assembly use sequential worker waves, so pools do
+not multiply the worker ceiling.
+
+One bounded case pool overlaps registration and ready native work with the
+coordinator's existing GPU source preparation. Helpers take another ready task
+without waiting for the coordinator to return from a GPU call. At most 64 tasks
+are outstanding; native tasks contain at most two items. The coordinator assists
+only the next member's registration dependency before launching its GPU phase,
+then collects completed native results for later adoption through the ordinary
+ordered constructors. The worker count includes the coordinator. GPU execution and mutable workflow
+owners stay on that coordinator; the metadata GPU port remains deferred.
+
+Extra results, queue storage, worker stacks, private recorder frames and numeric
+cache storage are admitted before execution. An exact worker-side census checks
+each native job against its 512 MiB transient sublimit before allocating its
+metadata. Larger work remains for the ordinary typed constructor. Insufficient
+case admission selects the existing preparation path before starting work.
+All workers join before reservations and referenced sources can retire, including
+worker errors, publication errors and panics. The 32/24/8 GiB
+worker/native/device limits are unchanged.
+
+Linear-map descriptors contain their complete coefficients. Their numeric plans
+use a bounded phase-local cache with exact descriptor comparisons, source and
+profile checks. Large plans are boxed rather than widening every generic cache
+or queue slot. That cache dies after its workers join and before its reservation
+is released; it does not become an unfunded persistent cache.
+
+The test-only selector is
+`--metadata-concurrency-variant baseline|native|crypto|overlap|all`.
+`baseline` disables this pass while retaining earlier optimizations. `overlap`
+includes the native work performed in the case pool, so it is not an independent
+ablation of native packing. Production enables the qualified implementation.
+`--metadata-reference-check` compares all six prepared payload families with
+their original serializers and checks refusal of a changed ordinal.
+
+The parallel report adds queue residence, idle waiting, longest task, outstanding
+task peak, source-preparation callback duration and the task time overlapping
+those callbacks. Worker and overlap counters sum task wall time, including any
+mutex waits; they are not OS CPU utilization. Callback time is not precise GPU
+device busy time. Nested and overlapping clocks must not be added together.
+
+Fresh-process complete-stage medians on the Ryzen 9 5900XT / RTX 5080:
+
+| Workers / fixture | Checkpoint median | Candidate median | Elapsed reduction | Speedup over candidate 1 worker |
+|---|---:|---:|---:|---:|
+| 1 / baseline N3 | 3.261 s | 3.247 s | 0.4% | 1.00x |
+| 2 / baseline N3 | 2.848 s | 2.514 s | 11.7% | 1.29x |
+| 4 / baseline N3 | 2.590 s | 2.437 s | 5.9% | 1.33x |
+| 8 / baseline N3 | 2.584 s | 2.389 s | 7.6% | 1.36x |
+| 16 / baseline N3 | 2.583 s | 2.362 s | 8.6% | 1.37x |
+| 1 / heldout N3 | 3.244 s | 3.202 s | 1.3% | 1.00x |
+| 2 / heldout N3 | 2.886 s | 2.546 s | 11.8% | 1.26x |
+| 4 / heldout N3 | 2.619 s | 2.445 s | 6.6% | 1.31x |
+| 8 / heldout N3 | 2.585 s | 2.387 s | 7.7% | 1.34x |
+| 16 / heldout N3 | 2.596 s | 2.346 s | 9.6% | 1.36x |
+
+Targets are evaluated from ratios of medians across seven alternating pairs per configuration:
+
+- At least 10% complete-stage reduction at both 8 and 16 workers on both fixtures: **missed**.
+- At least 1.35x speedup over the candidate one-worker path at both 8 and 16 workers: **missed**.
+- No more than 3% regression at 1, 2 and 4 workers: **passed**.
+- No more than 3% heldout regression at any worker setting: **passed**.
+- Zero cold descriptor compilations and zero descriptor-cache evictions: **passed**.
+
+The 10% reduction target was missed at 8 workers / baseline (7.56%); 16 workers / baseline (8.55%); 8 workers / heldout (7.65%); 16 workers / heldout (9.62%).
+
+The 1.35x scaling target was missed at 8 workers / heldout (1.341x).
+
+Five worker settings, two fixed deterministic N3 fixtures and seven alternating checkpoint/candidate pairs produce 140 complete runs. Every sample is retained, including the min/max ranges and paired median reductions. These measurements cover startup, graph/source preparation, metadata construction and final memory/schedule closure. They exclude fixture verification, input generation, runtime preissue and recursive proof generation. Runs are sequential under the exclusive validation service. They measure latency of one N3 case, not throughput of simultaneous cases.
+
+All 140 runs passed the source, executable, retirement and zero-miss checks. Maximum observed service memory peaks were 524.6 MiB for the checkpoint and 581.8 MiB for the candidate. These are measured process peaks, distinct from conservative reservation allowances.
+
+A separate instrumented comparison in the final binary isolates this pass at 16 workers:
+
+| Phase | This pass disabled | All three priorities enabled |
+|---|---:|---:|
+| Source preparation | 1091.4 ms | 1104.7 ms |
+| Native constructors after preparation | 303.4 ms | 112.3 ms |
+| Crypto constructors including worker waves | 103.7 ms | 66.4 ms |
+
+The enabled case pool completed 129 tasks with a maximum of 16 active workers and 40 outstanding tasks. The numeric crypto wave used 64 jobs and took 16.2 ms. These are diagnostic samples; only the alternating complete-stage runs determine the performance targets.
+
+Validation passed 23 focused Rust tests, 10 core queue/cache tests, eight GPU parity/failure tests, 68 Python tests and release all-target checks for both full-workflow and default feature sets. Both descriptor catalogs qualified at 1, 2, 4, 8 and 16 workers: 317 native descriptors and 72 registered shapes. Their exact numeric rows match the checkpoint and both generated tables reproduce from the new source-bound qualification receipts.
+
+Complete-fixture reference checks matched all 237 payloads in each run (99 affine, 21 NTT, 51 multiplication, 36 bounds, nine permutation and 21 linear-map payloads). The baseline fixture used 16 workers, the heldout fixture eight workers, and a third baseline run exercised the standalone native worker path at 16 workers. All checks preserved complete memory closure under the existing limits.
+
+The checkpoint source, frozen candidate, build/fixture hashes, all timing samples, qualifications and earlier failed diagnostics are indexed in [concurrency evidence](../../docs/evidence/ringct-metadata-concurrency-2026-11-04.json). Documentation and this evidence were added after the measured source snapshot.

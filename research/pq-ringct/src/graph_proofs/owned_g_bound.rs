@@ -141,12 +141,16 @@ pub(crate) struct GBoundProofPlan<'a> {
 impl<'a> GBoundProofPlan<'a> {
     pub(crate) fn new(sources: &'a SourceRetained<PreparedWorkflowSources<'a>>, batch: usize, original: &Reservation, ledger: &Ledger)
         -> Result<Self>
+    { Self::new_resolved(sources, batch, original, ledger, None) }
+    pub(crate) fn new_resolved(sources: &'a SourceRetained<PreparedWorkflowSources<'a>>, batch: usize, original: &Reservation, ledger: &Ledger, prepared: Option<metadata::Prepared<'a>>)
+        -> Result<Self>
     {
         if !original.belongs_to(ledger) || !sources.belongs_to(ledger)
             || original.requirements().get(crate::execution::retained_resources::Category::RegisteredMetadata).host
                 < Self::metadata_host_bytes() as u64
         { return Err(GBoundFailure::Resource); }
         let source = GBoundSource::from_original(sources, batch)?;
+        if let Some(prepared) = prepared { return prepared.into_plan(source); }
         let preparation = GBoundPreparationPlan::new(source.kind).map_err(|_| GBoundFailure::Resource)?;
         let output = GBoundOutputPlan::new(preparation).map_err(|_| GBoundFailure::Resource)?;
         let geometry = preparation.geometry(); let air = source.air();
@@ -170,6 +174,12 @@ impl<'a> GBoundProofPlan<'a> {
             + size_of::<WipedRaw>() + size_of::<Result<WipedRaw>>()
             + size_of::<GBoundDescriptor>() + size_of::<Result<GBoundDescriptor>>()
             + size_of::<[usize; 32]>() + size_of::<Reservation>()) + GBoundSource::planning_view_host_bytes()
+    }
+    /// Additional preparation is private to the admitted worker phase. Its
+    /// forwarding frames must not become retained proof metadata.
+    pub(crate) const fn metadata_worker_host_bytes() -> usize {
+        Self::metadata_host_bytes() + 8 * (size_of::<metadata::View<'static>>()
+            + size_of::<metadata::Data<'static>>() + size_of::<metadata::Prepared<'static>>())
     }
     pub(crate) fn source(&self) -> GBoundSource<'a> { self.source }
     pub(crate) fn preparation(&self) -> GBoundPreparationPlan { self.preparation }
@@ -274,3 +284,5 @@ impl<'a> VerifiedGBoundProof<'a> {
 
 #[cfg(all(test, not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
 mod tests;
+
+pub(crate) mod metadata;

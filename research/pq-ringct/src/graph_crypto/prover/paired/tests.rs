@@ -52,6 +52,19 @@ fn numeric_worker_preserves_request_plan_and_refuses_changed_binding() {
     let key_original = ledger.reserve(Category::PhaseScratch,
         Bytes { host: key_admission.host_bytes as u64, device: 0 }).unwrap();
     let keys = key_plan.derive(key_admission).unwrap();
+    for width in [1, 2, 4, 8, 16] {
+        let leaves_plan = crate::graph_crypto::NumericLeafPlan::new([&request].into_iter(), layout, width).unwrap();
+        let admission = crate::metadata_parallel::Plan::new(width, leaves_plan.jobs(), usize::MAX,
+            leaves_plan.retained_bytes(), 8 << 20).unwrap();
+        let _original = ledger.reserve(Category::PhaseScratch, Bytes { host: admission.host_bytes as u64, device: 0 }).unwrap();
+        let leaves = leaves_plan.derive(admission, &native, &registered).unwrap();
+        let chunked = PairedRequestNumbers::derive_prepared(&request, context(), layout, Some(keys.get(0).unwrap()), Some(leaves.get(0).unwrap())).unwrap();
+        assert_eq!(chunked.nodes, baseline.nodes);
+        assert_eq!(chunked.steps, baseline.steps);
+        assert_eq!(chunked.slots, baseline.slots);
+        assert_eq!(chunked.root, baseline.root);
+        assert_eq!(chunked.source_fingerprint, baseline.source_fingerprint);
+    }
     let numbers = || std::thread::scope(|threads| threads.spawn(|| {
         let _native = cache::Scope::begin_read_only(&native).unwrap();
         let _registered = HeightEnvelopeCacheScope::begin_read_only(&registered).unwrap();

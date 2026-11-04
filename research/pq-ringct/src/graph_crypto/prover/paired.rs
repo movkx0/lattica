@@ -23,7 +23,7 @@ pub(crate) use operations::{
 };
 type Result<T> = core::result::Result<T, PairedFailure>;
 
-mod memory;
+pub(super) mod memory;
 mod numeric;
 pub(crate) use numeric::PairedRequestNumbers;
 mod endpoints;

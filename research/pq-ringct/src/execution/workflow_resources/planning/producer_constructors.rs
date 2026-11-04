@@ -16,6 +16,7 @@ mod graph;
 mod crypto;
 mod parallel_crypto;
 mod parallel_native;
+pub(crate) mod native_jobs;
 mod final_aggregation;
 mod complete;
 pub(crate) use complete::{CompleteSlotFailure, CompleteSlotResult};

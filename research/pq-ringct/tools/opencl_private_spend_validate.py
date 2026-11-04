@@ -891,6 +891,11 @@ def build_plan(args):
     reuse_variant = getattr(args, 'metadata_reuse_variant', None)
     pipeline_variant = getattr(args, 'metadata_pipeline_variant', None)
     parallel_variant = getattr(args, 'metadata_parallel_variant', None)
+    concurrency_variant = getattr(args, 'metadata_concurrency_variant', None)
+    metadata_reference_check = getattr(args, 'metadata_reference_check', False)
+    require(not metadata_reference_check or metadata_stage_profile, 'metadata reference check requires metadata-stage profile')
+    require(concurrency_variant in (None, 'baseline', 'native', 'crypto', 'overlap', 'all'), 'invalid concurrency variant')
+    require(concurrency_variant is None or metadata_stage_profile, 'concurrency variant requires metadata-stage profile')
     require(parallel_variant in (None, 'all', 'serial', 'registration', 'crypto', 'native'), 'invalid parallel variant')
     require(parallel_variant is None or metadata_stage_profile, 'parallel variant requires metadata-stage profile')
     require(pipeline_variant in (None, 'baseline', 'field_hash', 'registration', 'arithmetic', 'all'), 'invalid pipeline variant')
@@ -1184,6 +1189,9 @@ def build_plan(args):
         environment['LATTICA_RINGCT_METADATA_REUSE_VARIANT'] = reuse_variant or 'all'
         environment['LATTICA_RINGCT_METADATA_PIPELINE_VARIANT'] = pipeline_variant or 'all'
         environment['LATTICA_RINGCT_METADATA_PARALLEL_VARIANT'] = parallel_variant or 'all'
+        environment['LATTICA_RINGCT_METADATA_CONCURRENCY_VARIANT'] = concurrency_variant or 'all'
+        if metadata_reference_check:
+            environment['LATTICA_RINGCT_METADATA_REFERENCE_CHECK'] = '1'
         environment['LATTICA_RINGCT_METADATA_NEXT_VARIANT'] = next_variant or 'all'
         if metadata_preparation_detail:
             environment['LATTICA_RINGCT_METADATA_PREPARATION_DETAIL'] = '1'
@@ -1233,6 +1241,8 @@ def build_plan(args):
         'metadata_reuse_variant': reuse_variant or 'all',
         'metadata_pipeline_variant': pipeline_variant or 'all',
         'metadata_parallel_variant': parallel_variant or 'all',
+        'metadata_concurrency_variant': concurrency_variant or 'all',
+        'metadata_reference_check': metadata_reference_check,
         'metadata_next_variant': next_variant or 'all',
             'metadata_fixture_out': fixture_out, 'metadata_fixture_in': fixture_in,
             'metadata_fixture_sha256': sha(Path(fixture_in)) if fixture_in else None, 'metadata_workers': metadata_workers if metadata_stage_profile else None,
@@ -1921,6 +1931,9 @@ def validate_output(log, plan):
         require(plan['metadata_stage_profile_acceptance']['reuse_variant'] == plan.get('metadata_reuse_variant', 'all'), 'metadata reuse variant mismatch')
         require(plan['metadata_stage_profile_acceptance']['pipeline_variant'] == plan.get('metadata_pipeline_variant', 'all'), 'metadata pipeline variant mismatch')
         require(plan['metadata_stage_profile_acceptance']['parallel_variant'] == plan.get('metadata_parallel_variant', 'all'), 'metadata parallel variant mismatch')
+        counts = plan['metadata_stage_profile_acceptance']['native_reference_checks']
+        require(all(value > 0 for value in counts) if plan.get('metadata_reference_check', False) else not any(counts), 'native reference check coverage mismatch')
+        require(plan['metadata_stage_profile_acceptance']['concurrency_variant'] == plan.get('metadata_concurrency_variant', 'all'), 'metadata concurrency variant mismatch')
         require(plan['metadata_stage_profile_acceptance']['next_variant'] == plan.get('metadata_next_variant', 'all'), 'metadata next variant mismatch')
     if plan.get('metadata_cpu_qualification'):
         from metadata_cpu_qualification import validate
@@ -2255,6 +2268,8 @@ def main():
     parser.add_argument('--metadata-hash-variant', choices=('reference', 'nodes', 'endpoints', 'fields', 'all'))
     parser.add_argument('--metadata-reuse-variant', choices=('baseline', 'structure', 'verifier', 'arithmetic', 'all'))
     parser.add_argument('--metadata-pipeline-variant', choices=('baseline', 'field_hash', 'registration', 'arithmetic', 'all'))
+    parser.add_argument('--metadata-reference-check', action='store_true')
+    parser.add_argument('--metadata-concurrency-variant', choices=('baseline', 'native', 'crypto', 'overlap', 'all'))
     parser.add_argument('--metadata-parallel-variant', choices=('all', 'serial', 'registration', 'crypto', 'native'))
     parser.add_argument('--metadata-next-variant', choices=('baseline', 'field_hash', 'encoding', 'case_cache', 'all'))
     parser.add_argument('--metadata-preparation-detail', action='store_true',

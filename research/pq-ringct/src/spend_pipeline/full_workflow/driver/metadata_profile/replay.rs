@@ -51,7 +51,7 @@ pub(super) fn run(path: &std::path::Path) -> Result<()> {
     metadata_timing::phase(Phase::GraphSources);
     bootstrap_layers::prepare_graph_layer(&scope, &mut planning, &owner, graph_plans.get()?, graphs.get()?)?;
     metadata_timing::phase(Phase::SourcePreparation);
-    bootstrap_layers::prepare_source_layer(&scope, &mut planning, &owner, graphs.get()?, prep_plans.get()?, prepared.get()?)?;
+    let early_native = bootstrap_layers::prepare_source_layer(&scope, &mut planning, &owner, graphs.get()?, prep_plans.get()?, prepared.get()?)?;
     members.install([prepared.get()?.get(0)?.get()?.as_ref().map_err(|_| fail("fixture member 0"))?,
         prepared.get()?.get(1)?.get()?.as_ref().map_err(|_| fail("fixture member 1"))?,
         prepared.get()?.get(2)?.get()?.as_ref().map_err(|_| fail("fixture member 2"))?])?;
@@ -63,7 +63,7 @@ pub(super) fn run(path: &std::path::Path) -> Result<()> {
     planning.reserve_producer_metadata(metadata, &owner).map_err(|_| fail("fixture producer admission"))?;
     metadata_timing::phase(Phase::Constructors);
     let mut stage = super::super::metadata_driver::DriverStage::Readiness;
-    let result = super::super::metadata_driver::run::<3>(planning, metadata, &owner, None, &case, &caches.native, &caches.outer, &mut stage);
+    let result = super::super::metadata_driver::run::<3>(planning, metadata, &owner, None, &case, &caches.native, &caches.outer, &mut stage, early_native);
     let complete = matches!(result, Err(WorkflowError::MetadataProfileComplete));
     if !complete { metadata_timing::finish(); }
     record(complete, 3, 0, generation_and_startup_ns, clock.statistics().ok_or_else(|| fail("fixture clock unfinished"))?,

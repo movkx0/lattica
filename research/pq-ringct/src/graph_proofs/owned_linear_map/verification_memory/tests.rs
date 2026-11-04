@@ -5,7 +5,7 @@ use lattica_prover_p3::block_v2::native_gpu::{
     linear_map_recording::{self, LinearMapRecorder},
 };
 
-fn recorded_replay(air: &SourceAir) -> LinearMapSymbolicReplay {
+pub(super) fn recorded_replay(air: &SourceAir) -> LinearMapSymbolicReplay {
     let source = LinearMapPreparationPlan::new(air.kind()).unwrap();
     let ledger = ResourceLedger::new(WorkerAllowance { host: 32 << 30, device: 0 });
     let symbolic = source.host().prepared_partition_bytes().unwrap();

@@ -78,6 +78,11 @@ impl<'a> MulNativeOperationPlan<'a> {
         sources: &'a SourceRetained<PreparedWorkflowSources<'a>>, batch: usize,
         original: Reservation, recording: &mut Reservation, ledger: &Ledger)
         -> core::result::Result<Self, (MulNativeOperationFailure, Reservation)>
+    { Self::new_resolved(scope, sources, batch, original, recording, ledger, None) }
+    pub(crate) fn new_resolved(scope: &SourcePlanningPlan<'a>,
+        sources: &'a SourceRetained<PreparedWorkflowSources<'a>>, batch: usize,
+        original: Reservation, recording: &mut Reservation, ledger: &Ledger, numbers: Option<MetadataNumbers<'a>>)
+        -> core::result::Result<Self, (MulNativeOperationFailure, Reservation)>
     {
         let mut original = Some(original);
         let constructed = (|| -> Result<Self> {
@@ -93,7 +98,22 @@ impl<'a> MulNativeOperationPlan<'a> {
             || sources.compiled_source_fingerprint() != scope.compiled_source_fingerprint() {
             return Err(MulNativeOperationFailure::Authority);
         }
-            let native = MulProofPlan::new(sources, batch, held, ledger)
+            if let Some(numbers) = numbers {
+            if !recording.belongs_to(ledger)
+                || recording.requirements() != Self::verification_planning_requirements(numbers.prepared.data().source().kind())? {
+                return Err(MulNativeOperationFailure::Authority);
+            }
+            if numbers.binding != super::native_numbers::Binding::new(scope, sources) {
+                return Err(MulNativeOperationFailure::SourceDrift);
+            }
+            let native = MulProofPlan::new_resolved(sources, batch, held, ledger, Some(numbers.prepared))
+                .map_err(|_| MulNativeOperationFailure::Source)?;
+            return Ok(Self { context: scope.context(), sources, native, verification: numbers.verification,
+                workflow_source: scope.source_fingerprint(), facts: numbers.facts,
+                backend: Bytes { host: 24 << 30, device: 8 << 30 },
+                metadata: original.take().expect("same admitted metadata original") });
+        }
+        let native = MulProofPlan::new(sources, batch, held, ledger)
             .map_err(|_| MulNativeOperationFailure::Source)?;
         // Close the actual unchanged symbolic replay under a separately
         // precharged preparation original before freezing phase facts. The
@@ -107,6 +127,16 @@ impl<'a> MulNativeOperationPlan<'a> {
         let verification = scope.verifier_cache(metadata).verifier_mul(native.source().kind(), || native.record(recording, ledger)
                     .map(|recorded| recorded.verification_plan()).map_err(|_| ()))
                 .map_err(|_| MulNativeOperationFailure::Preparation)?;
+        let facts = Self::metadata_facts(native.metadata_data(), &super::native_numbers::Binding::new(scope, sources), verification)?;
+        Ok(Self { context: scope.context(), sources, native, verification, workflow_source: scope.source_fingerprint(),
+            facts,
+            backend: Bytes { host: 24 << 30, device: 8 << 30 },
+            metadata: original.take().expect("same admitted metadata original") })
+        })();
+        constructed.map_err(|error| (error, original.expect("refusal before metadata transfer")))
+    }
+    fn metadata_facts(native: crate::graph_proofs::owned_mul::metadata::Data<'_>,
+        binding: &super::native_numbers::Binding, verification: VerificationPlan) -> Result<PhaseFacts> {
         let reservations = NativeMulReservationPlan::outer_host_v1(native.preparation(), 1)
             .map_err(|_| MulNativeOperationFailure::Resource)?;
         let output = combine(&[native.output_plan().proof_requirement(), native.output_plan().report_requirement(),
@@ -128,16 +158,16 @@ impl<'a> MulNativeOperationPlan<'a> {
         identity.update(b"lattica/full-workflow/native-mul-source/v2-source-verifier");
         identity.update(u64::try_from(verification.bounds().component_reservation_bytes)
             .map_err(|_| MulNativeOperationFailure::Overflow)?.to_le_bytes());
-        identity.update(scope.source_fingerprint());
-        identity.update(scope.compiled_source_fingerprint());
-        identity.update(sources.get().native_identity());
-        identity.update(sources.get().plan().label());
-        identity.update(sources.get().context().context);
-        for word in sources.get().context().statement.iter().chain(&sources.get().context().node_manifest) {
+        identity.update(binding.workflow);
+        identity.update(binding.compiled);
+        identity.update(binding.native);
+        identity.update(binding.label);
+        identity.update(binding.context.context);
+        for word in binding.context.statement.iter().chain(&binding.context.node_manifest) {
             identity.update(word.as_canonical_u64().to_le_bytes());
         }
             let descriptor = native.source().kind();
-            for value in [batch as u64, descriptor.modulus(), descriptor.count() as u64] {
+            for value in [native.source().ordinal() as u64, descriptor.modulus(), descriptor.count() as u64] {
                 identity.update(value.to_le_bytes());
             }
             for &index in native.source().operation_indices() {
@@ -150,15 +180,11 @@ impl<'a> MulNativeOperationPlan<'a> {
         for n in [g.rows(), g.width(), g.public_values(), g.periodic_columns(), g.raw_words(), g.period()] {
             identity.update(u64::try_from(n).map_err(|_| MulNativeOperationFailure::Overflow)?.to_le_bytes());
         }
-        Ok(Self { context: scope.context(), sources, native, verification, workflow_source: scope.source_fingerprint(),
-            facts: PhaseFacts { kind: PhaseKind::MulNative,
-                compiled_source_fingerprint: scope.compiled_source_fingerprint(),
-                source_fingerprint: identity.finalize().into(), output, failure, scratch },
-            backend: Bytes { host: 24 << 30, device: 8 << 30 },
-            metadata: original.take().expect("same admitted metadata original") })
-        })();
-        constructed.map_err(|error| (error, original.expect("refusal before metadata transfer")))
+        Ok(PhaseFacts { kind: PhaseKind::MulNative,
+                compiled_source_fingerprint: binding.compiled,
+                source_fingerprint: identity.finalize().into(), output, failure, scratch })
     }
+
     pub(crate) fn context(&self) -> &'a ProvingContext { self.context }
     pub(crate) fn sources(&self) -> &'a SourceRetained<PreparedWorkflowSources<'a>> { self.sources }
     pub(crate) fn source_fingerprint(&self) -> [u8; 32] { self.facts.source_fingerprint }
@@ -326,4 +352,19 @@ impl<'a> OwnedMulOutput<'a> {
     pub(crate) fn binding(&self) -> PhaseBinding { self.binding }
     pub(crate) fn report(&self) -> &Report { self.proof.owned().report() }
     pub(crate) fn into_originals(self) -> (Reservation, Reservation) { self.proof.into_originals() }
+}
+
+pub(crate) struct MetadataNumbers<'a> {
+    binding: super::native_numbers::Binding,
+    prepared: crate::graph_proofs::owned_mul::metadata::Prepared<'a>,
+    facts: PhaseFacts,
+    verification: VerificationPlan,
+}
+impl<'a> MetadataNumbers<'a> {
+    pub(crate) fn prepare(view: crate::graph_proofs::owned_mul::metadata::View<'a>,
+        binding: super::native_numbers::Binding, verification: VerificationPlan) -> Result<Self> {
+        let prepared = view.prepare(MulProofPlan::metadata_worker_host_bytes()).map_err(|_| MulNativeOperationFailure::Preparation)?;
+        let facts = MulNativeOperationPlan::metadata_facts(prepared.data(), &binding, verification)?;
+        Ok(Self { binding, prepared, facts, verification })
+    }
 }

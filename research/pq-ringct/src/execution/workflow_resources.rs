@@ -24,6 +24,8 @@ mod types;
 pub(crate) use owners::{PhaseFailure, Retained, RetainedFailure, RetainedNative, RetainedOriginal};
 pub(crate) use planning::WorkflowPlanning;
 #[cfg(not(debug_assertions))]
+pub(crate) use planning::PreparedNativeBatch;
+#[cfg(not(debug_assertions))]
 pub(crate) use planning::{PlanningAdmissionTransition, PlanningAdmissionProjection};
 #[cfg(all(test, not(debug_assertions)))]
 pub(crate) use planning::GuardedPlanningOriginal;

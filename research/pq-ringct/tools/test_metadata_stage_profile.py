@@ -10,6 +10,37 @@ from metadata_stage_profile import SELECTOR, PREFIX, cache_rates, preparation_de
 
 
 class MetadataStageTests(unittest.TestCase):
+    def test_concurrency_selectors_are_confined_to_metadata_profile(self):
+        options = dict(profile='full', expect_tests=True, build_label='build',
+            command=['/tmp/profile', SELECTOR, '--exact', '--ignored', '--test-threads=1', '--nocapture'],
+            metadata_stage_profile=True, retained_tree_storage='host',
+            device_uuid='GPU-11111111-2222-3333-4444-555555555555')
+        for variant in ('baseline', 'native', 'crypto', 'overlap', 'all'):
+            plan = runner.build_plan(arguments(**options, metadata_concurrency_variant=variant))
+            self.assertEqual(plan['metadata_concurrency_variant'], variant)
+            self.assertEqual(plan['environment']['LATTICA_RINGCT_METADATA_CONCURRENCY_VARIANT'], variant)
+        for extra in ({'metadata_concurrency_variant': 'nested'}, {'metadata_reference_check': True}):
+            if 'metadata_reference_check' in extra:
+                options['metadata_stage_profile'] = False
+            with self.assertRaises(ValueError):
+                runner.build_plan(arguments(**options, **extra))
+
+    def test_concurrency_statistics_bound_refills_and_overlap(self):
+        record = self.fixture()
+        record.update(parallel_variant='all', concurrency_variant='all')
+        stats = dict(jobs=180, width=16, peak_active=15, threads=15, budget_reductions=0,
+            admitted_host_bytes=8 << 30, worker_ns=90, wait_ns=10, publication_ns=30, wall_ns=50,
+            queued_peak=64, queue_ns=20, idle_ns=10, max_job_ns=20, gpu_ns=25, overlap_worker_ns=50)
+        def content(values=stats, family='case_pipeline'):
+            return self.text(record) + '\nRINGCT_METADATA_PARALLEL ' + json.dumps(dict(family=family, statistics=values))
+        self.assertEqual(validate(content())['parallel']['case_pipeline'], stats)
+        for field, value in (('jobs', 525), ('queued_peak', 65), ('gpu_ns', 31),
+                             ('overlap_worker_ns', 91), ('max_job_ns', 91)):
+            bad = dict(stats, **{field: value})
+            with self.assertRaises(ValueError): validate(content(bad))
+        record['concurrency_variant'] = 'baseline'
+        with self.assertRaises(ValueError): validate(content())
+
     def test_parallel_selector_is_confined_to_metadata_profile(self):
         options = dict(profile='full', expect_tests=True, build_label='build',
             command=['/tmp/profile', SELECTOR, '--exact', '--ignored', '--test-threads=1', '--nocapture'],

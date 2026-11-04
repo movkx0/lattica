@@ -378,6 +378,8 @@ impl Plan {
             bounds,
         })
     }
+    pub(crate) fn descriptor(self) -> LinearMapDescriptor { self.shape.kind }
+    pub(crate) fn has_descriptor(&self, descriptor: &LinearMapDescriptor) -> bool { &self.shape.kind == descriptor }
     pub(crate) fn bounds(self) -> Bounds {
         self.bounds
     }
@@ -770,3 +772,12 @@ impl Shape {
 
 #[cfg(all(test, not(debug_assertions), target_arch = "x86_64"))]
 mod tests;
+
+mod numeric;
+pub(crate) use numeric::{numeric_host_bytes, numeric_plan};
+
+#[cfg(test)]
+pub(crate) fn recorded_test_plan(kind: LinearMapDescriptor) -> Plan {
+    let air = SourceAir::new(kind);
+    Plan::for_recorded(&air, tests::recorded_replay(&air)).unwrap()
+}

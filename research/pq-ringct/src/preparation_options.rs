@@ -113,6 +113,18 @@ pub(crate) fn metadata_workers_enabled(family: &str) -> bool {
     { let selected = parallel_variant(); selected == "all" || selected == family }
     #[cfg(not(test))] { let _ = family; true }
 }
+#[cfg(test)]
+pub(crate) fn concurrency_variant() -> &'static str {
+    match std::env::var("LATTICA_RINGCT_METADATA_CONCURRENCY_VARIANT").as_deref() {
+        Err(_) | Ok("all") => "all", Ok("baseline") => "baseline",
+        Ok("native") => "native", Ok("crypto") => "crypto", Ok("overlap") => "overlap",
+        _ => panic!("invalid metadata concurrency variant"),
+    }
+}
+pub(crate) fn concurrency_enabled(family: &str) -> bool {
+    #[cfg(test)] { let selected = concurrency_variant(); selected == "all" || selected == family }
+    #[cfg(not(test))] { let _ = family; true }
+}
 #[derive(Clone, Copy)]
 #[repr(usize)]
 pub(crate) enum PipelineCounter { RegistrationEncodeNs, RegistrationHashNs, ParallelRegistrations, FusedPairs }
@@ -161,4 +173,20 @@ pub(crate) fn timed_constructor<T>(family: usize, operation: impl FnOnce() -> T)
 #[cfg(test)]
 pub(crate) fn constructor_ns() -> [u64; 111] {
     core::array::from_fn(|i| CONSTRUCTOR_NS[i].load(std::sync::atomic::Ordering::Relaxed))
+}
+
+#[cfg(test)]
+static METADATA_REFERENCE_CHECKS: [std::sync::atomic::AtomicU64; 6] = [const { std::sync::atomic::AtomicU64::new(0) }; 6];
+#[cfg(test)]
+pub(crate) fn metadata_reference_check() -> bool {
+    static ENABLED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *ENABLED.get_or_init(|| std::env::var("LATTICA_RINGCT_METADATA_REFERENCE_CHECK").as_deref() == Ok("1"))
+}
+#[cfg(test)]
+pub(crate) fn record_metadata_reference_check(family: usize) {
+    METADATA_REFERENCE_CHECKS[family].fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+}
+#[cfg(test)]
+pub(crate) fn metadata_reference_checks() -> [u64; 6] {
+    core::array::from_fn(|i| METADATA_REFERENCE_CHECKS[i].load(std::sync::atomic::Ordering::Relaxed))
 }

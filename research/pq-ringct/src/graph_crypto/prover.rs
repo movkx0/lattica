@@ -7,6 +7,7 @@ use crate::component_tree::{self, CompiledNode, Geometry, NodeKey, NodeProof};
 pub(crate) mod paired;
 #[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
 pub(crate) mod numeric_bounds;
+pub(crate) mod numeric_leaves;
 #[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
 pub(crate) mod identity_keys;
 

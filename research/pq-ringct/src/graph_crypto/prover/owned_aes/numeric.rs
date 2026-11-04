@@ -18,8 +18,15 @@ impl<'request> OwnedAesRequestNumbers<'request> {
     pub(crate) fn derive_with_keys(request: &'request Request, context: GraphContext, backing: Option<(&Reservation, &Ledger)>,
         keys: Option<&crate::graph_crypto::RequestIdentityKeys<'_>>) -> Result<Self>
     {
+        Self::derive_prepared(request, context, backing, keys, None)
+    }
+    pub(crate) fn derive_prepared(request: &'request Request, context: GraphContext, backing: Option<(&Reservation, &Ledger)>,
+        keys: Option<&crate::graph_crypto::RequestIdentityKeys<'_>>, leaves: Option<&crate::graph_crypto::RequestLeaves<'_>>) -> Result<Self>
+    {
         let keys = keys.map(|keys| keys.for_request(request)).transpose()?;
-        let (leaves, node_count, step_count) = counts(request)?;
+        // AES has no wrapper layout; its leaf plan uses the case layout only as a sealed tag.
+        let leaves = leaves.map(|leaves| leaves.for_aes_request(request)).transpose()?;
+        let (leaf_count, node_count, step_count) = counts(request)?;
         let code = crate::graph_proofs::compiled_source_fingerprint();
         let mut hash = Sha3_256::new();
         hash.update(b"lattica/owned-aes-request-source/v1");
@@ -53,7 +60,7 @@ impl<'request> OwnedAesRequestNumbers<'request> {
         let mut cores = [None; cohort::MAX];
         for index in 0..request.segments().len() {
             let blueprint = source::AesBlueprint::new(request, index)?;
-            if index % cohort::MAX == 0 {
+            if leaves.is_none() && index % cohort::MAX == 0 {
                 let count = cohort::MAX.min(request.segments().len() - index);
                 let mut requests = [blueprint.metadata_request(); cohort::MAX];
                 for (offset, slot) in requests[..count].iter_mut().enumerate() {
@@ -65,10 +72,12 @@ impl<'request> OwnedAesRequestNumbers<'request> {
                     None => cohort::bounds_exact(&requests[..count], source::construction()) }
                     .map_err(|_| PairedFailure::Source)?;
             }
-            let leaf_source = blueprint.inspect_bound(cores[index % cohort::MAX].take()
-                .ok_or(PairedFailure::SourceDrift)?)?;
+            let prepared = leaves.map(|leaves| leaves.aes(index)).transpose()?;
+            let leaf_source = match prepared { Some((source, _, _)) => source,
+                None => blueprint.inspect_bound(cores[index % cohort::MAX].take().ok_or(PairedFailure::SourceDrift)?)? };
             let segment = request.segments().get(index).ok_or(PairedFailure::Coverage)?;
-            let (output, scratch) = memory::native_requirements(request, index)?;
+            let (output, scratch) = match prepared { Some((_, native, _)) => native,
+                None => memory::native_requirements(request, index)? };
             plan.slots.native = maxima(plan.slots.native, output);
             plan.push(OwnedAesStepKind::Native { index }, PhaseKind::Native, output, scratch)?;
             let id = plan.nodes.len();
@@ -77,7 +86,8 @@ impl<'request> OwnedAesRequestNumbers<'request> {
                     first: u32::try_from(segment.first_unit).map_err(|_| PairedFailure::Overflow)?,
                     count: u32::try_from(segment.units).map_err(|_| PairedFailure::Overflow)?, level: 0 },
                 source: leaf_source, children: None, segment: Some(index) });
-            let (output, scratch) = blueprint.compiler_requirements(leaf_source)?;
+            let (output, scratch) = match prepared { Some((_, _, compiler)) => compiler,
+                None => blueprint.compiler_requirements(leaf_source)? };
             plan.slots.compiled = maxima(plan.slots.compiled, output);
             plan.push(OwnedAesStepKind::Compile { node: id }, PhaseKind::GroupCompile, output,
                 combine(&[scratch, endpoints::group_preparation_requirements(request)?.0])?)?;
@@ -104,7 +114,7 @@ impl<'request> OwnedAesRequestNumbers<'request> {
         plan.root = right.ok_or(PairedFailure::Coverage)?;
         let root = plan.nodes[plan.root];
         if root.span.first != 0 || usize::try_from(root.span.count).ok() != Some(request.units())
-            || plan.nodes.len() != node_count || plan.steps.len() != step_count || live != 1 || leaves == 0 {
+            || plan.nodes.len() != node_count || plan.steps.len() != step_count || live != 1 || leaf_count == 0 {
             return Err(PairedFailure::Coverage);
         }
         // Parent outputs are produced only after compiler phase destroys its

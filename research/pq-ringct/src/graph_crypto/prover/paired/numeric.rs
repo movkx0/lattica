@@ -19,8 +19,14 @@ impl<'request> PairedRequestNumbers<'request> {
     pub(crate) fn derive_with_keys(request: &'request Request, context: GraphContext, layout: ShakeWrapperLayout,
         keys: Option<&crate::graph_crypto::RequestIdentityKeys<'_>>) -> Result<Self>
     {
+        Self::derive_prepared(request, context, layout, keys, None)
+    }
+    pub(crate) fn derive_prepared(request: &'request Request, context: GraphContext, layout: ShakeWrapperLayout,
+        keys: Option<&crate::graph_crypto::RequestIdentityKeys<'_>>, leaves: Option<&crate::graph_crypto::RequestLeaves<'_>>) -> Result<Self>
+    {
         let keys = keys.map(|keys| keys.for_request(request)).transpose()?;
-        let (leaves, node_count, step_count) = counts(request, layout)?;
+        let leaves = leaves.map(|leaves| leaves.for_request(request, layout)).transpose()?;
+        let (leaf_count, node_count, step_count) = counts(request, layout)?;
         let code = crate::graph_proofs::compiled_source_fingerprint();
         let mut hash = Sha3_256::new();
         hash.update(b"lattica/owned-paired-request-source/v1");
@@ -51,17 +57,21 @@ impl<'request> PairedRequestNumbers<'request> {
         let mut carry = [None; usize::BITS as usize];
         let mut live = 0usize;
         let mut maximum_live = 0usize;
-        for span in request.shake_wrapper_schedule(layout).map_err(|_| PairedFailure::Coverage)?.groups() {
-            let leaf_source = source::GroupBlueprint::new(request, span)?.inspect()?;
+        for (ordinal, span) in request.shake_wrapper_schedule(layout).map_err(|_| PairedFailure::Coverage)?.groups().enumerate() {
+            let prepared = leaves.map(|leaves| leaves.shake(ordinal, span)).transpose()?;
+            let leaf_source = match prepared { Some((source, _, _)) => source,
+                None => source::GroupBlueprint::new(request, span)?.inspect()? };
             for index in span.first_segment..add(span.first_segment, span.segment_count)? {
-                let (output, scratch) = memory::native_requirements(request, index)?;
+                let (output, scratch) = match prepared { Some((_, native, _)) => native[index - span.first_segment].ok_or(PairedFailure::SourceDrift)?,
+                    None => memory::native_requirements(request, index)? };
                 plan.slots.native = maxima(plan.slots.native, output);
                 plan.push(RequestStepKind::Native { index }, PhaseKind::Native, output, scratch)?;
             }
             let id = plan.nodes.len();
             plan.nodes.push(RequestNodeSource { id, span: ComponentSpan::leaf(span)?, source: leaf_source,
                 children: None, group: Some(span) });
-            let (output, scratch) = source::compiler_requirements(leaf_source, source::CompilerGeometry::Group(span.segment_count))?;
+            let (output, scratch) = match prepared { Some((_, _, compiler)) => compiler,
+                None => source::compiler_requirements(leaf_source, source::CompilerGeometry::Group(span.segment_count))? };
             plan.slots.compiled = maxima(plan.slots.compiled, output);
             plan.push(RequestStepKind::Group { node: id }, PhaseKind::GroupCompile, output,
                 combine(&[scratch, endpoints::group_preparation_requirements(request)?.0])?)?;
@@ -88,7 +98,7 @@ impl<'request> PairedRequestNumbers<'request> {
         plan.root = right.ok_or(PairedFailure::Coverage)?;
         let root = plan.nodes[plan.root];
         if root.span.first != 0 || usize::try_from(root.span.count).ok() != Some(request.units())
-            || plan.nodes.len() != node_count || plan.steps.len() != step_count || live != 1 || leaves == 0 {
+            || plan.nodes.len() != node_count || plan.steps.len() != step_count || live != 1 || leaf_count == 0 {
             return Err(PairedFailure::Coverage);
         }
         // Parent outputs are produced only after compiler phase destroys its

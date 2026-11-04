@@ -2,7 +2,7 @@
 use super::*;
 use crate::component_tree::native_shape::cache;
 use crate::graph_crypto::{Request, RequestDescriptor, PairedRequestPlan, OwnedAesRequestPlan,
-    PairedRequestNumbers, OwnedAesRequestNumbers, ShakeWrapperLayout, IdentityKeyPlan};
+    PairedRequestNumbers, OwnedAesRequestNumbers, ShakeWrapperLayout, IdentityKeyPlan, NumericLeafPlan};
 use crate::graph_tree::GraphContext;
 use crate::metadata_parallel::{self as parallel, Error as WorkerError};
 use lattica_prover_p3::block_v2::machine::verifier::batch::shape::{self,
@@ -68,7 +68,13 @@ impl WorkflowPlanning<'_> {
         if count < 2 { return Ok(None); }
         let keys_plan = IdentityKeyPlan::new(inputs[..count].iter().flatten().map(|input| input.request), ceiling)
             .map_err(|_| WorkflowError::Planning)?;
-        retained = retained.checked_add(keys_plan.retained_bytes()).ok_or(WorkflowError::Overflow)?;
+        let leaves_plan = if crate::preparation_options::concurrency_enabled("crypto") {
+            Some(NumericLeafPlan::new(inputs[..count].iter().flatten().map(|input| input.request), layout, ceiling)
+                .map_err(|_| WorkflowError::Planning)?)
+        } else { None };
+        retained = retained.checked_add(keys_plan.retained_bytes())
+            .and_then(|n| n.checked_add(leaves_plan.as_ref().map_or(0, NumericLeafPlan::retained_bytes)))
+            .ok_or(WorkflowError::Overflow)?;
         // The fixed allowance covers the cohort lookup arrays and both numeric
         // TLS readers, in addition to the existing request forwarding census.
         let transient = frames.checked_add(cache::RESERVED_BYTES)
@@ -83,8 +89,13 @@ impl WorkflowPlanning<'_> {
             Ok(plan) if plan.width >= 2 => plan,
             _ => return Ok(None),
         };
+        let leaf_admission = match leaves_plan.as_ref() {
+            Some(leaves) => match parallel::Plan::new(ceiling, leaves.jobs(), budget, retained, transient) {
+                Ok(plan) if plan.width >= 2 => Some(plan), _ => return Ok(None),
+            }, None => None,
+        };
         let original = self.capability.ledger().reserve(Category::PhaseScratch,
-            Bytes { host: plan.host_bytes.max(hashes.host_bytes) as u64, device: 0 })?;
+            Bytes { host: plan.host_bytes.max(hashes.host_bytes).max(leaf_admission.map_or(0, |p| p.host_bytes)) as u64, device: 0 })?;
         self.failed = true;
         let result = (|| {
             // Cold compilation, when needed, finishes under the existing
@@ -97,6 +108,10 @@ impl WorkflowPlanning<'_> {
             let registered = HeightEnvelopeCacheScope::snapshot().map_err(|_| WorkflowError::Planning)?;
             let mut batch = Batch { values: core::array::from_fn(|_| None), _original: original };
             let keys = keys_plan.derive(hashes).map_err(|_| WorkflowError::Planning)?;
+            let leaves = match (leaves_plan.as_ref(), leaf_admission) {
+                (Some(leaves), Some(admission)) => Some(leaves.derive(admission, &native, &registered).map_err(|_| WorkflowError::Planning)?),
+                (None, None) => None, _ => return Err(WorkflowError::Planning),
+            };
             let stats = parallel::run(plan, &costs[..count], |caller| {
                 if caller { return Ok(None); }
                 Ok(Some((cache::Scope::begin_read_only(&native).map_err(|_| WorkerError::Worker)?,
@@ -104,11 +119,13 @@ impl WorkflowPlanning<'_> {
             }, |readers, index| {
                 let input = inputs[index].as_ref().ok_or(WorkerError::Geometry)?;
                 let value = match input.request.descriptor() {
-                    RequestDescriptor::Shake(_) => Numbers::Shake(PairedRequestNumbers::derive_with_keys(input.request, input.context.clone(), layout,
-                        Some(keys.get(index).map_err(|_| WorkerError::Worker)?))
+                    RequestDescriptor::Shake(_) => Numbers::Shake(PairedRequestNumbers::derive_prepared(input.request, input.context.clone(), layout,
+                        Some(keys.get(index).map_err(|_| WorkerError::Worker)?),
+                        leaves.as_ref().map(|leaves| leaves.get(index)).transpose().map_err(|_| WorkerError::Worker)?)
                         .map_err(|_| WorkerError::Worker)?),
-                    RequestDescriptor::Aes(_) => Numbers::Aes(OwnedAesRequestNumbers::derive_with_keys(input.request, input.context.clone(), None,
-                        Some(keys.get(index).map_err(|_| WorkerError::Worker)?))
+                    RequestDescriptor::Aes(_) => Numbers::Aes(OwnedAesRequestNumbers::derive_prepared(input.request, input.context.clone(), None,
+                        Some(keys.get(index).map_err(|_| WorkerError::Worker)?),
+                        leaves.as_ref().map(|leaves| leaves.get(index)).transpose().map_err(|_| WorkerError::Worker)?)
                         .map_err(|_| WorkerError::Worker)?),
                 };
                 let (native, registered) = match readers {

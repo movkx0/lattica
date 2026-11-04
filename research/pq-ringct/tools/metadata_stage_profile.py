@@ -103,7 +103,7 @@ def preparation_detail(content, timing, required, variant='reference'):
                 metrics_overlap=True)
 
 
-def parallel_detail(content, workers, variant):
+def parallel_detail(content, workers, variant, concurrency=None):
     """Per-wave elapsed times overlap GPU publication; worker_ns is not CPU time."""
     require(variant in ('all', 'serial', 'registration', 'crypto', 'native'), 'invalid parallel variant')
     prefix = 'RINGCT_METADATA_PARALLEL '
@@ -113,21 +113,32 @@ def parallel_detail(content, workers, variant):
             continue
         row = json.loads(line[len(prefix):])
         family, stats = row['family'], row['statistics']
-        require(family in ('registration_encode', 'registration_hash', 'crypto_hash', 'crypto', 'native')
+        require(family in ('registration_encode', 'registration_hash', 'crypto_hash', 'crypto', 'native', 'native_data', 'crypto_leaves', 'case_pipeline')
                 and family not in result, 'unknown or duplicate parallel phase')
         require(variant in ('all', family.split('_')[0]) and workers > 1, 'disabled parallel phase')
+        if family in ('native_data', 'crypto_leaves', 'case_pipeline'):
+            enabled = {'native_data': ('all', 'native'), 'crypto_leaves': ('all', 'crypto'), 'case_pipeline': ('all', 'overlap')}
+            require(concurrency in enabled[family], 'disabled concurrency phase')
         fields = ('jobs', 'width', 'peak_active', 'threads', 'budget_reductions',
                   'admitted_host_bytes', 'worker_ns', 'wait_ns', 'publication_ns', 'wall_ns')
+        if concurrency is not None:
+            fields += ('queued_peak', 'queue_ns', 'idle_ns', 'max_job_ns', 'gpu_ns', 'overlap_worker_ns')
         require(set(stats) == set(fields), 'incomplete parallel statistics')
         for value in stats.values():
             natural(value)
-        require(2 <= stats['jobs'] <= 64 and 2 <= stats['width'] <= min(workers, stats['jobs'])
+        maximum_jobs = 524 if family == 'case_pipeline' else 512 if family == 'native_data' else 64
+        require(2 <= stats['jobs'] <= maximum_jobs and 2 <= stats['width'] <= min(workers, stats['jobs'])
                 and 1 <= stats['peak_active'] <= stats['width']
                 and stats['threads'] == stats['width'] - 1, 'parallel worker ceiling exceeded')
         require(stats['budget_reductions'] == int(stats['width'] < min(workers, stats['jobs']))
                 and 0 < stats['admitted_host_bytes'] <= 32 << 30, 'invalid parallel admission')
         require(stats['wall_ns'] > 0 and stats['worker_ns'] > 0
                 and stats['wait_ns'] + stats['publication_ns'] <= stats['wall_ns'], 'invalid parallel timing')
+        if concurrency is not None:
+            require(stats['queued_peak'] <= min(64, stats['jobs']), 'queue admission exceeded')
+            require(stats['max_job_ns'] <= stats['worker_ns'] and stats['gpu_ns'] <= stats['publication_ns']
+                    and stats['overlap_worker_ns'] <= stats['worker_ns'], 'invalid overlap timing')
+            require(stats['gpu_ns'] == 0 or family == 'case_pipeline', 'GPU publication outside case pool')
         result[family] = stats
     require(('registration_encode' in result) == ('registration_hash' in result), 'incomplete registration waves')
     return result
@@ -164,7 +175,12 @@ def validate(content, require_preparation_detail=False):
         require((reuse[4] > 0) == (reuse_variant in ('all', 'verifier')), 'incorrect verifier reuse')
     pipeline_variant = r.get('pipeline_variant', 'baseline')
     parallel_variant = r.get('parallel_variant', 'serial')
-    parallel = parallel_detail(content, r['metadata_workers'], parallel_variant)
+    checks = r.get('native_reference_checks', [0] * 6)
+    require(type(checks) is list and len(checks) == 6, 'invalid native reference coverage')
+    for value in checks: natural(value)
+    concurrency_variant = r.get('concurrency_variant')
+    require(concurrency_variant in (None, 'baseline', 'native', 'crypto', 'overlap', 'all'), 'invalid concurrency variant')
+    parallel = parallel_detail(content, r['metadata_workers'], parallel_variant, concurrency_variant)
     require(pipeline_variant in ('baseline', 'field_hash', 'registration', 'arithmetic', 'all'), 'invalid pipeline variant')
     pipeline_counts = r.get('pipeline_counters')
     if 'pipeline_variant' in r:
@@ -220,7 +236,7 @@ def validate(content, require_preparation_detail=False):
             len(set(constructors)) == len(constructors), 'incomplete constructor timings')
     for value in constructor_ns: natural(value)
     metadata_startup_ns = r['generation_and_startup_ns'] - input_ns
-    return dict(parallel_variant=parallel_variant, parallel=parallel, constructor_ns=dict(zip(constructors, constructor_ns)), pipeline_variant=pipeline_variant, pipeline_counters=pipeline_counts, next_variant=next_variant, next_counters=next_counts, reuse_variant=reuse_variant, reuse_counters=reuse, hash_variant=variant, endpoint_adoptions=r.get('endpoint_adoptions', 0), metadata_workers=r['metadata_workers'], fixture_load_verify_ns=r.get('fixture_load_verify_ns', 0), complete_metadata=True, complete_workflow=False, recursive_proofs_generated=0,
+    return dict(native_reference_checks=checks, concurrency_variant=concurrency_variant or 'baseline', parallel_variant=parallel_variant, parallel=parallel, constructor_ns=dict(zip(constructors, constructor_ns)), pipeline_variant=pipeline_variant, pipeline_counters=pipeline_counts, next_variant=next_variant, next_counters=next_counts, reuse_variant=reuse_variant, reuse_counters=reuse, hash_variant=variant, endpoint_adoptions=r.get('endpoint_adoptions', 0), metadata_workers=r['metadata_workers'], fixture_load_verify_ns=r.get('fixture_load_verify_ns', 0), complete_metadata=True, complete_workflow=False, recursive_proofs_generated=0,
                 timing=timing, native_input_generation_ns=r['native_input_generation_ns'],
                 generation_and_startup_ns=r['generation_and_startup_ns'],
                 metadata_startup_ns=metadata_startup_ns,

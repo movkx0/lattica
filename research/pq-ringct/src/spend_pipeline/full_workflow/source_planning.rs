@@ -313,6 +313,12 @@ impl<'source> SourcePlanningPlan<'source> {
         let _ = graph;
         &self.verifiers
     }
+    #[cfg(not(debug_assertions))]
+    pub(crate) fn case_verifier_cache(&self) -> Option<&crate::graph_tree::metadata::verifier::VerifierCache> {
+        #[cfg(test)]
+        if !crate::preparation_options::case_verifier_cache() { return None; }
+        Some(&self.verifiers)
+    }
     pub(crate) fn validate_initial_source(&self, native: &InitialNativeSource<'_>) -> Result<()> {
         if self.natives.iter().any(|original| core::ptr::eq(original, native)) {
             Ok(())

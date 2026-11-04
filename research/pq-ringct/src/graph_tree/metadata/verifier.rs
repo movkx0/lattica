@@ -12,6 +12,7 @@ use lattica_prover_p3::block_v2::{
 
 const CAPACITY: usize = 64;
 mod parallel;
+pub(crate) mod linear_map;
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Key {
     Ntt(NttDescriptor),

@@ -29,6 +29,8 @@ mod producer_metadata;
 #[cfg(not(debug_assertions))]
 mod producer_constructors;
 #[cfg(not(debug_assertions))]
+pub(crate) use producer_constructors::native_jobs::Batch as PreparedNativeBatch;
+#[cfg(not(debug_assertions))]
 pub(crate) use producer_metadata::{producer_metadata_retained_requirements, producer_metadata_inspection_requirements};
 #[cfg(not(debug_assertions))]
 pub(crate) use producer_metadata::{PlanningAdmissionTransition, PlanningAdmissionProjection};

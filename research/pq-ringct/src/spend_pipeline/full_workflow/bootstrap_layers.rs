@@ -17,6 +17,7 @@ pub(crate) type PreparedSourceResult<'a> = core::result::Result<SourceRetained<P
 
 fn failure(message: &'static str) -> FreshGenerationError { FreshGenerationError::Resource(message) }
 mod registration;
+mod overlap;
 
 // Each table owns its payload independently of the planning capability's
 // context borrow. Invariant output slots must retain only their source/graph
@@ -53,14 +54,14 @@ pub(crate) fn prepare_graph_layer<'scope, 'context, const N: usize>(
     Ok(())
 }
 
-pub(crate) fn prepare_source_layer<'source: 'graph, 'graph, 'context, const N: usize>(
+pub(crate) fn prepare_source_layer<'source: 'graph, 'graph: 'prepared, 'prepared, 'context, const N: usize>(
     scope: &SourcePlanningPlan<'source>,
     planning: &mut WorkflowPlanning<'context>,
     startup: &crate::spend_pipeline::full_workflow::fresh_generation::case_lifetime::MetadataOwner<'_, '_, '_>,
     graphs: &'graph FixedCaseOwnerSlots<'_, GraphSourceResult, N>,
     plans: &FixedCaseOwnerSlots<'_, PreparationPlanResult<'graph>, N>,
-    outputs: &FixedCaseOwnerSlots<'_, PreparedSourceResult<'graph>, N>,
-) -> Result<()> {
+    outputs: &'prepared FixedCaseOwnerSlots<'_, PreparedSourceResult<'graph>, N>,
+) -> Result<Option<crate::execution::workflow_resources::PreparedNativeBatch<'prepared>>> {
     let case = startup.metadata_case_state(scope, planning.ledger())?;
     graphs.check_case(case)?;
     plans.check_case(case)?;
@@ -81,7 +82,8 @@ pub(crate) fn prepare_source_layer<'source: 'graph, 'graph, 'context, const N: u
         let plan_slot = plans.get(ordinal)?;
         plan_slot.install(SourcePreparationPlan::new(scope, graph, native))?;
     }
-    if registration::prepare(planning, plans, outputs)? { return Ok(()); }
+    if let Some(numbers) = overlap::prepare(scope, planning, plans, outputs)? { return Ok(Some(numbers)); }
+    if registration::prepare(planning, plans, outputs)? { return Ok(None); }
     for ordinal in 0..N {
         let plan_slot = plans.get(ordinal)?;
         let plan = plan_slot.get()?.as_ref()
@@ -91,5 +93,5 @@ pub(crate) fn prepare_source_layer<'source: 'graph, 'graph, 'context, const N: u
         output_slot.get()?.as_ref()
             .map_err(|_| failure("prepared source phase refused"))?;
     }
-    Ok(())
+    Ok(None)
 }

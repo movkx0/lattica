@@ -6,6 +6,7 @@ use std::time::Instant;
 
 pub(crate) const MAX_JOBS: usize = 64;
 pub(crate) const CONTROL_BYTES: usize = 4 << 20;
+pub(crate) mod pool;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Error { Geometry, Budget, Worker, Publication }
@@ -22,6 +23,12 @@ pub(crate) struct Statistics {
     pub wait_ns: u128,
     pub publication_ns: u128,
     pub wall_ns: u128,
+    pub queued_peak: usize,
+    pub queue_ns: u128,
+    pub idle_ns: u128,
+    pub max_job_ns: u128,
+    pub gpu_ns: u128,
+    pub overlap_worker_ns: u128,
 }
 
 /// Retained results are charged for *every* job, including completed jobs that
@@ -64,6 +71,9 @@ pub(crate) fn run<S, R: Send>(
     work: impl Fn(&mut S, usize) -> Result<R, Error> + Sync,
     mut publish: impl FnMut(usize, R) -> Result<(), Error>,
 ) -> Result<Statistics, Error> {
+    if crate::preparation_options::concurrency_enabled("overlap") {
+        return pool::run(plan, costs, initialize, work, publish);
+    }
     let count = costs.len();
     if count == 0 || count > MAX_JOBS || plan.width == 0 || plan.width > count
         || !cpu_queue::control_fits::<usize, (usize, Result<R, Error>, u128)>()

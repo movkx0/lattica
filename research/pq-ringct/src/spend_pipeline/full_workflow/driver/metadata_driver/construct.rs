@@ -2,12 +2,12 @@ use super::*;
 
 /// All dependent owners remain in these scopes until the concrete continuation
 /// completes workflow retirement and case completion.
-pub(crate) fn run<const N: usize>(
-    planning: WorkflowPlanning<'_>, metadata: &SourceMetadataPlanningPlan<'_>,
+pub(crate) fn run<'a, const N: usize>(
+    planning: WorkflowPlanning<'_>, metadata: &SourceMetadataPlanningPlan<'a>,
     startup: &crate::spend_pipeline::full_workflow::fresh_generation::case_lifetime::MetadataOwner<'_, '_, '_>,
     batch: Option<&CaseOwnerSlot<'_, FreshGenerationBatch<N>>>, case: &CaseRetirementState,
     native_cache: &ProofCache, outer_cache: &OuterProofCache,
-    stage: &mut DriverStage,
+    stage: &mut DriverStage, early_native: Option<crate::execution::workflow_resources::PreparedNativeBatch<'a>>,
 ) -> Result<CompletedCaseSummary> {
     super::super::metadata_timing::phase(super::super::metadata_timing::Phase::Native);
     stage.layer("construct");
@@ -58,7 +58,7 @@ pub(crate) fn run<const N: usize>(
         permutation: permutation_native_plans,
         linear_map: linear_map_native_plans,
     };
-    native_layers::fill_native_layer(planning.get()?, metadata, case, native_plans, stage)?;
+    native_layers::fill_native_layer(planning.get()?, metadata, case, native_plans, stage, early_native)?;
 
     *stage = DriverStage::Call("metadata_source_blueprints");
 
