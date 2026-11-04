@@ -7,6 +7,8 @@ use lattica_prover_p3::block_v2::native_gpu::OperationContext;
 use lattica_prover_p3::proving::Policy as BackendPolicy;
 #[cfg(feature = "opencl")]
 use p3_field::PrimeCharacteristicRing;
+#[cfg(feature = "opencl")]
+mod tiled;
 
 #[cfg(feature = "opencl")]
 fn commit_bytes_on_gpu(
@@ -212,6 +214,9 @@ impl Plan {
     pub(crate) fn prepare_endpoint_facts(&mut self, context: &graph_tree::GraphContext,
         operations: &OperationContext<'_>, batched: bool) -> Result<()> {
         require(self.requests.len() == 7, "prepared endpoint request catalog")?;
+        if batched && crate::preparation_options::readiness_enabled("gpu") {
+            return self.prepare_tiled_endpoint_facts(context, operations);
+        }
         let mut hashes = graph_tree::commitment_batches::FieldBatch::new(operations, 14, batched).map_err(err)?;
         let mut indices = [[0usize; 2]; 7];
         for (index, request) in self.requests.iter_mut().enumerate() {

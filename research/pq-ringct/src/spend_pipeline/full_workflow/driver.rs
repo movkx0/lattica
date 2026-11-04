@@ -8,7 +8,7 @@ pub(crate) mod native_runtime;
 pub(crate) mod graph_runtime;
 pub(crate) mod runtime_dispatch;
 pub(crate) mod case_report;
-mod metadata_timing;
+pub(crate) mod metadata_timing;
 #[cfg(test)]
 mod metadata_profile;
 #[cfg(test)]

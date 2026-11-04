@@ -1173,3 +1173,108 @@ Validation passed 23 focused Rust tests, 10 core queue/cache tests, eight GPU pa
 Complete-fixture reference checks matched all 237 payloads in each run (99 affine, 21 NTT, 51 multiplication, 36 bounds, nine permutation and 21 linear-map payloads). The baseline fixture used 16 workers, the heldout fixture eight workers, and a third baseline run exercised the standalone native worker path at 16 workers. All checks preserved complete memory closure under the existing limits.
 
 The checkpoint source, frozen candidate, build/fixture hashes, all timing samples, qualifications and earlier failed diagnostics are indexed in [concurrency evidence](../../docs/evidence/ringct-metadata-concurrency-2026-11-04.json). Documentation and this evidence were added after the measured source snapshot.
+
+## Earlier case scheduling and bounded GPU field streams (2026-11-04)
+
+This pass starts one admitted CPU pool before the first graph is built. As each
+graph becomes stable, registration encoding and its two identity hashes become
+ready jobs. GPU graph and source operations, owner installation and publication
+remain ordered on the coordinator. Each prepared member immediately releases
+its native metadata jobs and its crypto identity/leaf shards. The last shard of
+a request assembles that request on the same worker; there is no case-wide
+identity/leaf barrier or nested pool.
+
+The pool admits its fixed backing and threads before graph construction, protects
+future graph/source requirements, and charges each registration and numeric result
+before allocating it. At most 64 jobs are outstanding, including continuations.
+All helpers join before borrowed sources or reservations retire. Missing cached
+numeric bounds defer early crypto work to ordinary planning after the pool joins.
+Lookup-only warmup cannot compile a descriptor or borrow an unfunded compiler
+reservation. Native jobs also seal their recording requirements into prepared
+results, avoiding repeated recording censuses while preserving exact source,
+profile, descriptor, ordinal and ledger checks.
+
+Endpoint commitments now borrow byte/field streams and use a fixed 131072-word
+GPU input window. Up to 64 streams use tiles of at most 4096 words, rounded to
+four-word absorption boundaries. Length ordering is private packing order; roots
+return in caller order. State and failure status stay on device between tiles,
+and only the final roots/status are read back. Every absorption still canonicalizes
+field elements. Empty streams, odd byte lengths, uneven finish times, late invalid
+words and failed-scope cleanup are covered by CPU parity and refusal tests.
+
+Fresh-process complete N3 metadata medians on the Ryzen 9 5900XT / RTX 5080:
+
+| Workers / fixture | Checkpoint median | Candidate median | Elapsed reduction | Speedup over candidate 1 worker |
+|---|---:|---:|---:|---:|
+| 1 / baseline N3 | 3.253 s | 3.262 s | -0.3% | 1.00x |
+| 2 / baseline N3 | 2.496 s | 2.229 s | 10.7% | 1.46x |
+| 4 / baseline N3 | 2.460 s | 2.213 s | 10.0% | 1.47x |
+| 8 / baseline N3 | 2.379 s | 2.222 s | 6.6% | 1.47x |
+| 16 / baseline N3 | 2.365 s | 2.227 s | 5.8% | 1.47x |
+| 1 / heldout N3 | 3.205 s | 3.212 s | -0.2% | 1.00x |
+| 2 / heldout N3 | 2.552 s | 2.270 s | 11.1% | 1.42x |
+| 4 / heldout N3 | 2.480 s | 2.204 s | 11.2% | 1.46x |
+| 8 / heldout N3 | 2.398 s | 2.229 s | 7.1% | 1.44x |
+| 16 / heldout N3 | 2.366 s | 2.221 s | 6.1% | 1.45x |
+
+These are 140 runs: seven alternating checkpoint/candidate pairs at each worker
+count on each of two fixed public fixtures. The checkpoint is `68b65a6`.
+Timing includes startup and final memory/schedule closure; it excludes fixture
+verification, native input generation, proof preissue and recursive proof generation.
+All N3 runs keep the 32/24/8 GiB worker/native/device limits. Cold descriptor
+misses and evictions are zero throughout. The 1.40x scaling target and the 3%
+low-worker regression limit pass. The 15% reduction target at 8/16 workers is
+not met. Most gains arrive by two to four workers; more workers do not materially
+reduce this workload further.
+
+The test-only selectors are `--metadata-readiness-variant baseline|cpu|gpu|all`
+and `--metadata-tiled-kernel paired|fused`. Production enables the combined CPU
+and borrowed-stream path with the paired field kernel. CPU-only/GPU-only screens
+show that earlier scheduling supplies most of the N3 gain; tiling alone has
+little effect on these already bounded endpoint batches.
+
+The fused partial-round prototype is retained for qualification. Larger GPU
+workloads were measured before choosing the default: six uniform stream shapes,
+seven alternating paired/fused pairs each, through the maximum one-million-word
+stream length. Each shape checks both kernels against an independent CPU result.
+These operation-only timings include packing, upload, kernels and readback, but
+exclude source generation, workspace construction and the initial warm submission.
+Streams share deterministic input backing to isolate occupancy and length effects;
+these are not transaction timings.
+
+| Streams | Words per stream | Paired median | Fused median | Fused elapsed increase |
+|---:|---:|---:|---:|---:|
+| 1 | 4096 | 6.876 ms | 7.954 ms | 15.7% |
+| 14 | 4096 | 6.937 ms | 8.017 ms | 15.6% |
+| 64 | 2048 | 3.629 ms | 4.168 ms | 14.9% |
+| 64 | 16384 | 28.593 ms | 32.922 ms | 15.1% |
+| 64 | 131073 | 228.214 ms | 262.857 ms | 15.2% |
+| 64 | 1048576 | 1826.058 ms | 2103.777 ms | 15.2% |
+
+The metadata harness now supports `--metadata-transactions 3|4`, including exact
+fixture size/header/digest checks and independent verification of every input.
+N4 fixtures combine four distinct public inputs from the two existing N3 files;
+the evidence records their composition. At both 1 and 16 workers, standard N4
+reaches the final combined admission gate and requires 34,770,227,486 host bytes,
+410,489,118 bytes (391.5 MiB) above the 32 GiB worker limit. Those runs are recorded
+as refusals, not successful complete-stage timings. The explicit existing
+`--host-profile expanded-36` option is available for an explicit N4 research
+run; it does not change defaults or permit expanded N3 comparisons. This pass
+contains no successful complete-stage N4 kernel comparison.
+
+Validation: 43 focused research tests, 14 core tests, nine GPU correctness tests,
+the large GPU parity/profiling test, and 74 Python tests passed. All 317 native
+and 72 registered descriptor rows match the checkpoint numerically and qualify
+at all five worker counts; both generated tables reproduce. Full-workflow and
+default release checks cover all targets. Three complete N3 reference runs compare
+237 payloads each across all six native families with their original serializers
+and check rejection of changed bindings.
+
+Worker/overlap counters sum task wall time, including mutex waits; they are not
+OS CPU utilization. Coordinator graph/source callback time is not precise GPU
+device busy time. Timelines overlap and must not be added together.
+
+[Evidence, every timing sample, qualification receipts, failed diagnostics, and source/fixture hashes](../../docs/evidence/ringct-metadata-readiness-2026-11-04.json).
+The measured source is frozen under `.tools/metadata-readiness-candidate-source`;
+raw receipts remain under `.tools/pq-opencl-opt/runs`. Documentation and evidence
+were added after the frozen measurement source.

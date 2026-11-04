@@ -238,3 +238,190 @@ __kernel void pq_operation_commit_fields_batch_pair(__global const ulong *raw,
 }
 
 #endif
+
+// Tiled streams retain their exact rate-four recurrence on the device.
+__kernel void pq_operation_commit_fields_tiled(__global const ulong *raw,
+    __global const ulong *descriptors, uint streams, uint first,
+    __global ulong *roots, __global ulong *status,
+    __global const ulong *rci, __global const ulong *rcp,
+    __global const ulong *rcf, __global const ulong *diag) {
+    uint stream = get_global_id(0);
+    if (stream >= streams) return;
+    ulong offset = descriptors[6*stream], count = descriptors[6*stream+1];
+    ulong state[8];
+    if (first != 0) {
+        status[stream] = 0;
+        if (streams > 64 || offset > 131072UL || count > 4096UL || count > 131072UL-offset) {
+            status[stream] = 1; return;
+        }
+        for (uint j=0;j<4;++j) {
+            state[j] = descriptors[6*stream+2+j];
+            if (state[j] >= GP) { status[stream] = 2; return; }
+            roots[4*stream+j] = state[j];
+        }
+    } else {
+        if (status[stream] != 0 || count == 0) return;
+        for (uint j=0;j<4;++j) state[j] = roots[4*stream+j];
+    }
+    uint end = (uint)count;
+    for (uint j=0;j<end;++j) if (raw[offset+j] >= GP) {
+        status[stream] = 3; return;
+    }
+    for (uint at=0;at<end;at+=4) {
+        for (uint j=0;j<4;++j) state[4+j] = at+j<end ? raw[offset+at+j] : 0;
+        pq_poseidon_permute(state,rci,rcp,rcf,diag);
+    }
+    for (uint j=0;j<4;++j) roots[4*stream+j] = gl_canon(state[j]);
+}
+
+__attribute__((reqd_work_group_size(8, 1, 1)))
+__kernel void pq_operation_commit_fields_tiled_cooperative(__global const ulong *raw,
+    __global const ulong *descriptors, uint streams, uint first,
+    __global ulong *roots, __global ulong *status,
+    __global const ulong *rci, __global const ulong *rcp,
+    __global const ulong *rcf, __global const ulong *diag) {
+    const uint stream = get_group_id(0), lane = get_local_id(0);
+    __local ulong words[8];
+    if (stream >= streams) return;
+    const ulong offset = descriptors[6*stream], count = descriptors[6*stream+1];
+    if (streams > 64 || offset > 131072UL || count > 4096UL || count > 131072UL-offset) {
+        if (lane == 0) status[stream] = 1;
+        return;
+    }
+    if (first == 0 && (status[stream] != 0 || count == 0)) return;
+    ulong value = lane < 4 ? (first != 0 ? descriptors[6*stream+2+lane] : roots[4*stream+lane]) : 0;
+    const uint end = (uint)count;
+    uint invalid = first != 0 && value >= GP ? 1u : 0u;
+    for (uint i=lane; i<end; i+=8) if (raw[offset+i] >= GP) invalid |= 2u;
+    invalid = pq_fields_invalid(invalid, lane, words);
+    if (lane == 0) status[stream] = (invalid & 1u) ? 2u : (invalid ? 3u : 0u);
+    if (invalid) return;
+    const ulong diagonal = diag[lane];
+    for (uint at=0; at<end; at+=4) {
+        if (lane >= 4) value = at+lane-4 < end ? raw[offset+at+lane-4] : 0;
+        value = pq_fields_permute(value, lane, diagonal, words, rci, rcp, rcf);
+    }
+    if (lane < 4) roots[4*stream+lane] = value;
+}
+
+
+#if defined(LATTICA_PUBLIC_HASH_NVIDIA_SHUFFLE)
+inline ulong pq_fields_fused_neg2_raw(ulong value) {
+    ulong high_word = value >> 32;
+    ulong low_word = (ulong)(uint)value;
+    ulong middle = high_word + low_word;
+    ulong weighted_low = (middle << 32) | low_word;
+    ulong weighted_high = high_word + (middle >> 32);
+    ulong product_low = 0UL - weighted_low;
+    ulong product_high = value - weighted_high - (ulong)(weighted_low != 0UL);
+    return gl_reduce128(product_low, product_high);
+}
+
+inline ulong pq_fields_fused_partial(ulong original, uint physical,
+                                      ulong round_constant, ulong diagonal) {
+    uint lane = physical >> 1;
+    uint role = physical & 1u;
+    uint nonlinear = lane == 0u;
+    ulong input = gl_add(original, round_constant);
+    // Word zero uses the established pair x^7 schedule. Every other word
+    // computes its diagonal product in role zero and the unit in role one.
+    // Those products use otherwise unnecessary S-box multiply instructions.
+    ulong left = nonlinear ? input : (role ? 1UL : original);
+    ulong right = nonlinear ? input : (role ? 1UL : diagonal);
+    ulong first = gl_mul(left, right);
+    ulong factor = nonlinear ? (role ? first : input) : 1UL;
+    ulong partial = gl_mul(first, factor);
+    ulong partner = public_hash_pair_exchange(partial, physical ^ 1u);
+    ulong product = gl_mul(partial, partner);
+    // Both roles again contain the exact same representative. Preserve the
+    // untouched words for the sum; only logical word zero adopts the S-box.
+    ulong value = nonlinear ? product : original;
+    ulong diagonal_product = nonlinear ? pq_fields_fused_neg2_raw(product) : product;
+    ulong sum = gl_add(value, public_hash_pair_logical(value, lane ^ 1u, role));
+    sum = gl_add(sum, public_hash_pair_logical(sum, lane ^ 2u, role));
+    sum = gl_add(sum, public_hash_pair_logical(sum, lane ^ 4u, role));
+    return gl_add(diagonal_product, sum);
+}
+
+inline ulong pq_fields_fused_permute(ulong value, uint physical, ulong diagonal,
+    __global const ulong *rci, __global const ulong *rcp, __global const ulong *rcf) {
+    const uint lane = physical >> 1, role = physical & 1u;
+    value = public_hash_pair_external(value, lane, role);
+#pragma unroll
+    for (uint r=0; r<4; ++r) {
+        value = public_hash_pair_pow7(gl_add(value, rci[8*r+lane]), physical);
+        value = public_hash_pair_external(value, lane, role);
+    }
+#pragma unroll
+    for (uint r=0; r<22; ++r) {
+        value = pq_fields_fused_partial(value, physical, rcp[r], diagonal);
+    }
+#pragma unroll
+    for (uint r=0; r<4; ++r) {
+        value = public_hash_pair_pow7(gl_add(value, rcf[8*r+lane]), physical);
+        value = public_hash_pair_external(value, lane, role);
+    }
+    return gl_canon(value);
+}
+__attribute__((reqd_work_group_size(16, 1, 1)))
+__kernel void pq_operation_commit_fields_tiled_pair(__global const ulong *raw,
+    __global const ulong *descriptors, uint streams, uint first,
+    __global ulong *roots, __global ulong *status,
+    __global const ulong *rci, __global const ulong *rcp,
+    __global const ulong *rcf, __global const ulong *diag) {
+    const uint stream = get_group_id(0), physical = get_local_id(0), lane = physical >> 1, role = physical & 1u;
+
+    if (stream >= streams) return;
+    const ulong offset = descriptors[6*stream], count = descriptors[6*stream+1];
+    if (streams > 64 || offset > 131072UL || count > 4096UL || count > 131072UL-offset) {
+        if (physical == 0) status[stream] = 1;
+        return;
+    }
+    if (first == 0 && (status[stream] != 0 || count == 0)) return;
+    ulong value = lane < 4 ? (first != 0 ? descriptors[6*stream+2+lane] : roots[4*stream+lane]) : 0;
+    const uint end = (uint)count;
+    uint invalid = first != 0 && value >= GP ? 1u : 0u;
+    for (uint i=physical; i<end; i+=16) if (raw[offset+i] >= GP) invalid |= 2u;
+    invalid = pq_fields_pair_invalid(invalid, physical);
+    if (physical == 0) status[stream] = (invalid & 1u) ? 2u : (invalid ? 3u : 0u);
+    if (invalid) return;
+    const ulong diagonal = diag[lane];
+    for (uint at=0; at<end; at+=4) {
+        if (lane >= 4) value = at+lane-4 < end ? raw[offset+at+lane-4] : 0;
+        value = pq_fields_pair_permute(value, physical, diagonal, rci, rcp, rcf);
+    }
+    if (role == 0 && lane < 4) roots[4*stream+lane] = value;
+}
+
+__attribute__((reqd_work_group_size(16, 1, 1)))
+__kernel void pq_operation_commit_fields_tiled_fused(__global const ulong *raw,
+    __global const ulong *descriptors, uint streams, uint first,
+    __global ulong *roots, __global ulong *status,
+    __global const ulong *rci, __global const ulong *rcp,
+    __global const ulong *rcf, __global const ulong *diag) {
+    const uint stream = get_group_id(0), physical = get_local_id(0), lane = physical >> 1, role = physical & 1u;
+
+    if (stream >= streams) return;
+    const ulong offset = descriptors[6*stream], count = descriptors[6*stream+1];
+    if (streams > 64 || offset > 131072UL || count > 4096UL || count > 131072UL-offset) {
+        if (physical == 0) status[stream] = 1;
+        return;
+    }
+    if (first == 0 && (status[stream] != 0 || count == 0)) return;
+    ulong value = lane < 4 ? (first != 0 ? descriptors[6*stream+2+lane] : roots[4*stream+lane]) : 0;
+    const uint end = (uint)count;
+    uint invalid = first != 0 && value >= GP ? 1u : 0u;
+    for (uint i=physical; i<end; i+=16) if (raw[offset+i] >= GP) invalid |= 2u;
+    invalid = pq_fields_pair_invalid(invalid, physical);
+    if (physical == 0) status[stream] = (invalid & 1u) ? 2u : (invalid ? 3u : 0u);
+    if (invalid) return;
+    const ulong diagonal = diag[lane];
+    for (uint at=0; at<end; at+=4) {
+        if (lane >= 4) value = at+lane-4 < end ? raw[offset+at+lane-4] : 0;
+        value = pq_fields_fused_permute(value, physical, diagonal, rci, rcp, rcf);
+    }
+    if (role == 0 && lane < 4) roots[4*stream+lane] = value;
+}
+
+
+#endif

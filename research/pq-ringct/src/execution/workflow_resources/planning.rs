@@ -30,6 +30,7 @@ mod producer_metadata;
 mod producer_constructors;
 #[cfg(not(debug_assertions))]
 pub(crate) use producer_constructors::native_jobs::Batch as PreparedNativeBatch;
+pub(crate) use producer_constructors::parallel_crypto::{Batch as PreparedCryptoBatch, Numbers as CryptoNumbers};
 #[cfg(not(debug_assertions))]
 pub(crate) use producer_metadata::{producer_metadata_retained_requirements, producer_metadata_inspection_requirements};
 #[cfg(not(debug_assertions))]

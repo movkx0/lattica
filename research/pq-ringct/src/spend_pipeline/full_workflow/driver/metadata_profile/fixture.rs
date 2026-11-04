@@ -1,4 +1,4 @@
-//! Public, independently verified N3 inputs. No private keys or capabilities.
+//! Public, independently verified N3/N4 inputs. No private keys or capabilities.
 use crate::spend_pipeline::full_workflow::InitialNativeSource;
 use crate::{
     execution::retained_resources::{
@@ -15,34 +15,36 @@ use std::{
 };
 
 pub(super) const MAGIC: &[u8; 17] = b"RINGCT-N3-FIX-v1\0";
+pub(super) const MAGIC_N4: &[u8; 17] = b"RINGCT-N4-FIX-v1\0";
+fn magic(transactions: usize) -> io::Result<&'static [u8; 17]> {
+    match transactions { 3 => Ok(MAGIC), 4 => Ok(MAGIC_N4), _ => Err(bad()) }
+}
 pub(super) const FRAME_BYTES: usize = 16 << 10;
 
 pub(crate) fn capture(sources: &[InitialNativeSource<'_>]) -> io::Result<()> {
     let Some(path) = std::env::var_os("LATTICA_RINGCT_METADATA_FIXTURE_OUT") else {
         return Ok(());
     };
-    if !super::active() || sources.len() != 3 {
+    if !super::active() || !matches!(sources.len(), 3 | 4) {
         return Err(io::Error::other(
-            "fixture capture requires N3 metadata profile",
+            "fixture capture requires N3/N4 metadata profile",
         ));
     }
     let mut out = OpenOptions::new().write(true).create_new(true).open(path)?;
     write(&mut out, &sources)?;
     out.sync_all()?;
-    eprintln!("RINGCT_METADATA_FIXTURE_CAPTURED transactions=3");
+    eprintln!("RINGCT_METADATA_FIXTURE_CAPTURED transactions={}", sources.len());
     Ok(())
 }
 
 fn write(out: &mut impl Write, sources: &[InitialNativeSource<'_>]) -> io::Result<()> {
-    if sources.len() != 3 {
-        return Err(io::Error::other("fixture requires three inputs"));
-    }
+    let header = magic(sources.len())?;
     let mut digest = Sha3_256::new();
     let mut part = |bytes: &[u8]| -> io::Result<()> {
         digest.update(bytes);
         out.write_all(bytes)
     };
-    part(MAGIC)?;
+    part(header)?;
     for source in sources {
         part(&source.setup_seed())?;
         part(source.context())?;
@@ -73,33 +75,36 @@ impl Input {
         .map_err(io::Error::other)
     }
 }
-pub(super) struct Inputs {
-    inputs: [Input; 3],
+pub(super) struct Inputs<const N: usize> {
+    inputs: [Input; N],
     pub(super) digest: [u8; 32],
     // Actual payloads precede their original backing in destruction order.
     _original: Reservation,
     ledger: Ledger,
 }
 fn bad() -> io::Error {
-    io::Error::other("invalid or unverified N3 metadata fixture")
+    io::Error::other("invalid or unverified N3/N4 metadata fixture")
 }
 fn claim(category: Category, host: u64) -> Requirements {
     Requirements::single(category, Bytes { host, device: 0 })
 }
-impl Inputs {
+impl<const N: usize> Inputs<N> {
     pub(super) fn read(path: &std::path::Path) -> io::Result<Self> {
+        let header = magic(N)?;
+        let profile = super::host_profile();
+        if N != 4 && profile != crate::host_memory_profile::HostMemoryProfile::Standard { return Err(bad()); }
         let mut file = std::fs::File::open(path)?;
-        let expected = MAGIC.len() + 3 * (64 + STATEMENT_BYTES + PROOF_BYTES) + 32;
+        let expected = header.len() + N * (64 + STATEMENT_BYTES + PROOF_BYTES) + 32;
         if file.metadata()?.len() != expected as u64 {
             return Err(bad());
         }
         let footprint = InitialSourceFootprint::fixed().map_err(io::Error::other)?;
         let native = DeclaredNativeFootprint::reviewed().map_err(io::Error::other)?;
         let ledger = Ledger::new(WorkerAllowance {
-            host: 32 << 30,
+            host: profile.worker_bytes(),
             device: 8 << 30,
         });
-        let retained = 3 * (STATEMENT_BYTES + PROOF_BYTES + footprint.decoded_bytes())
+        let retained = N * (STATEMENT_BYTES + PROOF_BYTES + footprint.decoded_bytes())
             + 8 * core::mem::size_of::<Self>()
             + FRAME_BYTES;
         let mut original_requirements = claim(Category::NativeProof, retained as u64);
@@ -132,10 +137,10 @@ impl Inputs {
         };
         let mut magic = [0u8; 17];
         part(&mut magic)?;
-        if &magic != MAGIC {
+        if &magic != header {
             return Err(bad());
         }
-        let mut inputs: [Option<Input>; 3] = core::array::from_fn(|_| None);
+        let mut inputs: [Option<Input>; N] = core::array::from_fn(|_| None);
         for input in &mut inputs {
             let mut setup_seed = [0; 32];
             let mut context = [0; 32];
@@ -174,12 +179,9 @@ impl Inputs {
         if stored_digest != calculated {
             return Err(bad());
         }
-        let [Some(first), Some(second), Some(third)] = inputs else {
-            return Err(bad());
-        };
         drop(scratch);
         Ok(Self {
-            inputs: [first, second, third],
+            inputs: inputs.map(|input| input.expect("every verified input installed")),
             digest: calculated,
             _original: original,
             ledger,
@@ -188,12 +190,10 @@ impl Inputs {
     pub(super) fn ledger(&self) -> &Ledger {
         &self.ledger
     }
-    pub(super) fn views(&self) -> io::Result<[InitialNativeSource<'_>; 3]> {
-        Ok([
-            self.inputs[0].view()?,
-            self.inputs[1].view()?,
-            self.inputs[2].view()?,
-        ])
+    pub(super) fn views(&self) -> io::Result<[InitialNativeSource<'_>; N]> {
+        let mut views = core::array::from_fn(|_| None);
+        for (slot, input) in views.iter_mut().zip(&self.inputs) { *slot = Some(input.view()?); }
+        Ok(views.map(|view| view.expect("every verified view installed")))
     }
 }
 
@@ -202,8 +202,12 @@ mod tests {
     use super::*;
     #[test]
     fn replay_rejects_truncated_wrong_profile_and_unverified_inputs() {
+        reject::<3>(); reject::<4>();
+    }
+    fn reject<const N: usize>() {
+        let header = magic(N).unwrap();
         let path = std::env::temp_dir().join(format!(
-            "ringct-metadata-fixture-refusal-{}.bin",
+            "ringct-metadata-fixture-refusal-{N}-{}.bin",
             std::process::id()
         ));
         let mut file = OpenOptions::new()
@@ -211,16 +215,16 @@ mod tests {
             .create_new(true)
             .open(&path)
             .unwrap();
-        file.write_all(MAGIC).unwrap();
+        file.write_all(header).unwrap();
         drop(file);
-        assert!(Inputs::read(&path).is_err());
-        let mut bytes = vec![0u8; MAGIC.len() + 3 * (64 + STATEMENT_BYTES + PROOF_BYTES) + 32];
+        assert!(Inputs::<N>::read(&path).is_err());
+        let mut bytes = vec![0u8; MAGIC.len() + N * (64 + STATEMENT_BYTES + PROOF_BYTES) + 32];
         std::fs::write(&path, &bytes).unwrap();
-        assert!(Inputs::read(&path).is_err());
-        bytes[..MAGIC.len()].copy_from_slice(MAGIC);
+        assert!(Inputs::<N>::read(&path).is_err());
+        bytes[..MAGIC.len()].copy_from_slice(header);
         std::fs::write(&path, &bytes).unwrap();
-        assert!(Inputs::read(&path).is_err());
-        for index in 0..3 {
+        assert!(Inputs::<N>::read(&path).is_err());
+        for index in 0..N {
             let start = MAGIC.len() + index * (64 + STATEMENT_BYTES + PROOF_BYTES);
             bytes[start..start + 32].fill(17);
             bytes[start + 32..start + 64].fill(34);
@@ -230,7 +234,7 @@ mod tests {
         let digest = Sha3_256::digest(&bytes[..end]);
         bytes[end..].copy_from_slice(&digest);
         std::fs::write(&path, &bytes).unwrap();
-        assert!(Inputs::read(&path).is_err());
+        assert!(Inputs::<N>::read(&path).is_err());
         std::fs::remove_file(path).unwrap();
     }
 }

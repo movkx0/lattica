@@ -37,6 +37,12 @@ impl RequestIdentityKeys<'_> {
         Ok(&self.values)
     }
 }
+impl<'a> RequestIdentityKeys<'a> {
+    pub(super) fn from_shards(request: &'a Request, values: Vec<Key>) -> Result<Self> {
+        if values.len() != request.segments().len() { return Err(PairedFailure::Coverage); }
+        Ok(Self { request, values, source: crate::graph_proofs::compiled_source_fingerprint() })
+    }
+}
 pub(crate) struct IdentityKeys<'a> { requests: [Option<RequestIdentityKeys<'a>>; MAX] }
 impl<'a> IdentityKeys<'a> {
     pub(crate) fn get(&self, index: usize) -> Result<&RequestIdentityKeys<'a>> {

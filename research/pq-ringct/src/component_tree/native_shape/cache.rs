@@ -102,6 +102,15 @@ const _: () = assert!(
         <= RESERVED_BYTES
 );
 thread_local! { static CACHE: RefCell<Option<Cache>> = const { RefCell::new(None) }; }
+thread_local! { static LOOKUP_ONLY: std::cell::Cell<bool> = const { std::cell::Cell::new(false) }; }
+/// A coordinator may fill numeric snapshots from qualified tables while its
+/// case pool is live. A missing descriptor must defer compilation until join.
+pub(crate) fn lookup_only<T>(operation: impl FnOnce() -> T) -> T {
+    struct Restore(bool);
+    impl Drop for Restore { fn drop(&mut self) { LOOKUP_ONLY.with(|slot| slot.set(self.0)); } }
+    let restore = Restore(LOOKUP_ONLY.with(|slot| slot.replace(true)));
+    let result = operation(); drop(restore); result
+}
 
 /// Numeric entries resolved by the coordinator. No source owner or compiler
 /// authority crosses the thread boundary, and a missing entry is an error.
@@ -404,6 +413,7 @@ pub(super) fn select<D: DescriptorKey>(
     CACHE.with(|slot| {
         let mut slot = slot.try_borrow_mut().map_err(|_| busy())?;
         let Some(c) = slot.as_mut() else {
+            if LOOKUP_ONLY.with(|slot| slot.get()) { return Err(busy()); }
             return Ok(Pending {
                 key: None,
                 miss: None,
@@ -412,6 +422,10 @@ pub(super) fn select<D: DescriptorKey>(
             });
         };
         let key = key(c.source, family, descriptor, limits, auxiliary);
+        if LOOKUP_ONLY.with(|slot| slot.get()) && !c.entries.iter().flatten().any(|entry| entry.key == key)
+            && (!c.precomputed || super::precomputed::lookup(family, descriptor, limits, storage).is_none()) {
+            return Err(CompileError::Shape("native descriptor requires deferred compilation"));
+        }
         let family_index = descriptor.family();
         c.families[family_index].requests += 1;
         let mut miss = None;

@@ -15,6 +15,14 @@ pub(crate) struct Batch<'a> {
     _original: Reservation,
 }
 impl<'a> Batch<'a> {
+    pub(crate) fn new(original: Reservation) -> Self {
+        Self { values: core::array::from_fn(|_| None), _original: original }
+    }
+    pub(crate) fn insert(&mut self, index: usize, value: Numbers<'a>) -> Result<(), WorkflowError> {
+        let slot = self.values.get_mut(index).ok_or(WorkflowError::Identity)?;
+        if slot.replace(value).is_some() { return Err(WorkflowError::Identity); }
+        Ok(())
+    }
     pub(crate) fn shake(&mut self, index: usize) -> Result<PairedRequestNumbers<'a>, WorkflowError> {
         match self.values.get_mut(index).and_then(Option::take) {
             Some(Numbers::Shake(value)) => Ok(value), _ => Err(WorkflowError::Identity),

@@ -125,6 +125,26 @@ pub(crate) fn concurrency_enabled(family: &str) -> bool {
     #[cfg(test)] { let selected = concurrency_variant(); selected == "all" || selected == family }
     #[cfg(not(test))] { let _ = family; true }
 }
+#[cfg(test)]
+pub(crate) fn readiness_variant() -> &'static str {
+    match std::env::var("LATTICA_RINGCT_METADATA_READINESS_VARIANT").as_deref() {
+        Err(_) | Ok("all") => "all", Ok("baseline") => "baseline",
+        Ok("cpu") => "cpu", Ok("gpu") => "gpu",
+        _ => panic!("invalid metadata readiness variant"),
+    }
+}
+pub(crate) fn readiness_enabled(family: &str) -> bool {
+    #[cfg(test)] { let selected = readiness_variant(); selected == "all" || selected == family }
+    #[cfg(not(test))] { let _ = family; true }
+}
+pub(crate) fn fused_fields() -> bool {
+    #[cfg(test)]
+    match std::env::var("LATTICA_RINGCT_METADATA_TILED_KERNEL").as_deref() {
+        Err(_) | Ok("paired") => false, Ok("fused") => true,
+        _ => panic!("invalid tiled field kernel"),
+    }
+    #[cfg(not(test))] { false }
+}
 #[derive(Clone, Copy)]
 #[repr(usize)]
 pub(crate) enum PipelineCounter { RegistrationEncodeNs, RegistrationHashNs, ParallelRegistrations, FusedPairs }

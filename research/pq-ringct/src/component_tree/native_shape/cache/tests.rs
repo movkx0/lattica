@@ -1,6 +1,21 @@
 use super::super::unchanged::OtherNativeDescriptor;
 use super::super::{native_core_bound, NativeCoreCounts, NativeDescriptor, NativePlanningStorage};
 use super::*;
+#[test]
+fn lookup_only_defers_a_miss_and_restores_the_writer_after_unwind() {
+    let scope = Scope::begin([23; 32]).unwrap();
+    let descriptor = NativeDescriptor::Transcript(&[PartKind::Bytes32]);
+    let expected = fixture();
+    assert!(lookup_only(|| memoized(0, &descriptor, limits(), 512 << 20, expected.storage,
+        || panic!("lookup-only scope compiled"))).is_err());
+    assert_eq!(scope.statistics().misses, 0);
+    let unwind = std::panic::catch_unwind(|| lookup_only(|| panic!("injected lookup unwind")));
+    assert!(unwind.is_err());
+    assert_eq!(memoized(0, &descriptor, limits(), 512 << 20, expected.storage, || Ok(expected)).unwrap(), expected);
+    assert_eq!(lookup_only(|| memoized(0, &descriptor, limits(), 512 << 20, expected.storage,
+        || panic!("cached descriptor compiled"))).unwrap(), expected);
+    assert_eq!((scope.statistics().hits, scope.statistics().misses), (1, 1));
+}
 use crate::{
     aes_lane_air,
     graph_proofs::ComponentKind,

@@ -1,5 +1,128 @@
 use super::*;
 use lattica_prover_p3::block_v2::native_gpu::{NodeCommitment, FieldCommitment};
+#[test]
+#[ignore = "exclusive admitted OpenCL; seven alternating pairs through maximum field stream length"]
+fn large_field_stream_kernel_profile() {
+    use lattica_prover_p3::block_v2::{commitment::MODULUS,
+        native_gpu::operations_batch::{FieldStream, FieldStreamInput}};
+    use p3_field::PrimeField64;
+    let worker = crate::execution::ProvingContext::opencl(crate::opencl::Limits {
+        host_bytes: 8 << 30, device_bytes: 8 << 30, max_rows: 4096 }).unwrap();
+    for (count, length) in [(1, 4096), (14, 4096), (64, 2048), (64, 16384),
+        (64, 131073), (64, 1 << 20)] {
+        // Identical streams isolate occupancy/length effects. Mixed framing,
+        // ordering, late failures and uneven lengths have separate tests.
+        let words: Vec<_> = (0..length).map(|i| [0, 1, MODULUS - 1, MODULUS - 2,
+            i as u64][i % 5]).collect();
+        let initial = [MODULUS - 1, 17, length as u64, 1];
+        let mut expected = initial;
+        for chunk in words.chunks(4) {
+            let mut block = [Val::ZERO; 8];
+            for i in 0..4 { block[i] = Val::from_u64(expected[i]); }
+            for (i, &value) in chunk.iter().enumerate() { block[4 + i] = Val::from_u64(value); }
+            let result = lattica_prover_p3::poseidon2_air::native_permute(block);
+            expected = core::array::from_fn(|i| result[i].as_canonical_u64());
+        }
+        let streams = vec![FieldStream { initial, input: FieldStreamInput::Fields(&words) }; count];
+        let mut samples = [[0u128; 7]; 2];
+        for repetition in 0..7 {
+            for mode in if repetition % 2 == 0 { [0, 1] } else { [1, 0] } {
+                worker.with_witness_preparation(16 << 20, |op| {
+                    if mode == 0 { op.enable_reusable_storage()?; }
+                    else { op.enable_fused_field_storage_for_qualification()?; }
+                    // Workspace construction and initial driver submission
+                    // are outside this operation-only timing boundary.
+                    op.commit_field_streams(&[FieldStream { initial,
+                        input: FieldStreamInput::Fields(&words[..4]) }])?;
+                    let began = std::time::Instant::now();
+                    let result = op.commit_field_streams(&streams)?;
+                    samples[mode][repetition] = began.elapsed().as_nanos();
+                    assert_eq!(result, vec![expected; count]);
+                    Ok(())
+                }).unwrap();
+            }
+        }
+        eprintln!("RINGCT_LARGE_FIELD_PROFILE {}", serde_json::json!({
+            "streams": count, "words_per_stream": length, "tile_words": 4096.min(131072 / count),
+            "input_window_words": 131072, "paired_ns": samples[0], "fused_ns": samples[1],
+            "cpu_parity": true, "includes_pack_upload_kernel_readback": true,
+            "complete_metadata": false }));
+    }
+    assert_eq!(worker.report()["operations"]["prove_calls"], 0);
+}
+#[test]
+#[ignore = "exclusive admitted OpenCL; borrowed stream tiling, CPU parity and failed-scope cleanup"]
+fn tiled_field_streams_preserve_order_and_reject_late_invalid_words() {
+    use lattica_prover_p3::block_v2::{commitment::MODULUS,
+        native_gpu::operations_batch::{FieldStream, FieldStreamInput}};
+    use p3_field::PrimeField64;
+    let worker = crate::execution::ProvingContext::opencl(crate::opencl::Limits {
+        host_bytes: 8 << 30, device_bytes: 8 << 30, max_rows: 4096 }).unwrap();
+    let lengths = [0, 1, 3, 4, 5, 4095, 4096, 4097, 131072, 131073];
+    let values: Vec<Vec<u64>> = lengths.iter().map(|&n| (0..n)
+        .map(|i| [0, 1, MODULUS - 1, MODULUS - 2, i as u64][i % 5]).collect()).collect();
+    let expected: Vec<_> = values.iter().map(|words| {
+        let mut state = [MODULUS - 1, 17, words.len() as u64, 1];
+        for chunk in words.chunks(4) {
+            let mut block = [Val::ZERO; 8];
+            for i in 0..4 { block[i] = Val::from_u64(state[i]); }
+            for (i, &word) in chunk.iter().enumerate() { block[4 + i] = Val::from_u64(word); }
+            let result = lattica_prover_p3::poseidon2_air::native_permute(block);
+            state = core::array::from_fn(|i| result[i].as_canonical_u64());
+        }
+        state
+    }).collect();
+    let streams: Vec<_> = values.iter().map(|words| FieldStream {
+        initial: [MODULUS - 1, 17, words.len() as u64, 1], input: FieldStreamInput::Fields(words) }).collect();
+    for lanes in [1, 8, 16, 32] {
+        let enable = |op: &lattica_prover_p3::block_v2::native_gpu::OperationContext<'_>| match lanes {
+            1 => op.enable_scalar_field_storage_for_qualification(),
+            8 => op.enable_eight_lane_field_storage_for_qualification(),
+            32 => op.enable_fused_field_storage_for_qualification(),
+            _ => op.enable_reusable_storage(),
+        };
+        worker.with_witness_preparation(16 << 20, |op| {
+            enable(op)?;
+            assert!(op.commit_field_streams(&[])?.is_empty());
+            assert_eq!(op.commit_field_streams(&streams)?, expected);
+            assert_eq!(op.commit_field_streams(&[streams[9]])?, vec![expected[9]]);
+            // 64 streams reduce tile width to 2048; caller order and empty
+            // streams survive both packing order and unequal finish times.
+            let many: Vec<_> = (0..64).map(|i| streams[i % 8]).collect();
+            assert_eq!(op.commit_field_streams(&many)?, (0..64).map(|i| expected[i % 8]).collect::<Vec<_>>());
+            let bytes: Vec<_> = (0..8195).map(|i| i as u8).collect();
+            let words: Vec<_> = bytes.chunks(2).map(|p| u64::from(p[0]) | (u64::from(*p.get(1).unwrap_or(&0)) << 8)).collect();
+            let initial = [17, bytes.len() as u64, 0, 0];
+            assert_eq!(op.commit_field_streams(&[FieldStream { initial, input: FieldStreamInput::Bytes(&bytes) }])?,
+                vec![op.commit_field_chunks(initial, &words)?]);
+            Ok(())
+        }).unwrap();
+        for bad in [0, 15, 4096, 4111, 8192] {
+            assert!(worker.with_witness_preparation(16 << 20, |op| {
+                enable(op)?;
+                let mut words = vec![0; 8193]; words[bad] = MODULUS;
+                let mut input = [streams[0]; 64];
+                input[31] = FieldStream { initial: [0; 4], input: FieldStreamInput::Fields(&words) };
+                assert!(op.commit_field_streams(&input).is_err());
+                assert!(op.commit_field_streams(&[]).is_err());
+                Ok(())
+            }).is_err());
+        }
+        for failure in 0..2 {
+            assert!(worker.with_witness_preparation(16 << 20, |op| {
+                enable(op)?;
+                if failure == 0 { op.commit_field_streams(&[streams[0]; 65]) }
+                else { op.commit_field_streams(&[FieldStream { initial: [MODULUS; 4], input: FieldStreamInput::Fields(&[]) }]) }
+            }).is_err());
+        }
+        worker.with_witness_preparation(16 << 20, |op| {
+            enable(op)?;
+            assert_eq!(op.commit_field_streams(&[streams[7]])?, vec![expected[7]]);
+            Ok(())
+        }).unwrap();
+    }
+    assert_eq!(worker.report()["operations"]["prove_calls"], 0);
+}
 
 #[test]
 #[ignore = "exclusive admitted OpenCL; bounded commitment batches, scalar parity and rejection"]

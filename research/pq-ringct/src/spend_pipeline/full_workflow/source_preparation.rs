@@ -632,6 +632,9 @@ impl<'graph> SourcePreparationOperation<'_, 'graph> {
                 if !crate::preparation_options::paired_fields() {
                     operations.enable_eight_lane_field_storage_for_qualification()?;
                 }
+                if crate::preparation_options::fused_fields() {
+                    operations.enable_fused_field_storage()?;
+                }
                 operations.enable_reusable_storage()?;
                 #[cfg(test)]
                 let mut timeline = profiling::Timeline::new();

@@ -81,8 +81,10 @@ macro_rules! recording_constructor {
             self.check_native_constructor_scratch(inventory, Requirements::default())?;
             let source = $source::from_original(member.prepared(), source_ordinal)
                 .map_err(|_| WorkflowError::Identity)?;
-            let recording = $plan::verification_planning_requirements(source.kind())
-                .map_err(|_| WorkflowError::Planning)?;
+            let recording = match numbers.as_ref().and_then(|numbers| numbers.recording_requirements()) {
+                Some(recording) => recording,
+                None => $plan::verification_planning_requirements(source.kind()).map_err(|_| WorkflowError::Planning)?,
+            };
             self.check_native_constructor_scratch(inventory, recording)?;
             let required = $plan::metadata_requirements().map_err(|_| WorkflowError::Planning)?;
             let original = self.original.split(required)?;

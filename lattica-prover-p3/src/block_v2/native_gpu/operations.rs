@@ -127,6 +127,16 @@ impl OperationContext<'_> {
     pub fn enable_eight_lane_field_storage_for_qualification(&self) -> Result<(), String> {
         self.enable_reusable_storage_with(8)
     }
+    /// Fused partial-round candidate, confined to the admitted research path.
+    #[cfg(feature = "ringct-research-quota")]
+    pub fn enable_fused_field_storage_for_qualification(&self) -> Result<(), String> {
+        self.enable_fused_field_storage()
+    }
+    /// Keep paired full rounds and fuse the partial-round work in tiled
+    /// field commitments on the qualified sixteen-lane device.
+    pub fn enable_fused_field_storage(&self) -> Result<(), String> {
+        self.enable_reusable_storage_with(32)
+    }
     fn enable_reusable_storage_with(&self, field_lanes: usize) -> Result<(), String> {
         #[cfg(not(feature = "gpu"))]
         let _ = field_lanes;

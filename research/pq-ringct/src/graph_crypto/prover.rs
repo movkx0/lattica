@@ -10,6 +10,8 @@ pub(crate) mod numeric_bounds;
 pub(crate) mod numeric_leaves;
 #[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
 pub(crate) mod identity_keys;
+#[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
+pub(crate) mod readiness;
 
 #[derive(Clone, Debug)]
 pub struct NodeProvingReport {

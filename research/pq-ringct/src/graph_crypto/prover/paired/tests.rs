@@ -31,6 +31,57 @@ fn context() -> GraphContext {
         node_manifest: [crate::graph_crypto::Val::ONE; 4] }
 }
 fn ledger() -> Ledger { Ledger::new(WorkerAllowance { host: 32 << 30, device: 8 << 30 }) }
+#[test]
+fn ready_request_last_shard_assembles_exact_numbers_at_every_width() {
+    use crate::{component_tree::native_shape::cache, execution::workflow_resources::CryptoNumbers,
+        graph_crypto::metadata_readiness, metadata_parallel::{self as workers, Error}};
+    use lattica_prover_p3::block_v2::machine::verifier::batch::shape::HeightEnvelopeCacheScope;
+    let source = crate::graph_proofs::compiled_source_fingerprint();
+    let _native = cache::Scope::begin(source).unwrap();
+    let _registered = HeightEnvelopeCacheScope::begin(source).unwrap();
+    let requests: Vec<_> = [2, 3, 5, 7, 9, 4, 6].into_iter().map(|n| request(RATE * n, RATE * 2, 1)).collect();
+    let layout = ShakeWrapperLayout::PairedV1;
+    let ledger = ledger();
+    let scratch = ledger.reserve(Category::PhaseScratch, Bytes { host: 2 << 30, device: 0 }).unwrap();
+    // Resolve independent reference numbers first; lookup-only warming may
+    // then use these exact cached entries even when tables are disabled.
+    let expected: Vec<_> = requests.iter().map(|r| PairedRequestNumbers::derive(r, context(), layout).unwrap()).collect();
+    for width in [1, 2, 4, 8, 16] {
+        let plan = metadata_readiness::Plan::new(&requests, context(), layout, width).unwrap();
+        let bytes = plan.retained_bytes();
+        let original = ledger.reserve(Category::PhaseScratch, Bytes { host: bytes as u64, device: 0 }).unwrap();
+        let member = plan.prepare(bytes, &scratch, &ledger).unwrap().unwrap();
+        let admission = workers::Plan::new(width, member.jobs(), usize::MAX, bytes, 16 << 20).unwrap();
+        let controls = ledger.reserve(Category::PhaseScratch,
+            Bytes { host: (admission.host_bytes - bytes) as u64, device: 0 }).unwrap();
+        let mut completed = [false; 7];
+        workers::pool::scoped(admission, |caller| Ok(caller), |caller, job| member.compute(job, *caller).map_err(|_| Error::Worker), |pool, caller| {
+            for job in (0..member.jobs()).rev() { pool.submit(0, member.cost(job).unwrap(), job)?; }
+            while pool.outstanding() != 0 {
+                while let Some(done) = pool.try_receive()? {
+                    let mut result = done.value;
+                    result.absorb().map_err(|_| Error::Publication)?;
+                    if let Some(CryptoNumbers::Shake(numbers)) = result.numbers {
+                        assert!(!completed[result.request]); completed[result.request] = true;
+                        let reference = &expected[result.request];
+                        assert_eq!(numbers.nodes, reference.nodes);
+                        assert_eq!(numbers.steps, reference.steps);
+                        assert_eq!(numbers.slots, reference.slots);
+                        assert_eq!(numbers.root, reference.root);
+                        assert_eq!(numbers.source_fingerprint, reference.source_fingerprint);
+                    }
+                }
+                if pool.outstanding() != 0 && !caller.help()? { pool.wait()?; }
+            }
+            Ok(())
+        }).unwrap();
+        assert!(completed.into_iter().all(|done| done));
+        assert!(member.compute(0, true).is_err());
+        drop(member); drop(controls); drop(original);
+    }
+    drop(expected); drop(scratch);
+    assert_eq!(ledger.snapshot().current, Bytes::ZERO);
+}
 
 #[test]
 fn numeric_worker_preserves_request_plan_and_refuses_changed_binding() {

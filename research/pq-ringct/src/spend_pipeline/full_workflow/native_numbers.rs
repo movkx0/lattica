@@ -110,7 +110,12 @@ impl<'a> Job<'a> {
                     let bytes = graph_proofs::owned_ntt::verification_memory::numeric_host_bytes(kind).map_err(|_| ())?;
                     graph_proofs::owned_ntt::verification_memory::numeric_plan(kind, bytes).map_err(|_| ())
                 })?;
-                super::ntt_native::MetadataNumbers::prepare(view, binding, verification).map(Ready::Ntt).map_err(|_| ())
+                if !crate::preparation_options::readiness_enabled("cpu") {
+                    return super::ntt_native::MetadataNumbers::prepare(view, binding, verification).map(Ready::Ntt).map_err(|_| ());
+                }
+                let recording = cache.recording(Key::Ntt(kind), ||
+                    super::ntt_native::NttNativeOperationPlan::verification_planning_requirements(kind).map_err(|_| ()))?;
+                super::ntt_native::MetadataNumbers::prepare_recorded(view, binding, verification, recording).map(Ready::Ntt).map_err(|_| ())
             }
             Self::Mul(view) => {
                 let kind = view.kind();
@@ -118,7 +123,12 @@ impl<'a> Job<'a> {
                     let bytes = graph_proofs::owned_mul::verification_memory::numeric_host_bytes(kind).map_err(|_| ())?;
                     graph_proofs::owned_mul::verification_memory::numeric_plan(kind, bytes).map_err(|_| ())
                 })?;
-                super::mul_native::MetadataNumbers::prepare(view, binding, verification).map(Ready::Mul).map_err(|_| ())
+                if !crate::preparation_options::readiness_enabled("cpu") {
+                    return super::mul_native::MetadataNumbers::prepare(view, binding, verification).map(Ready::Mul).map_err(|_| ());
+                }
+                let recording = cache.recording(Key::Mul(kind), ||
+                    super::mul_native::MulNativeOperationPlan::verification_planning_requirements(kind).map_err(|_| ()))?;
+                super::mul_native::MetadataNumbers::prepare_recorded(view, binding, verification, recording).map(Ready::Mul).map_err(|_| ())
             }
             Self::GBound(view) => {
                 super::g_bound_native::MetadataNumbers::prepare(view, binding).map(Ready::GBound).map_err(|_| ())
@@ -129,7 +139,12 @@ impl<'a> Job<'a> {
                     let bytes = graph_proofs::owned_permutation::verification_memory::numeric_host_bytes(kind).map_err(|_| ())?;
                     graph_proofs::owned_permutation::verification_memory::numeric_plan(kind, bytes).map_err(|_| ())
                 })?;
-                super::permutation_native::MetadataNumbers::prepare(view, binding, verification).map(Ready::Permutation).map_err(|_| ())
+                if !crate::preparation_options::readiness_enabled("cpu") {
+                    return super::permutation_native::MetadataNumbers::prepare(view, binding, verification).map(Ready::Permutation).map_err(|_| ());
+                }
+                let recording = cache.recording(Key::Permutation(kind), ||
+                    super::permutation_native::PermutationNativeOperationPlan::verification_planning_requirements(kind).map_err(|_| ()))?;
+                super::permutation_native::MetadataNumbers::prepare_recorded(view, binding, verification, recording).map(Ready::Permutation).map_err(|_| ())
             }
             Self::LinearMap(view) => {
                 let kind = view.kind();
@@ -137,7 +152,12 @@ impl<'a> Job<'a> {
                     let bytes = graph_proofs::owned_linear_map::verification_memory::numeric_host_bytes(kind).map_err(|_| ())?;
                     graph_proofs::owned_linear_map::verification_memory::numeric_plan(kind, bytes).map_err(|_| ())
                 })?;
-                super::linear_map_native::MetadataNumbers::prepare(view, binding, verification).map(|value| Ready::LinearMap(Box::new(value))).map_err(|_| ())
+                if !crate::preparation_options::readiness_enabled("cpu") {
+                    return super::linear_map_native::MetadataNumbers::prepare(view, binding, verification).map(|value| Ready::LinearMap(Box::new(value))).map_err(|_| ());
+                }
+                let recording = linear_maps.recording(kind, ||
+                    super::linear_map_native::LinearMapNativeOperationPlan::verification_planning_requirements(kind).map_err(|_| ()))?;
+                super::linear_map_native::MetadataNumbers::prepare_recorded(view, binding, verification, recording).map(|value| Ready::LinearMap(Box::new(value))).map_err(|_| ())
             }
         }
     }

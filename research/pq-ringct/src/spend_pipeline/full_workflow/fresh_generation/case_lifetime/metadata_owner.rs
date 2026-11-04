@@ -38,11 +38,13 @@ impl<'view, 'case, 'terminal> MetadataOwner<'view, 'case, 'terminal> {
 
 impl CaseRetirementState {
     #[cfg(test)]
-    pub(crate) fn prepare_fixture(startup: &crate::execution::generation_terminal::planning_startup::FixturePlanningContext) -> Result<Self> {
+    pub(crate) fn prepare_fixture(startup: &crate::execution::generation_terminal::planning_startup::FixturePlanningContext,
+        transactions: usize) -> Result<Self> {
+        if !matches!(transactions, 3 | 4) { return Err(source("fixture case size")); }
         let original = startup.ledger().admit_phase(state_requirements()?)
             .map_err(|_| source("fixture case admission"))?;
         Ok(Self { state: Cell::new(State::Armed), ledger: startup.ledger().clone(),
-            generation_session: 0, transactions: 3, fixture_context: Some(startup.context()),
+            generation_session: 0, transactions, fixture_context: Some(startup.context()),
             batch_identity: Cell::new(core::ptr::null()), sealed_plan: Cell::new(core::ptr::null()),
             sealed_context: Cell::new(core::ptr::null()), sealed_source: Cell::new(([0; 32], [0; 32])),
             batch_original: RefCell::new(None), planning_original: RefCell::new(None),

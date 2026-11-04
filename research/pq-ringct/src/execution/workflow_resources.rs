@@ -25,6 +25,7 @@ pub(crate) use owners::{PhaseFailure, Retained, RetainedFailure, RetainedNative,
 pub(crate) use planning::WorkflowPlanning;
 #[cfg(not(debug_assertions))]
 pub(crate) use planning::PreparedNativeBatch;
+pub(crate) use planning::{PreparedCryptoBatch, CryptoNumbers};
 #[cfg(not(debug_assertions))]
 pub(crate) use planning::{PlanningAdmissionTransition, PlanningAdmissionProjection};
 #[cfg(all(test, not(debug_assertions)))]

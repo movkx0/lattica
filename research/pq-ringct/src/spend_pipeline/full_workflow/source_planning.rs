@@ -140,8 +140,9 @@ impl<'source> SourcePlanningPlan<'source> {
     }
 
     #[cfg(test)]
-    pub(crate) fn fixture_n3(context: &'source crate::execution::generation_terminal::planning_startup::FixturePlanningContext,
-        natives: &'source [InitialNativeSource<'source>; 3], layout: ShakeWrapperLayout) -> Result<Self> {
+    pub(crate) fn fixture<const N: usize>(context: &'source crate::execution::generation_terminal::planning_startup::FixturePlanningContext,
+        natives: &'source [InitialNativeSource<'source>; N], layout: ShakeWrapperLayout) -> Result<Self> {
+        if !matches!(N, 3 | 4) { return Err(SourcePreparationError::Resource); }
         let owned = context.ledger().snapshot().current;
         Self::derive(natives, layout, SourceEnvironment { context: context.context(), enclosing: 0,
             already_owned: owned.host, backend_device: context.source_backend_device_bytes().map_err(|_| SourcePreparationError::Resource)?,

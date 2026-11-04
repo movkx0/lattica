@@ -80,6 +80,7 @@ const _: () = assert!(
         <= HEIGHT_ENVELOPE_CACHE_RESERVED_BYTES
 );
 thread_local! { static CACHE: RefCell<Option<Cache>> = const { RefCell::new(None) }; }
+thread_local! { static LOOKUP_ONLY: std::cell::Cell<bool> = const { std::cell::Cell::new(false) }; }
 
 /// Immutable numeric lookup inputs. A reader cannot start a compiler on a miss.
 pub struct HeightEnvelopeCacheSnapshot {
@@ -94,6 +95,14 @@ pub struct HeightEnvelopeCacheScope {
     _thread: PhantomData<Rc<()>>,
 }
 impl HeightEnvelopeCacheScope {
+    /// Resolve only cached or source-qualified precomputed numbers. This lets
+    /// a coordinator prepare snapshots without nesting a compiler worker pool.
+    pub fn lookup_only<T>(operation: impl FnOnce() -> T) -> T {
+        struct Restore(bool);
+        impl Drop for Restore { fn drop(&mut self) { LOOKUP_ONLY.with(|slot| slot.set(self.0)); } }
+        let restore = Restore(LOOKUP_ONLY.with(|slot| slot.replace(true)));
+        let result = operation(); drop(restore); result
+    }
     pub fn snapshot() -> Result<HeightEnvelopeCacheSnapshot, CompileError> {
         CACHE.with(|slot| {
             let cache = slot.try_borrow().map_err(|_| busy())?;
@@ -200,6 +209,7 @@ pub(super) fn memoized(
     let key = CACHE.with(|slot| {
         let mut slot = slot.try_borrow_mut().map_err(|_| busy())?;
         let Some(cache) = slot.as_mut() else {
+            if LOOKUP_ONLY.with(|slot| slot.get()) { return Err(busy()); }
             return Ok(None);
         };
         cache.clock = cache.clock.checked_add(1).ok_or_else(overflow)?;
@@ -221,6 +231,10 @@ pub(super) fn memoized(
         }
         if cache.read_only {
             return Err(CompileError::Shape("unresolved geometry worker descriptor"));
+        }
+        if LOOKUP_ONLY.with(|slot| slot.get()) && (!cache.precomputed
+            || super::precomputed::lookup(publics, height, limits, auxiliary)?.is_none()) {
+            return Err(CompileError::Shape("geometry descriptor requires deferred compilation"));
         }
         cache.statistics.misses = cache
             .statistics
@@ -303,6 +317,19 @@ pub(super) fn memoized(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn lookup_only_defers_compilation_and_restores_after_unwind() {
+        let scope = HeightEnvelopeCacheScope::begin([23; 32]).unwrap();
+        assert!(HeightEnvelopeCacheScope::lookup_only(|| memoized(28, 8, limits(), 512 << 20,
+            || panic!("lookup-only scope compiled"))).is_err());
+        assert_eq!(scope.statistics().misses, 0);
+        assert!(std::panic::catch_unwind(|| HeightEnvelopeCacheScope::lookup_only(|| panic!("injected lookup unwind"))).is_err());
+        let expected = value(28);
+        assert_eq!(memoized(28, 8, limits(), 512 << 20, || Ok(expected)).unwrap(), expected);
+        assert_eq!(HeightEnvelopeCacheScope::lookup_only(|| memoized(28, 8, limits(), 512 << 20,
+            || panic!("cached descriptor compiled"))).unwrap(), expected);
+        assert_eq!((scope.statistics().hits, scope.statistics().misses), (1, 1));
+    }
     #[test]
     fn numeric_reader_cannot_start_a_compiler_or_hide_its_hits() {
         let scope = HeightEnvelopeCacheScope::begin([23; 32]).unwrap();

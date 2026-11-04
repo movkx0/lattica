@@ -7,7 +7,7 @@ pub(crate) fn run<'a, const N: usize>(
     startup: &crate::spend_pipeline::full_workflow::fresh_generation::case_lifetime::MetadataOwner<'_, '_, '_>,
     batch: Option<&CaseOwnerSlot<'_, FreshGenerationBatch<N>>>, case: &CaseRetirementState,
     native_cache: &ProofCache, outer_cache: &OuterProofCache,
-    stage: &mut DriverStage, early_native: Option<crate::execution::workflow_resources::PreparedNativeBatch<'a>>,
+    stage: &mut DriverStage, early: super::super::super::bootstrap_layers::EarlyNumbers<'a>,
 ) -> Result<CompletedCaseSummary> {
     super::super::metadata_timing::phase(super::super::metadata_timing::Phase::Native);
     stage.layer("construct");
@@ -58,7 +58,7 @@ pub(crate) fn run<'a, const N: usize>(
         permutation: permutation_native_plans,
         linear_map: linear_map_native_plans,
     };
-    native_layers::fill_native_layer(planning.get()?, metadata, case, native_plans, stage, early_native)?;
+    native_layers::fill_native_layer(planning.get()?, metadata, case, native_plans, stage, early.native)?;
 
     *stage = DriverStage::Call("metadata_source_blueprints");
 
@@ -194,7 +194,7 @@ pub(crate) fn run<'a, const N: usize>(
     *stage = DriverStage::Call("metadata_aes_plans");
     let aes_plans_result = crate::preparation_options::timed_constructor(34, { let planner = planning.get()?; move || planner.metadata_aes_plans(metadata, case) });
     let aes_plans = table(&aes_plans_result)?;
-    crypto::fill(planning.get()?, metadata, case, shake_plans, aes_plans, stage)?;
+    crypto::fill(planning.get()?, metadata, case, shake_plans, aes_plans, stage, early.crypto)?;
 
     super::super::metadata_timing::phase(super::super::metadata_timing::Phase::Graph);
     *stage = DriverStage::Call("metadata_parameters_plans");

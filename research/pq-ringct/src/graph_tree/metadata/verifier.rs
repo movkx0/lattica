@@ -31,6 +31,8 @@ pub(super) struct Cache {
     entries: [Option<(Key, Value)>; CAPACITY],
     len: usize,
     case_owned: bool,
+    recordings: [Option<(Key, crate::execution::retained_resources::Requirements)>; CAPACITY],
+    recording_len: usize,
 }
 impl Cache {
     pub(super) fn new() -> Self {
@@ -40,6 +42,7 @@ impl Cache {
             entries: [None; CAPACITY],
             len: 0,
             case_owned: false,
+            recordings: [None; CAPACITY], recording_len: 0,
         }
     }
     fn resolve(
@@ -107,6 +110,25 @@ macro_rules! method {
 // No reservations, private data, proofs or replay authority enter this cache.
 pub(crate) struct VerifierCache { verifiers: std::sync::Mutex<Cache> }
 impl VerifierCache {
+    pub(crate) fn recording(&self, key: Key,
+        derive: impl FnOnce() -> Result<crate::execution::retained_resources::Requirements, ()>)
+        -> Result<crate::execution::retained_resources::Requirements, ()> {
+        let mut cache = self.verifiers.lock().map_err(|_| ())?;
+        if cache.source != crate::graph_proofs::native_numeric_source_fingerprint()
+            || cache.profile != profile::CANDIDATE_PROFILE_ID { return Err(()); }
+        let reuse = crate::preparation_options::readiness_enabled("cpu") && crate::preparation_options::verifier_reuse();
+        if reuse {
+            if let Some((_, value)) = cache.recordings[..cache.recording_len].iter().flatten().find(|(k, _)| *k == key) {
+                return Ok(*value);
+            }
+        }
+        let value = derive()?;
+        if reuse && cache.recording_len < CAPACITY {
+            let index = cache.recording_len;
+            cache.recordings[index] = Some((key, value)); cache.recording_len += 1;
+        }
+        Ok(value)
+    }
     // Caller multiplies these lookup/return/lock frames by its normal overlap
     // factor. The inline entries themselves belong to the case descriptor.
     pub(crate) const fn lookup_frame_bytes() -> usize {
@@ -142,6 +164,25 @@ impl VerifierCache {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn recording_census_is_exact_and_cached_once_per_descriptor() {
+        let cache = VerifierCache::new(true);
+        let a = Key::Ntt(NttDescriptor::new(crate::rust_verify::Q, 3).unwrap());
+        let b = Key::Ntt(NttDescriptor::new(crate::rust_verify::QHAT, 3).unwrap());
+        let calls = std::sync::atomic::AtomicUsize::new(0);
+        let expected = crate::execution::retained_resources::Requirements::default();
+        std::thread::scope(|threads| {
+            for _ in 0..8 { threads.spawn(|| {
+                assert_eq!(cache.recording(a, || {
+                    calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst); Ok(expected)
+                }).unwrap(), expected);
+            }); }
+        });
+        assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 1);
+        assert!(cache.recording(b, || Err(())).is_err());
+        cache.verifiers.lock().unwrap().profile[0] ^= 1;
+        assert!(cache.recording(a, || panic!("stale source recorded")).is_err());
+    }
     fn equal(a: Value, b: Value) -> bool {
         match (a, b) {
             (Value::Ntt(a), Value::Ntt(b)) => a.same_census(b),

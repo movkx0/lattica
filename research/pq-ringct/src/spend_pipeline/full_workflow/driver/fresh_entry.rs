@@ -68,9 +68,8 @@ let metadata_planner = lattica_prover_p3::block_v2::machine::verifier::batch::sh
                     let metadata_owner = super::super::fresh_generation::case_lifetime::MetadataOwner::Fresh(&startup);
         let mut planning = WorkflowPlanning::admit_fresh(scope, fresh).map_err(|_| failed("fresh workflow planning admission refused"))?;
                     metadata_timing::phase(Phase::GraphSources);
-                    bootstrap_layers::prepare_graph_layer(scope, &mut planning, &metadata_owner, graph_plans.get()?, graphs.get()?)?;
-                    metadata_timing::phase(Phase::SourcePreparation);
-                    let early_native = bootstrap_layers::prepare_source_layer(scope, &mut planning, &metadata_owner, graphs.get()?, preparation_plans.get()?, prepared.get()?)?;
+                    let early = bootstrap_layers::prepare_layers(scope, &mut planning, &metadata_owner,
+                        graph_plans.get()?, graphs.get()?, preparation_plans.get()?, prepared.get()?)?;
                     members.install([$(prepared.get()?.get($index)?.get()?.as_ref().map_err(|_| failed("fresh source preparation refused"))?),+])?;
                     metadata_timing::phase(Phase::Inventory);
                     let mut metadata_stage = MetadataPlanningStage::Readiness;
@@ -80,7 +79,7 @@ let metadata_planner = lattica_prover_p3::block_v2::machine::verifier::batch::sh
                     planning.reserve_producer_metadata(metadata, &metadata_owner).map_err(|_| failed("producer metadata reservation refused"))?;
                     metadata_timing::phase(Phase::Constructors);
                     let mut driver_stage = super::metadata_driver::DriverStage::Readiness;
-                    let outcome = super::metadata_driver::run(planning, metadata, &metadata_owner, Some(&batch_slot), &case, &caches.native, &caches.outer, &mut driver_stage, early_native);
+                    let outcome = super::metadata_driver::run(planning, metadata, &metadata_owner, Some(&batch_slot), &case, &caches.native, &caches.outer, &mut driver_stage, early);
                     #[cfg(test)]
                     if super::metadata_profile::active() && outcome.is_err() {
                         let complete = matches!(&outcome, Err(crate::execution::workflow_resources::WorkflowError::MetadataProfileComplete));

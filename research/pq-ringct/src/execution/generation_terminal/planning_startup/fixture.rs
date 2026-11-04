@@ -14,7 +14,7 @@ impl PlanningStartupPlan {
     {
         if cfg!(debug_assertions) || !original.belongs_to(ledger)
             || original.requirements() != self.requirements()?
-            || ledger.snapshot().allowance.host != 32 << 30
+            || crate::host_memory_profile::HostMemoryProfile::from_worker_bytes(ledger.snapshot().allowance.host).is_err()
             || ledger.snapshot().allowance.device != 8 << 30
         { return Err(GenerationError::Authority); }
         let transient = original.split(self.startup).map_err(|_| GenerationError::Resource)?;
@@ -22,9 +22,10 @@ impl PlanningStartupPlan {
             original: RefCell::new(Some(transient)), requirements: self.startup,
             session_id: Cell::new(None), closed_requirements: Cell::new(None),
             capability_issued: Cell::new(false), armed: Cell::new(true) });
-        let context = match ProvingContext::opencl(Limits {
-            host_bytes: 32 << 30, device_bytes: 8 << 30, max_rows: 1 << 20,
-        }) {
+        let context = match ProvingContext::opencl_with_host_profile(Limits {
+            host_bytes: ledger.snapshot().allowance.host, device_bytes: 8 << 30, max_rows: 1 << 20,
+        }, crate::host_memory_profile::HostMemoryProfile::from_worker_bytes(ledger.snapshot().allowance.host)
+            .map_err(|_| GenerationError::Authority)?) {
             Ok(context) => context,
             Err(_) => { core::mem::forget(original); return Err(GenerationError::Startup); }
         };

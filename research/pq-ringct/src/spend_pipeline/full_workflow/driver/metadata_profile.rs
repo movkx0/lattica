@@ -9,6 +9,10 @@ use lattica_prover_p3::block_v2::machine::verifier::batch::shape::{
     HeightEnvelopeCacheStatistics, MetadataPlanningStatistics,
 };
 use std::{cell::Cell, marker::PhantomData, rc::Rc};
+fn host_profile() -> crate::host_memory_profile::HostMemoryProfile {
+    std::env::var("LATTICA_RINGCT_HOST_PROFILE").unwrap_or_else(|_| "standard".into())
+        .parse().expect("explicit metadata host profile")
+}
 
 #[derive(Clone, Copy, Default)]
 struct State {
@@ -76,6 +80,8 @@ struct Report {
     pipeline_variant: &'static str,
     parallel_variant: &'static str,
     concurrency_variant: &'static str,
+    readiness_variant: &'static str,
+    tiled_kernel: &'static str,
     native_reference_checks: [u64; 6],
     pipeline_counters: [u64; 4],
     #[serde(serialize_with = "serialize_array")]
@@ -135,6 +141,8 @@ pub(super) fn record(
         pipeline_variant: crate::preparation_options::pipeline_variant(),
         parallel_variant: crate::preparation_options::parallel_variant(),
         concurrency_variant: crate::preparation_options::concurrency_variant(),
+        readiness_variant: crate::preparation_options::readiness_variant(),
+        tiled_kernel: if crate::preparation_options::fused_fields() { "fused" } else { "paired" },
         native_reference_checks: crate::preparation_options::metadata_reference_checks(),
         pipeline_counters: crate::preparation_options::pipeline_counts(),
         constructor_families: crate::preparation_options::CONSTRUCTOR_NAMES,
@@ -146,7 +154,7 @@ pub(super) fn record(
         layout: "paired-v1",
         setup_seed: [0x11; 32],
         context: [0x22; 32],
-        host_profile: "standard",
+        host_profile: host_profile().label(),
         metadata_workers: workers(),
         input_randomness: if native_input_generation_ns == 0 { "replayed-verified-public-fixture" } else { "fixed-public-parameters-fresh-private-entropy" },
         complete_metadata,
@@ -201,31 +209,34 @@ mod tests {
 
     #[test]
     #[ignore = "guarded full profile, native N3 input generation; no recursive proofs"]
-    fn complete_n3_metadata_stage() {
+    fn complete_n3_metadata_stage() { complete(3); }
+    #[test]
+    #[ignore = "guarded full profile, native N4 inputs; no recursive proofs"]
+    fn complete_n4_metadata_stage() { complete(4); }
+    fn complete(transactions: usize) {
         assert_eq!(
             std::env::var("LATTICA_RINGCT_METADATA_STAGE_PROFILE").as_deref(),
-            Ok("n3-paired-v1")
+            Ok(if transactions == 3 { "n3-paired-v1" } else { "n4-paired-v1" })
         );
-        assert_eq!(
-            std::env::var("LATTICA_RINGCT_HOST_PROFILE").as_deref(),
-            Ok("standard")
-        );
+        assert!(transactions == 4 || host_profile() == crate::host_memory_profile::HostMemoryProfile::Standard);
         assert_eq!(std::env::var("RUST_MIN_STACK").as_deref(), Ok("8388608"));
         let _scope = Scope::begin();
         if let Some(path) = std::env::var_os("LATTICA_RINGCT_METADATA_FIXTURE_IN") {
-            replay::run(std::path::Path::new(&path)).unwrap_or_else(|error| panic!("complete fixture metadata boundary not reached: {error:?}"));
+            let run = if transactions == 3 { replay::run_n3 } else { replay::run_n4 };
+            run(std::path::Path::new(&path)).unwrap_or_else(|error| panic!("complete fixture metadata boundary not reached: {error:?}"));
             ACTIVE.with(|s| assert!(s.get().is_some_and(|state| state.stopped && state.reported)));
             return;
         }
-        eprintln!("RINGCT_METADATA_INPUT_GENERATION n=3 layout=paired-v1");
+        eprintln!("RINGCT_METADATA_INPUT_GENERATION n={transactions} layout=paired-v1");
         let metadata_cpu = lattica_prover_p3::block_v2::machine::verifier::batch::shape::MetadataCpuOptions::workers(workers()).unwrap();
         assert_eq!(metadata_cpu.max_workers(), workers());
-        let result = super::super::fresh_entry::run_n3(
+        let run = if transactions == 3 { super::super::fresh_entry::run_n3 } else { super::super::fresh_entry::run_n4 };
+        let result = run(
             [0x11; 32],
             [0x22; 32],
             crate::graph_crypto::ShakeWrapperLayout::PairedV1,
             Default::default(),
-            crate::host_memory_profile::HostMemoryProfile::Standard,
+            host_profile(),
             true,
             metadata_cpu,
         );

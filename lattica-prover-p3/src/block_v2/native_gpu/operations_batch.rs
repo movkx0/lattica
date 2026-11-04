@@ -28,6 +28,8 @@ impl NodeCommitment<'_> {
 }
 #[derive(Clone, Copy)]
 pub struct FieldCommitment<'a> { pub initial: [u64; 4], pub words: &'a [u64] }
+mod tiled;
+pub use tiled::{FieldStream, FieldStreamInput};
 
 /// Internal packing plus all batch/result forwarding frames. Caller-owned
 /// source streams and the separately funded reusable workspace are additional.
@@ -38,7 +40,7 @@ impl RawCommitmentBatchStorage {
             + core::mem::size_of::<FieldCommitment<'static>>() + 16 * 8)
         + 4096);
 }
-pub(super) struct PackedWords(pub Vec<u64>);
+pub(crate) struct PackedWords(pub Vec<u64>);
 impl Drop for PackedWords {
     fn drop(&mut self) {
         for word in &mut self.0 {

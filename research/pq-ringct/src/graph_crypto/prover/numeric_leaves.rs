@@ -46,6 +46,15 @@ impl RequestLeaves<'_> {
         }
     }
 }
+impl<'a> RequestLeaves<'a> {
+    pub(super) fn from_shards(request: &'a Request, layout: ShakeWrapperLayout,
+        values: Vec<Option<Leaf>>) -> Result<Self> {
+        if values.len() != count(request, layout)? || values.iter().any(Option::is_none) {
+            return Err(PairedFailure::Coverage);
+        }
+        Ok(Self { request, layout, values, source: crate::graph_proofs::compiled_source_fingerprint() })
+    }
+}
 pub(crate) struct Leaves<'a> { requests: [Option<RequestLeaves<'a>>; MAX] }
 impl<'a> Leaves<'a> {
     pub(crate) fn get(&self, index: usize) -> Result<&RequestLeaves<'a>> {
@@ -58,7 +67,7 @@ pub(crate) struct NumericLeafPlan<'a> {
     requests: [Option<&'a Request>; MAX], count: usize, layout: ShakeWrapperLayout,
     shards: [Option<Shard>; MAX], jobs: usize, retained: usize,
 }
-fn count(request: &Request, layout: ShakeWrapperLayout) -> Result<usize> {
+pub(super) fn count(request: &Request, layout: ShakeWrapperLayout) -> Result<usize> {
     match request.descriptor() {
         RequestDescriptor::Shake(_) => Ok(request.shake_wrapper_schedule(layout).map_err(|_| PairedFailure::Coverage)?.groups().len()),
         RequestDescriptor::Aes(_) => Ok(request.segments().len()),
@@ -142,7 +151,7 @@ impl<'a> NumericLeafPlan<'a> {
         Ok(leaves)
     }
 }
-fn prepare(request: &Request, layout: ShakeWrapperLayout, first: usize, count: usize) -> Result<Vec<Leaf>> {
+pub(super) fn prepare(request: &Request, layout: ShakeWrapperLayout, first: usize, count: usize) -> Result<Vec<Leaf>> {
     let end = first.checked_add(count).ok_or(PairedFailure::Overflow)?;
     let mut values = Vec::new();
     values.try_reserve_exact(count).map_err(|_| PairedFailure::Capacity)?;

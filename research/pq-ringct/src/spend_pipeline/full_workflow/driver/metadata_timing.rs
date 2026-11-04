@@ -1,7 +1,7 @@
 //! Disjoint wall-clock metadata phases, stopped before proof execution.
 use std::{cell::Cell, marker::PhantomData, rc::Rc, time::Instant};
 #[derive(Clone, Copy, Debug)]
-pub(super) enum Phase {
+pub(crate) enum Phase {
     Setup,
     GraphSources,
     SourcePreparation,
@@ -100,7 +100,7 @@ fn advance(phase: Option<Phase>) {
         }
     });
 }
-pub(super) fn phase(phase: Phase) {
+pub(crate) fn phase(phase: Phase) {
     advance(Some(phase));
     #[cfg(test)]
     super::metadata_profile::phase_started(phase);

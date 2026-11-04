@@ -892,6 +892,12 @@ def build_plan(args):
     pipeline_variant = getattr(args, 'metadata_pipeline_variant', None)
     parallel_variant = getattr(args, 'metadata_parallel_variant', None)
     concurrency_variant = getattr(args, 'metadata_concurrency_variant', None)
+    readiness_variant = getattr(args, 'metadata_readiness_variant', None)
+    tiled_kernel = getattr(args, 'metadata_tiled_kernel', None)
+    require(readiness_variant in (None, 'baseline', 'cpu', 'gpu', 'all'), 'invalid readiness variant')
+    require(readiness_variant is None or metadata_stage_profile, 'readiness variant requires metadata-stage profile')
+    require(tiled_kernel in (None, 'paired', 'fused'), 'invalid tiled field kernel')
+    require(tiled_kernel is None or metadata_stage_profile, 'tiled kernel requires metadata-stage profile')
     metadata_reference_check = getattr(args, 'metadata_reference_check', False)
     require(not metadata_reference_check or metadata_stage_profile, 'metadata reference check requires metadata-stage profile')
     require(concurrency_variant in (None, 'baseline', 'native', 'crypto', 'overlap', 'all'), 'invalid concurrency variant')
@@ -911,6 +917,9 @@ def build_plan(args):
             'preparation detail requires metadata-stage profile')
     fixture_out = getattr(args, 'metadata_fixture_out', None)
     fixture_in = getattr(args, 'metadata_fixture_in', None)
+    metadata_transactions = getattr(args, 'metadata_transactions', None) or 3
+    require(metadata_transactions in (3, 4), 'unsupported metadata transaction count')
+    require(metadata_stage_profile or getattr(args, 'metadata_transactions', None) is None, 'metadata transactions require metadata-stage profile')
     metadata_workers = getattr(args, 'metadata_workers', None) or 16
     require(metadata_stage_profile or (fixture_out is None and fixture_in is None and getattr(args, 'metadata_workers', None) is None),
             'metadata fixture/workers require metadata-stage profile')
@@ -923,10 +932,10 @@ def build_plan(args):
         if fixture_out is not None:
             fixture_out = str(Path(fixture_out).resolve())
             require(not Path(fixture_out).exists() and Path(fixture_out).parent.is_dir(), 'fixture output must be a new file in an existing directory')
-        from metadata_stage_profile import SELECTOR
+        from metadata_stage_profile import selector
         require(args.profile == 'full' and args.expect_tests and args.build_label,
                 'complete metadata profiling requires the recorded full-profile test')
-        require(len(argv) == 6 and argv[1] == SELECTOR
+        require(len(argv) == 6 and argv[1] == selector(metadata_transactions)
                 and set(argv[2:]) == {'--exact', '--ignored', '--test-threads=1', '--nocapture'},
                 'wrong complete metadata profiling selector')
         require(getattr(args, 'retained_tree_storage', 'device') == 'host'
@@ -976,9 +985,10 @@ def build_plan(args):
     if identity_qualification or metadata_qualification or native_metadata_profile or scaling or metadata_stage_profile:
         require(len(identity_cpus) == 16, '16-worker qualification requires sixteen physical cores')
     host_profile = selected_host_profile(getattr(args, 'host_profile', 'standard'))
-    require(host_profile['name'] == 'standard' or (args.profile == 'full' and complete_case),
-            'expanded host profiles require an explicit complete RingCT workflow')
-    if complete_case:
+    require(host_profile['name'] == 'standard' or (args.profile == 'full' and
+            (complete_case or metadata_stage_profile and metadata_transactions == 4)),
+            'expanded host profiles require an explicit complete RingCT workflow or N4 metadata profile')
+    if complete_case or metadata_stage_profile:
         require(args.profile == 'full', 'complete workflow requires the full process profile')
         maximum = host_profile['memory_max_bytes'] // GIB
         high = host_profile['memory_high_bytes'] // GIB
@@ -1183,13 +1193,15 @@ def build_plan(args):
             args, tree_storage, public_hash_kernel)
     full_case_environment = None
     if metadata_stage_profile:
-        environment['LATTICA_RINGCT_METADATA_STAGE_PROFILE'] = 'n3-paired-v1'
+        environment['LATTICA_RINGCT_METADATA_STAGE_PROFILE'] = f'n{metadata_transactions}-paired-v1'
         environment['LATTICA_RINGCT_METADATA_WORKERS'] = str(metadata_workers)
         environment['LATTICA_RINGCT_METADATA_HASH_VARIANT'] = hash_variant or 'all'
         environment['LATTICA_RINGCT_METADATA_REUSE_VARIANT'] = reuse_variant or 'all'
         environment['LATTICA_RINGCT_METADATA_PIPELINE_VARIANT'] = pipeline_variant or 'all'
         environment['LATTICA_RINGCT_METADATA_PARALLEL_VARIANT'] = parallel_variant or 'all'
         environment['LATTICA_RINGCT_METADATA_CONCURRENCY_VARIANT'] = concurrency_variant or 'all'
+        environment['LATTICA_RINGCT_METADATA_READINESS_VARIANT'] = readiness_variant or 'all'
+        environment['LATTICA_RINGCT_METADATA_TILED_KERNEL'] = tiled_kernel or 'paired'
         if metadata_reference_check:
             environment['LATTICA_RINGCT_METADATA_REFERENCE_CHECK'] = '1'
         environment['LATTICA_RINGCT_METADATA_NEXT_VARIANT'] = next_variant or 'all'
@@ -1202,7 +1214,7 @@ def build_plan(args):
         # libtest otherwise uses a 2 MiB thread stack; the real CLI runs on
         # Linux's 8 MiB main stack. Keep the process memory limits unchanged.
         environment['RUST_MIN_STACK'] = str(8 << 20)
-        environment['LATTICA_RINGCT_HOST_PROFILE'] = 'standard'
+        environment['LATTICA_RINGCT_HOST_PROFILE'] = host_profile['name']
         environment['LATTICA_V2_HOST_OUTPUT_BYTES'] = str(24 * GIB)
     if complete_case:
         full_case_environment = first_leaf_module('full_workflow_case_guard').configure(
@@ -1236,12 +1248,15 @@ def build_plan(args):
             'identity_physical_cpus': identity_cpus, 'identity_cpu_qualification': identity_qualification,
             'metadata_cpu_qualification': metadata_qualification, 'native_metadata_profile': native_metadata_profile,
             'metadata_stage_profile': metadata_stage_profile,
+            'metadata_transactions': metadata_transactions if metadata_stage_profile else None,
             'metadata_preparation_detail': metadata_preparation_detail,
         'metadata_hash_variant': hash_variant or 'all',
         'metadata_reuse_variant': reuse_variant or 'all',
         'metadata_pipeline_variant': pipeline_variant or 'all',
         'metadata_parallel_variant': parallel_variant or 'all',
         'metadata_concurrency_variant': concurrency_variant or 'all',
+        'metadata_readiness_variant': readiness_variant or 'all',
+        'metadata_tiled_kernel': tiled_kernel or 'paired',
         'metadata_reference_check': metadata_reference_check,
         'metadata_next_variant': next_variant or 'all',
             'metadata_fixture_out': fixture_out, 'metadata_fixture_in': fixture_in,
@@ -1926,7 +1941,9 @@ def validate_output(log, plan):
             require(sha(Path(plan['metadata_fixture_in'])) == plan['metadata_fixture_sha256'], 'metadata fixture changed during run')
         from metadata_stage_profile import validate
         plan['metadata_stage_profile_acceptance'] = validate(
-            content, require_preparation_detail=plan.get('metadata_preparation_detail', False))
+            content, require_preparation_detail=plan.get('metadata_preparation_detail', False),
+            expected_transactions=plan.get('metadata_transactions') or 3,
+            expected_host_profile=plan['host_memory_profile']['name'])
         require(plan['metadata_stage_profile_acceptance']['hash_variant'] == plan.get('metadata_hash_variant', 'all'), 'metadata hash variant mismatch')
         require(plan['metadata_stage_profile_acceptance']['reuse_variant'] == plan.get('metadata_reuse_variant', 'all'), 'metadata reuse variant mismatch')
         require(plan['metadata_stage_profile_acceptance']['pipeline_variant'] == plan.get('metadata_pipeline_variant', 'all'), 'metadata pipeline variant mismatch')
@@ -1934,6 +1951,8 @@ def validate_output(log, plan):
         counts = plan['metadata_stage_profile_acceptance']['native_reference_checks']
         require(all(value > 0 for value in counts) if plan.get('metadata_reference_check', False) else not any(counts), 'native reference check coverage mismatch')
         require(plan['metadata_stage_profile_acceptance']['concurrency_variant'] == plan.get('metadata_concurrency_variant', 'all'), 'metadata concurrency variant mismatch')
+        require(plan['metadata_stage_profile_acceptance']['readiness_variant'] == plan.get('metadata_readiness_variant', 'all'), 'metadata readiness variant mismatch')
+        require(plan['metadata_stage_profile_acceptance']['tiled_kernel'] == plan.get('metadata_tiled_kernel', 'paired'), 'metadata tiled kernel mismatch')
         require(plan['metadata_stage_profile_acceptance']['next_variant'] == plan.get('metadata_next_variant', 'all'), 'metadata next variant mismatch')
     if plan.get('metadata_cpu_qualification'):
         from metadata_cpu_qualification import validate
@@ -2264,12 +2283,15 @@ def main():
     parser.add_argument('--identity-cpu-qualification', action='store_true')
     parser.add_argument('--metadata-fixture-out')
     parser.add_argument('--metadata-fixture-in')
+    parser.add_argument('--metadata-transactions', type=int, choices=(3, 4))
     parser.add_argument('--metadata-workers', type=int, choices=(1, 2, 4, 8, 16))
     parser.add_argument('--metadata-hash-variant', choices=('reference', 'nodes', 'endpoints', 'fields', 'all'))
     parser.add_argument('--metadata-reuse-variant', choices=('baseline', 'structure', 'verifier', 'arithmetic', 'all'))
     parser.add_argument('--metadata-pipeline-variant', choices=('baseline', 'field_hash', 'registration', 'arithmetic', 'all'))
     parser.add_argument('--metadata-reference-check', action='store_true')
     parser.add_argument('--metadata-concurrency-variant', choices=('baseline', 'native', 'crypto', 'overlap', 'all'))
+    parser.add_argument('--metadata-readiness-variant', choices=('baseline', 'cpu', 'gpu', 'all'))
+    parser.add_argument('--metadata-tiled-kernel', choices=('paired', 'fused'))
     parser.add_argument('--metadata-parallel-variant', choices=('all', 'serial', 'registration', 'crypto', 'native'))
     parser.add_argument('--metadata-next-variant', choices=('baseline', 'field_hash', 'encoding', 'case_cache', 'all'))
     parser.add_argument('--metadata-preparation-detail', action='store_true',

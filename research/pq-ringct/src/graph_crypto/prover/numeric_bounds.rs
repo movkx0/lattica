@@ -7,6 +7,16 @@ use crate::graph_crypto::{Request, RequestDescriptor, ShakeWrapperLayout};
 pub(crate) fn warm_request_bounds(request: &Request, layout: ShakeWrapperLayout,
     scratch: &Reservation, ledger: &Ledger) -> Result<(), PairedFailure>
 {
+    warm(request, layout, Some((scratch, ledger)))
+}
+/// Early readiness owns numeric frames, not a compiler reservation. Both
+/// lookup guards reject missing entries before any compiler can be entered.
+pub(super) fn warm_cached_request_bounds(request: &Request, layout: ShakeWrapperLayout) -> Result<(), PairedFailure> {
+    crate::component_tree::native_shape::cache::lookup_only(||
+        lattica_prover_p3::block_v2::machine::verifier::batch::shape::HeightEnvelopeCacheScope::lookup_only(||
+            warm(request, layout, None)))
+}
+fn warm(request: &Request, layout: ShakeWrapperLayout, backing: Option<(&Reservation, &Ledger)>) -> Result<(), PairedFailure> {
     let mut carry = [None; usize::BITS as usize];
     let mut push = |mut fact: ComponentSourceFacts| -> Result<(), PairedFailure> {
         for slot in &mut carry {
@@ -24,6 +34,10 @@ pub(crate) fn warm_request_bounds(request: &Request, layout: ShakeWrapperLayout,
             }
         }
         RequestDescriptor::Aes(_) => {
+            if backing.is_none() {
+                for index in 0..request.segments().len() { push(source::AesBlueprint::new(request, index)?.inspect()?)?; }
+            } else {
+            let (scratch, ledger) = backing.ok_or(PairedFailure::Source)?;
             use crate::component_tree::native_shape::cohort;
             let mut index = 0;
             while index < request.segments().len() {
@@ -40,6 +54,7 @@ pub(crate) fn warm_request_bounds(request: &Request, layout: ShakeWrapperLayout,
                         bounds[offset].take().ok_or(PairedFailure::SourceDrift)?)?)?;
                 }
                 index += count;
+            }
             }
         }
     }

@@ -6,14 +6,14 @@ pub(super) fn fill<'case, 'request>(planning: &mut WorkflowPlanning<'_>,
     metadata: &SourceMetadataPlanningPlan<'request>, case: &CaseRetirementState,
     shake: &crypto_tables::ShakePlanTable<'case, 'request>,
     aes: &crypto_tables::AesPlanTable<'case, 'request>,
-    stage: &mut DriverStage,
+    stage: &mut DriverStage, early: Option<crate::execution::workflow_resources::PreparedCryptoBatch<'request>>,
 ) -> Result<()>
 {
     stage.layer("fill_crypto_plans");
     planning.validate_metadata_driver(metadata, case)?;
     empty_table(shake, case, metadata.counts().family(ProducerFamily::Shake))?;
     empty_table(aes, case, metadata.counts().family(ProducerFamily::Aes))?;
-    let mut numbers = planning.prepare_parallel_crypto(metadata)?;
+    let mut numbers = match early { Some(batch) => Some(batch), None => planning.prepare_parallel_crypto(metadata)? };
     let mut number_index = 0usize;
     let mut shake_count = 0usize;
     let mut aes_count = 0usize;

@@ -4,12 +4,13 @@ use super::*;
 use crate::graph_proofs::owned_linear_map::verification_memory::Plan;
 use lattica_prover_p3::block_v2::native_gpu::linear_map_preparation::LinearMapDescriptor;
 
-struct Entries { values: [Option<Box<Plan>>; CAPACITY], len: usize }
+struct Entry { plan: Plan, recording: Option<crate::execution::retained_resources::Requirements> }
+struct Entries { values: [Option<Box<Entry>>; CAPACITY], len: usize }
 pub(crate) struct Cache {
     entries: std::sync::Mutex<Entries>, source: [u8; 32], profile: [u8; 32],
 }
 impl Cache {
-    pub(crate) const fn allowance_bytes() -> usize { CAPACITY * core::mem::size_of::<Plan>() + 8 * Self::frame_bytes() }
+    pub(crate) const fn allowance_bytes() -> usize { CAPACITY * core::mem::size_of::<Entry>() + 8 * Self::frame_bytes() }
     pub(crate) const fn frame_bytes() -> usize { 4 * core::mem::size_of::<Plan>() + core::mem::size_of::<LinearMapDescriptor>() }
     pub(crate) fn new(admitted: usize) -> Result<Self, ()> {
         if admitted != Self::allowance_bytes() { return Err(()); }
@@ -21,10 +22,10 @@ impl Cache {
             || self.profile != profile::CANDIDATE_PROFILE_ID { return Err(()); }
         let mut entries = self.entries.lock().map_err(|_| ())?;
         if crate::preparation_options::verifier_reuse() {
-            if let Some(plan) = entries.values[..entries.len].iter().flatten().find(|plan| plan.has_descriptor(&descriptor)) {
+            if let Some(entry) = entries.values[..entries.len].iter().flatten().find(|entry| entry.plan.has_descriptor(&descriptor)) {
                 reuse_count(ReuseCounter::VerifierHits);
                 crate::preparation_options::next_count(crate::preparation_options::NextCounter::CaseHits);
-                return Ok(**plan);
+                return Ok(entry.plan);
             }
         }
         reuse_count(ReuseCounter::VerifierRecordings);
@@ -34,9 +35,23 @@ impl Cache {
         if crate::preparation_options::verifier_reuse() {
             let index = entries.len;
             if index == CAPACITY { reuse_count(ReuseCounter::VerifierOverflow); }
-            else { entries.values[index] = Some(Box::new(plan)); entries.len += 1; }
+            else { entries.values[index] = Some(Box::new(Entry { plan, recording: None })); entries.len += 1; }
         }
         Ok(plan)
+    }
+    pub(crate) fn recording(&self, descriptor: LinearMapDescriptor,
+        derive: impl FnOnce() -> Result<crate::execution::retained_resources::Requirements, ()>)
+        -> Result<crate::execution::retained_resources::Requirements, ()> {
+        if self.source != crate::graph_proofs::native_numeric_source_fingerprint()
+            || self.profile != profile::CANDIDATE_PROFILE_ID { return Err(()); }
+        let mut entries = self.entries.lock().map_err(|_| ())?;
+        if crate::preparation_options::readiness_enabled("cpu") && crate::preparation_options::verifier_reuse() {
+            if let Some(entry) = entries.values.iter_mut().flatten().find(|entry| entry.plan.has_descriptor(&descriptor)) {
+                if let Some(value) = entry.recording { return Ok(value); }
+                let value = derive()?; entry.recording = Some(value); return Ok(value);
+            }
+        }
+        derive()
     }
 }
 #[cfg(test)]

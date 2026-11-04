@@ -122,6 +122,13 @@ impl<J, R> Pool<J, R> {
         state.error.map_or(Ok(()), Err)
     }
     pub(crate) fn outstanding(&self) -> usize { self.lock().outstanding }
+    /// Statistics for extra originals admitted by the coordinator after a
+    /// source becomes available. This does not grant allocation authority.
+    pub(crate) fn account_admitted(&self, bytes: usize) -> Result<(), Error> {
+        let mut state = self.lock();
+        state.stats.admitted_host_bytes = state.stats.admitted_host_bytes.checked_add(bytes).ok_or(Error::Budget)?;
+        Ok(())
+    }
     pub(crate) fn publication<T>(&self, gpu: bool, work: impl FnOnce() -> T) -> Result<T, Error> {
         let started = Instant::now();
         let index = if gpu {
@@ -169,6 +176,16 @@ pub(crate) fn scoped<S, J: Send, R: Send, T>(
     work: impl Fn(&mut S, J) -> Result<R, Error> + Sync,
     coordinate: impl FnOnce(&Pool<J, R>, &mut Lane<'_, S, J, R>) -> Result<T, Error>,
 ) -> Result<(T, Statistics), Error> {
+    scoped_with_pool(plan, initialize, |state, job, _| work(state, job), coordinate)
+}
+/// Continuations may submit bounded child jobs directly. They never carry a
+/// ledger or GPU owner and cannot increase the fixed slot or lane counts.
+pub(crate) fn scoped_with_pool<S, J: Send, R: Send, T>(
+    plan: Plan,
+    initialize: impl Fn(bool) -> Result<S, Error> + Sync,
+    work: impl Fn(&mut S, J, &Pool<J, R>) -> Result<R, Error> + Sync,
+    coordinate: impl FnOnce(&Pool<J, R>, &mut Lane<'_, S, J, R>) -> Result<T, Error>,
+) -> Result<(T, Statistics), Error> {
     if !(1..=cpu_queue::MAX_WORKERS).contains(&plan.width)
         || core::mem::size_of::<State<J, R>>().checked_mul(8)
             .and_then(|n| n.checked_add(cpu_queue::CONTROL_BYTES)).is_none_or(|n| n > CONTROL_BYTES) {
@@ -182,6 +199,7 @@ pub(crate) fn scoped<S, J: Send, R: Send, T>(
         stats: Statistics { width: plan.width, admitted_host_bytes: plan.host_bytes,
             budget_reductions: usize::from(plan.reduced), ..Default::default() },
     }), ready: Condvar::new(), completed: Condvar::new() };
+    let work = |state: &mut S, job: J| work(state, job, &pool);
     let initialize = |caller| std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| initialize(caller)))
         .unwrap_or(Err(Error::Worker));
     let mut local = Lane { pool: &pool, state: initialize(true)?, work: &work };
@@ -243,6 +261,39 @@ pub(super) fn run<S, R: Send>(plan: Plan, costs: &[usize],
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn worker_continuations_progress_without_a_coordinator_round_trip() {
+        let completed = std::sync::atomic::AtomicUsize::new(0);
+        for members in [3, 4] {
+            completed.store(0, std::sync::atomic::Ordering::SeqCst);
+            let plan = Plan::new(4, MAX_JOBS, usize::MAX, 0, 0).unwrap();
+            let (_, statistics) = scoped_with_pool(plan, |_| Ok(()), |_, (member, child), pool| {
+                if child {
+                    completed.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                } else {
+                    for _ in 0..2 { pool.submit(2, 1, (member, true))?; }
+                }
+                Ok((member, child))
+            }, |pool, _| {
+                for member in 0..members { pool.submit(1, 1, (member, false))?; }
+                pool.publication(true, || {
+                    let until = Instant::now() + std::time::Duration::from_secs(3);
+                    while completed.load(std::sync::atomic::Ordering::SeqCst) != 2 * members && Instant::now() < until {
+                        std::thread::yield_now();
+                    }
+                    assert_eq!(completed.load(std::sync::atomic::Ordering::SeqCst), 2 * members);
+                })?;
+                while pool.outstanding() != 0 {
+                    while pool.try_receive()?.is_some() {}
+                    if pool.outstanding() != 0 { pool.wait()?; }
+                }
+                Ok(())
+            }).unwrap();
+            assert_eq!(statistics.jobs, 3 * members);
+            assert!(statistics.overlap_worker_ns > 0);
+            assert_eq!(statistics.threads, 3);
+        }
+    }
     #[test]
     fn publication_failure_and_panic_join_lanes_before_returning() {
         use std::sync::atomic::{AtomicUsize, Ordering};

@@ -6,10 +6,101 @@ from pathlib import Path
 from unittest.mock import patch
 import opencl_private_spend_validate as runner
 from test_opencl_private_spend_validate import arguments
-from metadata_stage_profile import SELECTOR, PREFIX, cache_rates, preparation_detail, validate
+from metadata_stage_profile import SELECTOR, PREFIX, cache_rates, preparation_detail, readiness_detail, selector, validate
 
 
 class MetadataStageTests(unittest.TestCase):
+    def test_expanded_n4_profile_is_explicit_and_cannot_change_n3(self):
+        options = dict(profile='full', expect_tests=True, build_label='build',
+            metadata_stage_profile=True, retained_tree_storage='host',
+            device_uuid='GPU-11111111-2222-3333-4444-555555555555')
+        with patch.object(runner, 'identity_physical_cpus', return_value=list(range(16))):
+            command = ['/tmp/profile', selector(4), '--exact', '--ignored', '--test-threads=1', '--nocapture']
+            ordinary = runner.build_plan(arguments(**options, command=command, metadata_transactions=4))
+            self.assertEqual(ordinary['host_memory_profile']['worker_host_bytes'], 32 << 30)
+            expanded = runner.build_plan(arguments(**options, command=command, metadata_transactions=4, host_profile='expanded-36'))
+            self.assertEqual(expanded['host_memory_profile']['worker_host_bytes'], 36 << 30)
+            self.assertEqual(expanded['environment']['LATTICA_RINGCT_HOST_PROFILE'], 'expanded-36')
+            self.assertEqual(expanded['environment']['LATTICA_V2_HOST_OUTPUT_BYTES'], str(24 << 30))
+            command[1] = selector(3)
+            with self.assertRaises(ValueError):
+                runner.build_plan(arguments(**options, command=command, metadata_transactions=3, host_profile='expanded-36'))
+        record = self.fixture(); record.update(transactions=4, host_profile='expanded-36')
+        with self.assertRaises(ValueError): validate(self.text(record), expected_transactions=4)
+        self.assertEqual(validate(self.text(record), expected_transactions=4,
+            expected_host_profile='expanded-36')['host_profile'], 'expanded-36')
+
+    def test_n4_report_requires_complete_four_member_coverage(self):
+        record = self.fixture()
+        record.update(transactions=4, hash_variant='all', endpoint_adoptions=28,
+            reuse_variant='all', reuse_counters=[4, 0, 0, 4, 68, 13, 0, 16],
+            pipeline_variant='all', pipeline_counters=[0, 0, 4, 1])
+        self.assertEqual(validate(self.text(record), expected_transactions=4)['transactions'], 4)
+        with self.assertRaises(ValueError): validate(self.text(record))
+        for field, index, value in [('endpoint_adoptions', None, 21), ('reuse_counters', 3, 3),
+                                   ('reuse_counters', 7, 12), ('pipeline_counters', 2, 3)]:
+            bad = copy.deepcopy(record)
+            if index is None: bad[field] = value
+            else: bad[field][index] = value
+            with self.assertRaises(ValueError): validate(self.text(bad), expected_transactions=4)
+
+    def test_transaction_count_binds_selector_and_profile_environment(self):
+        options = dict(profile='full', expect_tests=True, build_label='build',
+            metadata_stage_profile=True, retained_tree_storage='host',
+            device_uuid='GPU-11111111-2222-3333-4444-555555555555')
+        with patch.object(runner, 'identity_physical_cpus', return_value=list(range(16))):
+            for count in (3, 4):
+                command = ['/tmp/profile', selector(count), '--exact', '--ignored', '--test-threads=1', '--nocapture']
+                plan = runner.build_plan(arguments(**options, command=command, metadata_transactions=count))
+                self.assertEqual(plan['metadata_transactions'], count)
+                self.assertEqual(plan['environment']['LATTICA_RINGCT_METADATA_STAGE_PROFILE'], f'n{count}-paired-v1')
+                with self.assertRaises(ValueError):
+                    runner.build_plan(arguments(**options, command=command, metadata_transactions=7-count))
+            with self.assertRaises(ValueError):
+                runner.build_plan(arguments(metadata_transactions=4))
+
+    def test_early_source_admission_fallback_retains_no_numeric_work(self):
+        row = dict(graph_ready_ns=[1, 2, 3], registration_ready_ns=[4, 0, 0],
+            source_ready_ns=[0, 0, 0], request_ready_ns=[0] * 21, joined_ns=10, early_crypto=False)
+        def content(): return 'RINGCT_METADATA_READINESS_DETAIL ' + json.dumps(row)
+        timing = dict(graph_sources_ns=5, source_preparation_ns=5)
+        self.assertEqual(readiness_detail(content(), 3, {'case_readiness': {}}, timing, True), row)
+        row['request_ready_ns'][0] = 6
+        with self.assertRaises(ValueError): readiness_detail(content(), 3, {'case_readiness': {}}, timing, True)
+
+    def test_readiness_and_tiled_kernel_selectors_are_profile_only(self):
+        options = dict(profile='full', expect_tests=True, build_label='build',
+            command=['/tmp/profile', SELECTOR, '--exact', '--ignored', '--test-threads=1', '--nocapture'],
+            metadata_stage_profile=True, retained_tree_storage='host',
+            device_uuid='GPU-11111111-2222-3333-4444-555555555555')
+        for variant in ('baseline', 'cpu', 'gpu', 'all'):
+            for kernel in ('paired', 'fused'):
+                plan = runner.build_plan(arguments(**options, metadata_readiness_variant=variant, metadata_tiled_kernel=kernel))
+                self.assertEqual(plan['metadata_readiness_variant'], variant)
+                self.assertEqual(plan['metadata_tiled_kernel'], kernel)
+                self.assertEqual(plan['environment']['LATTICA_RINGCT_METADATA_READINESS_VARIANT'], variant)
+                self.assertEqual(plan['environment']['LATTICA_RINGCT_METADATA_TILED_KERNEL'], kernel)
+        for bad in ({'metadata_readiness_variant': 'nested'}, {'metadata_tiled_kernel': 'unknown'}):
+            with self.assertRaises(ValueError): runner.build_plan(arguments(**options, **bad))
+        options['metadata_stage_profile'] = False
+        for extra in ({'metadata_readiness_variant': 'all'}, {'metadata_tiled_kernel': 'fused'}):
+            with self.assertRaises(ValueError): runner.build_plan(arguments(**options, **extra))
+
+    def test_readiness_statistics_cannot_hide_disabled_or_excess_work(self):
+        record = self.fixture()
+        record.update(parallel_variant='all', concurrency_variant='all', readiness_variant='all', tiled_kernel='paired')
+        stats = dict(jobs=321, width=16, peak_active=15, threads=15, budget_reductions=0,
+            admitted_host_bytes=15 << 30, worker_ns=90, wait_ns=10, publication_ns=30, wall_ns=50,
+            queued_peak=64, queue_ns=20, idle_ns=10, max_job_ns=20, gpu_ns=25, overlap_worker_ns=50)
+        def content(values=stats):
+            return self.text(record) + '\nRINGCT_METADATA_PARALLEL ' + json.dumps(dict(family='case_readiness', statistics=values))
+        self.assertEqual(validate(content())['parallel']['case_readiness'], stats)
+        for field, value in (('jobs', 525), ('queued_peak', 65), ('width', 17), ('threads', 16)):
+            with self.assertRaises(ValueError): validate(content(dict(stats, **{field: value})))
+        for variant in ('baseline', 'gpu'):
+            record['readiness_variant'] = variant
+            with self.assertRaises(ValueError): validate(content())
+
     def test_concurrency_selectors_are_confined_to_metadata_profile(self):
         options = dict(profile='full', expect_tests=True, build_label='build',
             command=['/tmp/profile', SELECTOR, '--exact', '--ignored', '--test-threads=1', '--nocapture'],

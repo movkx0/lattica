@@ -517,6 +517,8 @@ pub(crate) use prover::paired::{PairedCompiled, PairedFailure, PairedNode, Paire
 pub(crate) use prover::owned_aes::{OwnedAesEndpointOperation, OwnedAesEndpoints, OwnedAesCompileOperation, OwnedAesMergeOperation, OwnedAesNativeOperation, OwnedAesNativeOutput, OwnedAesOuterOperation, OwnedAesNativeSource, ProducedAesNative, RecordedAesNative, BoundAesOuter, PreissuedAesOuter, OwnedAesExecuteError, OwnedAesRequestOutput, OwnedAesRequestReport, OwnedAesNodeSource, OwnedAesStepKind, OwnedAesStep, OwnedAesSlotRequirements, OwnedAesRequestPlan};
 
 #[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
+pub(crate) use prover::readiness as metadata_readiness;
+#[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
 pub(crate) use prover::{paired::PairedRequestNumbers, owned_aes::OwnedAesRequestNumbers,
     numeric_bounds::warm_request_bounds, identity_keys::{IdentityKeyPlan, RequestIdentityKeys},
     numeric_leaves::{NumericLeafPlan, RequestLeaves}};

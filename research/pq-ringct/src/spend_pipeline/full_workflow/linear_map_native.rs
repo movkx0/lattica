@@ -97,8 +97,10 @@ impl<'a> LinearMapNativeOperationPlan<'a> {
             return Err(LinearMapNativeOperationFailure::Authority);
         }
             if let Some(numbers) = numbers {
+            let expected_recording = match numbers.recording { Some(value) => value,
+                None => Self::verification_planning_requirements(numbers.prepared.data().source().kind())? };
             if !recording.belongs_to(ledger)
-                || recording.requirements() != Self::verification_planning_requirements(numbers.prepared.data().source().kind())? {
+                || recording.requirements() != expected_recording {
                 return Err(LinearMapNativeOperationFailure::Authority);
             }
             if numbers.binding != super::native_numbers::Binding::new(scope, sources) {
@@ -371,12 +373,25 @@ pub(crate) struct MetadataNumbers<'a> {
     prepared: crate::graph_proofs::owned_linear_map::metadata::Prepared<'a>,
     facts: PhaseFacts,
     verification: VerificationPlan,
+    recording: Option<Requirements>,
 }
 impl<'a> MetadataNumbers<'a> {
     pub(crate) fn prepare(view: crate::graph_proofs::owned_linear_map::metadata::View<'a>,
         binding: super::native_numbers::Binding, verification: VerificationPlan) -> Result<Self> {
+        let recording = if crate::preparation_options::readiness_enabled("cpu") {
+            Some(LinearMapNativeOperationPlan::verification_planning_requirements(view.kind())?)
+        } else { None };
+        Self::prepare_inner(view, binding, verification, recording)
+    }
+    pub(crate) fn recording_requirements(&self) -> Option<Requirements> { self.recording }
+    pub(crate) fn prepare_recorded(view: crate::graph_proofs::owned_linear_map::metadata::View<'a>,
+        binding: super::native_numbers::Binding, verification: VerificationPlan, recording: Requirements) -> Result<Self> {
+        Self::prepare_inner(view, binding, verification, Some(recording))
+    }
+    fn prepare_inner(view: crate::graph_proofs::owned_linear_map::metadata::View<'a>,
+        binding: super::native_numbers::Binding, verification: VerificationPlan, recording: Option<Requirements>) -> Result<Self> {
         let prepared = view.prepare(LinearMapProofPlan::metadata_worker_host_bytes()).map_err(|_| LinearMapNativeOperationFailure::Preparation)?;
         let facts = LinearMapNativeOperationPlan::metadata_facts(prepared.data(), &binding, verification)?;
-        Ok(Self { binding, prepared, facts, verification })
+        Ok(Self { binding, prepared, facts, verification, recording })
     }
 }

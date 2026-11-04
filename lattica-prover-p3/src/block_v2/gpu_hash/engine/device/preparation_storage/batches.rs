@@ -2,7 +2,7 @@ use super::*;
 
 impl DeviceSession {
     // Status is read and checked before any roots are downloaded or published.
-    fn batch_roots(&self, use_: &Use<'_>, engine: &mut Engine, count: usize) -> Result<Vec<[u64; 4]>, String> {
+    pub(super) fn batch_roots(&self, use_: &Use<'_>, engine: &mut Engine, count: usize) -> Result<Vec<[u64; 4]>, String> {
         let mut status = [0u64; 64];
         let fence = engine.fence();
         let readback = profile::metric(profile::READBACK);

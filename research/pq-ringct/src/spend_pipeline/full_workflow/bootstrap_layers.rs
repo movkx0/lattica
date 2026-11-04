@@ -18,6 +18,34 @@ pub(crate) type PreparedSourceResult<'a> = core::result::Result<SourceRetained<P
 fn failure(message: &'static str) -> FreshGenerationError { FreshGenerationError::Resource(message) }
 mod registration;
 mod overlap;
+mod readiness;
+
+pub(crate) struct EarlyNumbers<'a> {
+    pub(crate) native: Option<crate::execution::workflow_resources::PreparedNativeBatch<'a>>,
+    pub(crate) crypto: Option<crate::execution::workflow_resources::PreparedCryptoBatch<'a>>,
+}
+pub(crate) fn prepare_layers<'source: 'graph, 'graph: 'prepared, 'prepared, const N: usize>(
+    scope: &'source SourcePlanningPlan<'source>, planning: &mut WorkflowPlanning<'_>,
+    startup: &crate::spend_pipeline::full_workflow::fresh_generation::case_lifetime::MetadataOwner<'_, '_, '_>,
+    graph_plans: &FixedCaseOwnerSlots<'_, GraphPlanResult<'source>, N>,
+    graphs: &'graph FixedCaseOwnerSlots<'_, GraphSourceResult, N>,
+    plans: &FixedCaseOwnerSlots<'_, PreparationPlanResult<'graph>, N>,
+    outputs: &'prepared FixedCaseOwnerSlots<'_, PreparedSourceResult<'graph>, N>,
+) -> Result<EarlyNumbers<'prepared>> {
+    let case = startup.metadata_case_state(scope, planning.ledger())?;
+    graph_plans.check_case(case)?; graphs.check_case(case)?; plans.check_case(case)?; outputs.check_case(case)?;
+    if !matches!(N, 3 | 4) || scope.natives().len() != N { return Err(failure("readiness source case mismatch")); }
+    for member in 0..N {
+        if graph_plans.get(member)?.get().is_ok() || graphs.get(member)?.get().is_ok()
+            || plans.get(member)?.get().is_ok() || outputs.get(member)?.get().is_ok() {
+            return Err(failure("readiness source table already populated"));
+        }
+    }
+    if let Some(numbers) = readiness::prepare(scope, planning, graph_plans, graphs, plans, outputs)? { return Ok(numbers); }
+    prepare_graph_layer(scope, planning, startup, graph_plans, graphs)?;
+    super::driver::metadata_timing::phase(super::driver::metadata_timing::Phase::SourcePreparation);
+    Ok(EarlyNumbers { native: prepare_source_layer(scope, planning, startup, graphs, plans, outputs)?, crypto: None })
+}
 
 // Each table owns its payload independently of the planning capability's
 // context borrow. Invariant output slots must retain only their source/graph
@@ -82,6 +110,12 @@ pub(crate) fn prepare_source_layer<'source: 'graph, 'graph: 'prepared, 'prepared
         let plan_slot = plans.get(ordinal)?;
         plan_slot.install(SourcePreparationPlan::new(scope, graph, native))?;
     }
+    prepare_planned_sources(scope, planning, plans, outputs)
+}
+fn prepare_planned_sources<'source: 'graph, 'graph: 'prepared, 'prepared, const N: usize>(scope: &SourcePlanningPlan<'source>,
+    planning: &mut WorkflowPlanning<'_>, plans: &FixedCaseOwnerSlots<'_, PreparationPlanResult<'graph>, N>,
+    outputs: &'prepared FixedCaseOwnerSlots<'_, PreparedSourceResult<'graph>, N>)
+    -> Result<Option<crate::execution::workflow_resources::PreparedNativeBatch<'prepared>>> {
     if let Some(numbers) = overlap::prepare(scope, planning, plans, outputs)? { return Ok(Some(numbers)); }
     if registration::prepare(planning, plans, outputs)? { return Ok(None); }
     for ordinal in 0..N {
