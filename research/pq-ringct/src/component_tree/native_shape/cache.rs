@@ -87,6 +87,7 @@ struct Entry {
 struct Cache {
     source: [u8; 32],
     precomputed: bool,
+    read_only: bool,
     #[cfg(test)]
     inventory: inventory::Inventory,
     entries: [Option<Entry>; ENTRIES],
@@ -102,10 +103,62 @@ const _: () = assert!(
 );
 thread_local! { static CACHE: RefCell<Option<Cache>> = const { RefCell::new(None) }; }
 
+/// Numeric entries resolved by the coordinator. No source owner or compiler
+/// authority crosses the thread boundary, and a missing entry is an error.
+pub(crate) struct Snapshot {
+    source: [u8; 32],
+    entries: [Option<Entry>; ENTRIES],
+    clock: u64,
+}
+pub(crate) fn snapshot() -> Result<Snapshot, CompileError> {
+    CACHE.with(|slot| {
+        let cache = slot.try_borrow().map_err(|_| busy())?;
+        let cache = cache.as_ref().filter(|c| !c.read_only).ok_or_else(busy)?;
+        Ok(Snapshot { source: cache.source, entries: cache.entries, clock: cache.clock })
+    })
+}
+pub(crate) type WorkerStatistics = (Statistics, [FamilyStatistics; 13]);
+pub(crate) fn absorb_worker((statistics, families): WorkerStatistics) -> Result<(), CompileError> {
+    if statistics.misses != 0 || statistics.evictions != 0 || statistics.failed_computations != 0 {
+        return Err(CompileError::Shape("native read-only worker performed a computation"));
+    }
+    CACHE.with(|slot| {
+        let mut cache = slot.try_borrow_mut().map_err(|_| busy())?;
+        let cache = cache.as_mut().filter(|c| !c.read_only).ok_or_else(busy)?;
+        cache.statistics.hits = cache.statistics.hits.checked_add(statistics.hits).ok_or_else(overflow)?;
+        cache.statistics.planning_ns = cache.statistics.planning_ns.checked_add(statistics.planning_ns).ok_or_else(overflow)?;
+        for (target, worker) in cache.families.iter_mut().zip(families) {
+            if worker.cold_misses != 0 || worker.table_hits != 0 { return Err(busy()); }
+            target.requests = target.requests.checked_add(worker.requests).ok_or_else(overflow)?;
+            target.cache_hits = target.cache_hits.checked_add(worker.cache_hits).ok_or_else(overflow)?;
+        }
+        Ok(())
+    })
+}
+
 pub(crate) struct Scope {
     _thread: PhantomData<Rc<()>>,
 }
 impl Scope {
+    pub(crate) fn begin_read_only(snapshot: &Snapshot) -> Result<Self, CompileError> {
+        let scope = Self::open(snapshot.source, false)?;
+        CACHE.with(|slot| {
+            let mut slot = slot.borrow_mut();
+            let cache = slot.as_mut().expect("new numeric reader");
+            cache.entries = snapshot.entries;
+            cache.clock = snapshot.clock;
+            cache.read_only = true;
+        });
+        Ok(scope)
+    }
+    pub(crate) fn take_worker_statistics(&self) -> WorkerStatistics {
+        CACHE.with(|slot| {
+            let mut slot = slot.borrow_mut();
+            let cache = slot.as_mut().expect("live numeric reader");
+            assert!(cache.read_only);
+            (core::mem::take(&mut cache.statistics), core::mem::take(&mut cache.families))
+        })
+    }
     pub(crate) fn begin(source: [u8; 32]) -> Result<Self, CompileError> {
         Self::open(source, false)
     }
@@ -121,6 +174,7 @@ impl Scope {
             *slot = Some(Cache {
                 source,
                 precomputed,
+                read_only: false,
                 #[cfg(test)] inventory: inventory::Inventory::new(),
                 entries: [None; ENTRIES],
                 clock: 0,
@@ -370,6 +424,9 @@ pub(super) fn select<D: DescriptorKey>(
             c.families[family_index].cache_hits += 1;
             Some(e.value)
         } else {
+            if c.read_only {
+                return Err(CompileError::Shape("unresolved native worker descriptor"));
+            }
             c.statistics.misses = c.statistics.misses.checked_add(1).ok_or_else(overflow)?;
             let table = c
                 .precomputed

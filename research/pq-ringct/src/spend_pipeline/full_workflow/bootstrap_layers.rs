@@ -16,6 +16,7 @@ pub(crate) type PreparedSourceResult<'a> = core::result::Result<SourceRetained<P
     SourcePhaseFailure<PreparedWorkflowSources<'a>>>;
 
 fn failure(message: &'static str) -> FreshGenerationError { FreshGenerationError::Resource(message) }
+mod registration;
 
 // Each table owns its payload independently of the planning capability's
 // context borrow. Invariant output slots must retain only their source/graph
@@ -79,6 +80,10 @@ pub(crate) fn prepare_source_layer<'source: 'graph, 'graph, 'context, const N: u
             .map_err(|_| failure("prepared source layer lacks graph"))?;
         let plan_slot = plans.get(ordinal)?;
         plan_slot.install(SourcePreparationPlan::new(scope, graph, native))?;
+    }
+    if registration::prepare(planning, plans, outputs)? { return Ok(()); }
+    for ordinal in 0..N {
+        let plan_slot = plans.get(ordinal)?;
         let plan = plan_slot.get()?.as_ref()
             .map_err(|_| failure("prepared source descriptor refused"))?;
         let output_slot = outputs.get(ordinal)?;

@@ -515,3 +515,7 @@ pub(crate) use retention::{
 pub(crate) use prover::paired::{PairedCompiled, PairedFailure, PairedNode, PairedEndpointOperation, PairedEndpoints, PairedGroupOperation, PairedMergeOperation, PairedNativeOperation, PairedNativeOutput, PairedOuterOperation, OwnedShakeNativeSource, ProducedShakeNative, RecordedShakeNative, BoundPairedOuter, PreissuedPairedOuter, PairedExecuteError, PairedRequestOutput, PairedRequestReport, RequestNodeSource, RequestStepKind, RequestStep, RequestSlotRequirements, PairedRequestPlan};
 #[cfg(all(feature = "full-workflow-experiment", target_os = "linux", target_arch = "x86_64"))]
 pub(crate) use prover::owned_aes::{OwnedAesEndpointOperation, OwnedAesEndpoints, OwnedAesCompileOperation, OwnedAesMergeOperation, OwnedAesNativeOperation, OwnedAesNativeOutput, OwnedAesOuterOperation, OwnedAesNativeSource, ProducedAesNative, RecordedAesNative, BoundAesOuter, PreissuedAesOuter, OwnedAesExecuteError, OwnedAesRequestOutput, OwnedAesRequestReport, OwnedAesNodeSource, OwnedAesStepKind, OwnedAesStep, OwnedAesSlotRequirements, OwnedAesRequestPlan};
+
+#[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
+pub(crate) use prover::{paired::PairedRequestNumbers, owned_aes::OwnedAesRequestNumbers,
+    numeric_bounds::warm_request_bounds, identity_keys::{IdentityKeyPlan, RequestIdentityKeys}};

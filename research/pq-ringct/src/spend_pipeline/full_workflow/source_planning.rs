@@ -253,6 +253,7 @@ impl<'source> SourcePlanningPlan<'source> {
         let scratch_bytes = InitialNativeSource::inspection_frame_bytes()
             .checked_add(4 * size_of::<Requirements>())
             .and_then(|bytes| bytes.checked_mul(4))
+            .and_then(|bytes| bytes.checked_add(crate::metadata_parallel::CONTROL_BYTES))
             .ok_or(SourcePreparationError::Resource)?;
         let mut scratch = Requirements::single(Category::PhaseScratch, host(as_u64(scratch_bytes)?));
         #[cfg(debug_assertions)]

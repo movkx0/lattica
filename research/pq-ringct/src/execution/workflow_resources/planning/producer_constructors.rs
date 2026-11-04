@@ -14,6 +14,8 @@ mod outer;
 mod frames;
 mod graph;
 mod crypto;
+mod parallel_crypto;
+mod parallel_native;
 mod final_aggregation;
 mod complete;
 pub(crate) use complete::{CompleteSlotFailure, CompleteSlotResult};

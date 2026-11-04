@@ -161,10 +161,10 @@ __kernel void device_validate_summary(__global const ulong *words, __global ulon
 }
 
 #[cfg(not(feature = "gpu-tuning"))]
-pub(crate) const KERNEL_SRC: &str = public_hash_source!("");
+pub(crate) const KERNEL_SRC: &str = public_hash_source!(include_str!("public_hash/pair_helpers.cl"));
 #[cfg(feature = "gpu-tuning")]
 pub(crate) const KERNEL_SRC: &str = public_hash_source!(concat!(
-    include_str!("public_hash/sbox_pair.cl"), include_str!("public_hash/batched.cl")
+    include_str!("public_hash/pair_helpers.cl"), include_str!("public_hash/sbox_pair.cl"), include_str!("public_hash/batched.cl")
 ));
 
 #[cfg(test)]
@@ -606,3 +606,8 @@ mod shuffle_tests;
 mod tests;
 #[cfg(all(test, feature = "gpu"))]
 mod unroll_tests;
+
+#[cfg(feature = "gpu")]
+pub(super) fn inspect_pair_kernel(kernel: &ocl::Kernel, device: ocl::Device) -> Result<(), String> {
+    selection::inspect_kernel(kernel, device).map(|_| ())
+}

@@ -155,6 +155,18 @@ impl ArithmeticOperationSpec {
         Ok(spec)
     }
 
+    /// Single product plus/minus an accumulator. Input is left, right, accumulator;
+    /// output is product, updated accumulator. Both original graph nodes survive.
+    pub fn mul_accumulate(mut self, subtract: bool) -> Result<Self, String> {
+        if self.metadata[0] != 8 || self.metadata[2] != 1 {
+            return Err("fused arithmetic requires one multiplication schedule".into());
+        }
+        self.metadata[0] = if subtract { 12 } else { 11 };
+        self.metadata[3] = 512;
+        self.input_words = 768;
+        self.output_words = 512;
+        Ok(self)
+    }
     /// Canonical Q automorphism. Factors use ordinary modular multiplication,
     /// exactly as ArithmeticSpec::permutation(1,...).
     pub fn automorphism(sources: &[u64], factors: &[u64]) -> Result<Self, String> {
@@ -273,6 +285,12 @@ mod tests {
         assert_eq!(spec.output_words(), 32768);
         assert!(spec.staging_bytes().unwrap() < 1 << 20);
         assert!(ArithmeticOperationSpec::mul(Q, 1, &terms).is_err());
+        assert!(spec.clone().mul_accumulate(false).is_err());
+        for subtract in [false, true] {
+            let fused = ArithmeticOperationSpec::mul(QHAT, 1, &terms).unwrap().mul_accumulate(subtract).unwrap();
+            assert_eq!((fused.raw_input_words(), fused.output_words(), fused.work_items), (768, 512, 64));
+            assert_eq!(fused.metadata[0], if subtract { 12 } else { 11 });
+        }
         let sources: [u64; 256] = core::array::from_fn(|i| i as u64);
         assert!(ArithmeticOperationSpec::automorphism(&sources, &[1; 256]).is_ok());
         assert!(ArithmeticOperationSpec::automorphism(&sources, &[Q; 256]).is_err());

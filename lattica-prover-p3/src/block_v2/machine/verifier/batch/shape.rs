@@ -25,7 +25,7 @@ mod metadata_planning;
 mod precomputed;
 pub use envelope::{verifier_height_envelope, VerifierHeightEnvelope};
 pub use envelope_cache::{
-    HeightEnvelopeCacheScope, HeightEnvelopeCacheStatistics, HEIGHT_ENVELOPE_CACHE_ENTRIES,
+    HeightEnvelopeCacheScope, HeightEnvelopeCacheSnapshot, HeightEnvelopeCacheStatistics, HEIGHT_ENVELOPE_CACHE_ENTRIES,
     HEIGHT_ENVELOPE_CACHE_RESERVED_BYTES,
 };
 pub use metadata_planning::{

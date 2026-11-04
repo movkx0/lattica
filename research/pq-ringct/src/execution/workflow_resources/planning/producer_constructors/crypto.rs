@@ -3,7 +3,7 @@
 use crate::{
     execution::{retained_resources::{Bytes, Category, Requirements, Reservation},
         workflow_resources::{WorkflowPlanning, WorkflowError}},
-    graph_crypto::{OwnedAesRequestPlan, PairedRequestPlan, RequestDescriptor},
+    graph_crypto::{OwnedAesRequestPlan, PairedRequestPlan, RequestDescriptor, PairedRequestNumbers, OwnedAesRequestNumbers},
     graph_tree::GraphContext,
     spend_pipeline::full_workflow::{
         metadata_planning::{MetadataMember, ProducerFamily, SourceMetadataPlanningPlan},
@@ -27,7 +27,7 @@ pub(super) fn requirements() -> Result<Requirements> {
     ].into_iter().try_fold(0usize, |sum, n| sum.checked_add(n))
         .and_then(|n| n.checked_mul(8)).ok_or(WorkflowError::Overflow)?;
     super::sum(Requirements::single(Category::PhaseScratch, Bytes {
-        host: u64::try_from(bytes).map_err(|_| WorkflowError::Overflow)?, device: 0,
+        host: u64::try_from(bytes.checked_add(crate::metadata_parallel::CONTROL_BYTES).ok_or(WorkflowError::Overflow)?).map_err(|_| WorkflowError::Overflow)?, device: 0,
     }), crate::execution::workflow_resources::source_endpoints::metadata_endpoint_query_requirements()?)
 }
 
@@ -41,6 +41,13 @@ impl WorkflowPlanning<'_> {
     pub(crate) fn derive_metadata_shake<'a>(&mut self,
         inventory: &SourceMetadataPlanningPlan<'a>, member: MetadataMember<'_, 'a>,
         ordinal: usize,
+    ) -> Result<ShakePlanResult<'a>> {
+        self.derive_metadata_shake_resolved(inventory, member, ordinal, None)
+    }
+
+    pub(crate) fn derive_metadata_shake_resolved<'a>(&mut self,
+        inventory: &SourceMetadataPlanningPlan<'a>, member: MetadataMember<'_, 'a>,
+        ordinal: usize, numbers: Option<PairedRequestNumbers<'a>>,
     ) -> Result<ShakePlanResult<'a>> {
         self.begin_metadata_constructor(inventory, member, ProducerFamily::Shake, ordinal, 0)?;
         let prepared = member.prepared().get();
@@ -57,8 +64,8 @@ impl WorkflowPlanning<'_> {
             return Err(WorkflowError::Planning);
         }
         let original = self.original.split(metadata)?;
-        let outcome = PairedRequestPlan::derive_pre_reserved(request, prepared.context().clone(),
-            layout, original, &self.scratch, self.capability.ledger())
+        let outcome = PairedRequestPlan::derive_pre_reserved_resolved(request, prepared.context().clone(),
+            layout, original, &self.scratch, self.capability.ledger(), numbers)
             .and_then(|plan| plan.with_identity_limits(inventory.scope().identity_limits()));
         if outcome.is_ok() { self.finish_metadata_constructor_success(); }
         Ok(outcome)
@@ -67,6 +74,13 @@ impl WorkflowPlanning<'_> {
     pub(crate) fn derive_metadata_aes<'a>(&mut self,
         inventory: &SourceMetadataPlanningPlan<'a>, member: MetadataMember<'_, 'a>,
         ordinal: usize,
+    ) -> Result<AesPlanResult<'a>> {
+        self.derive_metadata_aes_resolved(inventory, member, ordinal, None)
+    }
+
+    pub(crate) fn derive_metadata_aes_resolved<'a>(&mut self,
+        inventory: &SourceMetadataPlanningPlan<'a>, member: MetadataMember<'_, 'a>,
+        ordinal: usize, numbers: Option<OwnedAesRequestNumbers<'a>>,
     ) -> Result<AesPlanResult<'a>> {
         self.begin_metadata_constructor(inventory, member, ProducerFamily::Aes, ordinal, 0)?;
         let prepared = member.prepared().get();
@@ -82,8 +96,8 @@ impl WorkflowPlanning<'_> {
             return Err(WorkflowError::Planning);
         }
         let original = self.original.split(metadata)?;
-        let outcome = OwnedAesRequestPlan::derive_pre_reserved(request, prepared.context().clone(),
-            original, &self.scratch, self.capability.ledger());
+        let outcome = OwnedAesRequestPlan::derive_pre_reserved_resolved(request, prepared.context().clone(),
+            original, &self.scratch, self.capability.ledger(), numbers);
         if outcome.is_ok() { self.finish_metadata_constructor_success(); }
         Ok(outcome)
     }

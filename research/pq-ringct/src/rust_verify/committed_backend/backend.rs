@@ -193,6 +193,32 @@ impl Backend for CommittedBackend<'_> {
             SignedRef { owner: self.graph.owner, expr, bound: bounds[i], value: values[i] }
         })
     }
+    fn mul_accumulate_poly(&mut self, accumulator: &Polynomial<ResidueRef>, a: &Polynomial<ResidueRef>,
+        b: &Polynomial<ResidueRef>, q: u64, subtract: bool) -> Polynomial<ResidueRef> {
+        #[cfg(feature = "opencl")]
+        if self.device.is_some() && crate::preparation_options::fused_arithmetic() {
+            for &value in a.iter().chain(b).chain(accumulator) { self.check_residue(value, q); }
+            // Preserve canonical-map and polynomial/operation insertion order.
+            let left = self.canonical_id(a, q);
+            let right = self.canonical_id(b, q);
+            let (product, result) = witness_value!(self,
+                device => device.mul_accumulate_poly(&a.map(|v| v.value), &b.map(|v| v.value),
+                    &accumulator.map(|v| v.value), q, subtract),
+                unreachable!("GPU-only fused recipe"), ([0; D], [0; D]));
+            let product = self.derived_canonical(product, q);
+            self.graph.operations.push(Operation::Mul { modulus: q, left, right, output: product });
+            let product = self.canonical_refs(product);
+            let left = self.canonical_id(accumulator, q);
+            let right = self.canonical_id(&product, q);
+            let output = self.derived_canonical(result, q);
+            self.graph.operations.push(if subtract { Operation::Sub { modulus: q, left, right, output } }
+                else { Operation::Add { modulus: q, left, right, output } });
+            crate::preparation_options::pipeline_count(crate::preparation_options::PipelineCounter::FusedPairs, 1);
+            return self.canonical_refs(output);
+        }
+        let product = self.mul_poly(a, b, q);
+        if subtract { self.sub_poly(accumulator, &product, q) } else { self.add_poly(accumulator, &product, q) }
+    }
     fn add_poly(
         &mut self,
         a: &Polynomial<ResidueRef>,

@@ -115,22 +115,27 @@ impl Drop for RawNode {
 
 impl OperationContext<'_> {
     pub fn enable_reusable_storage(&self) -> Result<(), String> {
-        self.enable_reusable_storage_with(true)
+        self.enable_reusable_storage_with(16)
     }
     /// GPU scalar reference for source-bound research qualification only.
     #[cfg(feature = "ringct-research-quota")]
     pub fn enable_scalar_field_storage_for_qualification(&self) -> Result<(), String> {
-        self.enable_reusable_storage_with(false)
+        self.enable_reusable_storage_with(1)
     }
-    fn enable_reusable_storage_with(&self, cooperative_fields: bool) -> Result<(), String> {
+    /// Eight-lane reference for source-bound research qualification only.
+    #[cfg(feature = "ringct-research-quota")]
+    pub fn enable_eight_lane_field_storage_for_qualification(&self) -> Result<(), String> {
+        self.enable_reusable_storage_with(8)
+    }
+    fn enable_reusable_storage_with(&self, field_lanes: usize) -> Result<(), String> {
         #[cfg(not(feature = "gpu"))]
-        let _ = cooperative_fields;
+        let _ = field_lanes;
         self.execute(|| {
             #[cfg(feature = "gpu")]
             {
                 if self.workspace.try_borrow().map_err(|_| "reentrant preparation workspace")?.is_some() { return Ok(()); }
                 self.admit_host_bytes(RawPreparationWorkspaceStorage::fixed().host_bytes)?;
-                let workspace = self.session.preparation_workspace(cooperative_fields)?;
+                let workspace = self.session.preparation_workspace(field_lanes)?;
                 *self.workspace.try_borrow_mut().map_err(|_| "reentrant preparation workspace")? = Some(workspace);
                 Ok(())
             }

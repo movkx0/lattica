@@ -68,6 +68,7 @@ struct Entry {
 }
 struct Cache {
     precomputed: bool,
+    read_only: bool,
     source: [u8; 32],
     entries: [Option<Entry>; HEIGHT_ENVELOPE_CACHE_ENTRIES],
     clock: u64,
@@ -80,12 +81,57 @@ const _: () = assert!(
 );
 thread_local! { static CACHE: RefCell<Option<Cache>> = const { RefCell::new(None) }; }
 
+/// Immutable numeric lookup inputs. A reader cannot start a compiler on a miss.
+pub struct HeightEnvelopeCacheSnapshot {
+    source: [u8; 32],
+    entries: [Option<Entry>; HEIGHT_ENVELOPE_CACHE_ENTRIES],
+    clock: u64,
+}
+
 /// One thread-bound workflow scope. Nested scopes refuse; drop clears all
 /// numerical entries, including when source construction fails or unwinds.
 pub struct HeightEnvelopeCacheScope {
     _thread: PhantomData<Rc<()>>,
 }
 impl HeightEnvelopeCacheScope {
+    pub fn snapshot() -> Result<HeightEnvelopeCacheSnapshot, CompileError> {
+        CACHE.with(|slot| {
+            let cache = slot.try_borrow().map_err(|_| busy())?;
+            let cache = cache.as_ref().filter(|c| !c.read_only).ok_or_else(busy)?;
+            Ok(HeightEnvelopeCacheSnapshot { source: cache.source, entries: cache.entries, clock: cache.clock })
+        })
+    }
+    pub fn begin_read_only(snapshot: &HeightEnvelopeCacheSnapshot) -> Result<Self, CompileError> {
+        let scope = Self::begin_selected(snapshot.source, false)?;
+        CACHE.with(|slot| {
+            let mut slot = slot.borrow_mut();
+            let cache = slot.as_mut().expect("new numeric reader");
+            cache.entries = snapshot.entries;
+            cache.clock = snapshot.clock;
+            cache.read_only = true;
+        });
+        Ok(scope)
+    }
+    pub fn take_worker_statistics(&self) -> HeightEnvelopeCacheStatistics {
+        CACHE.with(|slot| {
+            let mut slot = slot.borrow_mut();
+            let cache = slot.as_mut().expect("live numeric reader");
+            assert!(cache.read_only);
+            core::mem::take(&mut cache.statistics)
+        })
+    }
+    pub fn absorb_worker(statistics: HeightEnvelopeCacheStatistics) -> Result<(), CompileError> {
+        if statistics.misses != 0 || statistics.evictions != 0 || statistics.failed_computations != 0 {
+            return Err(CompileError::Shape("read-only geometry worker performed a computation"));
+        }
+        CACHE.with(|slot| {
+            let mut slot = slot.try_borrow_mut().map_err(|_| busy())?;
+            let cache = slot.as_mut().filter(|c| !c.read_only).ok_or_else(busy)?;
+            cache.statistics.hits = cache.statistics.hits.checked_add(statistics.hits).ok_or_else(overflow)?;
+            cache.statistics.planning_ns = cache.statistics.planning_ns.checked_add(statistics.planning_ns).ok_or_else(overflow)?;
+            Ok(())
+        })
+    }
     pub fn begin(compiled_source: [u8; 32]) -> Result<Self, CompileError> {
         Self::begin_selected(compiled_source, false)
     }
@@ -101,6 +147,7 @@ impl HeightEnvelopeCacheScope {
             }
             *slot = Some(Cache {
                 precomputed,
+                read_only: false,
                 source: compiled_source,
                 entries: [None; HEIGHT_ENVELOPE_CACHE_ENTRIES],
                 clock: 0,
@@ -171,6 +218,9 @@ pub(super) fn memoized(
                 .checked_add(started.elapsed().as_nanos())
                 .ok_or_else(overflow)?;
             return Ok(Some((key, Some(entry.value), cache.precomputed)));
+        }
+        if cache.read_only {
+            return Err(CompileError::Shape("unresolved geometry worker descriptor"));
         }
         cache.statistics.misses = cache
             .statistics
@@ -253,6 +303,24 @@ pub(super) fn memoized(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn numeric_reader_cannot_start_a_compiler_or_hide_its_hits() {
+        let scope = HeightEnvelopeCacheScope::begin([23; 32]).unwrap();
+        let expected = value(28);
+        memoized(28, 8, limits(), 512 << 20, || Ok(expected)).unwrap();
+        let snapshot = HeightEnvelopeCacheScope::snapshot().unwrap();
+        let statistics = std::thread::scope(|threads| threads.spawn(|| {
+            let reader = HeightEnvelopeCacheScope::begin_read_only(&snapshot).unwrap();
+            assert_eq!(memoized(28, 8, limits(), 512 << 20,
+                || panic!("read-only hit compiled")).unwrap(), expected);
+            let statistics = reader.take_worker_statistics();
+            assert!(memoized(28, 16, limits(), 512 << 20,
+                || panic!("read-only miss compiled")).is_err());
+            statistics
+        }).join().unwrap());
+        HeightEnvelopeCacheScope::absorb_worker(statistics).unwrap();
+        assert_eq!((scope.statistics().hits, scope.statistics().misses), (1, 1));
+    }
     fn limits() -> ConstructionLimits {
         ConstructionLimits {
             max_requested_program_bytes: 2 << 30,

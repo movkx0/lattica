@@ -196,6 +196,7 @@ fn raw_crypto(input: usize, output: usize) -> Result<usize> {
 #[derive(Clone, Copy)]
 struct Census {
     shape_words: usize,
+    registration_bytes: usize,
     retained: usize,
     temporary: usize,
     packing: usize,
@@ -469,7 +470,8 @@ impl Census {
         #[cfg(not(feature = "opencl"))]
         let batch_frames = 0;
         raw_host = raw_host.max(lattica_prover_p3::block_v2::native_gpu::RawCommitmentBatchStorage::HOST_BYTES);
-        Ok(Self { shape_words, retained, temporary: sum([
+        Ok(Self { shape_words, registration_bytes: sum([registration_temporary, registered_heap,
+            2 * crate::rust_verify::committed_backend::source_binding::prepared::FRAME_BYTES])?, retained, temporary: sum([
             workspace.host_bytes, batch_frames,
             crate::rust_verify::committed_backend::source_binding::prepared::FRAME_BYTES,
             growth, registration_temporary, group_temporary, expression_temporary,
@@ -479,7 +481,9 @@ impl Census {
 }
 
 pub(crate) struct SourcePreparationPlan<'graph> {
+    registration_hashing: crate::rust_verify::committed_backend::source_binding::prepared::RegistrationHashPlan,
     shape_words: usize,
+    registration_bytes: usize,
     context: &'graph ProvingContext,
     source_fingerprint: [u8; 32],
     compiled_source_fingerprint: [u8; 32],
@@ -525,7 +529,10 @@ impl<'graph> SourcePreparationPlan<'graph> {
             size_of::<SourceFailure<PreparedWorkflowSources<'graph>>>(),
             size_of::<SourcePhaseFailure<PreparedWorkflowSources<'graph>>>(),
         )?)?);
-        let mut scratch = Requirements::single(Category::SymbolicCompiler, host(census.temporary)?);
+        let registration_hashing = crate::rust_verify::committed_backend::source_binding::prepared::RegistrationHashPlan::new(
+            lattica_prover_p3::block_v2::machine::verifier::batch::shape::metadata_cpu_worker_ceiling(),
+            (24usize << 30).saturating_sub(census.backend_host));
+        let mut scratch = Requirements::single(Category::SymbolicCompiler, host(add(census.temporary, registration_hashing.scratch_bytes())?)?);
         scratch.add(Category::CompilerInputs, host(census.packing)?)
             .map_err(|_| SourcePreparationError::Resource)?;
         let frames = mul(4, sum([
@@ -553,7 +560,8 @@ impl<'graph> SourcePreparationPlan<'graph> {
         // exact initial-source pointer membership before copying these facts.
         // Neither bootstrap nor this descriptor must outlive its operation.
         Ok(Self {
-            shape_words: census.shape_words, context: scope.context(), source_fingerprint: scope.source_fingerprint(),
+            registration_hashing, shape_words: census.shape_words, registration_bytes: census.registration_bytes,
+            context: scope.context(), source_fingerprint: scope.source_fingerprint(),
             compiled_source_fingerprint: scope.compiled_source_fingerprint(),
             native_identity: native.identity(), budgets: scope.budgets(),
             algebra_limits: scope.algebra_limits(), graph, native,
@@ -569,12 +577,22 @@ impl<'graph> SourcePreparationPlan<'graph> {
     pub(crate) fn scratch_requirements(&self) -> Requirements { self.scratch }
     pub(crate) fn backend_allowance(&self) -> Bytes { self.backend }
     pub(crate) fn operation(&self) -> SourcePreparationOperation<'_, 'graph> {
-        SourcePreparationOperation { plan: self }
+        SourcePreparationOperation { plan: self, registration: None }
+    }
+    pub(crate) fn registration_input(&self) -> (&'graph UnprovedRelationGraph, usize, usize) {
+        (self.graph.get().graph(), self.shape_words, self.registration_bytes)
+    }
+    pub(crate) fn operation_with_registration(&self,
+        registration: crate::rust_verify::committed_backend::source_binding::prepared::PreparedGraphStructure<'graph>)
+        -> SourcePreparationOperation<'_, 'graph>
+    {
+        SourcePreparationOperation { plan: self, registration: Some(registration) }
     }
 }
 
 pub(crate) struct SourcePreparationOperation<'plan, 'graph> {
     plan: &'plan SourcePreparationPlan<'graph>,
+    registration: Option<crate::rust_verify::committed_backend::source_binding::prepared::PreparedGraphStructure<'graph>>,
 }
 impl<'graph> SourcePreparationOperation<'_, 'graph> {
     pub(crate) fn plan(&self) -> &SourcePreparationPlan<'graph> { self.plan }
@@ -591,6 +609,11 @@ impl<'graph> SourcePreparationOperation<'_, 'graph> {
         if access.preparation_host_bytes().map_err(|_| SourcePreparationError::Resource)? != self.plan.backend.host {
             return Err(SourcePreparationError::Resource);
         }
+        if self.registration.as_ref().is_some_and(|registration|
+            !core::ptr::eq(registration.graph(), self.plan.graph.get().graph())
+                || !crate::preparation_options::structural_reuse()) {
+            return Err(SourcePreparationError::Identity);
+        }
         #[cfg(not(feature = "opencl"))]
         { Err(SourcePreparationError::Preparation) }
         #[cfg(feature = "opencl")]
@@ -602,16 +625,22 @@ impl<'graph> SourcePreparationOperation<'_, 'graph> {
             let host = usize::try_from(self.plan.backend.host).map_err(|_| SourcePreparationError::Resource)?;
             let (mut prepared, report) = execution.with_witness_preparation(host, |operations| {
                 #[cfg(test)]
-            if !crate::preparation_options::cooperative_fields() {
-                operations.enable_scalar_field_storage_for_qualification()?;
-            }
-            operations.enable_reusable_storage()?;
+                if !crate::preparation_options::cooperative_fields() {
+                    operations.enable_scalar_field_storage_for_qualification()?;
+                }
+                #[cfg(test)]
+                if !crate::preparation_options::paired_fields() {
+                    operations.enable_eight_lane_field_storage_for_qualification()?;
+                }
+                operations.enable_reusable_storage()?;
                 #[cfg(test)]
                 let mut timeline = profiling::Timeline::new();
                 // Fixed static errors prevent graph-dependent diagnostic
                 // expansion across the raw-operation/report boundary.
-                let structure = if crate::preparation_options::structural_reuse() {
-                    Some(crate::rust_verify::committed_backend::source_binding::prepared::PreparedGraphStructure::with_capacity(graph, Some(self.plan.shape_words))
+                let structure = if let Some(registration) = self.registration {
+                    Some(registration)
+                } else if crate::preparation_options::structural_reuse() {
+                    Some(crate::rust_verify::committed_backend::source_binding::prepared::PreparedGraphStructure::with_hash_plan(graph, Some(self.plan.shape_words), self.plan.registration_hashing)
                         .map_err(|_| "source registration failed".to_owned())?)
                 } else { None };
                 let registered = if structure.is_none() {

@@ -10,6 +10,67 @@ from metadata_stage_profile import SELECTOR, PREFIX, cache_rates, preparation_de
 
 
 class MetadataStageTests(unittest.TestCase):
+    def test_parallel_selector_is_confined_to_metadata_profile(self):
+        options = dict(profile='full', expect_tests=True, build_label='build',
+            command=['/tmp/profile', SELECTOR, '--exact', '--ignored', '--test-threads=1', '--nocapture'],
+            metadata_stage_profile=True, retained_tree_storage='host',
+            device_uuid='GPU-11111111-2222-3333-4444-555555555555')
+        for variant in ('all', 'serial', 'registration', 'crypto', 'native'):
+            plan = runner.build_plan(arguments(**options, metadata_parallel_variant=variant))
+            self.assertEqual(plan['metadata_parallel_variant'], variant)
+            self.assertEqual(plan['environment']['LATTICA_RINGCT_METADATA_PARALLEL_VARIANT'], variant)
+        with self.assertRaises(ValueError):
+            runner.build_plan(arguments(**options, metadata_parallel_variant='nested'))
+        options['metadata_stage_profile'] = False
+        with self.assertRaises(ValueError):
+            runner.build_plan(arguments(**options, metadata_parallel_variant='all'))
+
+    def test_parallel_statistics_validate_admission_and_active_lanes(self):
+        record = self.fixture()
+        record['parallel_variant'] = 'all'
+        stats = dict(jobs=13, width=13, peak_active=12, threads=12, budget_reductions=0,
+            admitted_host_bytes=64 << 20, worker_ns=90, wait_ns=10, publication_ns=5, wall_ns=50)
+        row = dict(family='native', statistics=stats)
+        def content(value=row):
+            return self.text(record) + '\nRINGCT_METADATA_PARALLEL ' + json.dumps(value)
+        self.assertEqual(validate(content())['parallel']['native'], stats)
+        for field, value in (('width', 17), ('peak_active', 14), ('threads', 13),
+                ('admitted_host_bytes', (32 << 30) + 1), ('budget_reductions', 1),
+                ('wait_ns', 50), ('wall_ns', 0), ('jobs', 65)):
+            bad = copy.deepcopy(row)
+            bad['statistics'][field] = value
+            with self.assertRaises(ValueError): validate(content(bad))
+        with self.assertRaises(ValueError): validate(content() + '\nRINGCT_METADATA_PARALLEL ' + json.dumps(row))
+        for family in ('unknown', 'registration_encode', 'registration_hash'):
+            with self.assertRaises(ValueError): validate(content(dict(family=family, statistics=stats)))
+        record['parallel_variant'] = 'serial'
+        with self.assertRaises(ValueError): validate(content())
+        record['parallel_variant'] = 'all'
+        record['metadata_workers'] = 1
+        with self.assertRaises(ValueError): validate(content())
+
+    def test_pipeline_selector_and_execution_counters(self):
+        options = dict(profile='full', expect_tests=True, build_label='build',
+            command=['/tmp/profile', SELECTOR, '--exact', '--ignored', '--test-threads=1', '--nocapture'],
+            metadata_stage_profile=True, retained_tree_storage='host',
+            device_uuid='GPU-11111111-2222-3333-4444-555555555555')
+        with patch.object(runner, 'identity_physical_cpus', return_value=list(range(16))):
+            for variant in ('baseline', 'field_hash', 'registration', 'arithmetic', 'all'):
+                plan = runner.build_plan(arguments(**options, metadata_pipeline_variant=variant))
+                self.assertEqual(plan['environment']['LATTICA_RINGCT_METADATA_PIPELINE_VARIANT'], variant)
+                r = self.fixture()
+                r.update(reuse_variant='all', reuse_counters=[3, 0, 0, 3, 68, 13, 0, 12], pipeline_variant=variant, pipeline_counters=[0, 0,
+                    3 if variant in ('registration', 'all') and r['metadata_workers'] >= 2 else 0,
+                    1 if variant in ('arithmetic', 'all') else 0])
+                self.assertEqual(validate(self.text(r))['pipeline_variant'], variant)
+                for index in (2, 3):
+                    bad = copy.deepcopy(r); bad['pipeline_counters'][index] = 0 if bad['pipeline_counters'][index] else 1
+                    with self.assertRaises(ValueError): validate(self.text(bad))
+            with self.assertRaises(ValueError):
+                runner.build_plan(arguments(**{**options, 'metadata_stage_profile': False}, metadata_pipeline_variant='all'))
+            with self.assertRaises(ValueError):
+                runner.build_plan(arguments(**options, metadata_pipeline_variant='invalid'))
+
     def test_next_counters_and_selector_are_complete_and_profile_only(self):
         options = dict(profile='full', expect_tests=True, build_label='build',
             command=['/tmp/profile', SELECTOR, '--exact', '--ignored', '--test-threads=1', '--nocapture'],

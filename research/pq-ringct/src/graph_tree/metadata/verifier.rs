@@ -11,8 +11,9 @@ use lattica_prover_p3::block_v2::{
 };
 
 const CAPACITY: usize = 64;
+mod parallel;
 #[derive(Clone, Copy, PartialEq, Eq)]
-enum Key {
+pub(crate) enum Key {
     Ntt(NttDescriptor),
     Mul(MulDescriptor),
     Permutation(PermutationDescriptor),

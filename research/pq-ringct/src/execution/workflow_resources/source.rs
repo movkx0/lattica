@@ -178,6 +178,20 @@ impl<'context> SourcePreparationAccess<'context> {
 }
 
 impl WorkflowPlanning<'_> {
+    pub(crate) fn poison_numeric_preparation(&mut self) { self.failed = true; }
+    pub(crate) fn source_preparation_requirements(&self, plan: &SourcePreparationPlan<'_>)
+        -> Result<Requirements, WorkflowError>
+    {
+        if !core::ptr::eq(self.context, plan.context()) || !plan.belongs_to(self.capability.ledger()) {
+            return Err(WorkflowError::Identity);
+        }
+        self.source_requirements(SourceFacts {
+            owner: plan as *const SourcePreparationPlan<'_> as *const (), stage: SourceStage::Preparation,
+            source: plan.source_fingerprint(), compiled_source: plan.compiled_source_fingerprint(),
+            output: plan.output_requirements(), failure: plan.failure_requirements(),
+            scratch: plan.scratch_requirements(), backend: plan.backend_allowance(),
+        })
+    }
     pub(crate) fn prepare_graph(
         &mut self,
         operation: SourceGraphOperation<'_, '_>,

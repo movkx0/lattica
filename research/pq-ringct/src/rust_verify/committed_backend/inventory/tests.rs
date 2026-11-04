@@ -19,6 +19,33 @@ fn example() -> UnprovedRelationGraph {
     );
     backend.into_unproved_graph()
 }
+#[test]
+fn case_registration_streams_preserve_both_domains_at_all_worker_counts() {
+    for members in [3, 4] {
+        let graphs: Vec<_> = (0..members).map(|_| example()).collect();
+        let reference: Vec<_> = graphs.iter().map(|graph| prepared_shape(graph)).collect();
+        let encoded: Vec<_> = graphs.iter().zip(&reference).map(|(graph, expected)| {
+            assert!(encode_registration(graph, expected.0.len() - 1).is_err());
+            let (words, counts) = encode_registration(graph, expected.0.len()).unwrap();
+            assert_eq!(words, expected.0);
+            assert_eq!(counts, expected.1);
+            words
+        }).collect();
+        for ceiling in [1, 2, 4, 8, 16] {
+            let plan = crate::metadata_parallel::Plan::new(ceiling, 2 * members, usize::MAX, 0, 0).unwrap();
+            crate::metadata_parallel::run(plan, &vec![1; 2 * members], |_| Ok(()), |_, index| {
+                hash_registration(&encoded[index / 2], index % 2 != 0)
+                    .map_err(|_| crate::metadata_parallel::Error::Worker)
+            }, |index, digest| {
+                let expected = &reference[index / 2];
+                assert_eq!(digest, if index % 2 == 0 { expected.2 } else { expected.3 });
+                Ok(())
+            }).unwrap();
+        }
+    }
+    assert!(hash_registration(&[], false).is_err());
+    assert!(hash_registration(&[VERSION + 1], true).is_err());
+}
 
 #[test]
 fn inventory_is_owner_independent_and_does_not_discharge_false_relations() {
@@ -235,4 +262,20 @@ fn stack_expression_words_match_every_reference_variant() {
         let (words, len) = expression(item);
         assert_eq!(&words[..len], expression_reference(item));
     }
+}
+
+#[test]
+fn parallel_registration_preserves_both_domains_and_capacity_refusal() {
+    let graph = example();
+    let reference = prepared_shape_with_capacity(&graph, None).unwrap();
+    for capacity in [None, Some(reference.0.len()), Some(reference.0.len()+128)] {
+        assert_eq!(prepared_shape_with_plan(&graph, capacity, true).unwrap(), reference);
+    }
+    for capacity in [0, reference.0.len()-1] {
+        assert!(prepared_shape_with_plan(&graph, Some(capacity), true).is_err());
+    }
+    use super::super::source_binding::prepared::RegistrationHashPlan as Plan;
+    assert_eq!(Plan::new(1, usize::MAX).scratch_bytes(), 0);
+    assert_eq!(Plan::new(16, Plan::WORKER_BYTES-1).scratch_bytes(), 0);
+    assert_eq!(Plan::new(2, Plan::WORKER_BYTES).scratch_bytes(), Plan::WORKER_BYTES);
 }

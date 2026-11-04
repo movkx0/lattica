@@ -37,7 +37,8 @@ struct Statistics {
     complete: bool,
     arithmetic_shapes: [ArithmeticCounts; 32],
     arithmetic_overflow: u64,
-    field_kernels: [u64; 2], // scalar, cooperative device dispatches
+    field_stream_sizes: [u64; 5], // empty, <=4, <=4096, <=131072, larger
+    field_kernels: [u64; 3], // scalar, eight-lane, sixteen-lane device dispatches
     #[serde(skip)]
     current: usize,
 }
@@ -53,11 +54,11 @@ impl Scope {
         if enabled { CURRENT.with(|slot| {
             let mut slot = slot.borrow_mut();
             assert!(slot.is_none(), "nested preparation profile");
-            *slot = Some(Statistics { schema: "ringct-preparation-operations-v2",
+            *slot = Some(Statistics { schema: "ringct-preparation-operations-v3",
                 families: ["node_commitment", "field_commitment", "arithmetic", "other"],
                 metrics: ["allocation", "kernel_setup", "upload_enqueue", "readback_wait", "cleanup", "device_wait"],
                 counters: [Counters::default(); 4], complete: false, current: OTHER,
-                arithmetic_shapes: [ArithmeticCounts::default(); 32], arithmetic_overflow: 0, field_kernels: [0; 2] });
+                arithmetic_shapes: [ArithmeticCounts::default(); 32], arithmetic_overflow: 0, field_stream_sizes: [0; 5], field_kernels: [0; 3] });
         }); }
         Self { enabled }
     }
@@ -137,8 +138,14 @@ pub(crate) fn arithmetic_shape(opcode: u64, output_words: usize) {
     } });
 }
 
-pub(crate) fn field_kernel(cooperative: bool) {
+pub(crate) fn field_kernel(lanes: usize) {
     CURRENT.with(|slot| { if let Some(s) = slot.borrow_mut().as_mut() {
-        s.field_kernels[usize::from(cooperative)] += 1;
+        s.field_kernels[match lanes { 16 => 2, 8 => 1, _ => 0 }] += 1;
+    } });
+}
+
+pub(crate) fn field_stream(words: usize) {
+    CURRENT.with(|slot| { if let Some(s) = slot.borrow_mut().as_mut() {
+        s.field_stream_sizes[match words { 0 => 0, 1..=4 => 1, 5..=4096 => 2, 4097..=131072 => 3, _ => 4 }] += 1;
     } });
 }

@@ -8,6 +8,7 @@ pub(in crate::rust_verify::committed_backend) struct PreparedDevice<'a, 'run> {
     operations: &'a OperationContext<'run>,
     ntt: RefCell<[Option<ArithmeticOperationSpec>; 2]>,
     mul: RefCell<[Option<ArithmeticOperationSpec>; 2]>,
+    fused: RefCell<[Option<ArithmeticOperationSpec>; 4]>,
 }
 impl<'a, 'run> PreparedDevice<'a, 'run> {
     pub(in crate::rust_verify::committed_backend) fn new(
@@ -17,6 +18,7 @@ impl<'a, 'run> PreparedDevice<'a, 'run> {
             operations,
             ntt: RefCell::new([None, None]),
             mul: RefCell::new([None, None]),
+            fused: RefCell::new(core::array::from_fn(|_| None)),
         }
     }
     fn index(q: u64) -> Result<usize, String> {
@@ -35,6 +37,17 @@ macro_rules! forward {
     };
 }
 impl GraphDevice for PreparedDevice<'_, '_> {
+    fn mul_accumulate_poly(&self, a: &RawPoly, b: &RawPoly, out: &RawPoly, q: u64, subtract: bool)
+        -> Result<(RawPoly, RawPoly), String> {
+        let mut layouts = self.fused.borrow_mut();
+        let slot = &mut layouts[2 * usize::from(subtract) + Self::index(q)?];
+        if slot.is_none() {
+            *slot = Some(MulAir::new(q, 1).map_err(|e| format!("{e:?}"))?
+                .raw_operation_spec()?.mul_accumulate(subtract)?);
+        }
+        fused_output(self.operations, slot.as_ref().unwrap(), a, b, out)
+    }
+
     fn deferred_commitments(&self) -> bool { true }
     fn commit_nodes(&self, nodes: &[lattica_prover_p3::block_v2::native_gpu::NodeCommitment<'_>]) -> Result<Vec<[Val; 4]>, String> {
         use p3_field::PrimeCharacteristicRing;

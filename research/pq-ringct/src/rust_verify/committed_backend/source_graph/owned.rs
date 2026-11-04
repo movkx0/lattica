@@ -205,6 +205,10 @@ impl Construction {
         self,
         operation: &lattica_prover_p3::block_v2::native_gpu::OperationContext<'_>,
     ) -> Result<PendingGraph> {
+        #[cfg(test)]
+        if !crate::preparation_options::paired_fields() {
+            operation.enable_eight_lane_field_storage_for_qualification().map_err(|_| "source graph workspace admission failed")?;
+        }
         operation.enable_reusable_storage().map_err(|_| "source graph workspace admission failed")?;
         let device = super::super::gpu::PreparedDevice::new(operation);
         let backend = CommittedBackend::with_device(self.setup_seed, &device);

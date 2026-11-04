@@ -58,14 +58,14 @@ impl DeviceSession {
             return Some(Err("invalid field batch geometry".into()));
         }
         self.with_prepared(workspace, [packed.len(), descriptors.len(), count * 4, count], profile::FIELDS, run, |use_, engine| {
+            for descriptor in descriptors.chunks_exact(6) { profile::field_stream(descriptor[1] as usize); }
             profile::batch_hashes(count);
             let fence = engine.fence();
             let upload = profile::metric(profile::UPLOAD);
             if !packed.is_empty() { use_.buffer(0).write(packed).enq().map_err(|e| e.to_string())?; }
             use_.buffer(1).write(descriptors).enq().map_err(|e| e.to_string())?;
             drop(upload);
-            let cooperative = use_.workspace.cooperative_fields;
-            let lanes = if cooperative { 8 } else { 1 };
+            let lanes = use_.workspace.field_lanes;
             let kernel = use_.kernel(4);
             for begin in (0..maximum.max(1)).step_by(4096) {
                 let setup = profile::metric(profile::KERNEL);
@@ -77,8 +77,8 @@ impl DeviceSession {
                 // the kernel also bounds every span. Independent streams use
                 // separate state/status and ordered bounded tiles on one queue.
                 unsafe { kernel.cmd().global_work_size(count * lanes).enew(&mut event).enq().map_err(|e| e.to_string())?; }
-                profile::field_kernel(cooperative);
-                self.prepared_event(engine, run, if cooperative { "pq_operation_commit_fields_batch_cooperative" } else { "pq_operation_commit_fields_batch" }, &event)?;
+                profile::field_kernel(lanes);
+                self.prepared_event(engine, run, field_kernel_name(lanes, true), &event)?;
             }
             self.prepared_transfer(engine, ((packed.len() + descriptors.len()) * 8) as u64, 0);
             let roots = self.batch_roots(use_, engine, count)?;

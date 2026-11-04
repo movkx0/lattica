@@ -107,12 +107,12 @@ impl RawAdapterPlan {
         let arithmetic = add(
             add(
                 add(growing::<[u64; 4]>(768)?, growing::<[u64; 2]>(1024)?)?,
-                // Four scope-owned public specs (NTT/product, Q/QHAT),
+                // Eight scope-owned specs (NTT/product/fused add/fused subtract, Q/QHAT),
                 // including allocator growth and their inline wrappers.
-                add(growing::<u64>(2 * (3140 + 2052))?, 1024)?,
+                add(growing::<u64>(2 * (3140 + 3 * 2052))?, 1024)?,
             )?,
             add(
-                growing::<u64>(3140 + 512 + D + D)?,
+                growing::<u64>(3140 + 768 + 2 * D + D)?,
                 add(
                     growing::<RawPoly>(1)?,
                     6 * size_of::<Vec<u64>>()
@@ -120,7 +120,7 @@ impl RawAdapterPlan {
                         + 3 * size_of::<RawPoly>()
                     // Batched signed subtraction: raw staging, both operands,
                     // returned values, bounds, and shaped reference copies.
-                    + 6 * size_of::<RawPoly>()
+                    + 10 * size_of::<RawPoly>()
                     + size_of::<[u32; D]>()
                     + 4 * size_of::<[SignedRef; D]>()
                         + size_of::<[bool; D]>()

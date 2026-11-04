@@ -13,6 +13,7 @@ impl DeviceSession {
         run: &Run,
     ) -> Result<[u64; 4], String> {
         let _operation = profile::operation(profile::FIELDS);
+        profile::field_stream(words.len());
         if field_chunk_staging_bytes(words.len())? > host_allowance {
             return Err("raw field commitment exceeds host allowance".into());
         }
@@ -49,7 +50,7 @@ impl DeviceSession {
                     .arg(&engine.constants[2].buffer).arg(&engine.constants[3].buffer)
                     .global_work_size(1).build().map_err(|e| e.to_string())?;
                 drop(setup);
-            profile::field_kernel(false);
+            profile::field_kernel(1);
                 // SAFETY: the aggregate plan admits all raw and result buffers.
                 // Consecutive aligned tiles share only a five-word device state;
                 // each validates its raw fields before hashing. The first tile

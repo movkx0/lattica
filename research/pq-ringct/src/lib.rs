@@ -107,3 +107,5 @@ pub mod full_workflow_experiment;
 #[cfg(all(test, feature = "full-workflow-experiment", not(debug_assertions)))]
 mod identity_preprocessing_screen;
 mod preparation_options;
+#[cfg(feature = "recursive")]
+mod metadata_parallel;

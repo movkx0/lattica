@@ -5,6 +5,10 @@ use crate::component_tree::{self, CompiledNode, Geometry, NodeKey, NodeProof};
 
 #[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
 pub(crate) mod paired;
+#[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
+pub(crate) mod numeric_bounds;
+#[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
+pub(crate) mod identity_keys;
 
 #[derive(Clone, Debug)]
 pub struct NodeProvingReport {

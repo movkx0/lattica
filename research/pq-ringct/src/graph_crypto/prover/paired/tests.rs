@@ -31,6 +31,57 @@ fn context() -> GraphContext {
         node_manifest: [crate::graph_crypto::Val::ONE; 4] }
 }
 fn ledger() -> Ledger { Ledger::new(WorkerAllowance { host: 32 << 30, device: 8 << 30 }) }
+
+#[test]
+fn numeric_worker_preserves_request_plan_and_refuses_changed_binding() {
+    use crate::component_tree::native_shape::cache;
+    use lattica_prover_p3::block_v2::machine::verifier::batch::shape::HeightEnvelopeCacheScope;
+    let source = crate::graph_proofs::compiled_source_fingerprint();
+    let _native = cache::Scope::begin(source).unwrap();
+    let _registered = HeightEnvelopeCacheScope::begin(source).unwrap();
+    let request = request(RATE * 2, RATE * 2, 1);
+    let layout = ShakeWrapperLayout::PairedV1;
+    let ledger = ledger();
+    let scratch = ledger.admit_phase(PairedRequestPlan::planning_scratch_requirements(&request, layout).unwrap()).unwrap();
+    let baseline = derive(&request, layout, &ledger, &scratch);
+    let native = cache::snapshot().unwrap();
+    let registered = HeightEnvelopeCacheScope::snapshot().unwrap();
+    let key_plan = crate::graph_crypto::IdentityKeyPlan::new([&request].into_iter(), 4).unwrap();
+    let key_admission = crate::metadata_parallel::Plan::new(4, key_plan.jobs(), usize::MAX,
+        key_plan.retained_bytes(), 0).unwrap();
+    let key_original = ledger.reserve(Category::PhaseScratch,
+        Bytes { host: key_admission.host_bytes as u64, device: 0 }).unwrap();
+    let keys = key_plan.derive(key_admission).unwrap();
+    let numbers = || std::thread::scope(|threads| threads.spawn(|| {
+        let _native = cache::Scope::begin_read_only(&native).unwrap();
+        let _registered = HeightEnvelopeCacheScope::begin_read_only(&registered).unwrap();
+        PairedRequestNumbers::derive_with_keys(&request, context(), layout, Some(keys.get(0).unwrap())).unwrap()
+    }).join().unwrap());
+    let original = || ledger.admit_phase(PairedRequestPlan::planning_requirements(&request, layout).unwrap()).unwrap();
+    let candidate = PairedRequestPlan::derive_pre_reserved_resolved(&request, context(), layout,
+        original(), &scratch, &ledger, Some(numbers())).unwrap();
+    assert_eq!(candidate.nodes, baseline.nodes);
+    assert_eq!(candidate.steps, baseline.steps);
+    assert_eq!(candidate.slots, baseline.slots);
+    assert_eq!(candidate.root, baseline.root);
+    assert_eq!(candidate.source_fingerprint, baseline.source_fingerprint);
+    assert_eq!(candidate._metadata_original.requirements(), baseline._metadata_original.requirements());
+    assert!(candidate.source_endpoints.prepared.get().is_none());
+    let mut wrong_context = context();
+    wrong_context.context[0] ^= 1;
+    assert!(matches!(PairedRequestPlan::derive_pre_reserved_resolved(&request, wrong_context,
+        layout, original(), &scratch, &ledger, Some(numbers())), Err(PairedFailure::SourceDrift)));
+    let mut stale = numbers();
+    stale.compiled_source_fingerprint[0] ^= 1;
+    assert!(matches!(PairedRequestPlan::derive_pre_reserved_resolved(&request, context(),
+        layout, original(), &scratch, &ledger, Some(stale)), Err(PairedFailure::SourceDrift)));
+    drop(candidate);
+    drop(baseline);
+    drop(scratch);
+    drop(keys);
+    drop(key_original);
+    assert_eq!(ledger.snapshot().current, Bytes::default());
+}
 fn derive<'a>(request: &'a Request, layout: ShakeWrapperLayout, ledger: &Ledger,
     scratch: &Reservation) -> PairedRequestPlan<'a> {
     let original = ledger.admit_phase(PairedRequestPlan::planning_requirements(request, layout).unwrap()).unwrap();

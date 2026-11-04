@@ -889,6 +889,12 @@ def build_plan(args):
     metadata_preparation_detail = getattr(args, 'metadata_preparation_detail', False)
     hash_variant = getattr(args, 'metadata_hash_variant', None)
     reuse_variant = getattr(args, 'metadata_reuse_variant', None)
+    pipeline_variant = getattr(args, 'metadata_pipeline_variant', None)
+    parallel_variant = getattr(args, 'metadata_parallel_variant', None)
+    require(parallel_variant in (None, 'all', 'serial', 'registration', 'crypto', 'native'), 'invalid parallel variant')
+    require(parallel_variant is None or metadata_stage_profile, 'parallel variant requires metadata-stage profile')
+    require(pipeline_variant in (None, 'baseline', 'field_hash', 'registration', 'arithmetic', 'all'), 'invalid pipeline variant')
+    require(pipeline_variant is None or metadata_stage_profile, 'pipeline variant requires metadata-stage profile')
     next_variant = getattr(args, 'metadata_next_variant', None)
     require(next_variant in (None, 'baseline', 'field_hash', 'encoding', 'case_cache', 'all'), 'invalid next variant')
     require(next_variant is None or metadata_stage_profile, 'next variant requires metadata-stage profile')
@@ -908,7 +914,7 @@ def build_plan(args):
         if fixture_in is not None:
             fixture_in = str(Path(fixture_in).resolve())
             require(Path(fixture_in).is_file(), 'metadata fixture does not exist')
-        require(metadata_workers in (1, 8, 16), 'unsupported metadata worker count')
+        require(metadata_workers in (1, 2, 4, 8, 16), 'unsupported metadata worker count')
         if fixture_out is not None:
             fixture_out = str(Path(fixture_out).resolve())
             require(not Path(fixture_out).exists() and Path(fixture_out).parent.is_dir(), 'fixture output must be a new file in an existing directory')
@@ -1176,6 +1182,8 @@ def build_plan(args):
         environment['LATTICA_RINGCT_METADATA_WORKERS'] = str(metadata_workers)
         environment['LATTICA_RINGCT_METADATA_HASH_VARIANT'] = hash_variant or 'all'
         environment['LATTICA_RINGCT_METADATA_REUSE_VARIANT'] = reuse_variant or 'all'
+        environment['LATTICA_RINGCT_METADATA_PIPELINE_VARIANT'] = pipeline_variant or 'all'
+        environment['LATTICA_RINGCT_METADATA_PARALLEL_VARIANT'] = parallel_variant or 'all'
         environment['LATTICA_RINGCT_METADATA_NEXT_VARIANT'] = next_variant or 'all'
         if metadata_preparation_detail:
             environment['LATTICA_RINGCT_METADATA_PREPARATION_DETAIL'] = '1'
@@ -1223,6 +1231,8 @@ def build_plan(args):
             'metadata_preparation_detail': metadata_preparation_detail,
         'metadata_hash_variant': hash_variant or 'all',
         'metadata_reuse_variant': reuse_variant or 'all',
+        'metadata_pipeline_variant': pipeline_variant or 'all',
+        'metadata_parallel_variant': parallel_variant or 'all',
         'metadata_next_variant': next_variant or 'all',
             'metadata_fixture_out': fixture_out, 'metadata_fixture_in': fixture_in,
             'metadata_fixture_sha256': sha(Path(fixture_in)) if fixture_in else None, 'metadata_workers': metadata_workers if metadata_stage_profile else None,
@@ -1909,6 +1919,8 @@ def validate_output(log, plan):
             content, require_preparation_detail=plan.get('metadata_preparation_detail', False))
         require(plan['metadata_stage_profile_acceptance']['hash_variant'] == plan.get('metadata_hash_variant', 'all'), 'metadata hash variant mismatch')
         require(plan['metadata_stage_profile_acceptance']['reuse_variant'] == plan.get('metadata_reuse_variant', 'all'), 'metadata reuse variant mismatch')
+        require(plan['metadata_stage_profile_acceptance']['pipeline_variant'] == plan.get('metadata_pipeline_variant', 'all'), 'metadata pipeline variant mismatch')
+        require(plan['metadata_stage_profile_acceptance']['parallel_variant'] == plan.get('metadata_parallel_variant', 'all'), 'metadata parallel variant mismatch')
         require(plan['metadata_stage_profile_acceptance']['next_variant'] == plan.get('metadata_next_variant', 'all'), 'metadata next variant mismatch')
     if plan.get('metadata_cpu_qualification'):
         from metadata_cpu_qualification import validate
@@ -2239,9 +2251,11 @@ def main():
     parser.add_argument('--identity-cpu-qualification', action='store_true')
     parser.add_argument('--metadata-fixture-out')
     parser.add_argument('--metadata-fixture-in')
-    parser.add_argument('--metadata-workers', type=int, choices=(1, 8, 16))
+    parser.add_argument('--metadata-workers', type=int, choices=(1, 2, 4, 8, 16))
     parser.add_argument('--metadata-hash-variant', choices=('reference', 'nodes', 'endpoints', 'fields', 'all'))
     parser.add_argument('--metadata-reuse-variant', choices=('baseline', 'structure', 'verifier', 'arithmetic', 'all'))
+    parser.add_argument('--metadata-pipeline-variant', choices=('baseline', 'field_hash', 'registration', 'arithmetic', 'all'))
+    parser.add_argument('--metadata-parallel-variant', choices=('all', 'serial', 'registration', 'crypto', 'native'))
     parser.add_argument('--metadata-next-variant', choices=('baseline', 'field_hash', 'encoding', 'case_cache', 'all'))
     parser.add_argument('--metadata-preparation-detail', action='store_true',
                         help='bounded raw-operation attribution; separate from timing comparisons')

@@ -6,8 +6,8 @@ use crate::{block_v2::native_gpu::operations_arithmetic::ArithmeticOperationSpec
     proving::{Backend, Run, Stage, preparation_profile as profile}};
 use std::cell::RefCell;
 
-const COUNTS: [usize; 8] = [1 << 17, 4096, 256, 256, 4096, 4096, 4096, 4096];
-pub(crate) const DEVICE_BYTES: usize = (COUNTS[0] + COUNTS[1] + COUNTS[2] + COUNTS[3] + 4 * 4096) * 8;
+const COUNTS: [usize; 12] = [1 << 17, 4096, 512, 256, 4096, 4096, 4096, 4096, 4096, 4096, 4096, 4096];
+pub(crate) const DEVICE_BYTES: usize = (COUNTS[0] + COUNTS[1] + COUNTS[2] + COUNTS[3] + 8 * 4096) * 8;
 // Pinned ocl 0.19: five kernels, <=10 argument types each and <=8 memory
 // arguments per kernel. Bound every BTree node as an internal 11-entry node,
 // with twice (entries+1) nodes, including clone/build overlap. ArgType contains
@@ -15,17 +15,17 @@ pub(crate) const DEVICE_BYTES: usize = (COUNTS[0] + COUNTS[1] + COUNTS[2] + COUN
 const KERNEL_HEAP: usize = 5 * (2 * 9 * (32 + 11 * 32 + 12 * 8) + 3 * 16 * 64);
 #[repr(C)]
 struct ArcBacking<T> { strong: std::sync::atomic::AtomicUsize, weak: std::sync::atomic::AtomicUsize, value: T }
-pub(crate) const HOST_BYTES: usize = 4 * 4096 * 8
+pub(crate) const HOST_BYTES: usize = 8 * 4096 * 8
     + 8 * (core::mem::size_of::<Workspace>() + KERNEL_HEAP
-        + 8 * core::mem::size_of::<ArcBacking<Allocation>>()
-        + 8 * core::mem::size_of::<MatrixSpec>() + 4096);
+        + 12 * core::mem::size_of::<ArcBacking<Allocation>>()
+        + 12 * core::mem::size_of::<MatrixSpec>() + 4096);
 
 pub(crate) struct Workspace {
     // Drop kernels before the buffers their OpenCL memory arguments retain.
     kernels: Option<[compute::Kernel; 5]>,
-    metadata: [Vec<u64>; 4],
-    cooperative_fields: bool,
-    buffers: [SecretAllocation; 8],
+    metadata: [Vec<u64>; 8],
+    field_lanes: usize,
+    buffers: [SecretAllocation; 12],
     queue: compute::Queue,
     session: Arc<Session>,
 }
@@ -70,7 +70,9 @@ impl Use<'_> {
     fn metadata(&mut self, spec: &ArithmeticOperationSpec) -> Result<(usize, bool), String> {
         let slot = match (spec.metadata[0], spec.metadata[1]) {
             (7, 167_770_241) => Some(0), (7, 3_489_661_057) => Some(1),
-            (8, 167_770_241) => Some(2), (8, 3_489_661_057) => Some(3), _ => None,
+            (8, 167_770_241) => Some(2), (8, 3_489_661_057) => Some(3),
+            (11, 167_770_241) => Some(4), (11, 3_489_661_057) => Some(5),
+            (12, 167_770_241) => Some(6), (12, 3_489_661_057) => Some(7), _ => None,
         };
         if let Some(slot) = slot {
             let saved = &mut self.workspace.metadata[slot];
@@ -89,13 +91,13 @@ impl Use<'_> {
 }
 
 impl DeviceSession {
-    pub(crate) fn preparation_workspace(&self, allow_cooperative_fields: bool) -> Result<Workspace, String> {
+    pub(crate) fn preparation_workspace(&self, requested_lanes: usize) -> Result<Workspace, String> {
         self.with_engine(|engine| {
             let shapes = COUNTS.map(|n| MatrixSpec::new(0, n, Extension::Base, RowOrder::Natural, 1))
                 .into_iter().collect::<Result<Vec<_>, _>>()?;
             let _plan = Self::plan(engine, &shapes)?;
             // Partial initialization retains the ordinary scrub-on-drop path.
-            let buffers: [SecretAllocation; 8] = COUNTS.into_iter().map(|n| SecretAllocation::new(engine, n))
+            let buffers: [SecretAllocation; 12] = COUNTS.into_iter().map(|n| SecretAllocation::new(engine, n))
                 .collect::<Result<Vec<_>, _>>()?.try_into().map_err(|_| "workspace buffer count")?;
             let setup = profile::metric(profile::KERNEL);
             let mut node = engine.pq.kernel_builder("pq_operation_commit_node");
@@ -104,10 +106,11 @@ impl DeviceSession {
             let node = node.global_work_size(1).build().map_err(|e| e.to_string())?;
             // Selection is immutable for the entire scope. An execution error
             // poisons the scope; it never triggers a scalar retry.
-            let cooperative_fields = allow_cooperative_fields && engine.nvidia_shuffle;
-            let lanes = if cooperative_fields { 8 } else { 1 };
-            let fields_name = if cooperative_fields { "pq_operation_commit_fields_cooperative" } else { "pq_operation_commit_fields" };
-            let batch_name = if cooperative_fields { "pq_operation_commit_fields_batch_cooperative" } else { "pq_operation_commit_fields_batch" };
+            let lanes = if requested_lanes == 1 || !engine.nvidia_shuffle { 1 }
+                else if requested_lanes == 16 && engine.pq.device().name().ok().as_deref() == Some("NVIDIA GeForce RTX 5080") { 16 }
+                else { 8 };
+            let fields_name = field_kernel_name(lanes, false);
+            let batch_name = field_kernel_name(lanes, true);
             let fields = engine.pq.kernel_builder(fields_name)
                 .arg(buffers[0].buffer()).arg(0u32).arg(0u32).arg(buffers[1].buffer()).arg(buffers[2].buffer())
                 .arg(&engine.constants[0].buffer).arg(&engine.constants[1].buffer)
@@ -130,11 +133,15 @@ impl DeviceSession {
                 .global_work_size(lanes);
             // Preserve the scalar kernel's driver-selected batch workgroup.
             // Only the collective kernel requires exactly eight local lanes.
-            if cooperative_fields { field_batch.local_work_size(8); }
+            if lanes > 1 { field_batch.local_work_size(lanes); }
             let field_batch = field_batch.build().map_err(|e| e.to_string())?;
+            if lanes == 16 {
+                super::public_hash::inspect_pair_kernel(&fields, engine.pq.device())?;
+                super::public_hash::inspect_pair_kernel(&field_batch, engine.pq.device())?;
+            }
             drop(setup);
             Ok(Workspace { kernels: Some([node, fields, arithmetic, node_batch, field_batch]), metadata: core::array::from_fn(|_| Vec::new()),
-                cooperative_fields, buffers, queue: engine.pq.queue().clone(), session: self.session.clone() })
+                field_lanes: lanes, buffers, queue: engine.pq.queue().clone(), session: self.session.clone() })
         })
     }
     fn with_prepared<T>(&self, workspace: &RefCell<Option<Workspace>>, counts: [usize; 4], family: usize,
@@ -199,13 +206,14 @@ impl DeviceSession {
     pub(crate) fn prepared_commit_fields(&self, workspace: &RefCell<Option<Workspace>>, initial: [u64; 4],
         words: &[u64], run: &Run) -> Option<Result<[u64; 4], String>> {
         self.with_prepared(workspace, [words.len(), 4, 5, 0], profile::FIELDS, run, |use_, engine| {
+            profile::field_stream(words.len());
             let mut result = [0u64; 5];
             let fence = engine.fence();
             let upload = profile::metric(profile::UPLOAD);
             if !words.is_empty() { use_.buffer(0).write(words).enq().map_err(|e| e.to_string())?; }
             use_.buffer(1).write(&initial[..]).enq().map_err(|e| e.to_string())?;
             drop(upload);
-            let cooperative = use_.workspace.cooperative_fields;
+            let lanes = use_.workspace.field_lanes;
             let kernel = use_.kernel(1);
             for begin in (0..words.len().max(1)).step_by(4096) {
                 let setup = profile::metric(profile::KERNEL);
@@ -216,8 +224,8 @@ impl DeviceSession {
                 // SAFETY: original bounded serial hash kernel and unchanged tile
                 // order; fixed state and source buffers remain owned by use_.
                 unsafe { kernel.cmd().enew(&mut event).enq().map_err(|e| e.to_string())?; }
-                profile::field_kernel(cooperative);
-                self.prepared_event(engine, run, if cooperative { "pq_operation_commit_fields_cooperative" } else { "pq_operation_commit_fields" }, &event)?;
+                profile::field_kernel(lanes);
+                self.prepared_event(engine, run, field_kernel_name(lanes, false), &event)?;
             }
             let readback = profile::metric(profile::READBACK);
             use_.buffer(2).read(&mut result[..]).enq().map_err(|e| e.to_string())?;
@@ -286,5 +294,16 @@ mod tests {
         assert!(core::mem::size_of::<ArcBacking<Allocation>>() >=
             crate::block_v2::gpu_hash::cache_metadata::arc_bytes::<Allocation>());
         assert!(HOST_BYTES > 4 * 4096 * 8 + 8 * core::mem::size_of::<Workspace>());
+    }
+}
+
+fn field_kernel_name(lanes: usize, batch: bool) -> &'static str {
+    match (lanes, batch) {
+        (16, false) => "pq_operation_commit_fields_pair",
+        (16, true) => "pq_operation_commit_fields_batch_pair",
+        (8, false) => "pq_operation_commit_fields_cooperative",
+        (8, true) => "pq_operation_commit_fields_batch_cooperative",
+        (_, false) => "pq_operation_commit_fields",
+        (_, true) => "pq_operation_commit_fields_batch",
     }
 }

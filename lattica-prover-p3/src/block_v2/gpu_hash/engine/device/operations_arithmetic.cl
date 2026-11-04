@@ -50,11 +50,12 @@ __kernel void pq_graph_arithmetic(__global const ulong *input,
             uint source=metadata[PQ_OP_HEADER+768*4+block];
             for(uint j=0;j<4;++j) output[(ulong)id*256+block*4+j]=state[source*4+j];
         }
-    } else if(opcode == 8) {
+    } else if(opcode == 8 || opcode == 11 || opcode == 12) {
         if(id >= count*64) return;
         uint poly=id/64,block=id%64;
         __global const ulong *a=input+(ulong)poly*512+4*block,*b=a+256;
-        for(uint j=0;j<4;++j) if(a[j]>=q||b[j]>=q) {status[id]=1;return;}
+        for(uint j=0;j<4;++j) if(a[j]>=q||b[j]>=q ||
+            (opcode != 8 && input[512+4*block+j]>=q)) {status[id]=1;return;}
         ulong state[4]={0,0,0,0};
         for(uint i=0;i<4;++i) for(uint j=0;j<4;++j) {
             uint term=block*16+4*i+j,target=(i+j)%4;
@@ -62,7 +63,13 @@ __kernel void pq_graph_arithmetic(__global const ulong *input,
             ulong value=(((a[i]*b[j])%q)*factor)%q;
             state[target]=(negative?state[target]+q-value:state[target]+value)%q;
         }
-        for(uint j=0;j<4;++j) output[(ulong)poly*256+4*block+j]=state[j];
+        for(uint j=0;j<4;++j) {
+            output[(ulong)poly*256+4*block+j]=state[j];
+            if(opcode != 8) {
+                ulong accumulator=input[512+4*block+j];
+                output[256+4*block+j]=(opcode==12 ? accumulator+q-state[j] : accumulator+state[j])%q;
+            }
+        }
     } else if(opcode == 9 || opcode == 10) {
         if(id>=256) return;
         uint source=metadata[PQ_OP_HEADER+id];

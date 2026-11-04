@@ -33,6 +33,26 @@ fn fixture() -> NativeCoreBound {
     }
 }
 #[test]
+fn numeric_readers_keep_resolved_values_and_never_compile_missing_descriptors() {
+    let scope = Scope::begin([23; 32]).unwrap();
+    let descriptor = NativeDescriptor::Transcript(&[PartKind::Bytes32]);
+    let expected = fixture();
+    memoized(0, &descriptor, limits(), 512 << 20, expected.storage, || Ok(expected)).unwrap();
+    let snapshot = snapshot().unwrap();
+    let statistics = std::thread::scope(|threads| threads.spawn(|| {
+        let reader = Scope::begin_read_only(&snapshot).unwrap();
+        let actual = memoized(0, &descriptor, limits(), 512 << 20, expected.storage,
+            || panic!("read-only hit compiled" )).unwrap();
+        assert_eq!(actual, expected);
+        let statistics = reader.take_worker_statistics();
+        assert!(memoized(0, &descriptor, limits(), 1, expected.storage,
+            || panic!("read-only miss compiled")).is_err());
+        statistics
+    }).join().unwrap());
+    absorb_worker(statistics).unwrap();
+    assert_eq!((scope.statistics().hits, scope.statistics().misses), (1, 1));
+}
+#[test]
 fn native_metadata_cache_keys_every_closed_descriptor_field_and_limit() {
     let base = aes_lane_air::Descriptor {
         domain: 1,

@@ -138,10 +138,9 @@ fn cooperative_fields_match_cpu_at_tile_boundaries_and_refuse_every_lane() {
         }
         state
     }).collect();
-    for cooperative in [false, true] {
+    for lanes in [1, 8, 16] {
         worker.with_witness_preparation(16 << 20, |op| {
-            if cooperative { op.enable_reusable_storage()?; }
-            else { op.enable_scalar_field_storage_for_qualification()?; }
+            match lanes { 1 => op.enable_scalar_field_storage_for_qualification()?, 8 => op.enable_eight_lane_field_storage_for_qualification()?, _ => op.enable_reusable_storage()? }
             for (input, root) in inputs.iter().zip(&expected) {
                 assert_eq!(op.commit_field_chunks(input.initial, input.words)?, *root);
             }
@@ -150,12 +149,11 @@ fn cooperative_fields_match_cpu_at_tile_boundaries_and_refuse_every_lane() {
         }).unwrap();
         // Invalid words in each participating lane and the second tile must
         // fail collectively, never hang at a shuffle or publish partial roots.
-        for index in (0..8).chain([4096, 4103]) {
+        for index in (0..16).chain([4096, 4111]) {
             for batch in [false, true] {
                 assert!(worker.with_witness_preparation(16 << 20, |op| {
-                    if cooperative { op.enable_reusable_storage()?; }
-                    else { op.enable_scalar_field_storage_for_qualification()?; }
-                    let mut words = vec![0; 4104]; words[index] = MODULUS;
+                    match lanes { 1 => op.enable_scalar_field_storage_for_qualification()?, 8 => op.enable_eight_lane_field_storage_for_qualification()?, _ => op.enable_reusable_storage()? }
+                    let mut words = vec![0; 4112]; words[index] = MODULUS;
                     let rejected = if batch {
                         op.commit_field_batch(&[inputs[0], FieldCommitment { initial: [0; 4], words: &words }, inputs[3]]).map(|_| ())
                     } else { op.commit_field_chunks([0; 4], &words).map(|_| ()) };
@@ -167,11 +165,76 @@ fn cooperative_fields_match_cpu_at_tile_boundaries_and_refuse_every_lane() {
         }
         for lane in 0..4 {
             assert!(worker.with_witness_preparation(16 << 20, |op| {
-                if cooperative { op.enable_reusable_storage()?; }
-                else { op.enable_scalar_field_storage_for_qualification()?; }
+                match lanes { 1 => op.enable_scalar_field_storage_for_qualification()?, 8 => op.enable_eight_lane_field_storage_for_qualification()?, _ => op.enable_reusable_storage()? }
                 let mut initial = [0; 4]; initial[lane] = MODULUS;
                 op.commit_field_chunks(initial, &[])
             }).is_err());
+        }
+    }
+    assert_eq!(worker.report()["operations"]["prove_calls"], 0);
+}
+
+#[test]
+#[ignore = "exclusive admitted OpenCL; fused multiply/accumulate values, exact graph and failures"]
+fn fused_multiply_accumulate_preserves_intermediates_and_graph() {
+    let worker = crate::execution::ProvingContext::opencl(crate::opencl::Limits {
+        host_bytes: 8 << 30, device_bytes: 8 << 30, max_rows: 4096 }).unwrap();
+    for reuse in [false, true] {
+        worker.with_witness_preparation(16 << 20, |op| {
+            if reuse { op.enable_reusable_storage()?; }
+            let device = PreparedDevice::new(op);
+            for q in [Q, QHAT] {
+                let a: RawPoly = core::array::from_fn(|i| [0, 1, q-1, q-2, (i as u64 * 7919)%q][i%5]);
+                let b = a.map(|x| q-1-x);
+                let out = b.map(|x| (x+1)%q);
+                for subtract in [false, true] {
+                    for _ in 0..2 { // cached layouts must preserve both results
+                        let product = arithmetic::mul(&a, &b, q);
+                        let expected = core::array::from_fn(|i| if subtract {
+                            arithmetic::sub(out[i], product[i], q)
+                        } else { arithmetic::add(out[i], product[i], q) });
+                        assert_eq!(device.mul_accumulate_poly(&a, &b, &out, q, subtract)?, (product, expected));
+                    }
+                    fn build(backend: &mut CommittedBackend<'_>, q: u64, a: RawPoly, b: RawPoly, out: RawPoly, subtract: bool, fused: bool) {
+                        let a = backend.canonical_node(a, q, Source::ProofPolynomial { position: 0 });
+                        let b = backend.canonical_node(b, q, Source::ProofPolynomial { position: 1 });
+                        let out = backend.canonical_node(out, q, Source::ProofPolynomial { position: 2 });
+                        let (a,b,mut out) = (backend.canonical_refs(a), backend.canonical_refs(b), backend.canonical_refs(out));
+                        // Forces the accumulator's CanonicalMap after the product node.
+                        out[0] = backend.add(out[0], a[0], q);
+                        if fused { backend.mul_accumulate_poly(&out, &a, &b, q, subtract); }
+                        else {
+                            let product = backend.mul_poly(&a, &b, q);
+                            if subtract { backend.sub_poly(&out, &product, q); }
+                            else { backend.add_poly(&out, &product, q); }
+                        }
+                    }
+                    let mut reference = CommittedBackend::new([0; 32]);
+                    build(&mut reference, q, a, b, out, subtract, false);
+                    let reference = reference.into_unproved_graph();
+                    let graph_device: &dyn GraphDevice = if reuse { &device } else { op };
+                    let mut candidate = CommittedBackend::with_device([0; 32], graph_device);
+                    build(&mut candidate, q, a, b, out, subtract, true);
+                    candidate.finish_device_commitments()?;
+                    let candidate = candidate.into_unproved_graph();
+                    assert_eq!(inventory::inventory(&candidate), inventory::inventory(&reference));
+                    assert_eq!(inventory::exact_shape(&candidate), inventory::exact_shape(&reference));
+                }
+            }
+            Ok(())
+        }).unwrap();
+    }
+    for q in [Q, QHAT] {
+        for subtract in [false, true] {
+            for operand in 0..3 {
+                assert!(worker.with_witness_preparation(16 << 20, |op| {
+                    op.enable_reusable_storage()?;
+                    let mut inputs = [[0; D]; 3]; inputs[operand][255] = q;
+                    assert!(GraphDevice::mul_accumulate_poly(op, &inputs[0], &inputs[1], &inputs[2], q, subtract).is_err());
+                    assert!(op.commit_bytes32_node(&[0; 32]).is_err());
+                    Ok(())
+                }).is_err());
+            }
         }
     }
     assert_eq!(worker.report()["operations"]["prove_calls"], 0);

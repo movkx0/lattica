@@ -491,3 +491,21 @@ fn vector_recipes_reject_foreign_operands_and_never_fallback_after_failure() {
     assert_eq!(backend.failure.as_deref(), Some("injected GPU operation failure"));
     assert!(std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| backend.into_unproved_graph())).is_err());
 }
+
+#[test]
+fn fused_accumulator_rejects_foreign_references_before_device_work() {
+    for bad_modulus in [false, true] {
+        let device = FailedDevice(Cell::new(0));
+        let mut first = CommittedBackend::new([1; 32]);
+        let mut second = CommittedBackend::new([1; 32]);
+        let a = first.canonical_node([1; D], Q, Source::Fixed);
+        let wrong = if bad_modulus { first.canonical_node([1; D], QHAT, Source::Fixed) }
+            else { second.canonical_node([1; D], Q, Source::Fixed) };
+        let a = first.canonical_refs(a);
+        let wrong = if bad_modulus { first.canonical_refs(wrong) } else { second.canonical_refs(wrong) };
+        first.device = Some(&device);
+        assert!(std::panic::catch_unwind(std::panic::AssertUnwindSafe(||
+            first.mul_accumulate_poly(&wrong, &a, &a, Q, false))).is_err());
+        assert_eq!(device.0.get(), 0);
+    }
+}

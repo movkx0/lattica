@@ -155,3 +155,86 @@ __kernel void pq_operation_commit_fields_batch_cooperative(__global const ulong 
     }
     if (lane < 4) roots[4*stream+lane] = value;
 }
+
+#if defined(LATTICA_PUBLIC_HASH_NVIDIA_SHUFFLE)
+// All sixteen physical lanes participate, including both copies of each word.
+inline uint pq_fields_pair_invalid(uint invalid, uint physical) {
+    for (uint delta=1; delta<16; delta*=2)
+        invalid |= (uint)public_hash_pair_exchange((ulong)invalid, physical ^ delta);
+    return invalid;
+}
+inline ulong pq_fields_pair_permute(ulong value, uint physical, ulong diagonal,
+    __global const ulong *rci, __global const ulong *rcp, __global const ulong *rcf) {
+    const uint lane = physical >> 1, role = physical & 1u;
+    value = public_hash_pair_external(value, lane, role);
+#pragma unroll
+    for (uint r=0; r<4; ++r) {
+        value = public_hash_pair_pow7(gl_add(value, rci[8*r+lane]), physical);
+        value = public_hash_pair_external(value, lane, role);
+    }
+#pragma unroll
+    for (uint r=0; r<22; ++r) {
+        ulong powered = public_hash_pair_pow7(gl_add(value, rcp[r]), physical);
+        if (lane == 0) value = powered;
+        value = public_hash_pair_internal(value, lane, role, diagonal);
+    }
+#pragma unroll
+    for (uint r=0; r<4; ++r) {
+        value = public_hash_pair_pow7(gl_add(value, rcf[8*r+lane]), physical);
+        value = public_hash_pair_external(value, lane, role);
+    }
+    return gl_canon(value);
+}
+__attribute__((reqd_work_group_size(16, 1, 1)))
+__kernel void pq_operation_commit_fields_pair(__global const ulong *raw,
+    uint count, uint begin, __global const ulong *initial, __global ulong *output,
+    __global const ulong *rci, __global const ulong *rcp,
+    __global const ulong *rcf, __global const ulong *diag) {
+    const uint physical = get_local_id(0), lane = physical >> 1, role = physical & 1u;
+
+    if (begin != 0 && output[4] != 0) return; // uniform across the group
+    ulong value = lane < 4 ? (begin == 0 ? initial[lane] : output[lane]) : 0;
+    const uint end = min(count, begin + 4096u);
+    uint invalid = begin == 0 && value >= GP ? 1u : 0u;
+    for (uint i=begin+physical; i<end; i+=16) if (raw[i] >= GP) invalid |= 2u;
+    invalid = pq_fields_pair_invalid(invalid, physical);
+    if (physical == 0) output[4] = (invalid & 1u) ? 1u : (invalid ? 2u : 0u);
+    if (invalid) return; // reduction makes all error exits collective
+    const ulong diagonal = diag[lane];
+    for (uint at=begin; at<end; at+=4) {
+        if (lane >= 4) value = at+lane-4 < end ? raw[at+lane-4] : 0;
+        value = pq_fields_pair_permute(value, physical, diagonal, rci, rcp, rcf);
+    }
+    if (role == 0 && lane < 4) output[lane] = value;
+}
+__attribute__((reqd_work_group_size(16, 1, 1)))
+__kernel void pq_operation_commit_fields_batch_pair(__global const ulong *raw,
+    __global const ulong *descriptors, uint streams, uint begin,
+    __global ulong *roots, __global ulong *status,
+    __global const ulong *rci, __global const ulong *rcp,
+    __global const ulong *rcf, __global const ulong *diag) {
+    const uint stream = get_group_id(0), physical = get_local_id(0), lane = physical >> 1, role = physical & 1u;
+
+    if (stream >= streams) return;
+    const ulong offset = descriptors[6*stream], count = descriptors[6*stream+1];
+    if (streams > 64 || offset > 131072UL || count > 131072UL-offset) {
+        if (physical == 0) status[stream] = 1;
+        return;
+    }
+    if (begin != 0 && (status[stream] != 0 || begin >= count)) return;
+    ulong value = lane < 4 ? (begin == 0 ? descriptors[6*stream+2+lane] : roots[4*stream+lane]) : 0;
+    const uint end = (uint)min(count, (ulong)begin+4096UL);
+    uint invalid = begin == 0 && value >= GP ? 1u : 0u;
+    for (uint i=begin+physical; i<end; i+=16) if (raw[offset+i] >= GP) invalid |= 2u;
+    invalid = pq_fields_pair_invalid(invalid, physical);
+    if (physical == 0) status[stream] = (invalid & 1u) ? 2u : (invalid ? 3u : 0u);
+    if (invalid) return;
+    const ulong diagonal = diag[lane];
+    for (uint at=begin; at<end; at+=4) {
+        if (lane >= 4) value = at+lane-4 < end ? raw[offset+at+lane-4] : 0;
+        value = pq_fields_pair_permute(value, physical, diagonal, rci, rcp, rcf);
+    }
+    if (role == 0 && lane < 4) roots[4*stream+lane] = value;
+}
+
+#endif

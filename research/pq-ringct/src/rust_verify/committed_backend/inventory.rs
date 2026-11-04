@@ -97,6 +97,8 @@ struct Encoder {
     used: usize,
     shape_limit: Option<usize>,
     shape_overflow: bool,
+    #[cfg(test)] profile_hashing: bool,
+    #[cfg(test)] hash_ns: u64,
 }
 impl Encoder {
     fn new() -> Self { Self::with_optimization(crate::preparation_options::buffered_encoding()) }
@@ -116,15 +118,21 @@ impl Encoder {
             registration: None,
             optimized, buffered: [0; 8192], used: 0,
             shape_limit: None, shape_overflow: false,
+            #[cfg(test)] profile_hashing: std::env::var("LATTICA_RINGCT_METADATA_PREPARATION_DETAIL").as_deref() == Ok("1"),
+            #[cfg(test)] hash_ns: 0,
         }
     }
     fn flush(&mut self) {
         if self.used == 0 { return; }
+        #[cfg(test)] let started = (self.profile_hashing && self.registration.is_some()).then(std::time::Instant::now);
         let bytes = &self.buffered[..self.used];
         self.shape.update(bytes);
         if let Some(hash) = &mut self.registration { hash.update(bytes); }
         else { self.witness.update(bytes); }
         self.used = 0;
+        #[cfg(test)] if let Some(started) = started {
+            self.hash_ns = self.hash_ns.saturating_add(u64::try_from(started.elapsed().as_nanos()).unwrap_or(u64::MAX));
+        }
     }
     fn word(&mut self, word: u64) {
         if let Some(words) = &mut self.exact_shape {
@@ -483,22 +491,102 @@ pub(super) fn prepared_shape(graph: &UnprovedRelationGraph) -> (Vec<u64>, Counts
 }
 pub(super) fn prepared_shape_with_capacity(graph: &UnprovedRelationGraph, capacity: Option<usize>)
     -> Option<(Vec<u64>, Counts, [u8; 32], [u8; 32])> {
+    prepared_shape_with_plan(graph, capacity, false).ok()
+}
+pub(super) fn prepared_shape_with_plan(graph: &UnprovedRelationGraph, capacity: Option<usize>, parallel: bool)
+    -> std::result::Result<(Vec<u64>, Counts, [u8; 32], [u8; 32]), &'static str> {
+    use crate::preparation_options::{PipelineCounter, PipelineSpan};
     let mut encoder = Encoder::new();
-    let mut label = Sha3_256::new();
-    label.update(b"lattica/matrict/registered-graph-label/v1");
-    label.update(VERSION.to_le_bytes());
-    encoder.registration = Some(label);
+    if !parallel {
+        let mut label = Sha3_256::new();
+        label.update(b"lattica/matrict/registered-graph-label/v1");
+        label.update(VERSION.to_le_bytes());
+        encoder.registration = Some(label);
+    }
     let capacity = capacity.filter(|_| encoder.optimized);
-    if capacity == Some(0) { return None; }
+    if capacity == Some(0) { return Err("registered shape exceeds admitted word census"); }
     let mut words = Vec::with_capacity(capacity.unwrap_or(1));
     crate::preparation_options::next_count(crate::preparation_options::NextCounter::ShapeAllocations);
     words.push(VERSION);
     encoder.exact_shape = Some(words);
     encoder.shape_limit = capacity;
+    #[cfg(test)] let encoding = encoder.profile_hashing.then(std::time::Instant::now);
     let counts = encode_graph(graph, &mut encoder);
     encoder.flush();
-    if encoder.shape_overflow { return None; }
-    Some((encoder.exact_shape.unwrap(), counts, encoder.registration.unwrap().finalize().into(), encoder.shape.finalize().into()))
+    #[cfg(test)] if let Some(started) = encoding {
+        let total = u64::try_from(started.elapsed().as_nanos()).unwrap_or(u64::MAX);
+        crate::preparation_options::pipeline_count(PipelineCounter::RegistrationEncodeNs, total.saturating_sub(encoder.hash_ns));
+        crate::preparation_options::pipeline_count(PipelineCounter::RegistrationHashNs, encoder.hash_ns);
+    }
+    if encoder.shape_overflow { return Err("registered shape exceeds admitted word census"); }
+    let words = encoder.exact_shape.take().unwrap();
+    if !parallel {
+        return Ok((words, counts, encoder.registration.unwrap().finalize().into(), encoder.shape.finalize().into()));
+    }
+    let hashing = PipelineSpan::new(PipelineCounter::RegistrationHashNs);
+    // The label covers VERSION plus all exact words; shape already has the
+    // domain length, domain, VERSION and role prefix, so skips that first word.
+    let (label, digest) = std::thread::scope(|scope| {
+        let borrowed = words.as_slice();
+        let label = std::thread::Builder::new().stack_size(2 << 20)
+            .spawn_scoped(scope, move || {
+                let mut hash = Sha3_256::new();
+                hash.update(b"lattica/matrict/registered-graph-label/v1");
+                hash_exact_words(hash, borrowed)
+            }).map_err(|_| "registration hashing worker creation failed")?;
+        let digest = hash_exact_words(encoder.shape, &words[1..]);
+        let label = label.join().map_err(|_| "registration hashing worker failed")?;
+        Ok::<_, &'static str>((label, digest))
+    })?;
+    drop(hashing);
+    crate::preparation_options::pipeline_count(PipelineCounter::ParallelRegistrations, 1);
+    Ok((words, counts, label, digest))
+}
+fn hash_exact_words(mut hash: Sha3_256, words: &[u64]) -> [u8; 32] {
+    let mut bytes = [0u8; 8192];
+    for chunk in words.chunks(bytes.len() / 8) {
+        for (word, target) in chunk.iter().zip(bytes.chunks_exact_mut(8)) {
+            target.copy_from_slice(&word.to_le_bytes());
+        }
+        hash.update(&bytes[..chunk.len() * 8]);
+    }
+    hash.finalize().into()
+}
+
+/// Separate encoding from the two independent streams without changing either
+/// framing. The caller has already admitted the exact capacity and temporaries.
+pub(super) fn encode_registration(graph: &UnprovedRelationGraph, capacity: usize)
+    -> std::result::Result<(Vec<u64>, Counts), &'static str>
+{
+    let _timing = crate::preparation_options::PipelineSpan::new(
+        crate::preparation_options::PipelineCounter::RegistrationEncodeNs);
+    if capacity == 0 { return Err("registered shape exceeds admitted word census"); }
+    let mut encoder = Encoder::new();
+    let mut words = Vec::new();
+    words.try_reserve_exact(capacity).map_err(|_| "registered shape allocation failed")?;
+    if words.capacity() != capacity { return Err("registered shape capacity differs"); }
+    words.push(VERSION);
+    crate::preparation_options::next_count(crate::preparation_options::NextCounter::ShapeAllocations);
+    encoder.exact_shape = Some(words);
+    encoder.shape_limit = Some(capacity);
+    let counts = encode_graph(graph, &mut encoder);
+    if encoder.shape_overflow { return Err("registered shape exceeds admitted word census"); }
+    Ok((encoder.exact_shape.take().unwrap(), counts))
+}
+
+pub(super) fn hash_registration(words: &[u64], inventory: bool)
+    -> std::result::Result<[u8; 32], &'static str>
+{
+    if words.first() != Some(&VERSION) { return Err("registered shape version differs"); }
+    let _timing = crate::preparation_options::PipelineSpan::new(
+        crate::preparation_options::PipelineCounter::RegistrationHashNs);
+    if inventory {
+        Ok(hash_exact_words(Encoder::new().shape, &words[1..]))
+    } else {
+        let mut hash = Sha3_256::new();
+        hash.update(b"lattica/matrict/registered-graph-label/v1");
+        Ok(hash_exact_words(hash, words))
+    }
 }
 
 fn encode_graph(graph: &UnprovedRelationGraph, encoder: &mut Encoder) -> Counts {

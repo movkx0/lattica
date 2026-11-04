@@ -24,6 +24,8 @@ pub(crate) use operations::{
 type Result<T> = core::result::Result<T, PairedFailure>;
 
 mod memory;
+mod numeric;
+pub(crate) use numeric::OwnedAesRequestNumbers;
 mod endpoints;
 mod operations;
 mod execute;
@@ -138,6 +140,14 @@ impl<'request> OwnedAesRequestPlan<'request> {
         request: &'request Request, context: GraphContext,
         metadata_original: Reservation, scratch: &Reservation, ledger: &Ledger,
     ) -> Result<Self> {
+        Self::derive_pre_reserved_resolved(request, context, metadata_original, scratch, ledger, None)
+    }
+
+    pub(crate) fn derive_pre_reserved_resolved(
+        request: &'request Request, context: GraphContext,
+        metadata_original: Reservation, scratch: &Reservation, ledger: &Ledger,
+        numbers: Option<OwnedAesRequestNumbers<'request>>,
+    ) -> Result<Self> {
         let required = Self::planning_requirements(request)?;
         let scratch_required = Self::planning_scratch_requirements(request)?;
         let allowance = ledger.snapshot().allowance;
@@ -146,130 +156,20 @@ impl<'request> OwnedAesRequestPlan<'request> {
             || !crate::host_memory_profile::HostMemoryProfile::valid_worker_ceiling(allowance.host) || allowance.device > 8u64 << 30 {
             return Err(PairedFailure::Authority);
         }
-        let (leaves, node_count, step_count) = counts(request)?;
-        let code = crate::graph_proofs::compiled_source_fingerprint();
-        let mut hash = Sha3_256::new();
-        hash.update(b"lattica/owned-aes-request-source/v1");
-        hash.update(code);
-        hash.update(context.context);
-        for value in context.statement.into_iter().chain(context.node_manifest) {
-            hash.update(value.as_canonical_u64().to_le_bytes());
+        let numbers = match numbers { Some(numbers) => numbers, None => OwnedAesRequestNumbers::derive(request, context.clone(), Some((scratch, ledger)))? };
+        if !core::ptr::eq(numbers.request, request) || numbers.context != context
+            || numbers.compiled_source_fingerprint != crate::graph_proofs::compiled_source_fingerprint() {
+            return Err(PairedFailure::SourceDrift);
         }
-        for index in 0..request.segments().len() {
-            hash.update(request.cache_key(index).map_err(|_| PairedFailure::Source)?);
-        }
-        let mut plan = Self { request, context, source_fingerprint: hash.finalize().into(),
-            compiled_source_fingerprint: code, nodes: Vec::new(), steps: Vec::new(),
-            slots: OwnedAesSlotRequirements::default(), root: 0, source_endpoints: endpoints::SourceEndpointStore::new(request),
-            endpoint_attempted: Cell::new(false), _metadata_original: metadata_original };
-        plan.nodes.try_reserve_exact(node_count).map_err(|_| PairedFailure::Capacity)?;
-        plan.steps.try_reserve_exact(step_count).map_err(|_| PairedFailure::Capacity)?;
-        if plan.nodes.capacity() > source::mul(2, node_count)?
-            || plan.steps.capacity() > source::mul(2, step_count)? {
-            return Err(PairedFailure::Capacity);
-        }
-        plan.slots.failure = memory::failure_requirements()?;
-        plan.slots.endpoint = memory::endpoint_output()?;
-        plan.push(OwnedAesStepKind::Endpoints, PhaseKind::EndpointAttach,
-            plan.slots.endpoint, requirement(Category::PhaseScratch,
-                endpoints::OUTPUT_COPY_FRAME_BYTES)?)?;
-        let mut carry = [None; usize::BITS as usize];
-        let mut live = 0usize;
-        let mut maximum_live = 0usize;
-        use crate::component_tree::native_shape::cohort;
-        let mut cores = [None; cohort::MAX];
-        for index in 0..request.segments().len() {
-            let blueprint = source::AesBlueprint::new(request, index)?;
-            if index % cohort::MAX == 0 {
-                let count = cohort::MAX.min(request.segments().len() - index);
-                let mut requests = [blueprint.metadata_request(); cohort::MAX];
-                for (offset, slot) in requests[..count].iter_mut().enumerate() {
-                    *slot = source::AesBlueprint::new(request, index + offset)?.metadata_request();
-                }
-                // The original scratch above covers the largest source planner.
-                // Consume returned numbers directly, also without a cache scope.
-                cores = cohort::bounds_exact_in_ledger(&requests[..count], source::construction(), scratch, ledger)
-                    .map_err(|_| PairedFailure::Source)?;
-            }
-            let leaf_source = blueprint.inspect_bound(cores[index % cohort::MAX].take()
-                .ok_or(PairedFailure::SourceDrift)?)?;
-            let segment = request.segments().get(index).ok_or(PairedFailure::Coverage)?;
-            let (output, scratch) = memory::native_requirements(request, index)?;
-            plan.slots.native = maxima(plan.slots.native, output);
-            plan.push(OwnedAesStepKind::Native { index }, PhaseKind::Native, output, scratch)?;
-            let id = plan.nodes.len();
-            plan.nodes.push(OwnedAesNodeSource { id,
-                span: ComponentSpan {
-                    first: u32::try_from(segment.first_unit).map_err(|_| PairedFailure::Overflow)?,
-                    count: u32::try_from(segment.units).map_err(|_| PairedFailure::Overflow)?, level: 0 },
-                source: leaf_source, children: None, segment: Some(index) });
-            let (output, scratch) = blueprint.compiler_requirements(leaf_source)?;
-            plan.slots.compiled = maxima(plan.slots.compiled, output);
-            plan.push(OwnedAesStepKind::Compile { node: id }, PhaseKind::GroupCompile, output,
-                combine(&[scratch, endpoints::group_preparation_requirements(request)?.0])?)?;
-            plan.push_outer(id)?;
-            live = add(live, 1)?;
-            maximum_live = maximum_live.max(live);
-            let mut value = id;
-            let mut level = 0;
-            loop {
-                let slot = carry.get_mut(level).ok_or(PairedFailure::Overflow)?;
-                match slot.take() {
-                    None => { *slot = Some(value); break; }
-                    Some(left) => { value = plan.merge(left, value)?; live -= 1; level += 1; }
-                }
-            }
-        }
-        let mut right = None;
-        for left in carry.into_iter().flatten() {
-            right = Some(match right {
-                None => left,
-                Some(right) => { live -= 1; plan.merge(left, right)? }
-            });
-        }
-        plan.root = right.ok_or(PairedFailure::Coverage)?;
-        let root = plan.nodes[plan.root];
-        if root.span.first != 0 || usize::try_from(root.span.count).ok() != Some(request.units())
-            || plan.nodes.len() != node_count || plan.steps.len() != step_count || live != 1 || leaves == 0 {
-            return Err(PairedFailure::Coverage);
-        }
-        // Parent outputs are produced only after compiler phase destroys its
-        // two children, so maximum occupied frontier slots already suffices.
-        plan.slots.frontier_slots = maximum_live;
-        Ok(plan)
+        Ok(Self { request, context, source_fingerprint: numbers.source_fingerprint,
+            compiled_source_fingerprint: numbers.compiled_source_fingerprint,
+            nodes: numbers.nodes, steps: numbers.steps, slots: numbers.slots, root: numbers.root,
+            source_endpoints: endpoints::SourceEndpointStore::new(request),
+            endpoint_attempted: Cell::new(false), _metadata_original: metadata_original })
     }
 
-    fn push(&mut self, kind: OwnedAesStepKind, phase: PhaseKind, output: Requirements, scratch: Requirements) -> Result<()> {
-        if self.steps.len() == self.steps.capacity() { return Err(PairedFailure::Capacity); }
-        self.steps.push(OwnedAesStep { kind, facts: PhaseFacts { kind: phase,
-            source_fingerprint: self.source_fingerprint,
-            compiled_source_fingerprint: self.compiled_source_fingerprint,
-            output, failure: self.slots.failure, scratch } });
-        Ok(())
-    }
-
-    fn push_outer(&mut self, id: usize) -> Result<()> {
-        let (output, verifier) = self.nodes.get(id).ok_or(PairedFailure::Order)?.source.output_requirements()?;
-        self.slots.node = maxima(self.slots.node, output);
-        self.push(OwnedAesStepKind::Outer { node: id }, PhaseKind::OuterProve, output,
-            combine(&[verifier, paired_runtime::owned_outer_requirements()?,
-                PreissuedAesOuter::planning_scratch_requirement()?])?)
-    }
-
-    fn merge(&mut self, left: usize, right: usize) -> Result<usize> {
-        let a = *self.nodes.get(left).ok_or(PairedFailure::Order)?;
-        let b = *self.nodes.get(right).ok_or(PairedFailure::Order)?;
-        let rows = [a.source.maximum_padded_rows, b.source.maximum_padded_rows];
-        let source = source::parent_source(rows[0], rows[1])?;
-        let id = self.nodes.len();
-        if id == self.nodes.capacity() { return Err(PairedFailure::Capacity); }
-        self.nodes.push(OwnedAesNodeSource { id, span: ComponentSpan::merge(a.span, b.span)?, source,
-            children: Some([left, right]), segment: None });
-        let (output, scratch) = source::compiler_requirements(source, source::CompilerGeometry::Parent(rows))?;
-        self.slots.compiled = maxima(self.slots.compiled, output);
-        self.push(OwnedAesStepKind::Merge { node: id, left, right }, PhaseKind::ParentCompile, output, scratch)?;
-        self.push_outer(id)?;
-        Ok(id)
+    pub(crate) fn numeric_frame_bytes() -> Result<usize> {
+        add(memory::planning_frames()?, bytes::<OwnedAesRequestNumbers<'static>>(8)?)
     }
 
     /// Pure source descriptor census before child proofs or operation owners

@@ -63,6 +63,12 @@ pub(super) trait GraphDevice {
     }
     fn ntt_poly(&self, input: &RawSigned, q: u64) -> Result<RawPoly, String>;
     fn mul_poly(&self, left: &RawPoly, right: &RawPoly, q: u64) -> Result<RawPoly, String>;
+    fn mul_accumulate_poly(&self, a: &RawPoly, b: &RawPoly, out: &RawPoly, q: u64, subtract: bool)
+        -> Result<(RawPoly, RawPoly), String> {
+        let product = self.mul_poly(a, b, q)?;
+        let result = if subtract { self.sub_poly(out, &product, q)? } else { self.add_poly(out, &product, q)? };
+        Ok((product, result))
+    }
     fn aut_poly(&self, input: &RawPoly) -> Result<RawPoly, String>;
     fn commit_canonical(&self, input: &RawPoly, q: u64) -> Result<[Val; 4], String>;
     fn commit_signed(&self, input: &RawSigned) -> Result<[Val; 4], String>;
@@ -113,6 +119,12 @@ pub(super) trait GraphDevice {
 }
 
 impl GraphDevice for OperationContext<'_> {
+    fn mul_accumulate_poly(&self, a: &RawPoly, b: &RawPoly, out: &RawPoly, q: u64, subtract: bool)
+        -> Result<(RawPoly, RawPoly), String> {
+        let spec = MulAir::new(q, 1).map_err(|e| format!("{e:?}"))?.raw_operation_spec()?.mul_accumulate(subtract)?;
+        fused_output(self, &spec, a, b, out)
+    }
+
     fn inverse_challenge_poly(&self, input: &RawSigned) -> Result<RawSigned, String> {
         match PermutationAir::new(PermutationKind::InverseChallenge)
             .evaluate_gpu_operations(self, &PermutationInput::Signed(*input))? {
@@ -295,6 +307,10 @@ pub fn lower_unproved_on_gpu(
     #[cfg(test)]
     timeline.mark(0);
     let (graph, _) = execution.with_witness_preparation(host_bytes, |operation| {
+        #[cfg(test)]
+        if !crate::preparation_options::paired_fields() {
+            operation.enable_eight_lane_field_storage_for_qualification()?;
+        }
         operation.enable_reusable_storage()?;
         #[cfg(test)]
         timeline.mark(1);
@@ -336,4 +352,13 @@ pub(super) fn lower_owned_on_gpu(
     })?;
     drop(report);
     Ok(pending.after_callback())
+}
+
+fn fused_output(operations: &OperationContext<'_>, spec: &ArithmeticOperationSpec,
+    a: &RawPoly, b: &RawPoly, out: &RawPoly) -> Result<(RawPoly, RawPoly), String> {
+    operations.admit_arithmetic_operation(spec)?;
+    let raw: [u64; 3 * D] = core::array::from_fn(|i| if i < D { a[i] } else if i < 2*D { b[i-D] } else { out[i-2*D] });
+    let words = operations.arithmetic_output(spec, &raw)?;
+    if words.len() != 2 * D { return Err("GPU fused output shape".into()); }
+    Ok((words[..D].try_into().unwrap(), words[D..].try_into().unwrap()))
 }

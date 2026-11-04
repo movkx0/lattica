@@ -10,6 +10,7 @@ pub(crate) fn fill_native_layer<'case, 'a>(
     stage.layer("fill_native_layer");
     run_layer(planning, inventory, case, |planning| {
         tables.validate_empty(inventory, case)?;
+        planning.prepare_parallel_native(inventory)?;
         for member_ordinal in 0..inventory.members().len() {
             stage.member(member_ordinal);
             let member = inventory.member(member_ordinal).map_err(|_| WorkflowError::Identity)?;
@@ -20,7 +21,8 @@ pub(crate) fn fill_native_layer<'case, 'a>(
                     stage.destination(ordinal);
                     let slot = tables.$field.get(ordinal).map_err(|_| WorkflowError::Identity)?;
                     stage.action(DriverAction::Derive);
-                    let result = planning.$method(inventory, member, $source)?;
+                    let result = crate::preparation_options::timed_constructor(ProducerFamily::$family as usize,
+                        || planning.$method(inventory, member, $source))?;
                     stage.action(DriverAction::Install);
                     install(slot, result)?;
                 }};

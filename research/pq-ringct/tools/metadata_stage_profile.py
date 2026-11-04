@@ -46,14 +46,19 @@ def preparation_detail(content, timing, required, variant='reference'):
     metrics = ['allocation', 'kernel_setup', 'upload_enqueue', 'readback_wait',
                'cleanup', 'device_wait']
     for record in operations:
-        require(record['schema'] in ('ringct-preparation-operations-v1', 'ringct-preparation-operations-v2')
+        require(record['schema'] in ('ringct-preparation-operations-v1', 'ringct-preparation-operations-v2', 'ringct-preparation-operations-v3')
                 and record['complete'] is True and record['families'] == families
                 and record['metrics'] == metrics and len(record['counters']) == 4,
                 'invalid raw preparation detail')
         if 'field_kernels' in record:
-            require(len(record['field_kernels']) == 2 and
+            require(len(record['field_kernels']) == (3 if record['schema'] == 'ringct-preparation-operations-v3' else 2) and
                     sum(natural(n) for n in record['field_kernels']) == record['counters'][1]['device_calls'],
                     'incomplete field kernel counters')
+        if record['schema'] == 'ringct-preparation-operations-v3':
+            sizes = record.get('field_stream_sizes')
+            require(type(sizes) is list and len(sizes) == 5 and
+                    sum(natural(n) for n in sizes) == record['counters'][1]['logical_hashes'],
+                    'incomplete field stream size counters')
         if 'arithmetic_shapes' in record:
             require(len(record['arithmetic_shapes']) == 32 and record['arithmetic_overflow'] == 0,
                     'incomplete arithmetic shape counters')
@@ -61,10 +66,10 @@ def preparation_detail(content, timing, required, variant='reference'):
                     'arithmetic shape counters disagree')
             for row in record['arithmetic_shapes']:
                 natural(row['opcode']); natural(row['output_words'])
-                require(row['calls'] == 0 or (1 <= row['opcode'] <= 10 and row['output_words'] > 0),
+                require(row['calls'] == 0 or (1 <= row['opcode'] <= (12 if record['schema'] == 'ringct-preparation-operations-v3' else 10) and row['output_words'] > 0),
                         'invalid arithmetic shape')
         for counter in record['counters']:
-            if record['schema'] == 'ringct-preparation-operations-v2':
+            if record['schema'] in ('ringct-preparation-operations-v2', 'ringct-preparation-operations-v3'):
                 natural(counter['logical_hashes'])
             for key in ('calls', 'wall_ns', 'device_calls', 'device_ns', 'allocations',
                         'allocated_words', 'uploaded_bytes', 'downloaded_bytes'):
@@ -72,8 +77,8 @@ def preparation_detail(content, timing, required, variant='reference'):
             require(len(counter['metric_ns']) == len(metrics), 'incomplete operation metrics')
             for value in counter['metric_ns']:
                 natural(value)
-    if any(record['schema'] == 'ringct-preparation-operations-v2' for record in operations):
-        require(all(record['schema'] == 'ringct-preparation-operations-v2' for record in operations),
+    if any(record['schema'] in ('ringct-preparation-operations-v2', 'ringct-preparation-operations-v3') for record in operations):
+        require(all(record['schema'] in ('ringct-preparation-operations-v2', 'ringct-preparation-operations-v3') for record in operations),
                 'mixed preparation counter versions')
         totals = [sum(record['counters'][i]['logical_hashes'] for record in operations) for i in range(4)]
         require(totals == [5334, 168 if variant in ('all', 'endpoints') else 189, 0, 0],
@@ -98,6 +103,36 @@ def preparation_detail(content, timing, required, variant='reference'):
                 metrics_overlap=True)
 
 
+def parallel_detail(content, workers, variant):
+    """Per-wave elapsed times overlap GPU publication; worker_ns is not CPU time."""
+    require(variant in ('all', 'serial', 'registration', 'crypto', 'native'), 'invalid parallel variant')
+    prefix = 'RINGCT_METADATA_PARALLEL '
+    result = {}
+    for line in content.splitlines():
+        if not line.startswith(prefix):
+            continue
+        row = json.loads(line[len(prefix):])
+        family, stats = row['family'], row['statistics']
+        require(family in ('registration_encode', 'registration_hash', 'crypto_hash', 'crypto', 'native')
+                and family not in result, 'unknown or duplicate parallel phase')
+        require(variant in ('all', family.split('_')[0]) and workers > 1, 'disabled parallel phase')
+        fields = ('jobs', 'width', 'peak_active', 'threads', 'budget_reductions',
+                  'admitted_host_bytes', 'worker_ns', 'wait_ns', 'publication_ns', 'wall_ns')
+        require(set(stats) == set(fields), 'incomplete parallel statistics')
+        for value in stats.values():
+            natural(value)
+        require(2 <= stats['jobs'] <= 64 and 2 <= stats['width'] <= min(workers, stats['jobs'])
+                and 1 <= stats['peak_active'] <= stats['width']
+                and stats['threads'] == stats['width'] - 1, 'parallel worker ceiling exceeded')
+        require(stats['budget_reductions'] == int(stats['width'] < min(workers, stats['jobs']))
+                and 0 < stats['admitted_host_bytes'] <= 32 << 30, 'invalid parallel admission')
+        require(stats['wall_ns'] > 0 and stats['worker_ns'] > 0
+                and stats['wait_ns'] + stats['publication_ns'] <= stats['wall_ns'], 'invalid parallel timing')
+        result[family] = stats
+    require(('registration_encode' in result) == ('registration_hash' in result), 'incomplete registration waves')
+    return result
+
+
 def validate(content, require_preparation_detail=False):
     records = [json.loads(line[len(PREFIX):]) for line in content.splitlines() if line.startswith(PREFIX)]
     require(len(records) == 1, 'expected exactly one complete metadata report')
@@ -105,7 +140,7 @@ def validate(content, require_preparation_detail=False):
     require(r['schema'] == 'ringct-complete-metadata-profile-v1'
             and r['transactions'] == 3 and r['layout'] == 'paired-v1'
             and r['setup_seed'] == [17] * 32 and r['context'] == [34] * 32
-            and r['host_profile'] == 'standard' and r['metadata_workers'] in (1, 8, 16),
+            and r['host_profile'] == 'standard' and r['metadata_workers'] in (1, 2, 4, 8, 16),
             'unexpected fixed N3 profile')
     require(r['input_randomness'] in ('fixed-public-parameters-fresh-private-entropy', 'replayed-verified-public-fixture'),
             'incorrect fixture reproducibility claim')
@@ -127,6 +162,16 @@ def validate(content, require_preparation_detail=False):
         require(reuse[7] == (12 if reuse_variant in ('all', 'arithmetic') else 0), 'incomplete vector recipes')
         require(reuse[6] == 0, 'numeric verifier cache overflow')
         require((reuse[4] > 0) == (reuse_variant in ('all', 'verifier')), 'incorrect verifier reuse')
+    pipeline_variant = r.get('pipeline_variant', 'baseline')
+    parallel_variant = r.get('parallel_variant', 'serial')
+    parallel = parallel_detail(content, r['metadata_workers'], parallel_variant)
+    require(pipeline_variant in ('baseline', 'field_hash', 'registration', 'arithmetic', 'all'), 'invalid pipeline variant')
+    pipeline_counts = r.get('pipeline_counters')
+    if 'pipeline_variant' in r:
+        require(type(pipeline_counts) is list and len(pipeline_counts) == 4, 'incomplete pipeline counters')
+        for value in pipeline_counts: natural(value)
+        require(pipeline_counts[2] == (3 if pipeline_variant in ('registration', 'all') and reuse_variant in ('all', 'structure') and r['metadata_workers'] >= 2 else 0), 'incorrect parallel registration count')
+        require((pipeline_counts[3] > 0) == (pipeline_variant in ('arithmetic', 'all')), 'incorrect fused arithmetic count')
     next_variant = r.get('next_variant', 'baseline')
     require(next_variant in ('baseline', 'field_hash', 'encoding', 'case_cache', 'all'), 'invalid next variant')
     next_counts = r.get('next_counters')
@@ -169,8 +214,13 @@ def validate(content, require_preparation_detail=False):
         require(native[key] == sum(f[family_key] for f in families), 'native family counters disagree')
     combined = {key: registered[key] + native[key] for key in ('requests', 'memory_hits', 'table_hits', 'cold_misses')}
     combined['cold_miss_rate'] = combined['cold_misses'] / combined['requests']
+    constructors = r.get('constructor_families', [])
+    constructor_ns = r.get('constructor_ns', [])
+    require(len(constructors) == len(constructor_ns) and len(constructors) <= 128 and
+            len(set(constructors)) == len(constructors), 'incomplete constructor timings')
+    for value in constructor_ns: natural(value)
     metadata_startup_ns = r['generation_and_startup_ns'] - input_ns
-    return dict(next_variant=next_variant, next_counters=next_counts, reuse_variant=reuse_variant, reuse_counters=reuse, hash_variant=variant, endpoint_adoptions=r.get('endpoint_adoptions', 0), metadata_workers=r['metadata_workers'], fixture_load_verify_ns=r.get('fixture_load_verify_ns', 0), complete_metadata=True, complete_workflow=False, recursive_proofs_generated=0,
+    return dict(parallel_variant=parallel_variant, parallel=parallel, constructor_ns=dict(zip(constructors, constructor_ns)), pipeline_variant=pipeline_variant, pipeline_counters=pipeline_counts, next_variant=next_variant, next_counters=next_counts, reuse_variant=reuse_variant, reuse_counters=reuse, hash_variant=variant, endpoint_adoptions=r.get('endpoint_adoptions', 0), metadata_workers=r['metadata_workers'], fixture_load_verify_ns=r.get('fixture_load_verify_ns', 0), complete_metadata=True, complete_workflow=False, recursive_proofs_generated=0,
                 timing=timing, native_input_generation_ns=r['native_input_generation_ns'],
                 generation_and_startup_ns=r['generation_and_startup_ns'],
                 metadata_startup_ns=metadata_startup_ns,

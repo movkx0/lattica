@@ -850,3 +850,224 @@ Frozen sources are in `.tools/metadata-cooperative-baseline` and
 fixtures, timings, ablations, memory plans, and acceptance checks are in
 [cooperative metadata evidence](../../docs/evidence/ringct-metadata-cooperative-2026-11-02.json).
 This documentation and evidence were added after the measured source snapshot.
+
+## Paired field hashing, parallel registration, and fused arithmetic (2026-11-03)
+
+This pass implements all three priorities against frozen commit `6de9c01`.
+All previous optimizations remain enabled. Complete metadata preparation is
+5.6% faster with one worker and 9.0% faster with sixteen workers. The primary
+10% / 3.05-second target was not met: the seven-pair median is 3.055 seconds.
+All individual optimizations passed their performance and correctness gates.
+
+Raw field commitments use sixteen physical lanes for eight logical state words,
+sharing the existing paired S-box helpers with the optional public-hash kernel.
+The qualified RTX 5080 selects the new raw-field kernels at workspace creation;
+other devices retain the existing eight-lane or scalar GPU selection. The
+public-hash experiment remains opt-in. Initial states, padding, canonicalization
+after each absorption, collective input validation, and ordered 4096-word tiles
+are unchanged. Kernel geometry and local/private storage are checked before use.
+Execution errors poison the scope and never trigger a retry.
+
+Registration encodes the exact shape once and hashes the original two
+SHA3-256 byte streams using the caller and one scoped CPU worker. The existing
+metadata worker ceiling limits this to two active hashing threads. One-worker
+execution retains the serial encoder. The extra 3,166,208-byte allowance covers
+the worker stack, bookkeeping, and bounded conversion buffers before execution;
+insufficient planning allowance selects the serial path. Exact shape words,
+hash domains and framing, ordinary inventory/witness encoding, and CPU identity
+hashing remain unchanged. Thread creation or join failure returns an error.
+
+Multiply-add and multiply-subtract now return both the intermediate product and
+updated accumulator in one GPU dispatch. The committed backend records both
+original operations and their polynomial/expression nodes in their original
+order. Default backend methods preserve the previous two-operation behavior.
+The GPU workspace admits 512 output words and eight fixed public metadata
+slots. Source ownership and modulus checks, status-before-output ordering,
+scrubbing, and failed-scope handling remain in force. Numeric metadata
+compilation remains on CPU; there are no protocol or proof-layout changes.
+
+Fresh-process complete-stage comparisons on the Ryzen 9 5900XT / RTX 5080:
+
+| Metadata workers / fixture | Frozen baseline | Updated median | Elapsed reduction | Alternating pairs |
+|---|---:|---:|---:|---:|
+| 1 / baseline N3 | 3.378 s | 3.190 s | 5.6% | 3 |
+| 8 / baseline N3 | 3.375 s | 3.008 s | 10.9% | 3 |
+| 16 / baseline N3 | 3.357 s | 3.055 s | 9.0% | 7 |
+| 16 / held-out N3 | 3.355 s | 3.007 s | 10.4% | 3 |
+
+The initial three-pair sixteen-worker comparison had variable startup time, so
+it was extended to seven pairs as planned. All samples were retained. The
+complete stage includes startup and metadata schedule/memory closure for three
+transactions, excludes fixture loading/verification and native input generation,
+and stops before recursive proof generation and runtime preissue. Worker-count
+differences include startup noise; these measurements do not establish that
+eight workers are intrinsically faster than sixteen.
+
+Separate uninstrumented screens in the same candidate binary qualified each
+feature at sixteen workers:
+
+| Enabled in this pass | Reference median | Feature median | Elapsed reduction | Samples per variant |
+|---|---:|---:|---:|---:|
+| Paired field hashing | 3.382 s | 3.286 s | 2.9% | 7 |
+| Parallel registration | 3.381 s | 3.200 s | 5.3% | 3 |
+| Fused arithmetic | 3.382 s | 3.293 s | 2.6% | 7 |
+| All three | 3.381 s | 3.040 s | 10.1% | 3 |
+
+These screens measure individual feature effects; the frozen-source comparisons
+above determine the primary acceptance result. Additional three-sample checks
+of each individual feature at one and eight workers and on the held-out fixture
+passed the 3% regression limit. The registration selector has no parallel effect
+at one worker; timing differences there reflect process variability.
+
+One instrumented baseline/all comparison showed:
+
+| Component | Previous path | All three enabled |
+|---|---:|---:|
+| Field commitment GPU time | 0.994 s | 0.897 s |
+| Registration encoding | 0.039 s | 0.035 s |
+| Registration hashing | 0.410 s | 0.216 s |
+| Arithmetic wall time | 0.430 s | 0.335 s |
+| Arithmetic GPU calls | 3900 | 2649 |
+
+Fusion removed 1251 device round trips while preserving all graph operations.
+Field commitments still use 147 kernel events and make no GPU allocations during
+execution. The diagnostic combined run had 0.353 seconds of native constructors
+and 0.403 seconds of crypto constructors; the new named timers attributed 0.365
+seconds to SHAKE request derivation and 0.034 seconds to AES request derivation.
+Component times are diagnostic single samples, overlap with broader phases,
+and must not be added as independent savings.
+
+Source changes initially invalidated 185 native and nine registered table
+entries. Those cold-compilation runs were excluded from performance acceptance.
+All 317 native descriptors and 72 registered shapes were requalified at 1, 2, 4,
+8, and 16 workers; regenerated tables reproduce exactly. All 32 paired runs,
+27 feature-screen runs, 36 per-feature regression runs, and five qualified
+diagnostic runs completed with zero cold misses, evictions, or memory shortfall.
+The worker/native/device limits remain 32/24/8 GiB.
+
+Validation passed a 138-test CPU regression run and a 20-test focused follow-up
+(the latter overlaps the first run and adds an ownership-refusal check), eight
+GPU parity/failure tests, twelve core resource/descriptor tests, one shared
+public-hash GPU test, 61 Python tests, and a release all-target compilation
+check. GPU coverage includes scalar/eight/sixteen-lane roots, rate/tile boundaries,
+invalid fields in every physical lane, both arithmetic moduli, intermediate
+products, exact graph/inventory parity, invalid accumulator inputs, and scope
+poisoning. All six required Apple source files remain identical to `HEAD`.
+
+The test-only selector is
+`--metadata-pipeline-variant baseline|field_hash|registration|arithmetic|all`;
+all three older selectors remain `all` for these measurements. Detail reports
+add bounded field-size buckets, scalar/eight/sixteen-lane dispatch counts,
+registration encoding/hashing times, fused-pair counts, and named constructor
+timings. Production enables the qualified optimizations without an environment
+selector.
+
+Frozen sources are in `.tools/metadata-pipeline-baseline` and
+`.tools/metadata-pipeline-candidate-source`. Raw source/build/fixture hashes,
+all samples, feature gates, memory plans, and the missed primary target are saved
+in [pipeline metadata evidence](../../docs/evidence/ringct-metadata-pipeline-2026-11-03.json).
+This documentation and evidence were added after the measured source snapshot.
+
+
+## Parallel case metadata preparation (2026-11-03)
+
+This pass parallelizes the remaining CPU metadata work across a complete case.
+A bounded executor counts the coordinator as one worker, admits retained results,
+worker stacks and transient storage before starting, and publishes in input
+order. Worker failure joins every lane before the additional reservation can
+retire. The 32/24/8 GiB worker/native/device limits remain in force.
+
+Registration encodes all case members, then hashes their two exact SHA3 streams
+concurrently. The coordinator moves the original encoded vector into GPU source
+preparation as soon as that member's hashes are ready. Later hashes can overlap
+that preparation. GPU execution and mutable workflow owners stay on the
+coordinator.
+
+Crypto planning first resolves descriptor bounds, then gives workers read-only
+numeric cache snapshots. Large request hashes are split into at most 64 segment
+jobs, weighted by payload size and segment count. Sealed key results retain the
+exact request and compiled-source binding. Numeric SHAKE/AES plans consume those
+keys, preserving hash framing, topology, phase order and memory requirements.
+The normal coordinator attaches the original reservation and prepares endpoints.
+
+Native verifier censuses are deduplicated per case. Balanced pairs of large and
+small recordings reuse each lane, reducing allocation contention in small
+inventories. N3's 13 descriptors use seven jobs; larger inventories can still use
+all 16 workers. The unchanged concrete recorders calculate the census under a
+coordinator-funded allowance. Only numeric results enter the case cache, in the
+original descriptor order.
+
+The one-worker path retains serial construction. Insufficient extra admission
+reduces concurrency or selects the existing serial path before work starts.
+Metadata computation and identity hashing remain on CPU. These measurements stop
+before recursive proof generation and runtime preissue.
+
+Fresh-process complete-stage results on Ryzen 9 5900XT / RTX 5080:
+
+| Workers / fixture | Previous median | Parallel median | Elapsed reduction | Speedup over parallel 1-worker path |
+|---|---:|---:|---:|---:|
+| 1 / baseline N3 | 3.201 s | 3.201 s | 0.0% | 1.00x |
+| 2 / baseline N3 | 3.041 s | 2.905 s | 4.5% | 1.10x |
+| 4 / baseline N3 | 3.058 s | 2.546 s | 16.7% | 1.26x |
+| 8 / baseline N3 | 3.049 s | 2.568 s | 15.8% | 1.25x |
+| 16 / baseline N3 | 3.010 s | 2.579 s | 14.3% | 1.24x |
+| 1 / heldout N3 | 3.192 s | 3.203 s | -0.3% | 1.00x |
+| 2 / heldout N3 | 3.017 s | 2.888 s | 4.3% | 1.11x |
+| 4 / heldout N3 | 3.045 s | 2.609 s | 14.3% | 1.23x |
+| 8 / heldout N3 | 3.063 s | 2.571 s | 16.1% | 1.25x |
+| 16 / heldout N3 | 3.009 s | 2.563 s | 14.8% | 1.25x |
+
+The 8- and 16-worker paths achieve 1.24–1.25x speedups over the candidate's one-worker path.
+
+The 15% elapsed-reduction target was missed for 16 workers / baseline (14.30%), 16 workers / heldout (14.81%).
+
+Other targets: 1.2x worker-scaling target passed; 3% one-worker regression limit passed; 3% held-out regression limit passed; zero-cold-miss and zero-eviction checks passed.
+
+The five worker settings measure latency for one complete N3 case, not throughput across concurrent cases.
+
+Most of the observed latency gain appears by four workers; higher counts do not
+produce a consistent further reduction across both fixtures.
+
+Each worker/fixture configuration uses seven alternating baseline/candidate
+pairs. Five worker settings and two fixtures give 140 complete runs. The baseline is the completed
+optimization frozen before this pass, including its previously uncommitted
+changes. Only its profiling harness was extended to accept two and four workers;
+its Rust implementation was unchanged. The complete stage includes startup and metadata memory/schedule
+closure for three transactions, excludes fixture loading/verification and
+native input generation, and runs under the exclusive validation service.
+
+All 140 comparisons had zero cold descriptor compilations and zero descriptor-cache evictions. The largest observed service memory peak was 525.2 MiB for the candidate and 452.9 MiB for the baseline. These are peaks for the entire guarded test process; they are distinct from conservative reservation allowances. Descriptor request counts include explicit prewarming and merged worker hits, so their denominators differ from the previous path.
+
+A separate instrumented comparison in the final binary isolates this pass at 16 workers:
+
+| Phase | New worker waves disabled | New worker waves enabled |
+|---|---:|---:|
+| Source preparation | 1256.1 ms | 1123.4 ms |
+| Native constructors, including census | 368.8 ms | 303.4 ms |
+| Crypto constructors, including hashing | 421.8 ms | 100.0 ms |
+
+The enabled run used 64 hash jobs with 16 simultaneously active workers (18.0 ms), 21 numeric crypto jobs (73.3 ms), and 7 native census groups (40.7 ms). Graph source construction still took 658.8 ms, and registration publication, including GPU source preparation, took 996.3 ms. These are single diagnostic samples; nested and overlapping times must not be added. The complete paired comparisons above determine performance targets.
+
+All 317 native descriptors and 72 registered shapes were qualified at 1, 2, 4,
+8 and 16 workers. Their numeric rows match the previous catalog, and both
+generated tables reproduce exactly from the final qualification records.
+Validation passed 15 focused tests on the final binary, 10 core cache/queue tests, eight GPU parity/failure tests, 100 Python tests, and release all-target compilation checks with the full-workflow and default feature sets. Earlier constructor regression checks also passed. The six required Apple source files remain identical to HEAD.
+
+The test-only selector is
+`--metadata-parallel-variant all|serial|registration|crypto|native`.
+`serial` disables this pass's worker waves while preserving the earlier
+optimizations, including the existing two-thread registration path when enabled.
+Production uses the qualified paths without an environment selector.
+`RINGCT_METADATA_PARALLEL` reports jobs, admitted width, peak active workers,
+thread count, admitted bytes, worker elapsed time, queue waiting, publication
+and wall time for registration encoding/hashing, crypto hashing/planning and
+native census groups. Worker elapsed time is not OS CPU time. Registration
+publication includes GPU preparation; its time overlaps worker hashing and
+cannot be added to worker time. The old registration hash counter now sums
+individual hash-job elapsed time, so stage clocks determine elapsed savings.
+
+Frozen baseline, diagnostic prototype and final candidate sources, per-run
+source/build/fixture hashes, every comparison sample, memory observations and
+gate outcomes are indexed in
+[parallel metadata evidence](../../docs/evidence/ringct-metadata-parallel-2026-11-03.json).
+Documentation and evidence were added after the measured source snapshot.

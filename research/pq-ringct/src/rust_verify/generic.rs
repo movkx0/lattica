@@ -65,6 +65,12 @@ pub trait Backend {
     {
         mul_residues(self, a, b, q)
     }
+    fn mul_accumulate_poly(&mut self, out: &Polynomial<Self::Residue>, a: &Polynomial<Self::Residue>,
+        c: &Polynomial<Self::Residue>, q: u64, subtract: bool) -> Polynomial<Self::Residue>
+    where Self: Sized {
+        let product = self.mul_poly(a, c, q);
+        if subtract { self.sub_poly(out, &product, q) } else { self.add_poly(out, &product, q) }
+    }
     fn add_poly(
         &mut self,
         a: &Polynomial<Self::Residue>,
@@ -312,8 +318,7 @@ pub fn multiply_add<B: Backend>(
     c: &Polynomial<B::Residue>,
     q: u64,
 ) {
-    let product = mul(b, a, c, q);
-    *out = plus(b, out, &product, q);
+    *out = b.mul_accumulate_poly(out, a, c, q, false);
 }
 pub fn multiply_sub<B: Backend>(
     b: &mut B,
@@ -322,8 +327,7 @@ pub fn multiply_sub<B: Backend>(
     c: &Polynomial<B::Residue>,
     q: u64,
 ) {
-    let product = mul(b, a, c, q);
-    *out = minus(b, out, &product, q);
+    *out = b.mul_accumulate_poly(out, a, c, q, true);
 }
 pub fn aut<B: Backend>(b: &mut B, a: &Polynomial<B::Residue>) -> Polynomial<B::Residue> {
     b.aut_poly(a)

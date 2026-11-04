@@ -26,6 +26,56 @@ fn context() -> GraphContext {
     GraphContext { context: [11; 32], statement: [crate::graph_crypto::Val::ZERO; 4],
         node_manifest: [crate::graph_crypto::Val::ONE; 4] }
 }
+
+#[test]
+fn numeric_worker_preserves_request_plan_and_refuses_changed_binding() {
+    use crate::component_tree::native_shape::cache;
+    use lattica_prover_p3::block_v2::machine::verifier::batch::shape::HeightEnvelopeCacheScope;
+    let source = crate::graph_proofs::compiled_source_fingerprint();
+    let _native = cache::Scope::begin(source).unwrap();
+    let _registered = HeightEnvelopeCacheScope::begin(source).unwrap();
+    let request = request(64 * 16 + 1, 64);
+    let ledger = Ledger::new(WorkerAllowance { host: 32 << 30, device: 8 << 30 });
+    let scratch = ledger.admit_phase(OwnedAesRequestPlan::planning_scratch_requirements(&request).unwrap()).unwrap();
+    let original = || ledger.admit_phase(OwnedAesRequestPlan::planning_requirements(&request).unwrap()).unwrap();
+    let baseline = OwnedAesRequestPlan::derive_pre_reserved(&request, context(), original(), &scratch, &ledger).unwrap();
+    let native = cache::snapshot().unwrap();
+    let registered = HeightEnvelopeCacheScope::snapshot().unwrap();
+    let key_plan = crate::graph_crypto::IdentityKeyPlan::new([&request].into_iter(), 4).unwrap();
+    let key_admission = crate::metadata_parallel::Plan::new(4, key_plan.jobs(), usize::MAX,
+        key_plan.retained_bytes(), 0).unwrap();
+    let key_original = ledger.reserve(Category::PhaseScratch,
+        Bytes { host: key_admission.host_bytes as u64, device: 0 }).unwrap();
+    let keys = key_plan.derive(key_admission).unwrap();
+    let numbers = || std::thread::scope(|threads| threads.spawn(|| {
+        let _native = cache::Scope::begin_read_only(&native).unwrap();
+        let _registered = HeightEnvelopeCacheScope::begin_read_only(&registered).unwrap();
+        OwnedAesRequestNumbers::derive_with_keys(&request, context(), None, Some(keys.get(0).unwrap())).unwrap()
+    }).join().unwrap());
+    let candidate = OwnedAesRequestPlan::derive_pre_reserved_resolved(&request, context(),
+        original(), &scratch, &ledger, Some(numbers())).unwrap();
+    assert_eq!(candidate.nodes, baseline.nodes);
+    assert_eq!(candidate.steps, baseline.steps);
+    assert_eq!(candidate.slots, baseline.slots);
+    assert_eq!(candidate.root, baseline.root);
+    assert_eq!(candidate.source_fingerprint, baseline.source_fingerprint);
+    assert_eq!(candidate._metadata_original.requirements(), baseline._metadata_original.requirements());
+    assert!(candidate.source_endpoints.prepared.get().is_none());
+    let mut wrong_context = context();
+    wrong_context.context[0] ^= 1;
+    assert!(matches!(OwnedAesRequestPlan::derive_pre_reserved_resolved(&request, wrong_context,
+        original(), &scratch, &ledger, Some(numbers())), Err(PairedFailure::SourceDrift)));
+    let mut stale = numbers();
+    stale.compiled_source_fingerprint[0] ^= 1;
+    assert!(matches!(OwnedAesRequestPlan::derive_pre_reserved_resolved(&request, context(),
+        original(), &scratch, &ledger, Some(stale)), Err(PairedFailure::SourceDrift)));
+    drop(candidate);
+    drop(baseline);
+    drop(scratch);
+    drop(keys);
+    drop(key_original);
+    assert_eq!(ledger.snapshot().current, Bytes::default());
+}
 #[test]
 fn aes_compiler_retains_only_source_bounded_packed_storage() {
     let request = request(64 * 16, 64);

@@ -782,6 +782,8 @@ impl Shape {
     }
 }
 
+mod numeric;
+pub(crate) use numeric::{numeric_host_bytes, numeric_plan};
 #[cfg(all(test, not(debug_assertions), target_arch = "x86_64"))]
 mod tests;
 

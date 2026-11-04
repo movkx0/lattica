@@ -64,12 +64,22 @@ pub(super) fn phase_started(phase: metadata_timing::Phase) {
     });
 }
 
+fn serialize_array<S: serde::Serializer, T: serde::Serialize, const N: usize>(values: &[T; N], serializer: S) -> std::result::Result<S::Ok, S::Error> {
+    serde::Serialize::serialize(values.as_slice(), serializer)
+}
 #[derive(serde::Serialize)]
 struct Report {
     schema: &'static str,
     hash_variant: &'static str,
     reuse_variant: &'static str,
     reuse_counters: [u64; 8],
+    pipeline_variant: &'static str,
+    parallel_variant: &'static str,
+    pipeline_counters: [u64; 4],
+    #[serde(serialize_with = "serialize_array")]
+    constructor_families: [&'static str; 111],
+    #[serde(serialize_with = "serialize_array")]
+    constructor_ns: [u64; 111],
     next_variant: &'static str,
     next_counters: [u64; 4],
     endpoint_adoptions: usize,
@@ -120,6 +130,11 @@ pub(super) fn record(
         hash_variant: crate::preparation_options::variant(),
         reuse_variant: crate::preparation_options::reuse_variant(),
         reuse_counters: crate::preparation_options::reuse_counts(),
+        pipeline_variant: crate::preparation_options::pipeline_variant(),
+        parallel_variant: crate::preparation_options::parallel_variant(),
+        pipeline_counters: crate::preparation_options::pipeline_counts(),
+        constructor_families: crate::preparation_options::CONSTRUCTOR_NAMES,
+        constructor_ns: crate::preparation_options::constructor_ns(),
         next_variant: crate::preparation_options::next_variant(),
         next_counters: crate::preparation_options::next_counts(),
         endpoint_adoptions: crate::preparation_options::endpoint_adoptions(),

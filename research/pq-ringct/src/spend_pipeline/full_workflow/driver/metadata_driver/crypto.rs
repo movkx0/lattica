@@ -13,6 +13,8 @@ pub(super) fn fill<'case, 'request>(planning: &mut WorkflowPlanning<'_>,
     planning.validate_metadata_driver(metadata, case)?;
     empty_table(shake, case, metadata.counts().family(ProducerFamily::Shake))?;
     empty_table(aes, case, metadata.counts().family(ProducerFamily::Aes))?;
+    let mut numbers = planning.prepare_parallel_crypto(metadata)?;
+    let mut number_index = 0usize;
     let mut shake_count = 0usize;
     let mut aes_count = 0usize;
     for member_ordinal in 0..metadata.members().len() {
@@ -29,12 +31,14 @@ pub(super) fn fill<'case, 'request>(planning: &mut WorkflowPlanning<'_>,
                     if ordinal != shake_count { return Err(WorkflowError::Sequence); }
                     let slot = shake.slots().get(ordinal).ok_or(WorkflowError::Slot)?;
                     stage.action(DriverAction::Derive);
-                    let result = planning.derive_metadata_shake(metadata, member, source_ordinal)?;
+                    let result = crate::preparation_options::timed_constructor(107, || planning.derive_metadata_shake_resolved(metadata, member, source_ordinal,
+                        numbers.as_mut().map(|batch| batch.shake(number_index)).transpose()?))?;
                     stage.action(DriverAction::Install);
                     install(slot, result)?;
                     stage.action(DriverAction::PrepareEndpoints);
-                    planning.prepare_metadata_shake_endpoints(metadata, member, source_ordinal, case, shake)?;
+                    crate::preparation_options::timed_constructor(108, || planning.prepare_metadata_shake_endpoints(metadata, member, source_ordinal, case, shake))?;
                     shake_count = shake_count.checked_add(1).ok_or(WorkflowError::Overflow)?;
+                    number_index += 1;
                 }
                 RequestDescriptor::Aes(_) => {
                     stage.source(ProducerFamily::Aes, source_ordinal);
@@ -44,12 +48,14 @@ pub(super) fn fill<'case, 'request>(planning: &mut WorkflowPlanning<'_>,
                     if ordinal != aes_count { return Err(WorkflowError::Sequence); }
                     let slot = aes.slots().get(ordinal).ok_or(WorkflowError::Slot)?;
                     stage.action(DriverAction::Derive);
-                    let result = planning.derive_metadata_aes(metadata, member, source_ordinal)?;
+                    let result = crate::preparation_options::timed_constructor(109, || planning.derive_metadata_aes_resolved(metadata, member, source_ordinal,
+                        numbers.as_mut().map(|batch| batch.aes(number_index)).transpose()?))?;
                     stage.action(DriverAction::Install);
                     install(slot, result)?;
                     stage.action(DriverAction::PrepareEndpoints);
-                    planning.prepare_metadata_aes_endpoints(metadata, member, source_ordinal, case, aes)?;
+                    crate::preparation_options::timed_constructor(110, || planning.prepare_metadata_aes_endpoints(metadata, member, source_ordinal, case, aes))?;
                     aes_count = aes_count.checked_add(1).ok_or(WorkflowError::Overflow)?;
+                    number_index += 1;
                 }
             }
         }
