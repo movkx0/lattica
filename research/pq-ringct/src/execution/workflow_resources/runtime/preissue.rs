@@ -44,9 +44,23 @@ impl OuterPreissueAccess<'_> {
     pub(crate) fn limits(&self) -> Result<RegisteredGpuLimits, WorkflowError> {
         // The original backend/startup and source planning claims already
         // exist. Physical/environment inspection is bounded by those owners.
-        RegisteredGpuLimits::new(self.limits.host_bytes, self.limits.device_bytes,
-            4 << 30, self.limits.max_rows).map_err(|_| WorkflowError::Planning)
+        registered_operation_limits(self.limits)
     }
+}
+fn registered_operation_limits(limits: crate::opencl::Limits)
+    -> Result<RegisteredGpuLimits, WorkflowError>
+{
+    // Extra worker capacity retains the enclosing case. It does not enlarge
+    // the registered proof operation, whose source envelope stays at 32 GiB.
+    if !crate::host_memory_profile::HostMemoryProfile::valid_worker_ceiling(limits.host_bytes) {
+        return Err(WorkflowError::Planning);
+    }
+    let operation_host = limits.host_bytes.min(crate::host_memory_profile::OPERATION_HOST_BYTES);
+    RegisteredGpuLimits::new(operation_host, limits.device_bytes, 4 << 30, limits.max_rows)
+        .map_err(|error| {
+            eprintln!("owned_outer_preissue_limits_failure worker_host={} operation_host={operation_host} cause={error}", limits.host_bytes);
+            WorkflowError::Planning
+        })
 }
 
 fn is_outer(kind: PhaseKind) -> bool {
@@ -147,7 +161,11 @@ impl<'plan, 'context> WorkflowAdmission<'plan, 'context> {
 pub(in crate::execution::workflow_resources) fn bookkeeping_bytes() -> usize {
     8 * core::mem::size_of::<OuterPreissueAccess<'static>>()
         + 8 * core::mem::size_of::<Result<RegisteredGpuLimits, WorkflowError>>()
+        + 8 * core::mem::size_of::<crate::opencl::Limits>()
 }
+
+#[cfg(all(test, feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
+mod tests;
 
 #[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
 mod final_aggregation;

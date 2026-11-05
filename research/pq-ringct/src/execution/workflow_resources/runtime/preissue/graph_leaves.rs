@@ -25,12 +25,18 @@ macro_rules! graph_preissue {
                 let access = OuterPreissueAccess { binding, context: self.context,
                     ledger: phase.ledger(), held: &held, limits, backend: step.backend,
                     operation_host: partition.operation_host() as u64 };
-                let packet = $packet::new(plan, &access).map_err(|_| WorkflowError::Planning)?;
+                let packet = $packet::new(plan, &access).map_err(|error| {
+                    eprintln!("owned_outer_preissue_packet_failure producer={} cause={error:?}", stringify!($method));
+                    WorkflowError::Planning
+                })?;
                 drop(access); drop(held);
                 self.next_preissue = index.checked_add(1).ok_or(WorkflowError::Overflow)?;
                 Ok(packet)
             })();
-            if result.is_err() { self.failed = true; self.pool.poison(); }
+            if let Err(error) = &result {
+                eprintln!("owned_outer_preissue_failure producer={} cause={error:?}", stringify!($method));
+                self.failed = true; self.pool.poison();
+            }
             result
         }
     };
