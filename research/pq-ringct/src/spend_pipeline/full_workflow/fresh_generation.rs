@@ -29,6 +29,7 @@ pub(crate) enum FreshGenerationError {
     Workflow { stage: super::driver::metadata_driver::DriverStage, cause: crate::execution::workflow_resources::WorkflowError },
     ProducerMetadata { stage: super::metadata_planning::MetadataPlanningStage, cause: super::ClosureError },
     Resource(&'static str), Context(GenerationError), Retirement(GenerationFailure), Native(NativeError),
+    NativeSource(lattica_prover_p3::block_v2::native_gpu::private_spend::NativeSpendSourceError),
 }
 type Result<T> = core::result::Result<T, FreshGenerationError>;
 fn source(error: &'static str) -> FreshGenerationError { FreshGenerationError::Resource(error) }
@@ -80,7 +81,7 @@ impl<const N: usize> FreshGenerationPlan<N> {
             host_bytes: profile.worker_bytes(), device_bytes: 8 << 30, max_rows: 1 << 20,
         }).map_err(FreshGenerationError::Context)?;
         let native = NativeSpendOperationPlan::new(SpendLimits::bounded(24 << 30))
-            .map_err(|_| source("native spend source plan rejected"))?;
+            .map_err(FreshGenerationError::NativeSource)?;
         let c = DeclaredNativeFootprint::reviewed().map_err(source)?;
         let inputs = InputPlan::new(c).map_err(source)?;
         for minimum in [native.output_requirements(),

@@ -57,6 +57,18 @@ session layout, dispatch, allocations and ten other source locks are unchanged.
 The added source text remains included in the static-source census. CPU prefix
 ownership and worker memory are charged by their separate existing originals.
 
+The facade and engine locks were reviewed again on 2026-11-05 after a fresh
+full-workflow pilot refused admission before creating any native input. Since
+the pinned facade in `45ef91d`, the only change is the `preparation_storage`
+module declaration. Since the pinned engine in `a558265`, shared public-hash
+kernel source moved before field-commitment source so its helpers are declared
+first. Neither change adds an owner, allocation, native dispatch, or retained
+kernel to this spend path. The native controller, dispatch, bundle, layout,
+request/output types, session census, and nine other pins are unchanged.
+Both reviewed hashes are refreshed; static source bytes remain charged by
+their actual lengths. The allocation canaries and N3/N4 source-plan checks
+qualify this admission repair without changing any resource ceiling.
+
 The ocl inventory follows 0.19.7 `standard/program.rs` and `kernel.rs`:
 
 - ProgramBuilder requests 64-entry options; source/includes/EOF and compiler
