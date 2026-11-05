@@ -83,3 +83,34 @@ fn aes_source_preparation_minimum_and_verifier_exact_bytes_are_checked() {
         assert_eq!(ledger.snapshot().current, Bytes::ZERO);
     }
 }
+
+#[test]
+fn expanded_aes_worker_keeps_native_operation_and_device_limits() {
+    assert_eq!(WORKER_HOST, 32 << 30);
+    assert_eq!(MANAGED_DEVICE, 8 << 30);
+    for host in [32 << 30, 36 << 30] {
+        let ledger = Ledger::new(WorkerAllowance {
+            host,
+            device: MANAGED_DEVICE,
+        });
+        check_ledger(&ledger).unwrap();
+        let source = source();
+        let preparation = ledger
+            .admit_phase(preparation_requirements(source))
+            .unwrap();
+        check_preparation(source, &preparation, &ledger).unwrap();
+        drop(preparation);
+        assert_eq!(ledger.snapshot().current, Bytes::ZERO);
+    }
+    for (host, device) in [
+        ((32 << 30) + 1, MANAGED_DEVICE),
+        ((36 << 30) + 1, MANAGED_DEVICE),
+        (40 << 30, MANAGED_DEVICE),
+        (36 << 30, MANAGED_DEVICE - 1),
+        (36 << 30, MANAGED_DEVICE + 1),
+    ] {
+        let ledger = Ledger::new(WorkerAllowance { host, device });
+        assert_eq!(check_ledger(&ledger), Err(Error::Authority));
+        assert_eq!(ledger.snapshot().current, Bytes::ZERO);
+    }
+}

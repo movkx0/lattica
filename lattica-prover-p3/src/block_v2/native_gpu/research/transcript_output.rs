@@ -111,8 +111,7 @@ impl TranscriptOutputPlan {
         ledger: &Ledger,
     ) -> core::result::Result<PendingTranscriptOutput, (Error, Reservation, Reservation)> {
         let allowance = ledger.snapshot().allowance;
-        if allowance.host == 0
-            || allowance.host > 32 << 30
+        if !allowance.native_worker_host_supported()
             || allowance.device == 0
             || allowance.device > 8 << 30
             || !proof.belongs_to(ledger)

@@ -10,7 +10,8 @@ exact runtime before releasing any preparation or phase owner. A matching
 research constructor and its qualification are separate coordinator work.
 
 The host runtime claims the full 8 GiB tree allowance and actual HostQuota Arc
-wrapper in the same 32 GiB worker ledger. Native PCS gets only the actual
+wrapper in the same supported worker ledger (up to 32 GiB standard, or the
+explicit 36 GiB research allowance). Native PCS gets only the actual
 remaining host allowance after all earlier original owners and the additive
 wrapper claim, capped at the existing 24 GiB native limit. A lower remaining
 allowance is never replaced with the configured 24 GiB or a measured peak.

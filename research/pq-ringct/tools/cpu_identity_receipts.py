@@ -2,6 +2,14 @@
 import copy
 import json
 
+# identity_cpu::IdentityBatchFootprint retains only fingerprint::bounded's
+# encoded fields. The original 32 MiB construction allowance remains charged.
+PREFIX_RETAINED_HOST_BYTES = (7 + 7 * (1 << 17)) * 8 + 4096
+
+
+def construction_host_bytes(streams):
+    return streams * ((32 << 20) + 4096 + (2 << 20)) + (192 << 20) + (1 << 20)
+
 FIELDS = ('batches', 'programs', 'elapsed_ns', 'analysis_ns', 'hash_wall_ns',
           'worker_elapsed_ns', 'finalizations', 'finalization_ns', 'fields',
           'uploaded_bytes', 'downloaded_bytes', 'reserved_host_peak_bytes',
@@ -122,10 +130,13 @@ def reconcile(content, expected):
                     and jobs[:count] == [w['job'] for w in raw['workers']], 'CPU deterministic job order')
             footprint = prefix['footprint']
             require(footprint == raw['footprint'] and footprint['program_storage'] == 'borrowed'
+                    and all(type(footprint.get(name)) is int and footprint[name] >= 0 for name in
+                            ('borrowed_program_host_bytes', 'retained_host_bytes', 'managed_bytes',
+                             'max_allocation_bytes', 'host_bytes'))
                     and footprint['borrowed_program_host_bytes'] > 0
-                    and footprint['retained_host_bytes'] == count * ((32 << 20) + 4096)
+                    and footprint['retained_host_bytes'] == count * PREFIX_RETAINED_HOST_BYTES
                     and footprint['managed_bytes'] == footprint['max_allocation_bytes'] == 0
-                    and footprint['host_bytes'] >= footprint['retained_host_bytes'] + count * (2 << 20)
+                    and footprint['host_bytes'] == construction_host_bytes(count)
                     and footprint['host_bytes'] <= 32 << 30, 'CPU footprint or original backing mismatch')
             measured = dict.fromkeys(FIELDS, 0)
             measured.update(batches=1, programs=count, elapsed_ns=raw['cpu']['elapsed_ns'] + raw['analysis_ns'],

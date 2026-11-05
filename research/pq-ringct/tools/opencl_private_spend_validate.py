@@ -892,6 +892,7 @@ def build_plan(args):
     require(getattr(args, 'full_workflow_profile', 'off') == 'off' or complete_case,
             'full-workflow profiling requires the complete case acceptance mode')
     identity_qualification = getattr(args, 'identity_cpu_qualification', False)
+    native_quotient_screen = getattr(args, 'native_quotient_screen', False)
     metadata_qualification = getattr(args, 'metadata_cpu_qualification', False)
     native_metadata_profile = getattr(args, 'native_metadata_profile', False)
     metadata_stage_profile = getattr(args, 'metadata_stage_profile', False)
@@ -990,8 +991,17 @@ def build_plan(args):
         require(len(argv) == 6 and argv[1] == 'identity_preprocessing_screen::cpu_recursive_identity_worker_qualification'
                 and set(argv[2:]) == {'--exact', '--ignored', '--test-threads=1', '--nocapture'},
                 'wrong CPU identity qualification selector')
-    identity_cpus = identity_physical_cpus() if complete_case or identity_qualification or metadata_qualification or native_metadata_profile or scaling or metadata_stage_profile else None
-    if identity_qualification or metadata_qualification or native_metadata_profile or scaling or metadata_stage_profile:
+    if native_quotient_screen:
+        from native_quotient_screen import SELECTOR
+        require(args.profile == 'full' and args.expect_tests and args.build_label
+                and exact_owned_test(argv, 'lattica_pq_ringct_research-', SELECTOR),
+                'native quotient screen requires its exact recorded full-profile test')
+        require(getattr(args, 'retained_tree_storage', 'device') == 'host'
+                and getattr(args, 'device_uuid', None) is not None
+                and getattr(args, 'public_hash_kernel', 'baseline') == 'baseline',
+                'native quotient screen requires host trees, physical GPU pin and baseline hash')
+    identity_cpus = identity_physical_cpus() if complete_case or identity_qualification or native_quotient_screen or metadata_qualification or native_metadata_profile or scaling or metadata_stage_profile else None
+    if identity_qualification or native_quotient_screen or metadata_qualification or native_metadata_profile or scaling or metadata_stage_profile:
         require(len(identity_cpus) == 16, '16-worker qualification requires sixteen physical cores')
     host_profile = selected_host_profile(getattr(args, 'host_profile', 'standard'))
     require(host_profile['name'] == 'standard' or (args.profile == 'full' and
@@ -1007,7 +1017,7 @@ def build_plan(args):
     require(sum((bool(complete_case), bool(getattr(args, 'note_owned_proof', False)),
                  bool(getattr(args, 'note_workflow_cpu', False)),
                  getattr(args, 'owned_runtime_test', None) is not None,
-                 bool(direct_ring_screen), bool(metadata_qualification), bool(identity_qualification), bool(native_metadata_profile), bool(scaling), bool(metadata_stage_profile),
+                 bool(direct_ring_screen), bool(metadata_qualification), bool(identity_qualification), bool(native_quotient_screen), bool(native_metadata_profile), bool(scaling), bool(metadata_stage_profile),
                  bool(getattr(args, 'direct_ring_aggregate', False)),
                  bool(getattr(args, 'owned_source_shape_test', False)),
                  bool(getattr(args, 'active_hashx_preflight', False)),
@@ -1091,9 +1101,15 @@ def build_plan(args):
         'LATTICA_PROVING_REPORT': '1',
         'LATTICA_PROVING_POLICY': 'cpu-required' if args.profile in CPU_PROFILES else 'gpu-required',
     }
+    cpu_target = getattr(args, 'build_cpu_target', None)
+    from cpu_build_target import configure as configure_cpu_target
+    configure_cpu_target(cpu_target, args.profile, argv, environment)
     device_uuid = getattr(args, 'device_uuid', None)
     if metadata_qualification:
         environment['LATTICA_METADATA_CPU_QUALIFICATION'] = '1'
+    if native_quotient_screen:
+        from native_quotient_screen import ENVIRONMENT
+        environment[ENVIRONMENT] = '1'
     if scaling:
         environment['LATTICA_CPU_SCALING_PROFILE'] = '1'
         environment['LATTICA_CPU_SCALING_PLACEMENT'] = scaling_selection['placement']
@@ -1230,7 +1246,7 @@ def build_plan(args):
             args, argv, environment, ROOT, STATE)
     return {'schema': 'pq-opencl-optimization-correctness-job-v2', 'label': args.label,
             'profile': args.profile, 'host_memory_profile': host_profile,
-            'command': argv, 'environment': environment,
+            'command': argv, 'environment': environment, 'build_cpu_target': cpu_target,
             'note_startup_environment': note_environment,
             'note_cpu_environment': cpu_note_environment,
             'owned_runtime_environment': runtime_environment,
@@ -1255,6 +1271,7 @@ def build_plan(args):
             'fresh_memavailable_required_bytes': admission * GIB,
             'cpu_quota': '1600%' if identity_cpus is not None else str(threads * 100) + '%',
             'identity_physical_cpus': identity_cpus, 'identity_cpu_qualification': identity_qualification,
+            'native_quotient_screen': native_quotient_screen,
             'metadata_cpu_qualification': metadata_qualification, 'native_metadata_profile': native_metadata_profile,
             'metadata_stage_profile': metadata_stage_profile,
             'metadata_transactions': metadata_transactions if metadata_stage_profile else None,
@@ -1312,6 +1329,8 @@ def executable_provenance(plan, sources, runs):
     if plan['build_label']:
         record_path = runs / (plan['build_label'] + '.json')
         record = json.loads(record_path.read_text())
+        from cpu_build_target import check as check_cpu_target
+        check_cpu_target(record.get('build_cpu_target'))
         require(record.get('status') == 'passed' and record.get('profile') == 'build'
                 and record.get('source_inputs_unchanged') is True
                 and record.get('all_subprocesses_terminal_and_reaped') is True
@@ -1324,7 +1343,8 @@ def executable_provenance(plan, sources, runs):
                 and sha(build_log) == record.get('raw_log_sha256'),
                 'executable build log does not match its record')
         require_cargo_test_artifacts(record, build_log.read_text(errors='replace'), [executable])
-        identity.update(build_record=str(record_path), build_record_sha256=sha(record_path))
+        identity.update(build_record=str(record_path), build_record_sha256=sha(record_path),
+                        build_cpu_target=record.get('build_cpu_target'))
     return identity
 
 
@@ -1933,6 +1953,9 @@ def validate_output(log, plan):
     if plan.get('identity_cpu_qualification'):
         from cpu_identity_qualification import validate
         plan['identity_cpu_qualification_acceptance'] = validate(content)
+    if plan.get('native_quotient_screen'):
+        from native_quotient_screen import validate
+        plan['native_quotient_screen_acceptance'] = validate(content)
     if plan.get('cpu_scaling_profile'):
         if plan['cpu_scaling_profile'].get('callgraph'):
             from cpu_callgraph_profile import validate
@@ -2302,6 +2325,8 @@ def main():
     parser.add_argument('--expect-result', action='store_true')
     parser.add_argument('--expect-direct-result', action='store_true')
     parser.add_argument('--identity-cpu-qualification', action='store_true')
+    parser.add_argument('--native-quotient-screen', action='store_true',
+                        help='exact AES/affine quotient compilation and execution screen')
     parser.add_argument('--metadata-fixture-out')
     parser.add_argument('--metadata-fixture-in')
     parser.add_argument('--metadata-transactions', type=int, choices=(3, 4))
@@ -2333,6 +2358,8 @@ def main():
     parser.add_argument('--retained-tree-storage', choices=['device', 'host'], default='device')
     parser.add_argument('--public-hash-kernel', choices=['baseline', 'sbox-pair-v1'], default='baseline')
     parser.add_argument('--build-label')
+    parser.add_argument('--build-cpu-target', choices=['x86-64-v3'],
+                        help='Explicit ISA for a recorded Cargo build; artifact launches check host support.')
     parser.add_argument('--device-uuid', help='exact physical UUID for selectors that verify the pin')
     parser.add_argument('--note-owned-proof', action='store_true',
                         help='use the fixed environment for the isolated owned-note GPU test')

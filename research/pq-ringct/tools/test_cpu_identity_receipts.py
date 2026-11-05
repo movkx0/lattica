@@ -33,7 +33,9 @@ def fixture():
         if prefix == 'owned_identity_report':
             epoch = next(v['epoch']['identity_prefix'] for p, v in original[index + 1:] if p == 'owned_outer_epoch' and 'identity_prefix' in v['epoch'])
             jobs = [j for j in epoch['jobs'] if j is not None]; count = len(jobs)
-            footprint = epoch['footprint']; footprint.update(managed_bytes=0, max_allocation_bytes=0)
+            footprint = epoch['footprint']; footprint.update(managed_bytes=0, max_allocation_bytes=0,
+                retained_host_bytes=count * audit.PREFIX_RETAINED_HOST_BYTES,
+                host_bytes=audit.construction_host_bytes(count))
             measured = dict.fromkeys(audit.FIELDS, 0)
             measured.update(batches=1, programs=count, elapsed_ns=110, analysis_ns=100, hash_wall_ns=9,
                             worker_elapsed_ns=count * 8, fields=count * 40, reserved_host_peak_bytes=footprint['host_bytes'])
@@ -56,6 +58,21 @@ def fixture():
 
 
 class CpuIdentityTests(unittest.TestCase):
+    def test_retained_encoding_shrinks_without_shrinking_construction_admission(self):
+        self.assertEqual(16 * audit.PREFIX_RETAINED_HOST_BYTES, 117_506_944)
+        self.assertEqual(audit.construction_host_bytes(16), 772_866_048)
+        for field, value in [('retained_host_bytes', 2 * ((32 << 20) + 4096)),
+                             ('host_bytes', 2 * audit.PREFIX_RETAINED_HOST_BYTES + (4 << 20)),
+                             ('managed_bytes', False)]:
+            events, totals = fixture()
+            raw = next(value for prefix, value in events if prefix == 'owned_identity_cpu_report')
+            epoch = next(value['epoch']['identity_prefix'] for prefix, value in events
+                         if prefix == 'owned_outer_epoch' and 'identity_prefix' in value['epoch'])
+            raw['footprint'][field] = value
+            epoch['footprint'][field] = value
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                audit.reconcile(render(events), totals)
+
     def test_parallel_prefixes_and_tail_are_distinct_from_gpu_proofs(self):
         events, totals = fixture(); normalized, result = audit.reconcile(render(events), totals)
         self.assertEqual(result['tokens_consumed'], 3)

@@ -66,7 +66,7 @@ fn only(token: &Reservation, category: Category, ledger: &Ledger) -> Result<Byte
 
 fn check_ledger(ledger: &Ledger) -> Result<()> {
     let allowance = ledger.snapshot().allowance;
-    if allowance.host == 0 || allowance.host > WORKER_HOST || allowance.device != MANAGED_DEVICE {
+    if !allowance.native_worker_host_supported() || allowance.device != MANAGED_DEVICE {
         return Err(Error::Authority);
     }
     Ok(())

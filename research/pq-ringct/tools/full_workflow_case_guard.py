@@ -202,7 +202,9 @@ def validate_envelope(envelope, plan):
             require(type(native) is dict, 'missing native metadata cache report')
             for key in ('hits', 'misses', 'evictions', 'failed_computations', 'planning_ns', 'entries', 'reserved_host_bytes'):
                 natural(native.get(key), 'native_metadata_cache.' + key)
-            require(native['reserved_host_bytes'] == 1 << 20 and native['entries'] <= 256
+            # Native cache storage includes its fixed descriptor inventory.
+            # Match cache::RESERVED_BYTES and the native catalog validator.
+            require(native['reserved_host_bytes'] == 2 << 20 and native['entries'] <= 256
                     and native['failed_computations'] == 0, 'invalid native metadata cache accounting')
         else:
             require(native is None, 'unexpected native metadata cache work')

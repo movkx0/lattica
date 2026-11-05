@@ -63,7 +63,7 @@ fn only(token: &Reservation, category: Category, ledger: &Ledger) -> Result<Byte
 
 fn check_ledger(ledger: &Ledger) -> Result<()> {
     let allowance = ledger.snapshot().allowance;
-    if allowance.host == 0 || allowance.host > WORKER_HOST || allowance.device != MANAGED_DEVICE {
+    if !allowance.native_worker_host_supported() || allowance.device != MANAGED_DEVICE {
         return Err(Error::Authority);
     }
     Ok(())
@@ -201,7 +201,7 @@ impl NativeAesPhase {
 
     /// Explicit host-tree research profile. The original pending runtime must
     /// own StartupPlan::outer_host_v1's complete 8 GiB host-tree payload and
-    /// quota wrapper inside the same 32 GiB worker ledger before this call.
+    /// quota wrapper inside the same supported worker ledger before this call.
     /// This is never selected as a fallback from the device profile.
     ///
     /// # Safety

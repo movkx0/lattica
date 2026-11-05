@@ -61,8 +61,7 @@ impl LinearMapDeviceCensus {
         pcs_owner: &'owner Reservation,
     ) -> Result<LinearMapDeviceLease<'owner>> {
         let allowance = ledger.snapshot().allowance;
-        if allowance.host == 0
-            || allowance.host > 32u64 << 30
+        if !allowance.native_worker_host_supported()
             || allowance.device != self.managed_ceiling_bytes as u64
             || allowance.device > 8u64 << 30
             || !preparation_owner.belongs_to(ledger)

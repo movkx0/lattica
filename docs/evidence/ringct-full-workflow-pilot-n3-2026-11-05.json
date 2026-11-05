@@ -1,0 +1,648 @@
+{
+  "schema": "ringct-full-workflow-pilot-n3-2026-11-05",
+  "measurement_date": "2026-11-05 UTC",
+  "scope": "Fresh N3 complete workflow, including native transaction input generation, recursive proof generation, final CPU verification and retirement. Detailed pilot only; no optimization performance is qualified.",
+  "executed_commit": "0751d7eb79d3fae20d487d17e81d7a7046cdec2f",
+  "pilot_label": "fullflow-pilot-n3-r3",
+  "qualification": {
+    "original_wrapper_status": "failed_or_incomplete",
+    "original_wrapper_error": "ValueError('invalid native metadata cache accounting')",
+    "separate_validator_reaudit_status": "passed",
+    "original_record_preserved": true,
+    "reaudit_reference": {
+      "path": ".tools/full-workflow-profile/n3-r3-validator-reaudit.json",
+      "sha256": "991ff4c74655c3fef8a5835144f93f6e5bb2269d9b09b772c666ee18547d1979"
+    },
+    "corrections": [
+      "Native cache reserves 2 MiB including its inventory; the old validator expected 1 MiB.",
+      "CPU prefixes retain only encoded fields: 7344184 bytes each; full 32 MiB construction, 192 MiB shared symbolic storage and worker stacks remain charged."
+    ],
+    "analysis_reference": {
+      "path": ".tools/full-workflow-profile/pilot-n3-r3-analysis.json",
+      "sha256": "02e1fb52eac54c4dda9979b3339f1063ce859df26be997970036f81c36e8c288"
+    },
+    "complete_case_artifacts_and_mutations_verified": true,
+    "performance_qualified": false
+  },
+  "analysis": {
+    "record": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/fullflow-pilot-n3-r3.json",
+    "record_sha256": "bb96dea518d0d26dd277325468162180f4cadad4e092dd91301b7c81ffd41efb",
+    "case": "n3",
+    "complete_workflow_seconds": 13591.458699106,
+    "phases": [
+      {
+        "phase": "generation",
+        "seconds": 1003.75068617,
+        "fraction": 0.07385157902411338
+      },
+      {
+        "phase": "startup",
+        "seconds": 0.110080492,
+        "fraction": 8.099240444827362e-06
+      },
+      {
+        "phase": "metadata",
+        "seconds": 1.958677473,
+        "fraction": 0.0001441109093852329
+      },
+      {
+        "phase": "admission",
+        "seconds": 0.065781005,
+        "fraction": 4.839878224721152e-06
+      },
+      {
+        "phase": "preflight",
+        "seconds": 1.566098813,
+        "fraction": 0.00011522669109114923
+      },
+      {
+        "phase": "preissue",
+        "seconds": 4.941842091,
+        "fraction": 0.0003635990956088516
+      },
+      {
+        "phase": "execution",
+        "seconds": 12579.061225351,
+        "fraction": 0.9255122282186243
+      },
+      {
+        "phase": "retirement",
+        "seconds": 0.004307711,
+        "fraction": 3.1694250745016404e-07
+      }
+    ],
+    "execution_groups": [
+      {
+        "group": "native",
+        "completed": 264,
+        "seconds": 958.040872684,
+        "fraction": 0.07048845115844826
+      },
+      {
+        "group": "crypto_endpoints",
+        "completed": 21,
+        "seconds": 0.030876012,
+        "fraction": 2.271721724911758e-06
+      },
+      {
+        "group": "crypto_native",
+        "completed": 402,
+        "seconds": 1756.664102568,
+        "fraction": 0.12924765041470843
+      },
+      {
+        "group": "crypto_compile",
+        "completed": 429,
+        "seconds": 247.168564604,
+        "fraction": 0.018185580376318098
+      },
+      {
+        "group": "crypto_outer",
+        "completed": 429,
+        "seconds": 4417.921302225,
+        "fraction": 0.3250512987627734
+      },
+      {
+        "group": "fixed_compile",
+        "completed": 3,
+        "seconds": 0.064341979,
+        "fraction": 4.73400099462703e-06
+      },
+      {
+        "group": "fixed_outer",
+        "completed": 3,
+        "seconds": 2.440389493,
+        "fraction": 0.00017955316990077899
+      },
+      {
+        "group": "leaf_compile",
+        "completed": 243,
+        "seconds": 61.224450606,
+        "fraction": 0.004504626910283525
+      },
+      {
+        "group": "leaf_outer",
+        "completed": 243,
+        "seconds": 1709.125255856,
+        "fraction": 0.12574995029550584
+      },
+      {
+        "group": "direct_compile",
+        "completed": 27,
+        "seconds": 10.492321843,
+        "fraction": 0.0007719790844591353
+      },
+      {
+        "group": "direct_outer",
+        "completed": 27,
+        "seconds": 236.966747387,
+        "fraction": 0.017434975349819287
+      },
+      {
+        "group": "parent_compile",
+        "completed": 270,
+        "seconds": 144.815327057,
+        "fraction": 0.010654877468488755
+      },
+      {
+        "group": "parent_outer",
+        "completed": 270,
+        "seconds": 2954.237072705,
+        "fraction": 0.21735982414450628
+      },
+      {
+        "group": "final_compile",
+        "completed": 2,
+        "seconds": 1.740045138,
+        "fraction": 0.0001280248997934603
+      },
+      {
+        "group": "final_outer",
+        "completed": 2,
+        "seconds": 77.457637542,
+        "fraction": 0.005698993703089051
+      },
+      {
+        "group": "final_verify",
+        "completed": 1,
+        "seconds": 0.182821627,
+        "fraction": 1.3451214549327615e-05
+      }
+    ],
+    "eligible_costs": [
+      {
+        "kind": "execution_group",
+        "name": "crypto_outer",
+        "fraction": 0.3250512987627734,
+        "seconds": 4417.921302225
+      },
+      {
+        "kind": "execution_group",
+        "name": "parent_outer",
+        "fraction": 0.21735982414450628,
+        "seconds": 2954.237072705
+      },
+      {
+        "kind": "nested_operation",
+        "name": "cpu_identity",
+        "seconds": 2544.342642425,
+        "fraction": 0.18720158731691972
+      },
+      {
+        "kind": "execution_group",
+        "name": "crypto_native",
+        "fraction": 0.12924765041470843,
+        "seconds": 1756.664102568
+      },
+      {
+        "kind": "execution_group",
+        "name": "leaf_outer",
+        "fraction": 0.12574995029550584,
+        "seconds": 1709.125255856
+      }
+    ],
+    "identity_cpu": {
+      "kind": "nested_operation",
+      "name": "cpu_identity",
+      "seconds": 2544.342642425,
+      "fraction": 0.18720158731691972
+    },
+    "identity_cpu_detail": null,
+    "quotient_compilation": {
+      "kind": "nested_operation",
+      "name": "gpu_quotient_compilation",
+      "seconds": 997.34075484,
+      "fraction": 0.07337996435258283,
+      "measured_builds": 785,
+      "selected_builds": 785,
+      "rejected_builds": 429,
+      "builds_without_wall_clock": 429,
+      "lower_bound": true,
+      "distinct_observed_sources": 0,
+      "repeated_source_builds": 0,
+      "source_build_seconds": {},
+      "source_note": "Repeated source digests identify identical compiler input; no driver cache-hit or miss is inferred."
+    },
+    "native_input_seconds": [
+      278.360684061,
+      270.997726043,
+      454.031633889
+    ],
+    "generation": {
+      "spends": 3,
+      "seconds": 1003.3713328399999,
+      "managed_peak_bytes": 3151744,
+      "witness_completed_calls": 2622,
+      "witness_device_calls": 2622,
+      "witness_device_ns": 1003215880192
+    },
+    "metadata_wall": {
+      "setup_ns": 5165988,
+      "graph_sources_ns": 658008781,
+      "source_preparation_ns": 1101367594,
+      "inventory_ns": 49941534,
+      "reservation_ns": 13410,
+      "constructors_ns": 143951221,
+      "native_constructors_ns": 20386127,
+      "crypto_constructors_ns": 5720249,
+      "graph_constructors_ns": 7752063,
+      "final_aggregation_ns": 110092782,
+      "total_ns": 1958448528
+    },
+    "owned_observations": {
+      "identity_preprocessing": {
+        "batches": 15,
+        "programs": 180,
+        "elapsed_ns": 89587058278,
+        "analysis_ns": 25378128872,
+        "hash_wall_ns": 64208749312,
+        "worker_elapsed_ns": 768934537346,
+        "finalizations": 974,
+        "finalization_ns": 2480133893113,
+        "fields": 4464387999,
+        "uploaded_bytes": 0,
+        "downloaded_bytes": 0,
+        "reserved_host_peak_bytes": 772866048,
+        "reserved_managed_peak_bytes": 0
+      },
+      "schema": "ringct-owned-workflow-observations-v2",
+      "session_id": 2,
+      "machine_preprocessing": {
+        "reports": 974,
+        "elapsed_ns": 1127024885921
+      },
+      "machine_proofs": {
+        "reports": 974,
+        "elapsed_ns": 5365914494926
+      },
+      "native_proofs": [
+        {
+          "entry_point": "ringct_owned_native_graph_source",
+          "totals": {
+            "reports": 6,
+            "elapsed_ns": 5263293765
+          },
+          "rows": {
+            "proofs": 6,
+            "active_rows": null,
+            "padded_rows": 73728
+          }
+        },
+        {
+          "entry_point": "ringct_owned_native_uniform",
+          "totals": {
+            "reports": 9,
+            "elapsed_ns": 3019637003
+          },
+          "rows": {
+            "proofs": 9,
+            "active_rows": null,
+            "padded_rows": 15360
+          }
+        },
+        {
+          "entry_point": "ringct_owned_native_sparse",
+          "totals": {
+            "reports": 6,
+            "elapsed_ns": 1460983433
+          },
+          "rows": {
+            "proofs": 6,
+            "active_rows": null,
+            "padded_rows": 1536
+          }
+        },
+        {
+          "entry_point": "ringct_owned_native_transcript",
+          "totals": {
+            "reports": 6,
+            "elapsed_ns": 6386339922
+          },
+          "rows": {
+            "proofs": 6,
+            "active_rows": null,
+            "padded_rows": 110592
+          }
+        },
+        {
+          "entry_point": "ringct_owned_native_affine",
+          "totals": {
+            "reports": 99,
+            "elapsed_ns": 511776240429
+          },
+          "rows": {
+            "proofs": 99,
+            "active_rows": null,
+            "padded_rows": 1082880
+          }
+        },
+        {
+          "entry_point": "ringct_owned_native_ntt",
+          "totals": {
+            "reports": 21,
+            "elapsed_ns": 26270158925
+          },
+          "rows": {
+            "proofs": 21,
+            "active_rows": null,
+            "padded_rows": 291840
+          }
+        },
+        {
+          "entry_point": "ringct_owned_native_mul",
+          "totals": {
+            "reports": 51,
+            "elapsed_ns": 177942395991
+          },
+          "rows": {
+            "proofs": 51,
+            "active_rows": null,
+            "padded_rows": 2912256
+          }
+        },
+        {
+          "entry_point": "ringct_owned_native_g_bound",
+          "totals": {
+            "reports": 36,
+            "elapsed_ns": 27353784682
+          },
+          "rows": {
+            "proofs": 36,
+            "active_rows": null,
+            "padded_rows": 147456
+          }
+        },
+        {
+          "entry_point": "ringct_owned_native_permutation",
+          "totals": {
+            "reports": 9,
+            "elapsed_ns": 56109445757
+          },
+          "rows": {
+            "proofs": 9,
+            "active_rows": null,
+            "padded_rows": 2304
+          }
+        },
+        {
+          "entry_point": "ringct_owned_native_linear_map",
+          "totals": {
+            "reports": 21,
+            "elapsed_ns": 75168879825
+          },
+          "rows": {
+            "proofs": 21,
+            "active_rows": null,
+            "padded_rows": 8064
+          }
+        },
+        {
+          "entry_point": "ringct_owned_native_aes",
+          "totals": {
+            "reports": 42,
+            "elapsed_ns": 293220616644
+          },
+          "rows": {
+            "proofs": 42,
+            "active_rows": null,
+            "padded_rows": 2580480
+          }
+        },
+        {
+          "entry_point": "ringct_owned_native_shake",
+          "totals": {
+            "reports": 360,
+            "elapsed_ns": 1366413773443
+          },
+          "rows": {
+            "proofs": 360,
+            "active_rows": null,
+            "padded_rows": 22339584
+          }
+        }
+      ],
+      "witness_preparation": {
+        "reports": 227,
+        "elapsed_ns": 100494584118,
+        "witness_completed_calls": 455,
+        "witness_device_calls": 455,
+        "witness_device_ns": 168853536
+      },
+      "row_receipts": 1640,
+      "machine_rows": {
+        "proofs": 974,
+        "active_rows": 202307535,
+        "padded_rows": 222150656
+      }
+    },
+    "source_preparation": {
+      "session_id": 2,
+      "calls": 6,
+      "succeeded": 6,
+      "complete_reports": 6,
+      "seconds": 1.657398131,
+      "witness_completed_calls": 3003,
+      "witness_device_calls": 3003,
+      "witness_device_ns": 1336982528,
+      "native_cpu_calls": 0,
+      "native_cpu_succeeded": 0,
+      "failure_events": 0
+    },
+    "final_cpu_verification_seconds": 0.152746054,
+    "source_geometry_cache": {
+      "hits": 1370,
+      "table_hits": 9,
+      "misses": 9,
+      "evictions": 0,
+      "failed_computations": 0,
+      "planning_ns": 93581,
+      "entries": 9,
+      "reserved_host_bytes": 1048576
+    },
+    "native_metadata_cache": {
+      "hits": 802,
+      "table_hits": 185,
+      "misses": 185,
+      "evictions": 0,
+      "failed_computations": 0,
+      "planning_ns": 2343754,
+      "entries": 185,
+      "reserved_host_bytes": 2097152,
+      "cohorts": 0,
+      "jobs_started": 0,
+      "peak_workers": 0,
+      "periodic_preparations": 0,
+      "budget_reductions": 0,
+      "admitted_host_bytes_peak": 0,
+      "threads_spawned": 0,
+      "pinned_workers": 0,
+      "affinity_failures": 0,
+      "queue_refills": 0,
+      "workspace_reuses": 0,
+      "restored_workspaces": 0,
+      "cost_hint_jobs": 0,
+      "maintenance_jobs": 0,
+      "completions_drained": 0,
+      "admission_stalls": 0,
+      "trimmed_compiler_bytes": 0,
+      "idle_compiler_bytes_peak": 0,
+      "phase_extra_bytes_peak": 0,
+      "preparation_ns": 0,
+      "coordinator_wait_ns": 0,
+      "retained_worker_bytes_peak": 0
+    },
+    "native_proofs": 666,
+    "recursive_proofs": 974,
+    "completed_phases": 2636,
+    "ledger_peak_host_bytes": 34359738368,
+    "ledger_peak_device_bytes": 8589934592,
+    "telemetry": {
+      "schema": "ringct-workflow-telemetry-v1",
+      "path": "/home/access/code/lattica/.tools/pq-opencl-opt/runs/fullflow-pilot-n3-r3.telemetry.jsonl",
+      "sha256": "dfb339d83190ffe1815f757e130731d14fdc0262c60210b65e24f1d8df78590c",
+      "samples": 13591,
+      "samples_with_errors": 0,
+      "write_error": null,
+      "requested_interval_seconds": 1,
+      "scope": "External cgroup CPU/RAM and whole-device GPU samples; not process-isolated GPU busy time."
+    },
+    "utilization": {
+      "samples": 13591,
+      "window_seconds": 13591.154488226,
+      "mean_cpu_cores": 1.0895880484493654,
+      "whole_device_gpu_mean_percent": 51.79177116658098,
+      "gpu_observation_fraction": 1.0,
+      "host_peak_bytes": 8906461184,
+      "whole_device_gpu_peak_mib": 8798.0,
+      "samples_with_errors": 0,
+      "write_error": null,
+      "scope": "External sampler window, including launch and cleanup; GPU measurements cover the whole device. Weighted sampled utilization is not a proof-stage duration or promotion criterion."
+    },
+    "clock_note": "Phase wall clocks partition the total. Execution groups, device time and metadata detail are nested observations.",
+    "validation_note": "Original guard rejected outdated reservation constants. A separate complete re-audit with source-matched validators passed; the original failure record is unchanged."
+  },
+  "n4_baseline_preparation": {
+    "scope": "Exact 36 GiB worker-host admission for native operations; operation limits remain 24 GiB native / 32 GiB recursive / 8 GiB managed device. No execution algorithm is changed.",
+    "diagnostics": [
+      "GPU quotient source SHA3-256 and selected/rejected build wall clocks",
+      "Serial CPU identity count/canonicalization and framed hash wall clocks"
+    ],
+    "tools": [
+      "Audited complete-workflow report and balanced-pair comparison",
+      "24-proof native quotient screen with CPU verification and mutation rejection",
+      "Explicit recorded x86-64-v3 build control and artifact host compatibility check"
+    ],
+    "source_snapshot": ".tools/full-workflow-baseline-source-r4",
+    "source_manifest": {
+      "path": ".tools/full-workflow-profile/baseline-source-manifest-r4.json",
+      "sha256": "82737948024407bebc6458a7f2ea44d9663a8a69933ec76d44e4b6928d85c2c3"
+    },
+    "numeric_table_parity": [
+      {
+        "family": "native",
+        "previous_record": "fullflow-native-catalog-r3",
+        "current_record": "fullflow-native-catalog-r4",
+        "rows": 317,
+        "equal": true,
+        "rows_sha256": "d43de3a204323e7368578dcb26a7816b253c3485c99121ea879eac383cb22719",
+        "generated_table_reproduces": true
+      },
+      {
+        "family": "registered",
+        "previous_record": "fullflow-registered-catalog-r3",
+        "current_record": "fullflow-registered-catalog-r4",
+        "rows": 72,
+        "equal": true,
+        "rows_sha256": "fb774a0fed7899ac0048a4d535ec908af5634e6ba9d2fbd6fb269eaf4afa0dd3",
+        "generated_table_reproduces": true
+      }
+    ],
+    "python_tests_passed": 128,
+    "guarded_validation": [
+      {
+        "label": "fullflow-research-tests-build-r5",
+        "path": ".tools/pq-opencl-opt/runs/fullflow-research-tests-build-r5.json",
+        "sha256": "8f705ced4199956e70f8910938765dd1c415534d29ee59e478c1acfe22d9e9e9",
+        "status": "passed",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      {
+        "label": "fullflow-core-tests-build-r5",
+        "path": ".tools/pq-opencl-opt/runs/fullflow-core-tests-build-r5.json",
+        "sha256": "14aac2166f07deb2d3c26b240ede096e36bb20872af2a7f4f06fc7c0e9e21fd5",
+        "status": "passed",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      {
+        "label": "fullflow-n4-admission-cpu-r1",
+        "path": ".tools/pq-opencl-opt/runs/fullflow-n4-admission-cpu-r1.json",
+        "sha256": "ca3d7a416f1cd08daca4625fe2bd87f379f56df4c3c31e8f12a69fcd5613ebe4",
+        "status": "passed",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      {
+        "label": "fullflow-n4-admission-research-r1",
+        "path": ".tools/pq-opencl-opt/runs/fullflow-n4-admission-research-r1.json",
+        "sha256": "9235a43a4f6ba9178f7150524209f7a481aa82e5e28157a336715e5ffe5a3908",
+        "status": "passed",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      {
+        "label": "fullflow-owned-identity-r3",
+        "path": ".tools/pq-opencl-opt/runs/fullflow-owned-identity-r3.json",
+        "sha256": "63911f5811568bebf0f04e65c48e29ee57a4e4cd691106508fe2c7c29ebe4cdc",
+        "status": "passed",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      {
+        "label": "fullflow-native-quotient-baseline-r2",
+        "path": ".tools/pq-opencl-opt/runs/fullflow-native-quotient-baseline-r2.json",
+        "sha256": "b8fc4c01f5229ffda2067230129164a1fbebce4662d10177a26c7890031eec08",
+        "status": "passed",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      {
+        "label": "fullflow-native-catalog-r4",
+        "path": ".tools/pq-opencl-opt/runs/fullflow-native-catalog-r4.json",
+        "sha256": "19b16cca2d97088405088e2d0301b9ec5acfe701048737b04dccc972f47d53b6",
+        "status": "passed",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      {
+        "label": "fullflow-registered-catalog-r4",
+        "path": ".tools/pq-opencl-opt/runs/fullflow-registered-catalog-r4.json",
+        "sha256": "edfb1f61f17a25fb0fb27b143d6ce24de79eb702454386dcbaf79cad044b13d1",
+        "status": "passed",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      },
+      {
+        "label": "fullflow-cli-build-r5",
+        "path": ".tools/pq-opencl-opt/runs/fullflow-cli-build-r5.json",
+        "sha256": "60e9e81bee77a57e071dc7d9d5d5399501d94788b402b0e2a8c80d41c78abe9f",
+        "status": "passed",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true
+      }
+    ],
+    "native_screen_first_attempt": {
+      "label": "fullflow-native-quotient-baseline-r1",
+      "original_wrapper_status": "failed_or_incomplete",
+      "cause": "Validator expected operation scope; native reports correctly cover proof_request. All 24 proof verifications and mutations passed, then the corrected validator and a fresh rerun passed."
+    },
+    "n4_complete_workflow_performance_qualified": false
+  },
+  "remaining_work": [
+    "N4 detailed pilot under the 36 GiB worker envelope",
+    "Select and measure up to three bottleneck optimizations",
+    "Worker and fused/paired metadata controls",
+    "Four balanced baseline/candidate pairs for each of N3 and N4 across two public workloads"
+  ]
+}

@@ -1,5 +1,35 @@
 use super::*;
 
+#[test]
+fn native_worker_host_envelopes_require_the_explicit_research_boundary() {
+    for host in [1, 1 << 30, 32 << 30, 36 << 30] {
+        assert!(WorkerAllowance {
+            host,
+            device: 8 << 30
+        }
+        .native_worker_host_supported());
+    }
+    for host in [
+        0,
+        (32 << 30) + 1,
+        35 << 30,
+        (36 << 30) + 1,
+        40 << 30,
+        u64::MAX,
+    ] {
+        assert!(!WorkerAllowance {
+            host,
+            device: 8 << 30
+        }
+        .native_worker_host_supported());
+    }
+    // Recognizing an envelope never changes ledger credit or operation caps.
+    let ledger = ledger(36 << 30, 8 << 30);
+    assert!(ledger.snapshot().allowance.native_worker_host_supported());
+    assert_eq!(ledger.snapshot().current, Bytes::ZERO);
+    assert_eq!(ledger.remaining(), bytes(36 << 30, 8 << 30));
+}
+
 fn bytes(host: u64, device: u64) -> Bytes {
     Bytes { host, device }
 }

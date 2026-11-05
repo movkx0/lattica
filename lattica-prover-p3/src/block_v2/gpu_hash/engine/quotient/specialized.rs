@@ -8,6 +8,7 @@ use crate::block_v2::quotient_program::{
     specialize::{self, Backend, BLOCK},
     Program,
 };
+use sha3::{Digest, Sha3_256};
 use std::sync::atomic::{AtomicBool, Ordering};
 const REQUIRED_DRIVER_RESERVE: usize = 4 << 30;
 const MAX_PRIVATE_BYTES: usize = 512;
@@ -70,6 +71,9 @@ pub(in crate::block_v2::gpu_hash::engine) fn prepare(
     let Some(source) = source(program)? else {
         return Ok(None);
     };
+    // Diagnostic only: distinguish repeated compiler inputs from merely equal
+    // byte lengths. This digest grants no cache, quota or execution authority.
+    let source_hash = Sha3_256::digest(source.as_bytes());
     let started = std::time::Instant::now();
     let compiled = ocl::Program::builder()
         .devices(device)
@@ -94,14 +98,15 @@ pub(in crate::block_v2::gpu_hash::engine) fn prepare(
     // Allow at most 128 MiB of rounded resident private backing within the
     // 4 GiB opaque driver allowance; no managed workspace is borrowed.
     if private_bytes > MAX_PRIVATE_BYTES {
-        eprintln!("bounded_gpu_quotient_specialization selected=false private_bytes={private_bytes} limit_bytes={MAX_PRIVATE_BYTES}");
+        eprintln!("bounded_gpu_quotient_specialization selected=false degree={} instructions={} registers={} source_bytes={} private_bytes={private_bytes} limit_bytes={MAX_PRIVATE_BYTES} source_sha3={source_hash:x} build_ns={}",
+            program.extension.degree(), program.instruction_count(), program.registers, source.len(), started.elapsed().as_nanos());
         return Ok(None);
     }
     let private_backing = units * 2048 * private_bytes.div_ceil(256) * 256;
     assert!(private_backing <= 128 << 20);
     engine.context_checkpoint("specialized quotient compilation")?;
-    eprintln!("bounded_gpu_quotient_specialization selected=true degree={} instructions={} blocks={} source_bytes={} source_capacity={} private_bytes={private_bytes} resident_private_bound_bytes={private_backing} driver_reserve_bytes={REQUIRED_DRIVER_RESERVE} build_ns={}",
-        program.extension.degree(), program.instruction_count(), program.instruction_count().div_ceil(BLOCK), source.len(), source.capacity(), started.elapsed().as_nanos());
+    eprintln!("bounded_gpu_quotient_specialization selected=true degree={} instructions={} registers={} blocks={} source_bytes={} source_capacity={} private_bytes={private_bytes} resident_private_bound_bytes={private_backing} driver_reserve_bytes={REQUIRED_DRIVER_RESERVE} source_sha3={source_hash:x} build_ns={}",
+        program.extension.degree(), program.instruction_count(), program.registers, program.instruction_count().div_ceil(BLOCK), source.len(), source.capacity(), started.elapsed().as_nanos());
     Ok(Some(Compiled {
         program: compiled,
         private_bytes,

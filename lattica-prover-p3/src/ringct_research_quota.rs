@@ -57,6 +57,14 @@ pub struct WorkerAllowance {
 }
 
 impl WorkerAllowance {
+    /// Host envelopes supported by native RingCT workflow ownership. The
+    /// caller explicitly constructs the 36 GiB research ledger; operation
+    /// admission still applies its separate, unchanged host/device limits.
+    /// This predicate never grants a reservation or execution authority.
+    pub(crate) const fn native_worker_host_supported(self) -> bool {
+        self.host > 0 && (self.host <= 32 << 30 || self.host == 36 << 30)
+    }
+
     fn bytes(self) -> Bytes {
         Bytes {
             host: self.host,

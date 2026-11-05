@@ -91,3 +91,41 @@ fn aes_output_claim_rejects_a_wrong_category_or_byte_boundary() {
         assert_eq!(ledger.snapshot().current, Bytes::ZERO);
     }
 }
+
+#[test]
+fn expanded_worker_aes_output_preserves_originals_and_rejects_unknown_envelopes() {
+    let source = source(5, 64);
+    let plan = AesOutputPlan::new(source).unwrap();
+    for (host, accepted) in [
+        (32 << 30, true),
+        (36 << 30, true),
+        ((32 << 30) + 1, false),
+        (35 << 30, false),
+        ((36 << 30) + 1, false),
+        (40 << 30, false),
+    ] {
+        let ledger = Ledger::new(WorkerAllowance {
+            host,
+            device: 8 << 30,
+        });
+        let proof = ledger.admit_phase(plan.proof_requirement()).unwrap();
+        let report = ledger.admit_phase(plan.report_requirement()).unwrap();
+        let before = ledger.snapshot().current;
+        match plan.claim_preserving(proof, report, &ledger) {
+            Ok(pending) => {
+                assert!(accepted);
+                pending.check(source, &ledger).unwrap();
+                assert_eq!(ledger.snapshot().current, before);
+                drop(pending);
+            }
+            Err((error, proof, report)) => {
+                assert!(!accepted);
+                assert_eq!(error, Error::Authority);
+                assert!(proof.belongs_to(&ledger) && report.belongs_to(&ledger));
+                assert_eq!(ledger.snapshot().current, before);
+                drop((proof, report));
+            }
+        }
+        assert_eq!(ledger.snapshot().current, Bytes::ZERO);
+    }
+}

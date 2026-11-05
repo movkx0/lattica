@@ -9,8 +9,10 @@ preflight, and must independently verify the result after runtime retirement.
 The unsafe lifecycle methods document those obligations explicitly; numeric
 receipts or same-sized unrelated reservations do not establish provenance.
 
-Admission checks the unchanged 32 GiB worker, 8 GiB managed GPU and 4 GiB
-context limits. The original preparation token owns A016's symbolic, periodic,
+Admission accepts the standard worker allowance up to 32 GiB or the explicit
+36 GiB research worker allowance. The operation limit remains 32 GiB, with
+unchanged 8 GiB managed GPU and 4 GiB context limits. The original preparation
+token owns A016's symbolic, periodic,
 configuration and planner partitions plus A021's bridge headers. The original
 verifier token must own exactly 64 MiB before any configuration or trace work.
 The consumed output claim already owns its original 64 MiB NativeProof and

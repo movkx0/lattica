@@ -112,8 +112,18 @@ class CompleteCaseGuardTests(unittest.TestCase):
             wall_ns=10, worker_elapsed_ns=10, symbolic_preparations=2,
             shared_symbolic_bytes_peak=128 << 20, worker_auxiliary_bytes_peak=1 << 20)
         self.envelope['report']['native_metadata_cache'] = dict(hits=2, misses=3, entries=3, evictions=0,
-            failed_computations=0, planning_ns=1, reserved_host_bytes=1 << 20)
+            failed_computations=0, planning_ns=1, reserved_host_bytes=2 << 20)
         self.envelope['report']['owned_observations'] = {'identity_preprocessing': {'finalizations': 10}}
+
+    def test_native_cache_uses_its_source_two_mib_inventory_reservation(self):
+        guard.validate_envelope(self.envelope, self.plan)
+        for key, value in [('reserved_host_bytes', 1 << 20),
+                           ('reserved_host_bytes', (2 << 20) + 1),
+                           ('entries', 257), ('failed_computations', 1)]:
+            bad = copy.deepcopy(self.envelope)
+            bad['report']['native_metadata_cache'][key] = value
+            with self.assertRaises(ValueError):
+                guard.validate_envelope(bad, self.plan)
 
     def test_metadata_defaults_override_and_invalid_reports(self):
         self.assertEqual(self.plan[guard.KEY]['planning_cache'], 'geometry-v1')

@@ -154,6 +154,14 @@ pub(super) fn hash(
     fingerprint: &[u64],
     common: &p3_batch_stark::CommonData<profile::Config>,
 ) -> Result<[u64; 4], String> {
+    // Detailed research profiles split the preliminary length/canonical pass
+    // from the framed sponge. Neither clock changes the identity stream.
+    let profile_started = (cfg!(feature = "gpu-tuning")
+        && matches!(
+            std::env::var("LATTICA_RINGCT_FULL_WORKFLOW_PROFILE").as_deref(),
+            Ok("detail")
+        ))
+    .then(std::time::Instant::now);
     let roots = common
         .preprocessed
         .as_ref()
@@ -163,6 +171,7 @@ pub(super) fn hash(
     let count = prefix_len(air, analysis, fingerprint)?
         .checked_add(roots.len().checked_mul(4).ok_or("identity cap size")?)
         .ok_or("identity size")?;
+    let count_ns = profile_started.map_or(0, |started| started.elapsed().as_nanos());
     let mut state = State::new(DOMAIN, count).map_err(|e| format!("{e:?}"))?;
     for field in identity_stream::Cursor::new(air, analysis, fingerprint) {
         state.push(field?).map_err(|e| format!("{e:?}"))?;
@@ -172,7 +181,15 @@ pub(super) fn hash(
             .push(field.as_canonical_u64())
             .map_err(|e| format!("{e:?}"))?;
     }
-    state.finish().map_err(|e| format!("{e:?}"))
+    let identity = state.finish().map_err(|e| format!("{e:?}"))?;
+    if let Some(started) = profile_started {
+        let total_ns = started.elapsed().as_nanos();
+        eprintln!(
+            "bounded_cpu_identity_hash fields={count} count_ns={count_ns} hash_and_framing_ns={} total_ns={total_ns}",
+            total_ns - count_ns
+        );
+    }
+    Ok(identity)
 }
 
 pub struct IdentityCpuContext {
