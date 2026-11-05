@@ -9,6 +9,7 @@ pub(crate) mod graph_runtime;
 pub(crate) mod runtime_dispatch;
 pub(crate) mod case_report;
 pub(crate) mod metadata_timing;
+pub(crate) mod workflow_profile;
 #[cfg(test)]
 mod metadata_profile;
 #[cfg(test)]

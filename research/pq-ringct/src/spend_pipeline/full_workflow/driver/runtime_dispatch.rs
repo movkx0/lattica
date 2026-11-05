@@ -399,9 +399,11 @@ impl RuntimeSet<'_, '_, '_> {
                 | ProducerRoute::Final { output: FinalOutput::Outer(_), .. });
             if !needs_packet { continue; }
             stage.runtime_step(RuntimeAction::PreissueStep, n, route);
+            let profile_step = super::workflow_profile::Step::preissue(n, route);
             if let ProducerRoute::Parent { level, .. } = route {
                 self.parents.get(level).copied().flatten().ok_or(WorkflowError::Sequence)?.preissue(w, i, c, n)?;
             } else { self.family(route)?.preissue(w, i, m, c, n)?; }
+            profile_step.complete();
         }
         guard.complete = true;
         Ok(())
@@ -413,6 +415,7 @@ impl RuntimeSet<'_, '_, '_> {
         self.validate_wiring()?;
         for (n, step) in i.closed_plan().dispatch().iter().enumerate() {
             let route = step.producer();
+            let profile_step = super::workflow_profile::Step::execute(n, route);
             stage.runtime_step(RuntimeAction::VerificationAttempt, n, route);
             w.emit_verification_attempt(i, m, c, n)?;
             stage.runtime_step(RuntimeAction::ExecuteStep, n, route);
@@ -421,6 +424,7 @@ impl RuntimeSet<'_, '_, '_> {
             } else { self.family(route)?.execute_step(w, i, m, c, n, native, outer)?; }
             stage.runtime_step(RuntimeAction::VerificationComplete, n, route);
             w.emit_verification_complete(i, m, c, n)?;
+            profile_step.complete();
         }
         guard.complete = true;
         Ok(())

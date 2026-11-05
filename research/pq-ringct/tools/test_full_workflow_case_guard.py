@@ -7,6 +7,7 @@ import struct
 import tempfile
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 import full_workflow_case_guard as guard
 import opencl_private_spend_validate as runner
@@ -242,6 +243,32 @@ class CompleteCaseGuardTests(unittest.TestCase):
                 envelope['report']['cache_statistics'][0][change] += 1
             with self.assertRaises(ValueError):
                 guard.validate_envelope(envelope, self.plan)
+
+    def test_complete_receipt_uses_selected_cpu_identity_ceiling(self):
+        self.argv += ['--identity-cpu-workers', '2']
+        self.plan[guard.KEY] = self.configure()
+        self.plan['observation_before_validation_ns'] = 400
+        self.envelope['identity_cpu'] = self.plan[guard.KEY]['identity_cpu'].copy()
+        line = guard.PREFIX + json.dumps(self.envelope)
+        with patch.object(guard, 'validate_receipts') as receipts, patch.object(guard, 'validate_artifact', return_value={}):
+            receipts.return_value = {'identity_preprocessing': {'max_streams': 2}}
+            guard.validate_log(line, self.plan, None)
+            receipts.return_value = {'identity_preprocessing': {'max_streams': 3}}
+            with self.assertRaisesRegex(ValueError, 'selected ceiling'):
+                guard.validate_log(line, self.plan, None)
+
+    def test_profile_mode_is_explicit_and_requires_matching_report(self):
+        for mode in ('summary', 'detail'):
+            self.args.full_workflow_profile = mode
+            environment = self.environment.copy()
+            selected = guard.configure(self.args, self.argv, environment, self.root, self.state)
+            self.assertEqual(selected['workflow_profile'], mode)
+            self.assertEqual(environment[guard.profiling.ENVIRONMENT], mode)
+            with self.assertRaises(ValueError):
+                guard.validate_envelope(self.envelope, {guard.KEY: selected})
+        self.args.full_workflow_profile = 'unknown'
+        with self.assertRaises(ValueError):
+            self.configure()
 
     def test_invalid_complete_time_or_resource_peak_refused(self):
         for key, wrong in [('complete_workflow_ns', 250), ('native_proofs', True),

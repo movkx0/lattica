@@ -124,6 +124,7 @@ impl<const N: usize> FreshGenerationPlan<N> {
             .and_then(|bytes| bytes.checked_add(
                 crate::execution::workflow_resources::METADATA_ENDPOINT_QUERY_FRAME_BYTES))
             .and_then(|bytes| bytes.checked_add(profiling_frames))
+        .and_then(|bytes| bytes.checked_add(super::driver::workflow_profile::frame_bytes()))
             .ok_or_else(|| source("generation driver transport overflow"))?;
         let frames = host(Category::PhaseScratch, inline)?;
         let mut complete = combine(combine(shared, frames)?, operation)?;
@@ -166,9 +167,12 @@ impl<const N: usize> FreshGenerationBatch<N> {
         Self::generate_with_host_profile(setup_seed, context, first_case_index, crate::host_memory_profile::HostMemoryProfile::Standard)
     }
     pub(crate) fn generate_with_host_profile(setup_seed: [u8; 32], context: [u8; 32], first_case_index: usize, profile: crate::host_memory_profile::HostMemoryProfile) -> Result<Self> {
+        Self::generate_with_start(setup_seed, context, first_case_index, profile, Instant::now())
+    }
+    pub(crate) fn generate_with_start(setup_seed: [u8; 32], context: [u8; 32], first_case_index: usize,
+        profile: crate::host_memory_profile::HostMemoryProfile, started: Instant) -> Result<Self> {
         // Includes source census, fixture setup, native context startup and
         // real retirement. The full driver keeps this timer through final audit.
-        let started = Instant::now();
         let plan = FreshGenerationPlan::<N>::with_host_profile(profile)?;
         if !matches!((N, first_case_index), (3, 0) | (4, 3)) {
             return Err(source("fresh screening index outside seven-transaction inventory"));
@@ -198,6 +202,7 @@ impl<const N: usize> FreshGenerationBatch<N> {
         let mut generation = plan.context.start(runtime, &ledger).map_err(FreshGenerationError::Retirement)?;
         guarded.started();
         for ordinal in 0..N {
+            let profile_step = super::driver::workflow_profile::Step::input(ordinal);
             let index = (first_case_index + ordinal) as u64;
             let fixture = generate_spend_fixture(context, Some(setup_seed), index % native::RING_PAIRS,
                 FixtureAmounts { input: [7 + index, 11], output: [9, 9 + index] })
@@ -212,6 +217,7 @@ impl<const N: usize> FreshGenerationBatch<N> {
             let verified = slot.finish(output, setup_seed, context).map_err(source)?;
             guarded.get_mut().verified[ordinal] = Some(verified);
             summaries[ordinal] = Some(summary);
+            profile_step.complete();
         }
         let terminal = generation.finish().map_err(FreshGenerationError::Retirement)?;
         let GenerationHoldings { mut verified, mut slots, shared, frames, operation } =

@@ -8,6 +8,7 @@ import struct
 from owned_workflow_case_receipts import parse_record, validate as validate_receipts
 
 from host_memory_profiles import selected_host_profile
+import full_workflow_profiling as profiling
 
 GIB = 1 << 30
 PREFIX = 'RINGCT_FULL_WORKFLOW_CASE '
@@ -91,6 +92,9 @@ def configure(args, argv, environment, root, state):
     # full-profile setup above is checked before this narrower runtime choice.
     environment['LATTICA_V2_HOST_OUTPUT_BYTES'] = str(24 * GIB)
     environment['LATTICA_RINGCT_HOST_PROFILE'] = selected['name']
+    profile_mode = getattr(args, 'full_workflow_profile', 'off')
+    require(profile_mode in profiling.MODES, 'unknown complete workflow profile mode')
+    environment[profiling.ENVIRONMENT] = profile_mode
     destination = state / 'artifacts' / args.label / 'full-case'
     require(not destination.exists() and not destination.is_symlink(),
             'complete case artifact directory must be fresh')
@@ -100,7 +104,7 @@ def configure(args, argv, environment, root, state):
             'setup_seed': list(bytes.fromhex(seed)), 'context': list(bytes.fromhex(context)),
             'output_directory': str(destination), 'screening_only': True,
             'runtime_tree_profile': 'outer_host_v1', 'worker_host_bytes': selected['worker_host_bytes'], 'host_profile': selected['name'],
-            'planning_cache': planning_cache,
+            'planning_cache': planning_cache, 'workflow_profile': profile_mode,
             'native_host_bytes': 24 * GIB, 'retained_tree_host_bytes': 8 * GIB}
 
 
@@ -241,6 +245,7 @@ def validate_envelope(envelope, plan):
     require(sum(c['fresh_proofs'] for c in statistics[:4]) <= report['native_proofs']
             and statistics[4]['fresh_proofs'] <= report['recursive_proofs'],
             'cache path counters exceed the complete proof inventory')
+    profiling.validate_summary(report, expected.get('workflow_profile', 'off'))
     return report
 
 
@@ -327,11 +332,14 @@ def validate_log(content, plan, collect_gpu_receipts):
             'complete workflow time exceeds runner observation')
     receipts = validate_receipts(content, report, collect_gpu_receipts, verification_mode='exact-dispatch-v1')
     require(receipts['identity_preprocessing']['max_streams']
-            <= plan[KEY].get('identity_preprocessing', {'max_streams': 1})['max_streams'],
+            <= plan[KEY]['identity_cpu']['max_streams'],
             'identity cohort exceeds selected ceiling')
+    profile_mode = plan[KEY].get('workflow_profile', 'off')
+    profile = profiling.validate_progress(content, report, profile_mode, observed_ns,
+        expected_routes=profiling.dispatch_inventory(content) if profile_mode != 'off' else None)
     artifact = validate_artifact(report, plan)
     return {'schema': SCHEMA, 'case': envelopes[0]['case'], 'layout': envelopes[0]['layout'],
             'setup_seed': envelopes[0]['setup_seed'], 'context': envelopes[0]['context'],
-            'report': report, 'receipts': receipts, 'artifact': artifact,
+            'report': report, 'receipts': receipts, 'artifact': artifact, 'workflow_profile': profile,
             'qualification_scope': 'final-aggregate', 'screening_only': True,
             'comparison_baseline': False, 'performance_qualified': False}

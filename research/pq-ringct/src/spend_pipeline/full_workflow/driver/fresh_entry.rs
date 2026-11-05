@@ -5,6 +5,7 @@ use super::super::{InitialNativeSource, SourcePlanningPlan, SourcePreparationErr
     fresh_generation::{FreshGenerationBatch, FreshGenerationError, caches::FreshProofCaches, case_lifetime::CaseRetirementState}};
 use crate::{graph_crypto::ShakeWrapperLayout, execution::workflow_resources::{WorkflowPlanning, SourceRetained}};
 use super::metadata_timing::{self, Phase};
+use super::workflow_profile::{self, Phase as WorkflowPhase};
 type Result<T> = core::result::Result<T, FreshGenerationError>;
 fn failed(message: &'static str) -> FreshGenerationError { FreshGenerationError::Resource(message) }
 
@@ -15,14 +16,17 @@ macro_rules! fixed_case {
         pub(crate) fn $name(setup_seed: [u8; 32], context: [u8; 32], layout: ShakeWrapperLayout,
 identity_limits: lattica_prover_p3::block_v2::machine::backend::identity_cpu::IdentityCpuOptions, host_profile: crate::host_memory_profile::HostMemoryProfile, planning_cache: bool,
 metadata_cpu: lattica_prover_p3::block_v2::machine::verifier::batch::shape::MetadataCpuOptions) -> Result<CompletedCaseSummary> {
-            let (mut summary, observation, started) = {
+            let profile_started = std::time::Instant::now();
+        let profile = workflow_profile::Scope::begin(profile_started).map_err(failed)?;
+        let (mut summary, observation, started) = {
                 #[cfg(test)]
                 let input_started = std::time::Instant::now();
-                let generated = FreshGenerationBatch::<$n>::generate_with_host_profile(setup_seed, context, $first, host_profile)?;
+                let generated = FreshGenerationBatch::<$n>::generate_with_start(setup_seed, context, $first, host_profile, profile_started)?;
                 #[cfg(test)]
                 let native_input_generation_ns = input_started.elapsed().as_nanos();
                 #[cfg(test)]
         super::metadata_profile::capture(&generated.views()?).map_err(|_| failed("metadata fixture capture failed"))?;
+        workflow_profile::phase(WorkflowPhase::Startup);
         let started = generated.started();
                 let case = CaseRetirementState::prepare(&generated)?;
                 let batch_slot = case.install_batch(generated)?;
@@ -37,7 +41,8 @@ metadata_cpu: lattica_prover_p3::block_v2::machine::verifier::batch::shape::Meta
                 // dedicated 1 MiB geometry sublimit before this scope is created.
                 #[cfg(test)]
                 let generation_and_startup_ns = input_started.elapsed().as_nanos();
-                let metadata_clock = metadata_timing::Scope::begin().ok_or_else(|| failed("metadata clock scope"))?;
+                workflow_profile::phase(WorkflowPhase::Metadata);
+        let metadata_clock = metadata_timing::Scope::begin().ok_or_else(|| failed("metadata clock scope"))?;
                 let geometry_cache = if planning_cache {
                     Some(lattica_prover_p3::block_v2::machine::verifier::batch::shape::HeightEnvelopeCacheScope::begin_with_precomputed(
                         crate::graph_proofs::compiled_source_fingerprint()).map_err(|_| failed("geometry cache scope"))?)
@@ -114,7 +119,9 @@ completed.native_metadata_cache = native_metadata_cache.as_ref().map(|scope| sco
             drop(observation);
             summary.ledger_peak_host_bytes = terminal.peak.host;
             summary.ledger_peak_device_bytes = terminal.peak.device;
-            summary.complete_workflow_ns = Some(started.elapsed().as_nanos());
+            let finished = std::time::Instant::now();
+        summary.complete_workflow_ns = Some(finished.duration_since(started).as_nanos());
+        summary.workflow_profile = profile.finish(finished).map_err(failed)?;
             Ok(summary)
         }
     };

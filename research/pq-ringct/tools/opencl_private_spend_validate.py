@@ -882,6 +882,8 @@ def build_plan(args):
         argv.pop(0)
     require(argv and Path(argv[0]).is_absolute(), 'command needs an absolute executable path')
     complete_case = getattr(args, 'full_workflow_case', False)
+    require(getattr(args, 'full_workflow_profile', 'off') == 'off' or complete_case,
+            'full-workflow profiling requires the complete case acceptance mode')
     identity_qualification = getattr(args, 'identity_cpu_qualification', False)
     metadata_qualification = getattr(args, 'metadata_cpu_qualification', False)
     native_metadata_profile = getattr(args, 'native_metadata_profile', False)
@@ -2154,20 +2156,27 @@ def execute(args, plan):
         with record.open('x') as output:
             json.dump(plan, output, indent=2)
         error, state, attempted = None, None, False
+        telemetry = None
         started = time.monotonic()
         started_ns = time.monotonic_ns()
         try:
+            if (plan.get('full_workflow_case_environment') or {}).get('workflow_profile', 'off') != 'off':
+                telemetry = first_leaf_module('full_workflow_telemetry').Sampler(
+                    runs / (args.label + '.telemetry.jsonl'), plan['environment']['LATTICA_GPU_DEVICE_UUID'])
             attempted = True
             response = command(argv)
             require(response.returncode == 0, 'launch failed: ' + response.stderr)
             plan['launch'] = True
             while True:
+                sample_started = time.monotonic()
                 state = systemd_state(unit)
                 require(state.get('MemoryMax') == properties['MemoryMax']
                         and state.get('MemoryHigh') == properties['MemoryHigh']
                         and state.get('MemorySwapMax') == '0', 'service memory policy changed')
                 if state.get('MainPID') == '0' and state.get('SubState') in ('exited', 'failed', 'dead'):
                     break
+                if telemetry is not None:
+                    telemetry.sample(state)
                 if plan.get('identity_physical_cpus') is not None and int(state.get('MainPID', '0')) > 0:
                     try:
                         affinity = sorted(os.sched_getaffinity(int(state['MainPID'])))
@@ -2181,7 +2190,7 @@ def execute(args, plan):
                                 and int(cpu_max[0]) == 16 * int(cpu_max[1]), 'identity CPU quota changed')
                         plan['observed_identity_cpu_max'] = cpu_max
                 require(time.monotonic() - started <= args.seconds + 30, 'observation exceeded runtime limit')
-                time.sleep(2)
+                time.sleep(max(0, 1 - (time.monotonic() - sample_started)) if telemetry is not None else 2)
             require(state.get('Result') == 'success' and state.get('ExecMainCode') == '1'
                     and state.get('ExecMainStatus') == '0', 'command failed: ' + json.dumps(state))
             # Runner-owned monotonic observation brackets launch through terminal
@@ -2249,6 +2258,11 @@ def execute(args, plan):
                 require(unchanged, 'sources changed during correctness job')
             except Exception as changed:
                 error = (error or '') + '; source check: ' + repr(changed)
+            if telemetry is not None:
+                try:
+                    plan['full_workflow_telemetry'] = telemetry.finish()
+                except Exception as telemetry_error:
+                    plan['full_workflow_telemetry'] = {'error': repr(telemetry_error)}
             plan.update(status='passed' if error is None else 'failed_or_incomplete', error=error,
                         finished_utc=now(), wall_seconds=time.monotonic() - started,
                         terminal_state=state, raw_log=str(log), raw_log_sha256=sha(log) if log.exists() else None)
@@ -2305,6 +2319,8 @@ def main():
                         help='bounded DWARF call-stack recording for the exact native CPU catalogue')
     parser.add_argument('--cpu-scaling-placement', choices=('scheduler', 'packed', 'spread'))
     parser.add_argument('--metadata-cpu-qualification', action='store_true')
+    parser.add_argument('--full-workflow-profile', choices=('off', 'summary', 'detail'), default='off',
+                        help='bounded complete-case phase and producer timings')
     parser.add_argument('--full-workflow-case', action='store_true',
                         help='qualify exactly one fresh N3 or N4 complete RingCT case')
     parser.add_argument('--retained-tree-storage', choices=['device', 'host'], default='device')

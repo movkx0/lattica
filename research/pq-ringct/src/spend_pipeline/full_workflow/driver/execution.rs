@@ -6,6 +6,7 @@ use super::super::{metadata_planning::SourceMetadataPlanningPlan, closed_plan::{
 use crate::{execution::{workflow_resources::{WorkflowPlanning, WorkflowError}, generation_terminal::planning_startup::FreshPlanningContext},
     graph_crypto::{ProofCache, OuterProofCache}, proof_cache_policy::FamilyStatistics};
 use std::time::Instant;
+use super::workflow_profile::{self, Phase};
 type Result<T> = core::result::Result<T, WorkflowError>;
 
 /// Runtime initialization happens once in the construction scopes, before complete closure.
@@ -38,11 +39,15 @@ pub(crate) fn execute_constructed_case<const N: usize>(
     case.seal_complete_metadata(batch_slot, fresh, complete_slot).map_err(|_| WorkflowError::Identity)?;
     let generation_and_planning_ns = batch.started().elapsed().as_nanos();
     let started = Instant::now();
+    workflow_profile::phase(Phase::Admission);
     stage.runtime(RuntimeAction::CloseAdmission);
     let mut workflow = planning.close(closed)?;
     let attempted = (|| {
+        workflow_profile::phase(Phase::Preflight);
         runtimes.preflight(&mut workflow, &inventory, metadata, case, stage)?;
+        workflow_profile::phase(Phase::Preissue);
         runtimes.preissue_all(&mut workflow, &inventory, metadata, case, stage)?;
+        workflow_profile::phase(Phase::Execution);
         runtimes.execute_all(&mut workflow, &inventory, metadata, case, native, outer, stage)?;
         stage.runtime(RuntimeAction::FinalReport);
         let report = runtimes.final_runtime.final_report()?;
@@ -63,6 +68,7 @@ pub(crate) fn execute_constructed_case<const N: usize>(
             };
         }
     };
+    workflow_profile::phase(Phase::Retirement);
     stage.runtime(RuntimeAction::FinishWorkflow);
     let completion = workflow.finish()?;
     stage.runtime(RuntimeAction::ConfirmCleanup);
@@ -84,7 +90,7 @@ pub(crate) fn execute_constructed_case<const N: usize>(
         }
     }
     let peak = ledger.snapshot().peak;
-    Ok(CompletedCaseSummary { metadata_wall: None, source_geometry_cache: None, metadata_planning: None, native_metadata_cache: None, transactions: N, native_proofs, recursive_proofs,
+    Ok(CompletedCaseSummary { workflow_profile: None, metadata_wall: None, source_geometry_cache: None, metadata_planning: None, native_metadata_cache: None, transactions: N, native_proofs, recursive_proofs,
         completed_phases: closed.steps().len(), generation_and_planning_ns, proving_and_verification_ns,
         final_cpu_verification_ns: report.cpu_verification_ns, complete_workflow_ns: None,
         ledger_peak_host_bytes: peak.host, ledger_peak_device_bytes: peak.device,

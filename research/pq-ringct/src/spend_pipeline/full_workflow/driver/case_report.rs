@@ -6,6 +6,8 @@ use crate::ordered_aggregation::owned_final::FinalQualificationReport;
 /// Only fixed actual observations escape the original case owners.
 #[derive(Serialize)]
 pub(crate) struct CompletedCaseSummary {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) workflow_profile: Option<super::workflow_profile::Report>,
     pub(crate) metadata_wall: Option<super::metadata_timing::Statistics>,
     pub(crate) source_geometry_cache: Option<lattica_prover_p3::block_v2::machine::verifier::batch::shape::HeightEnvelopeCacheStatistics>,
     pub(crate) metadata_planning: Option<lattica_prover_p3::block_v2::machine::verifier::batch::shape::MetadataPlanningStatistics>,
