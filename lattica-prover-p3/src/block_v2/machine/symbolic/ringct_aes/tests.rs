@@ -47,6 +47,45 @@ fn requirements(census: AesPreparationPlan) -> Requirements {
     request
 }
 
+#[test]
+fn expanded_workers_keep_recordings_bounded_and_owned() {
+    for host in [32u64 << 30, 36u64 << 30, 40u64 << 30] {
+        let ledger = Ledger::new(WorkerAllowance { host, device: 0 });
+        let mut token = ledger.admit_phase(requirements(census())).unwrap();
+        let before = ledger.snapshot().current;
+        let mut recorder = AesRecorder::begin(census(), &mut token, &ledger).unwrap();
+        filled(&mut recorder);
+        let recorded = recorder.finish().unwrap();
+        assert_eq!(recorded.constraints(), 3);
+        drop(recorded);
+        assert_eq!(ledger.snapshot().current, before);
+        drop(token);
+        assert_eq!(ledger.snapshot().current, Bytes::ZERO);
+    }
+    for host in [36u64 << 30, 40u64 << 30] {
+        let ledger = Ledger::new(WorkerAllowance { host, device: 0 });
+        let mut oversized = requirements(census());
+        let additional = (32u64 << 30) + 1 - oversized.total().unwrap().host;
+        oversized.add(Category::PhaseScratch, Bytes { host: additional, device: 0 }).unwrap();
+        // The enclosing worker can fund this token; an operation still cannot.
+        let mut token = ledger.admit_phase(oversized).unwrap();
+        assert!(AesRecorder::begin(census(), &mut token, &ledger).is_err());
+        drop(token);
+        let mut token = ledger.admit_phase(requirements(census())).unwrap();
+        let other = Ledger::new(WorkerAllowance { host, device: 0 });
+        assert!(AesRecorder::begin(census(), &mut token, &other).is_err());
+        drop(token);
+        assert_eq!(ledger.snapshot().current, Bytes::ZERO);
+    }
+    for host in [(32u64 << 30) + 1, 35u64 << 30, (36u64 << 30) + 1, 39u64 << 30, 41u64 << 30] {
+        let ledger = Ledger::new(WorkerAllowance { host, device: 0 });
+        let mut token = ledger.admit_phase(requirements(census())).unwrap();
+        assert!(AesRecorder::begin(census(), &mut token, &ledger).is_err());
+        drop(token);
+        assert_eq!(ledger.snapshot().current, Bytes::ZERO);
+    }
+}
+
 // Test-only fixed-layout source exercises the bridge's normalization against
 // the upstream symbolic builder. Actual AES eval is covered in research tests.
 struct Fixture;

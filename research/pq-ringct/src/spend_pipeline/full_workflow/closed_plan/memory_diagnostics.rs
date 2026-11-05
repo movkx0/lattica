@@ -98,7 +98,8 @@ pub(super) const FRAME_BYTES: usize =
 
 #[cfg(test)]
 fn profiling() -> bool {
-    std::env::var("LATTICA_RINGCT_METADATA_STAGE_PROFILE").as_deref() == Ok("n3-paired-v1")
+    matches!(std::env::var("LATTICA_RINGCT_METADATA_STAGE_PROFILE").as_deref(),
+        Ok("n3-paired-v1" | "n4-paired-v1"))
 }
 #[cfg(test)]
 pub(super) fn profile_slots(slots: &[crate::execution::workflow_resources::SlotSpec]) {

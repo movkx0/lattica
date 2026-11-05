@@ -9,8 +9,8 @@ pub(super) struct Timeline {
 impl Timeline {
     pub(super) fn new() -> Self {
         Self {
-            previous: (std::env::var("LATTICA_RINGCT_METADATA_STAGE_PROFILE").as_deref()
-                == Ok("n3-paired-v1"))
+            previous: matches!(std::env::var("LATTICA_RINGCT_METADATA_STAGE_PROFILE").as_deref(),
+                Ok("n3-paired-v1" | "n4-paired-v1"))
             .then(Instant::now),
             ns: [0; 9],
             completed: 0,

@@ -109,7 +109,7 @@ fn authority(
         .and_then(|n| n.checked_add(additional_host_bytes()))
         .ok_or(Error::Shape)?;
     if !reservation.belongs_to(ledger)
-        || allowance.host > 32u64 << 30
+        || !super::ringct_recording_host::allowed(allowance.host, request.total().map_err(|_| Error::Authority)?.host)
         || allowance.device > 8u64 << 30
         || request.get(Category::SymbolicCompiler)
             != (Bytes {

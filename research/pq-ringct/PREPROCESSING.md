@@ -1278,3 +1278,76 @@ device busy time. Timelines overlap and must not be added together.
 The measured source is frozen under `.tools/metadata-readiness-candidate-source`;
 raw receipts remain under `.tools/pq-opencl-opt/runs`. Documentation and evidence
 were added after the frozen measurement source.
+
+## N4 36 GiB research profile (2026-11-05 UTC)
+
+The explicitly approved N4 follow-up completes metadata planning under the existing
+`expanded-36` research worker profile. Production and N3 defaults remain at 32 GiB;
+native operation and device limits remain 24 GiB and 8 GiB. The earlier standard
+N4 admission refusals above remain valid historical results.
+
+The expanded run uncovered two issues. N4 detail logging was still gated on the N3
+profile marker. Also, twelve source-fixed symbolic recorders rejected a worker
+ledger above 32 GiB even when its individual recording fit within 32 GiB. Both
+are corrected. A shared envelope check recognizes the existing explicit 36/40 GiB
+worker profiles while retaining the 32 GiB recording ceiling, exact reservation
+ownership, census, categories, source geometry and device checks. This profile
+runs at 36 GiB; it does not change the default kernel or worker allowance.
+
+The comparison uses eight alternating paired/fused pairs at each of five worker
+counts on each of the two deterministic N4 fixtures: 160 complete timing runs.
+Each fixture contains four distinct verified inputs composed from the existing
+N3 fixtures; these are related synthetic fixtures, not production traffic.
+The table reports median complete metadata seconds, including startup and final
+memory/schedule closure. Fixture verification, input generation, proof preissue
+and recursive proof generation are excluded. An eighth pair was added after the
+heldout two-worker case showed an order effect: each kernel now runs first exactly
+four times per configuration. All eight pairs are included in the statistics.
+
+| Workers | Baseline paired | Baseline fused | Heldout paired | Heldout fused |
+|---:|---:|---:|---:|---:|
+| 1 | 4.278 s | 4.409 s | 4.289 s | 4.411 s |
+| 2 | 2.884 s | 2.959 s | 2.876 s | 2.884 s |
+| 4 | 2.751 s | 2.939 s | 2.800 s | 2.899 s |
+| 8 | 2.830 s | 2.949 s | 2.801 s | 2.957 s |
+| 16 | 2.817 s | 2.908 s | 2.789 s | 2.951 s |
+
+At 16 workers, the paired path is 1.52–1.54× faster than
+one worker. Fused medians are 0.3–6.8% slower across all ten configurations.
+The heldout two-worker comparison is effectively tied; its small difference
+changes sign when run order is balanced. The paired kernel remains the default; the fused
+prototype remains available for further qualification. This N4 comparison and
+the larger synthetic GPU profiles above measure different scopes.
+
+Every timing run has zero cold descriptor misses and zero native/registered
+cache evictions. One-worker runs make 2,074 lookups: 1,880 memory hits and 194
+table hits. Multiworker runs make 3,154 lookups: 2,960 memory hits and 194 table
+hits. Table hits are successful fallback lookups, not cold compiler misses.
+Observed process memory peaks are 0.518–0.642 GiB. The 36 GiB worker
+allowance is a logical admission ceiling for the complete schedule, not measured
+resident usage during metadata. The guard separately uses 51 GiB MemoryMax,
+49 GiB MemoryHigh and a 53 GiB fresh-MemAvailable requirement.
+
+Validation passed: 25 focused core tests, including actual expanded-ledger
+recording and oversized/foreign/unsupported-ledger rejection; 43 focused research
+tests; both release all-target feature configurations; and standard 32 GiB N3
+controls at 1 and 16 workers. All 317 native and 72 registered descriptor rows
+requalify at all five worker widths with exact numeric parity against the
+previous catalog, and both generated tables reproduce. Two N4 reference runs
+compare 316 native payloads each against the original serializers and check
+changed-binding rejection, covering all six native families.
+
+The metadata-only harness stops with case owners retained and exits its isolated
+process after measurement. All accepted receipts verify service termination and
+reaped children; this does not qualify complete proof-workflow retirement.
+Initial detail and serial failures are preserved separately and excluded from
+timing statistics. Diagnostic clocks overlap and are not CPU/GPU utilization.
+
+[Evidence, all 160 samples, diagnostics, validation and provenance](../../docs/evidence/ringct-metadata-n4-expanded36-2026-11-05.json).
+
+The measured source is frozen under `.tools/metadata-readiness-n4-final-source`;
+receipts remain under `.tools/pq-opencl-opt/runs`. Reproduction uses the guarded
+`full` profile with `--metadata-stage-profile --metadata-transactions 4
+--host-profile expanded-36 --metadata-readiness-variant all`, a verified N4 fixture,
+and the selected `--metadata-workers` / `--metadata-tiled-kernel` values.
+Documentation and evidence were added after the measured source snapshot.
