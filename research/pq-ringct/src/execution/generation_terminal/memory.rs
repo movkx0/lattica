@@ -21,6 +21,9 @@ fn host(category: Category, host: usize) -> GenerationResult<Requirements> {
 fn frames() -> GenerationResult<usize> {
     [
         bytes::<GenerationContextPlan>(8)?, bytes::<OwnedGenerationContext>(8)?,
+        bytes::<cpu::CpuGenerationPlan>(8)?, bytes::<cpu::OwnedCpuGeneration>(8)?,
+        bytes::<cpu::CpuSpendSummary>(8)?, bytes::<cpu::CpuTotals>(8)?,
+        bytes::<cpu::VerifiedCpuOutput>(8)?,
         bytes::<ProvingContext>(8)?, bytes::<GenerationSpendSummary>(8)?,
         bytes::<NativeGenerationCompletion>(8)?, bytes::<NativeGenerationTotals>(8)?,
         bytes::<NativeSessionRecord>(8)?, bytes::<RetiredGenerationSession>(8)?,

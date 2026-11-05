@@ -4,6 +4,8 @@ use crate::execution::generation_terminal::GenerationError;
 
 #[derive(Clone, Copy, serde::Serialize)]
 pub(crate) struct NativeGenerationTotals {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) cpu: Option<crate::execution::generation_terminal::cpu::CpuTotals>,
     pub(crate) spends: u64,
     pub(crate) seconds: f64,
     pub(crate) managed_peak_bytes: usize,
@@ -53,6 +55,7 @@ impl Diagnostics {
             || state.native_spend.witness.device_calls > state.native_spend.witness.completed_calls
         { return Err(GenerationError::Completion); }
         Ok(NativeGenerationCompletion { session_id, totals: NativeGenerationTotals {
+            cpu: None,
             spends: state.native_spend.reports,
             seconds: state.native_spend.seconds,
             managed_peak_bytes: state.native_spend.peak_managed_bytes,

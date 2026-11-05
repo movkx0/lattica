@@ -311,4 +311,5 @@ int lattica_matrict_reduction_selftest(void) {
 #include "private_spend_fixture.inc"
 #include "private_rng_rejection_oracle.inc"
 
+#include "cpu_generation.inc"
 #include "declared_footprint.inc"

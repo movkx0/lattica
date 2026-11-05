@@ -1,4 +1,7 @@
 //! Native research measurements only; no recursive or on-chain performance claim.
+#[cfg(feature = "native-matrict")]
+#[path = "matrict_bench/generation.rs"]
+mod generation;
 
 #[cfg(not(feature = "native-matrict"))]
 fn main() -> std::process::ExitCode {
@@ -41,8 +44,9 @@ mod enabled {
     pub fn run() -> Result<()> {
         let mut arguments = std::env::args().skip(1);
         let command = arguments.next().unwrap_or_else(|| "benchmark".into());
+        if command == "generation" { return crate::generation::run(arguments.collect()); }
         if matches!(command.as_str(), "--help" | "-h" | "help") {
-            println!("matrict-bench benchmark [--report FILE] [--packet FILE]\nmatrict-bench verify --packet FILE --context HEX32\n\nExplicit native-matrict feature required. CPU-only native research; no recursive or on-chain claim.");
+            println!("matrict-bench generation [--transactions 1|3|4] [--samples N] [--setup-seed HEX32] [--context HEX32] [--aes-lanes 1|4|8] [--cache-public-parameters 0|1] [--reuse-workspace 0|1]\nmatrict-bench benchmark [--report FILE] [--packet FILE]\nmatrict-bench verify --packet FILE --context HEX32\n\nExplicit native-matrict feature required. CPU-only native research; no recursive or on-chain claim.");
             return Ok(());
         }
         if command != "benchmark" && command != "verify" {

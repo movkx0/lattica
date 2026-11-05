@@ -13,6 +13,7 @@ use sha3::{
 use std::{fmt, sync::Mutex, time::Instant};
 
 static NATIVE_LOCK: Mutex<()> = Mutex::new(());
+pub mod cpu_generation;
 #[cfg(all(feature = "full-workflow-experiment", target_os = "linux", target_arch = "x86_64"))]
 pub(crate) mod declared_footprint;
 const MAX_NATIVE_PACKET: usize = 16 * 1024 * 1024;

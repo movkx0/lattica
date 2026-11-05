@@ -65,6 +65,12 @@ pub(super) struct GeneratedInputSlot {
 }
 impl GeneratedInputSlot {
     pub(super) fn original(&self) -> &Reservation { &self.output }
+    pub(super) fn verifier_original(&self) -> &Reservation { &self.scratch }
+    pub(super) fn finish_cpu(&self, output: crate::execution::generation_terminal::cpu::VerifiedCpuOutput,
+        setup_seed: [u8;32], context: [u8;32]) -> Result<VerifiedInput> {
+        let (statement, proof) = output.into_encoded();
+        self.decode_verified(statement, proof, setup_seed, context)
+    }
 
     /// Called only by the concrete fresh-generation loop after its GPU method
     /// returns. Actual native verification precedes decode/source construction.
@@ -82,6 +88,14 @@ impl GeneratedInputSlot {
             .map_err(|_| "generated native independent verifier failed")?
         {
             return Err("generated native independent verifier rejected");
+        }
+        self.decode_verified(statement_bytes, proof_bytes, setup_seed, context)
+    }
+    fn decode_verified(&self, statement_bytes: Vec<u8>, proof_bytes: Vec<u8>,
+        setup_seed: [u8;32], context: [u8;32]) -> Result<VerifiedInput> {
+        if statement_bytes.len()!=STATEMENT_BYTES || statement_bytes.capacity()!=STATEMENT_BYTES
+            || proof_bytes.len()!=PROOF_BYTES || proof_bytes.capacity()!=PROOF_BYTES {
+            return Err("generated native output differs preissued source geometry");
         }
         let statement = Statement::decode(&statement_bytes).map_err(|_| "generated statement decoding failed")?;
         let proof = Proof::decode(&proof_bytes).map_err(|_| "generated proof decoding failed")?;

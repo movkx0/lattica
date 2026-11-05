@@ -889,6 +889,8 @@ def build_plan(args):
         argv.pop(0)
     require(argv and Path(argv[0]).is_absolute(), 'command needs an absolute executable path')
     complete_case = getattr(args, 'full_workflow_case', False)
+    from cpu_generation_profile import selection as generation_selection
+    generation_only = generation_selection(args, argv)
     require(getattr(args, 'full_workflow_profile', 'off') == 'off' or complete_case,
             'full-workflow profiling requires the complete case acceptance mode')
     identity_qualification = getattr(args, 'identity_cpu_qualification', False)
@@ -1061,7 +1063,7 @@ def build_plan(args):
                 'faithful public hash candidate requires the full GPU profile')
         require(args.expect_tests or direct_result or args.expect_result or complete_case,
                 'public hash candidate requires execution evidence acceptance')
-    require(sum((args.expect_tests, args.expect_result, direct_result, complete_case)) <= 1,
+    require(sum((args.expect_tests, args.expect_result, direct_result, complete_case, generation_only is not None)) <= 1,
             'choose one acceptance output')
     require(args.profile != 'direct-full' or direct_result or args.expect_tests,
             'direct-full requires direct research result or correctness tests')
@@ -1305,7 +1307,7 @@ def build_plan(args):
             'comparison_baseline': False, 'performance_qualified': False,
             'benchmark': benchmark, 'correctness_label': correctness_label,
             'expect_tests': args.expect_tests, 'expect_result': args.expect_result,
-            'expect_direct_result': direct_result,
+        'expect_direct_result': direct_result, 'generation_only': generation_only,
             'full_workflow_case_environment': full_case_environment, 'direct_output_directory': direct_output,
             'build_label': args.build_label, 'record_artifacts': args.record_artifact,
             'launch': False, 'status': 'planned'}
@@ -1950,6 +1952,9 @@ def validate_active_hashx_preflight(content):
 
 def validate_output(log, plan):
     content = log.read_text(errors='replace')
+    if plan.get('generation_only') is not None:
+        from cpu_generation_profile import validate
+        plan['generation_only_acceptance'] = validate(content, plan['generation_only'])
     if plan['expect_tests']:
         require(re.search(r'test result: ok\. [1-9][0-9]* passed; 0 failed;', content),
                 'no nonempty passing correctness tests')
@@ -1992,6 +1997,10 @@ def validate_output(log, plan):
             content, require_preparation_detail=plan.get('metadata_preparation_detail', False),
             expected_transactions=plan.get('metadata_transactions') or 3,
             expected_host_profile=plan['host_memory_profile']['name'])
+        if not plan.get('metadata_fixture_in'):
+            from cpu_generation_receipts import metadata_handoff
+            plan['cpu_generation_handoff_acceptance'] = metadata_handoff(
+                content, plan.get('metadata_transactions') or 3)
         require(plan['metadata_stage_profile_acceptance']['hash_variant'] == plan.get('metadata_hash_variant', 'all'), 'metadata hash variant mismatch')
         require(plan['metadata_stage_profile_acceptance']['reuse_variant'] == plan.get('metadata_reuse_variant', 'all'), 'metadata reuse variant mismatch')
         require(plan['metadata_stage_profile_acceptance']['pipeline_variant'] == plan.get('metadata_pipeline_variant', 'all'), 'metadata pipeline variant mismatch')
@@ -2139,6 +2148,8 @@ def execute(args, plan):
         require(systemd_state(unit).get('LoadState') == 'not-found', 'service name already exists')
         before = source_manifest()
         executable = executable_provenance(plan, before, runs)
+        from cpu_generation_profile import require_build as require_generation_build
+        require_generation_build(plan, executable)
         require_direct_ring_recursion_build(plan, executable)
         first_leaf_module('direct_ring_aggregate_guard').require_build(plan, executable, ROOT)
         recursion = plan.get('direct_ring_recursion_environment')
@@ -2333,6 +2344,8 @@ def identity_physical_cpus(allowed=None, topology=Path('/sys/devices/system/cpu'
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--profile', choices=PROFILES, required=True)
+    parser.add_argument('--generation-only', action='store_true',
+                        help='Accept only a CPU transaction-generation profile; never a GPU proof/workflow result.')
     parser.add_argument('--host-profile', choices=HOST_PROFILES, default='standard',
                         help='explicit complete-workflow host allowance; no automatic escalation')
     parser.add_argument('--label', required=True)

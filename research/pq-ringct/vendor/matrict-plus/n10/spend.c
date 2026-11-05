@@ -14,6 +14,7 @@
 #include "sampleb.h"
 #include "spend.h"
 #include "private_spend_oracle.h"
+#include "cpu_generation.h"
 
 /* for M = 2, S = 2 */
 static void spend_impl(SPEND_OUT *out, CN_OUT *cn_out, CK_OUT *ck_out, SN_OUT *sn_out,
@@ -257,6 +258,7 @@ static void spend_impl(SPEND_OUT *out, CN_OUT *cn_out, CK_OUT *ck_out, SN_OUT *s
 
   do {
     rej = 0;
+    lattica_cpu_generation_attempt();
     LATTICA_ORACLE_CHECKPOINT(35,0,&rej,sizeof rej);
 
     /* a_1,...,a_{N_SPENT + 1} <-- D_{10 * B_a} */

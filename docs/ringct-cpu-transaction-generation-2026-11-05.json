@@ -1,0 +1,1651 @@
+{
+  "schema": "lattica-cpu-transaction-generation-qualification-v1",
+  "date": "2026-11-05",
+  "base_commit": "c71ecc7615c0d5cf391c66db0f0e67032be9189c",
+  "branch": "transaction-generation-cpu",
+  "cpu": "AMD Ryzen 9 5900XT 16-Core Processor",
+  "cpu_workers": 1,
+  "rust_cpu_target": "generic",
+  "native_c_flags": [
+    "-O2",
+    "-mavx2",
+    "-maes",
+    "-mfma",
+    "-fwrapv"
+  ],
+  "scope": {
+    "cpu_transaction_generation": true,
+    "independent_verification": true,
+    "gpu_metadata_and_proofs_required": true,
+    "complete_recursive_workflow_executed": false,
+    "full_workflow_performance_qualified": false,
+    "auto_promotion_canceled": true
+  },
+  "default": {
+    "aes_lanes": 1,
+    "cache_public_parameters": false,
+    "reuse_workspace": true,
+    "max_attempts": 1024,
+    "random_call_limit": 16777216,
+    "proposal_limit": 268435456,
+    "private_aes_block_limit": 4294967296
+  },
+  "primary_metric": "Complete CPU generation stage: owner construction, setup, keygen/mint, spend, encoding, independent verification, private-state cleanup and workspace destruction; excludes metadata and recursive proving.",
+  "fresh_benchmark": {
+    "samples": 240,
+    "transactions": 340,
+    "entropy": "fresh OS entropy per transaction",
+    "public_workloads": [
+      {
+        "setup_seed": "1111111111111111111111111111111111111111111111111111111111111111",
+        "context": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      {
+        "setup_seed": "3333333333333333333333333333333333333333333333333333333333333333",
+        "context": "4444444444444444444444444444444444444444444444444444444444444444"
+      }
+    ],
+    "rows": [
+      {
+        "label": "cpu-gen-final-w0-n1-r1",
+        "workload": 0,
+        "transactions": 1,
+        "samples": 100,
+        "median_ms": 52.471030999999996,
+        "p95_ms": 183.601113
+      },
+      {
+        "label": "cpu-gen-final-w0-n3-r1",
+        "workload": 0,
+        "transactions": 3,
+        "samples": 10,
+        "median_ms": 219.10956850000002,
+        "p95_ms": 469.924793
+      },
+      {
+        "label": "cpu-gen-final-w0-n4-r1",
+        "workload": 0,
+        "transactions": 4,
+        "samples": 10,
+        "median_ms": 222.76531849999998,
+        "p95_ms": 672.466671
+      },
+      {
+        "label": "cpu-gen-final-w1-n1-r1",
+        "workload": 1,
+        "transactions": 1,
+        "samples": 100,
+        "median_ms": 53.8799505,
+        "p95_ms": 148.438275
+      },
+      {
+        "label": "cpu-gen-final-w1-n3-r1",
+        "workload": 1,
+        "transactions": 3,
+        "samples": 10,
+        "median_ms": 223.5247245,
+        "p95_ms": 347.02493
+      },
+      {
+        "label": "cpu-gen-final-w1-n4-r1",
+        "workload": 1,
+        "transactions": 4,
+        "samples": 10,
+        "median_ms": 303.50946650000003,
+        "p95_ms": 545.918973
+      }
+    ]
+  },
+  "paired_optimization_screens": {
+    "diagnostic_entropy": true,
+    "identical_private_streams_and_outputs": true,
+    "alternating_variant_order": true,
+    "thresholds": {
+      "minimum_median_gain_percent": 5,
+      "maximum_p95_regression_percent": 3
+    },
+    "revisions": {
+      "r1": "Generic loops and byte-wise temporary erasure",
+      "r2": "Generic loops and volatile vector erasure",
+      "r3": "Fixed-width inlining/unrolling and volatile vector erasure"
+    },
+    "summaries": {
+      "r1": [
+        {
+          "workload": 0,
+          "transactions": 1,
+          "variant": "scalar",
+          "samples": 100,
+          "median_ms": 50.8037805,
+          "p95_ms": 178.716705,
+          "median_change_percent": 0.0,
+          "p95_change_percent": 0.0
+        },
+        {
+          "workload": 0,
+          "transactions": 1,
+          "variant": "aes4",
+          "samples": 100,
+          "median_ms": 65.371844,
+          "p95_ms": 234.350233,
+          "median_change_percent": 28.675156369514674,
+          "p95_change_percent": 31.129450377903957
+        },
+        {
+          "workload": 0,
+          "transactions": 1,
+          "variant": "aes8",
+          "samples": 100,
+          "median_ms": 57.405951,
+          "p95_ms": 203.50538,
+          "median_change_percent": 12.995431511243538,
+          "p95_change_percent": 13.870373785147837
+        },
+        {
+          "workload": 0,
+          "transactions": 1,
+          "variant": "cache",
+          "samples": 100,
+          "median_ms": 51.515586,
+          "p95_ms": 178.797197,
+          "median_change_percent": 1.4010876611830092,
+          "p95_change_percent": 0.045038878710301766
+        },
+        {
+          "workload": 0,
+          "transactions": 3,
+          "variant": "scalar",
+          "samples": 10,
+          "median_ms": 222.2577515,
+          "p95_ms": 276.993096,
+          "median_change_percent": 0.0,
+          "p95_change_percent": 0.0
+        },
+        {
+          "workload": 0,
+          "transactions": 3,
+          "variant": "aes4",
+          "samples": 10,
+          "median_ms": 286.6137145,
+          "p95_ms": 359.179346,
+          "median_change_percent": 28.955553885372588,
+          "p95_change_percent": 29.67086587602168
+        },
+        {
+          "workload": 0,
+          "transactions": 3,
+          "variant": "aes8",
+          "samples": 10,
+          "median_ms": 250.607592,
+          "p95_ms": 313.890958,
+          "median_change_percent": 12.755388871105367,
+          "p95_change_percent": 13.320859809444485
+        },
+        {
+          "workload": 0,
+          "transactions": 3,
+          "variant": "cache",
+          "samples": 10,
+          "median_ms": 221.91167,
+          "p95_ms": 276.744431,
+          "median_change_percent": -0.15571177952818926,
+          "p95_change_percent": -0.0897729956417348
+        },
+        {
+          "workload": 0,
+          "transactions": 4,
+          "variant": "scalar",
+          "samples": 10,
+          "median_ms": 242.476805,
+          "p95_ms": 351.106215,
+          "median_change_percent": 0.0,
+          "p95_change_percent": 0.0
+        },
+        {
+          "workload": 0,
+          "transactions": 4,
+          "variant": "aes4",
+          "samples": 10,
+          "median_ms": 312.105724,
+          "p95_ms": 454.781421,
+          "median_change_percent": 28.71570293084322,
+          "p95_change_percent": 29.528160303286
+        },
+        {
+          "workload": 0,
+          "transactions": 4,
+          "variant": "aes8",
+          "samples": 10,
+          "median_ms": 273.5525835,
+          "p95_ms": 398.829966,
+          "median_change_percent": 12.815979862486238,
+          "p95_change_percent": 13.59239710410709
+        },
+        {
+          "workload": 0,
+          "transactions": 4,
+          "variant": "cache",
+          "samples": 10,
+          "median_ms": 242.1607035,
+          "p95_ms": 351.044154,
+          "median_change_percent": -0.1303636032320754,
+          "p95_change_percent": -0.01767584774881037
+        },
+        {
+          "workload": 1,
+          "transactions": 1,
+          "variant": "scalar",
+          "samples": 100,
+          "median_ms": 53.6701665,
+          "p95_ms": 156.684248,
+          "median_change_percent": 0.0,
+          "p95_change_percent": 0.0
+        },
+        {
+          "workload": 1,
+          "transactions": 1,
+          "variant": "aes4",
+          "samples": 100,
+          "median_ms": 68.387498,
+          "p95_ms": 204.377299,
+          "median_change_percent": 27.421810774520328,
+          "p95_change_percent": 30.438957080101623
+        },
+        {
+          "workload": 1,
+          "transactions": 1,
+          "variant": "aes8",
+          "samples": 100,
+          "median_ms": 60.2443465,
+          "p95_ms": 178.05019,
+          "median_change_percent": 12.249226020195048,
+          "p95_change_percent": 13.63630503558979
+        },
+        {
+          "workload": 1,
+          "transactions": 1,
+          "variant": "cache",
+          "samples": 100,
+          "median_ms": 53.8313945,
+          "p95_ms": 156.995545,
+          "median_change_percent": 0.3004052540064306,
+          "p95_change_percent": 0.1986779168764885
+        },
+        {
+          "workload": 1,
+          "transactions": 3,
+          "variant": "scalar",
+          "samples": 10,
+          "median_ms": 187.6920345,
+          "p95_ms": 292.188227,
+          "median_change_percent": 0.0,
+          "p95_change_percent": 0.0
+        },
+        {
+          "workload": 1,
+          "transactions": 3,
+          "variant": "aes4",
+          "samples": 10,
+          "median_ms": 243.0297815,
+          "p95_ms": 378.610727,
+          "median_change_percent": 29.4832687745201,
+          "p95_change_percent": 29.577680417630248
+        },
+        {
+          "workload": 1,
+          "transactions": 3,
+          "variant": "aes8",
+          "samples": 10,
+          "median_ms": 212.3554465,
+          "p95_ms": 331.176803,
+          "median_change_percent": 13.140361585243522,
+          "p95_change_percent": 13.343650563990717
+        },
+        {
+          "workload": 1,
+          "transactions": 3,
+          "variant": "cache",
+          "samples": 10,
+          "median_ms": 187.7374305,
+          "p95_ms": 291.87272,
+          "median_change_percent": 0.024186428646766345,
+          "p95_change_percent": -0.10798073667765973
+        },
+        {
+          "workload": 1,
+          "transactions": 4,
+          "variant": "scalar",
+          "samples": 10,
+          "median_ms": 188.741337,
+          "p95_ms": 303.16633,
+          "median_change_percent": 0.0,
+          "p95_change_percent": 0.0
+        },
+        {
+          "workload": 1,
+          "transactions": 4,
+          "variant": "aes4",
+          "samples": 10,
+          "median_ms": 241.529924,
+          "p95_ms": 389.193881,
+          "median_change_percent": 27.968746984133098,
+          "p95_change_percent": 28.376353996830716
+        },
+        {
+          "workload": 1,
+          "transactions": 4,
+          "variant": "aes8",
+          "samples": 10,
+          "median_ms": 212.1843235,
+          "p95_ms": 340.411458,
+          "median_change_percent": 12.420695366802459,
+          "p95_change_percent": 12.285377469193225
+        },
+        {
+          "workload": 1,
+          "transactions": 4,
+          "variant": "cache",
+          "samples": 10,
+          "median_ms": 188.502522,
+          "p95_ms": 337.084928,
+          "median_change_percent": -0.12653031063354359,
+          "p95_change_percent": 11.188115118192709
+        }
+      ],
+      "r2": [
+        {
+          "workload": 0,
+          "transactions": 1,
+          "variant": "scalar",
+          "samples": 100,
+          "median_ms": 50.689143,
+          "p95_ms": 179.5238,
+          "median_change_percent": 0.0,
+          "p95_change_percent": 0.0
+        },
+        {
+          "workload": 0,
+          "transactions": 1,
+          "variant": "aes4",
+          "samples": 100,
+          "median_ms": 57.0515225,
+          "p95_ms": 203.761023,
+          "median_change_percent": 12.55175985121706,
+          "p95_change_percent": 13.500841114102968
+        },
+        {
+          "workload": 0,
+          "transactions": 1,
+          "variant": "aes8",
+          "samples": 100,
+          "median_ms": 54.77419,
+          "p95_ms": 194.783943,
+          "median_change_percent": 8.05901768747599,
+          "p95_change_percent": 8.500345358108508
+        },
+        {
+          "workload": 0,
+          "transactions": 1,
+          "variant": "cache",
+          "samples": 100,
+          "median_ms": 50.754174,
+          "p95_ms": 178.916217,
+          "median_change_percent": 0.12829374527005832,
+          "p95_change_percent": -0.33844147684040093
+        },
+        {
+          "workload": 0,
+          "transactions": 3,
+          "variant": "scalar",
+          "samples": 10,
+          "median_ms": 221.174232,
+          "p95_ms": 276.718887,
+          "median_change_percent": 0.0,
+          "p95_change_percent": 0.0
+        },
+        {
+          "workload": 0,
+          "transactions": 3,
+          "variant": "aes4",
+          "samples": 10,
+          "median_ms": 250.054858,
+          "p95_ms": 313.073397,
+          "median_change_percent": 13.057862002658617,
+          "p95_change_percent": 13.137704619345335
+        },
+        {
+          "workload": 0,
+          "transactions": 3,
+          "variant": "aes8",
+          "samples": 10,
+          "median_ms": 239.1097215,
+          "p95_ms": 297.918497,
+          "median_change_percent": 8.109212966544854,
+          "p95_change_percent": 7.661063626639986
+        },
+        {
+          "workload": 0,
+          "transactions": 3,
+          "variant": "cache",
+          "samples": 10,
+          "median_ms": 221.288799,
+          "p95_ms": 276.406331,
+          "median_change_percent": 0.051799433850874266,
+          "p95_change_percent": -0.11295072894681457
+        },
+        {
+          "workload": 0,
+          "transactions": 4,
+          "variant": "scalar",
+          "samples": 10,
+          "median_ms": 241.970412,
+          "p95_ms": 351.919569,
+          "median_change_percent": 0.0,
+          "p95_change_percent": 0.0
+        },
+        {
+          "workload": 0,
+          "transactions": 4,
+          "variant": "aes4",
+          "samples": 10,
+          "median_ms": 273.1832775,
+          "p95_ms": 396.737619,
+          "median_change_percent": 12.899455450776355,
+          "p95_change_percent": 12.735310550462732
+        },
+        {
+          "workload": 0,
+          "transactions": 4,
+          "variant": "aes8",
+          "samples": 10,
+          "median_ms": 261.9671,
+          "p95_ms": 378.235656,
+          "median_change_percent": 8.264104621188139,
+          "p95_change_percent": 7.477869751539723
+        },
+        {
+          "workload": 0,
+          "transactions": 4,
+          "variant": "cache",
+          "samples": 10,
+          "median_ms": 241.9685325,
+          "p95_ms": 350.263495,
+          "median_change_percent": -0.0007767478612197287,
+          "p95_change_percent": -0.47058309508215546
+        },
+        {
+          "workload": 1,
+          "transactions": 1,
+          "variant": "scalar",
+          "samples": 100,
+          "median_ms": 53.4991575,
+          "p95_ms": 156.514733,
+          "median_change_percent": 0.0,
+          "p95_change_percent": 0.0
+        },
+        {
+          "workload": 1,
+          "transactions": 1,
+          "variant": "aes4",
+          "samples": 100,
+          "median_ms": 60.253061,
+          "p95_ms": 177.674061,
+          "median_change_percent": 12.624317495093273,
+          "p95_change_percent": 13.51906468766746
+        },
+        {
+          "workload": 1,
+          "transactions": 1,
+          "variant": "aes8",
+          "samples": 100,
+          "median_ms": 57.4180355,
+          "p95_ms": 169.002368,
+          "median_change_percent": 7.3251209610170065,
+          "p95_change_percent": 7.978568381802109
+        },
+        {
+          "workload": 1,
+          "transactions": 1,
+          "variant": "cache",
+          "samples": 100,
+          "median_ms": 53.486907,
+          "p95_ms": 156.449802,
+          "median_change_percent": -0.022898491438860802,
+          "p95_change_percent": -0.041485551395348264
+        },
+        {
+          "workload": 1,
+          "transactions": 3,
+          "variant": "scalar",
+          "samples": 10,
+          "median_ms": 187.364541,
+          "p95_ms": 291.555502,
+          "median_change_percent": 0.0,
+          "p95_change_percent": 0.0
+        },
+        {
+          "workload": 1,
+          "transactions": 3,
+          "variant": "aes4",
+          "samples": 10,
+          "median_ms": 211.9373065,
+          "p95_ms": 329.78115,
+          "median_change_percent": 13.114949802588317,
+          "p95_change_percent": 13.110933505895561
+        },
+        {
+          "workload": 1,
+          "transactions": 3,
+          "variant": "aes8",
+          "samples": 10,
+          "median_ms": 201.891558,
+          "p95_ms": 313.985666,
+          "median_change_percent": 7.753343787712752,
+          "p95_change_percent": 7.693274126584648
+        },
+        {
+          "workload": 1,
+          "transactions": 3,
+          "variant": "cache",
+          "samples": 10,
+          "median_ms": 187.2733335,
+          "p95_ms": 291.845167,
+          "median_change_percent": -0.048679168167686804,
+          "p95_change_percent": 0.09935158074978467
+        },
+        {
+          "workload": 1,
+          "transactions": 4,
+          "variant": "scalar",
+          "samples": 10,
+          "median_ms": 189.7204955,
+          "p95_ms": 300.760886,
+          "median_change_percent": 0.0,
+          "p95_change_percent": 0.0
+        },
+        {
+          "workload": 1,
+          "transactions": 4,
+          "variant": "aes4",
+          "samples": 10,
+          "median_ms": 212.5661695,
+          "p95_ms": 339.72087,
+          "median_change_percent": 12.041753285427204,
+          "p95_change_percent": 12.953806765950283
+        },
+        {
+          "workload": 1,
+          "transactions": 4,
+          "variant": "aes8",
+          "samples": 10,
+          "median_ms": 202.704181,
+          "p95_ms": 323.540538,
+          "median_change_percent": 6.843586121669176,
+          "p95_change_percent": 7.574007479150735
+        },
+        {
+          "workload": 1,
+          "transactions": 4,
+          "variant": "cache",
+          "samples": 10,
+          "median_ms": 188.8472975,
+          "p95_ms": 300.320837,
+          "median_change_percent": -0.4602549649149523,
+          "p95_change_percent": -0.14631191105082264
+        }
+      ],
+      "r3": [
+        {
+          "workload": 0,
+          "transactions": 1,
+          "variant": "scalar",
+          "samples": 100,
+          "median_ms": 50.7485345,
+          "p95_ms": 178.665131,
+          "median_change_percent": 0.0,
+          "p95_change_percent": 0.0
+        },
+        {
+          "workload": 0,
+          "transactions": 1,
+          "variant": "aes4",
+          "samples": 100,
+          "median_ms": 49.9087105,
+          "p95_ms": 175.529665,
+          "median_change_percent": -1.6548734032901025,
+          "p95_change_percent": -1.7549400839719564
+        },
+        {
+          "workload": 0,
+          "transactions": 1,
+          "variant": "aes8",
+          "samples": 100,
+          "median_ms": 49.714722,
+          "p95_ms": 174.688247,
+          "median_change_percent": -2.0371277913453834,
+          "p95_change_percent": -2.2258870422791066
+        },
+        {
+          "workload": 0,
+          "transactions": 1,
+          "variant": "cache",
+          "samples": 100,
+          "median_ms": 50.7761995,
+          "p95_ms": 178.789144,
+          "median_change_percent": 0.054513889460205966,
+          "p95_change_percent": 0.06941085779070821
+        },
+        {
+          "workload": 0,
+          "transactions": 3,
+          "variant": "scalar",
+          "samples": 10,
+          "median_ms": 221.9200615,
+          "p95_ms": 276.630124,
+          "median_change_percent": 0.0,
+          "p95_change_percent": 0.0
+        },
+        {
+          "workload": 0,
+          "transactions": 3,
+          "variant": "aes4",
+          "samples": 10,
+          "median_ms": 217.5937045,
+          "p95_ms": 272.651859,
+          "median_change_percent": -1.9495114460393204,
+          "p95_change_percent": -1.438117057706989
+        },
+        {
+          "workload": 0,
+          "transactions": 3,
+          "variant": "aes8",
+          "samples": 10,
+          "median_ms": 216.527837,
+          "p95_ms": 271.71919,
+          "median_change_percent": -2.4298048871980837,
+          "p95_change_percent": -1.7752708667404526
+        },
+        {
+          "workload": 0,
+          "transactions": 3,
+          "variant": "cache",
+          "samples": 10,
+          "median_ms": 221.253562,
+          "p95_ms": 276.473631,
+          "median_change_percent": -0.3003331449599522,
+          "p95_change_percent": -0.05657120697383222
+        },
+        {
+          "workload": 0,
+          "transactions": 4,
+          "variant": "scalar",
+          "samples": 10,
+          "median_ms": 242.3479135,
+          "p95_ms": 350.704522,
+          "median_change_percent": 0.0,
+          "p95_change_percent": 0.0
+        },
+        {
+          "workload": 0,
+          "transactions": 4,
+          "variant": "aes4",
+          "samples": 10,
+          "median_ms": 238.1089535,
+          "p95_ms": 344.50849,
+          "median_change_percent": -1.7491217228903455,
+          "p95_change_percent": -1.766738553773195
+        },
+        {
+          "workload": 0,
+          "transactions": 4,
+          "variant": "aes8",
+          "samples": 10,
+          "median_ms": 237.2064095,
+          "p95_ms": 343.53389,
+          "median_change_percent": -2.1215383808121824,
+          "p95_change_percent": -2.0446363106775056
+        },
+        {
+          "workload": 0,
+          "transactions": 4,
+          "variant": "cache",
+          "samples": 10,
+          "median_ms": 242.0970735,
+          "p95_ms": 350.64333,
+          "median_change_percent": -0.10350408896753205,
+          "p95_change_percent": -0.017448306526257618
+        },
+        {
+          "workload": 1,
+          "transactions": 1,
+          "variant": "scalar",
+          "samples": 100,
+          "median_ms": 53.800173,
+          "p95_ms": 157.212217,
+          "median_change_percent": 0.0,
+          "p95_change_percent": 0.0
+        },
+        {
+          "workload": 1,
+          "transactions": 1,
+          "variant": "aes4",
+          "samples": 100,
+          "median_ms": 52.695565,
+          "p95_ms": 154.405278,
+          "median_change_percent": -2.053168118994708,
+          "p95_change_percent": -1.785445847379663
+        },
+        {
+          "workload": 1,
+          "transactions": 1,
+          "variant": "aes8",
+          "samples": 100,
+          "median_ms": 52.525947,
+          "p95_ms": 153.697052,
+          "median_change_percent": -2.3684421981319703,
+          "p95_change_percent": -2.235936282229267
+        },
+        {
+          "workload": 1,
+          "transactions": 1,
+          "variant": "cache",
+          "samples": 100,
+          "median_ms": 53.8919705,
+          "p95_ms": 156.788508,
+          "median_change_percent": 0.1706267747503265,
+          "p95_change_percent": -0.26951404164728965
+        },
+        {
+          "workload": 1,
+          "transactions": 3,
+          "variant": "scalar",
+          "samples": 10,
+          "median_ms": 187.4859525,
+          "p95_ms": 291.638791,
+          "median_change_percent": 0.0,
+          "p95_change_percent": 0.0
+        },
+        {
+          "workload": 1,
+          "transactions": 3,
+          "variant": "aes4",
+          "samples": 10,
+          "median_ms": 184.876302,
+          "p95_ms": 286.209407,
+          "median_change_percent": -1.3919178824877587,
+          "p95_change_percent": -1.8616810134835626
+        },
+        {
+          "workload": 1,
+          "transactions": 3,
+          "variant": "aes8",
+          "samples": 10,
+          "median_ms": 183.5089135,
+          "p95_ms": 284.846188,
+          "median_change_percent": -2.121246390446241,
+          "p95_change_percent": -2.329115059320075
+        },
+        {
+          "workload": 1,
+          "transactions": 3,
+          "variant": "cache",
+          "samples": 10,
+          "median_ms": 187.412991,
+          "p95_ms": 292.50934,
+          "median_change_percent": -0.038915715565412956,
+          "p95_change_percent": 0.2985024718471063
+        },
+        {
+          "workload": 1,
+          "transactions": 4,
+          "variant": "scalar",
+          "samples": 10,
+          "median_ms": 188.382766,
+          "p95_ms": 300.589331,
+          "median_change_percent": 0.0,
+          "p95_change_percent": 0.0
+        },
+        {
+          "workload": 1,
+          "transactions": 4,
+          "variant": "aes4",
+          "samples": 10,
+          "median_ms": 185.5171455,
+          "p95_ms": 295.841561,
+          "median_change_percent": -1.5211691392194582,
+          "p95_change_percent": -1.5794871974348257
+        },
+        {
+          "workload": 1,
+          "transactions": 4,
+          "variant": "aes8",
+          "samples": 10,
+          "median_ms": 184.628427,
+          "p95_ms": 294.320069,
+          "median_change_percent": -1.9929312429779245,
+          "p95_change_percent": -2.08565685919172
+        },
+        {
+          "workload": 1,
+          "transactions": 4,
+          "variant": "cache",
+          "samples": 10,
+          "median_ms": 188.416207,
+          "p95_ms": 300.383626,
+          "median_change_percent": 0.017751623840145392,
+          "p95_change_percent": -0.06843389927235766
+        }
+      ]
+    },
+    "selection": "Neither AES interleaving nor public caching met the 5% gate. Scalar AES and no public cache remain default. Experimental configurations remain opt-in."
+  },
+  "metadata": [
+    {
+      "transactions": 3,
+      "cpu_generation": {
+        "backend": "cpu",
+        "run_id": 1,
+        "verified": 3,
+        "cleanup_complete": true,
+        "gpu_generation_calls": 0,
+        "gpu_metadata_receipts_after_terminal": 6
+      },
+      "combined": {
+        "requests": 2366,
+        "memory_hits": 2172,
+        "table_hits": 194,
+        "cold_misses": 0,
+        "cold_miss_rate": 0.0
+      },
+      "timing": {
+        "setup_ns": 5239239,
+        "graph_sources_ns": 661550614,
+        "source_preparation_ns": 1144700725,
+        "inventory_ns": 48942086,
+        "reservation_ns": 21880,
+        "constructors_ns": 145428999,
+        "native_constructors_ns": 21381503,
+        "crypto_constructors_ns": 6190989,
+        "graph_constructors_ns": 8532478,
+        "final_aggregation_ns": 109324029,
+        "total_ns": 2005883543
+      },
+      "native_input_generation_ns": 258000046,
+      "generation_and_startup_ns": 590063340
+    },
+    {
+      "transactions": 4,
+      "cpu_generation": {
+        "backend": "cpu",
+        "run_id": 1,
+        "verified": 4,
+        "cleanup_complete": true,
+        "gpu_generation_calls": 0,
+        "gpu_metadata_receipts_after_terminal": 8
+      },
+      "combined": {
+        "requests": 3154,
+        "memory_hits": 2960,
+        "table_hits": 194,
+        "cold_misses": 0,
+        "cold_miss_rate": 0.0
+      },
+      "timing": {
+        "setup_ns": 6878073,
+        "graph_sources_ns": 886192059,
+        "source_preparation_ns": 1425276653,
+        "inventory_ns": 65760515,
+        "reservation_ns": 24551,
+        "constructors_ns": 196749825,
+        "native_constructors_ns": 27951960,
+        "crypto_constructors_ns": 7861924,
+        "graph_constructors_ns": 13316346,
+        "final_aggregation_ns": 147619595,
+        "total_ns": 2580881676
+      },
+      "native_input_generation_ns": 89182511,
+      "generation_and_startup_ns": 371859350
+    }
+  ],
+  "native_catalog": {
+    "rows": 317,
+    "numerical_rows_unchanged": true,
+    "qualification": "cpu-generation-native-catalog-r2",
+    "sha256": "d43de3a204323e7368578dcb26a7816b253c3485c99121ea879eac383cb22719"
+  },
+  "registered_numeric_catalog": "Inherited 72 rows unchanged; no core numeric/compiler sources changed.",
+  "correctness": {
+    "native_differential_and_limits_tests": 5,
+    "source_and_ownership_tests": 11,
+    "native_adapter_regression_tests": 8,
+    "focused_python_tests": 228,
+    "gpu_proofs": 24,
+    "independent_gpu_proof_verifications": 24,
+    "rejected_gpu_proof_mutations": 24
+  },
+  "measurements_match_current_generation_sources": [
+    {
+      "path": "research/pq-ringct/Cargo.lock",
+      "sha256": "4d30badf95bafb3623b8526d581ef98c6fb64801bac36af1ab644e12bea73f7c"
+    },
+    {
+      "path": "research/pq-ringct/Cargo.toml",
+      "sha256": "236ceba6aa6f976aae973394dea79032a4ccba4ff1f9b3563214d792d7a499bf"
+    },
+    {
+      "path": "research/pq-ringct/build.rs",
+      "sha256": "518070a38630b652e75b66d6bc453d0d8393b3dd5305f958c89db90be436ef79"
+    },
+    {
+      "path": "research/pq-ringct/native/cpu_generation.h",
+      "sha256": "7f4e22ddbf812ea759b6e86d508469d2be55dab8a35aac170a9e9e0df959cf19"
+    },
+    {
+      "path": "research/pq-ringct/native/cpu_generation.inc",
+      "sha256": "d9d508f5914938b5f371a747a99b846fdc3fb37f4e194c7dd001107a477a0e50"
+    },
+    {
+      "path": "research/pq-ringct/native/cpu_generation_footprint.inc",
+      "sha256": "970911b2b65143d534409070c73490c126315650a926f867c7faf56ba8a11c14"
+    },
+    {
+      "path": "research/pq-ringct/native/declared_footprint.h",
+      "sha256": "949a468d92a9e0c0542dac497bef6f06bc2aea543ba629318d7147bd6804a20a"
+    },
+    {
+      "path": "research/pq-ringct/native/declared_footprint.inc",
+      "sha256": "34e2e50e68cb46196878cfbf0a97dc10b908a4a09619f0c323c3f54f0943701e"
+    },
+    {
+      "path": "research/pq-ringct/native/lattica_guard.h",
+      "sha256": "39d357a56784df753db211aa79a8214daa3a99cdc62b2fa21054aafb116b6357"
+    },
+    {
+      "path": "research/pq-ringct/native/libXKCP.a.headers/SimpleFIPS202.h",
+      "sha256": "7651161b889a6e30dc6a1ba7d0d73ad2079a627a39939dd80a68f0f69d9f4185"
+    },
+    {
+      "path": "research/pq-ringct/native/matrict.c",
+      "sha256": "b36fb20246b57559ad3461fba12550f2bedb3563d2fcd9f6a5d18922a7d61259"
+    },
+    {
+      "path": "research/pq-ringct/native/matrict.h",
+      "sha256": "f3f5142263e9a0622e3ddc45c0079c3e9c176b6b455bde298c132623effa014a"
+    },
+    {
+      "path": "research/pq-ringct/native/private_rng_rejection_oracle.h",
+      "sha256": "3c25e62424fc3f5f3bf98ca2fb6ef8a4e5bc3d833853c8b930c21ec473fa8623"
+    },
+    {
+      "path": "research/pq-ringct/native/private_rng_rejection_oracle.inc",
+      "sha256": "d4b353f709437f1eb0929f907db0f56e386b4dc1397fcb473e1d38367a13166f"
+    },
+    {
+      "path": "research/pq-ringct/native/private_spend_fixture.inc",
+      "sha256": "30b4b42ba5b9846a2885f9910836f19862aefdd95cdb954303ac5ffa67425522"
+    },
+    {
+      "path": "research/pq-ringct/native/private_spend_oracle.h",
+      "sha256": "d09bacb7d8cb6223a3cd5312a8bfce3446aafe3adfb6fef2df838c6f039883bc"
+    },
+    {
+      "path": "research/pq-ringct/src/bin/matrict-bench.rs",
+      "sha256": "4b88b57838736126f32d0c587ca2e622c0744a764614ed5344bfece910c4ade4"
+    },
+    {
+      "path": "research/pq-ringct/src/bin/matrict_bench/generation.rs",
+      "sha256": "2707ff605bccb64bf7c0282b34a5493b54ad8bea4043a577749c96da95daef54"
+    },
+    {
+      "path": "research/pq-ringct/src/native/cpu_generation/tests.rs",
+      "sha256": "17228e313cac622f860e5c2db992ec2041f8382c1ba6cbebba99586f36eb84a6"
+    },
+    {
+      "path": "research/pq-ringct/src/native/cpu_generation.rs",
+      "sha256": "eb6574b4efbe2b78205483cc5f6cb552a94f2e3e9166e7aa234d69cbf6bce634"
+    },
+    {
+      "path": "research/pq-ringct/src/native/declared_footprint/sources.rs",
+      "sha256": "05abf9dc2195e562d24ea0135439b88bdaf104575eb472099bc547ac9eb0fbda"
+    },
+    {
+      "path": "research/pq-ringct/src/native/declared_footprint.rs",
+      "sha256": "5b1a6124bed47b048644a0d5a31d47e7e4f180e4cba4f74801d2c22a07f04352"
+    },
+    {
+      "path": "research/pq-ringct/src/native/private_rng_rejection_oracle.rs",
+      "sha256": "c2b9bff2f32584b9064353d4e86dbb2af09355c9ab2ca488c238fef490b2359e"
+    },
+    {
+      "path": "research/pq-ringct/src/native/private_spend_fixture/footprint.rs",
+      "sha256": "b24dbd1c28cf36461f9ff554ea7ce74a0354074d664e369d60d91c4016c7482d"
+    },
+    {
+      "path": "research/pq-ringct/src/native/private_spend_fixture.rs",
+      "sha256": "87ebae42c16a86b76034d241ed2444d50e23a257ad57e25912967909e34662cf"
+    },
+    {
+      "path": "research/pq-ringct/src/native.rs",
+      "sha256": "914def0ba47a49fb0a594ef4d6cfbfc3018187554f22d9f7330c4f33430a3aaa"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/LICENSE",
+      "sha256": "c9148b886ad30a343c16c8f1f8d7ec6ce216979b7e97ecdc7b33164f4dc57c69"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/PATCHES.diff",
+      "sha256": "e704cc1fc4186e581d765b2fc0add6358b49bf3264e11a1eb8ee2cdf1c8f4345"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/PROVENANCE.md",
+      "sha256": "f94db88b426e999283ab49d66cd9297722975457da55cd7a7b69f2bc200987a8"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/SOURCE.json",
+      "sha256": "fb7fad710a731fb0fadcbe7db2cdf1b283b6c6e5a3c695ab3b35d05e5ba9f05b"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/UPSTREAM_README.adoc",
+      "sha256": "5d07fa0cfed179973f325dd9de7ac44f0d8a2b59f9e27ade1256bfdee006ba38"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/n10/comp.h",
+      "sha256": "bd8d51492935436aecdc65d1e9ee4dc31ba9a6e6cf29fc6dd7bd5fac8e1ecb94"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/n10/fastrandombytes.c",
+      "sha256": "68a2667174a9f05275f41bb489e4f2ff44514f8fd716737807e44615893a65ac"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/n10/fastrandombytes.h",
+      "sha256": "5836f8f1940f925817135de11ea4a5b665e5f145d64d8f6f1eda435b63252dc7"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/n10/gaussian_avx.c",
+      "sha256": "e259bae1977835352a425cf294126bacb18039cf0b0136c35001ab970c367821"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/n10/gaussian_avx.h",
+      "sha256": "29b8f054fe9961649fa2f06b95462567177921a1c0ee5a18bd9d0f3ee2632d1c"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/n10/hash.c",
+      "sha256": "fc697261bb071504a8a56e0584e08031cbc40a1f95132637cab76bf0f9c36c49"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/n10/hash.h",
+      "sha256": "5c0ff19dbd35601534e00a529a19fdceb9801dcc17b09506e365dba00cee97c2"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/n10/keygen.c",
+      "sha256": "8eedeb1300f8c29fee7c8ff8620a559a91e81accc652cf8ab44ca80e65527620"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/n10/keygen.h",
+      "sha256": "ba2fc3ff1e56056a501b66ee40c307eb38a0f519916333d118e1d227ec9c9082"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/n10/littleendian.h",
+      "sha256": "d55405d02346da150166a5a12407d3bd0f4963477a9b970d75caa426cee0096f"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/n10/mint.c",
+      "sha256": "72454d30f84303f38472aaedeb7515251e579614aa732afe361125789fc9bbb3"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/n10/mint.h",
+      "sha256": "8c1a4f3a6d1b2db3291db4ee30590adde096ab7ca3428dc54cb47005685e336d"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/n10/param.h",
+      "sha256": "943b8a82cfb6057e1985d76048d6bb2eb7af72a61e6beecb92df1fc8b4f37656"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/n10/poly_mult.c",
+      "sha256": "878f4d2e4d2e087457af63a1e04684f8acb97ded19ae539ea4776fc7df2e2c82"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/n10/poly_mult.h",
+      "sha256": "d85de79ab9ec301fdba339481471b05e9f67cd6689eace587a730b6655d6bc88"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/n10/poly_param.h",
+      "sha256": "c28909ba4a8fbcebe0c28d7af152f5f3b773204490d766e9640c1b8e34c4f3ee"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/n10/poly_q.c",
+      "sha256": "918d0518f15fbbf074a05d94db21af21cd4c0d361e065a84f6a1fa59ffd1a3c6"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/n10/poly_q.h",
+      "sha256": "20aa078222daaa1fb5da5578a0222fac242c28e22c400d650f83cd4f19c78353"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/n10/poly_red.h",
+      "sha256": "481741874d699c54726d7544122b9a21dc450435ed033b8be561f7e34a2977f8"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/n10/sammat.c",
+      "sha256": "ea1f67945ad6bf611904d59ebc3bb2e30f0d0d7700efd1619efc668a729d971e"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/n10/sammat.h",
+      "sha256": "9a54c18f77beee5d28f6b00a378a5d1a0d20a92f567929fc735d19a50408b301"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/n10/sampleb.c",
+      "sha256": "2cce88eeb3d2cee48dbfdb34cd2020afedc575c8c0035cbc2d7f5e262c235669"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/n10/sampleb.h",
+      "sha256": "5877de5ae674bf300a6504b8d5bb75daaf9529ce324abbd22c4a5a1646679193"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/n10/setup.c",
+      "sha256": "102046093c7e8b4a46a4c1d8623a97b686795c95893a2bfa412715daa3f2d0ea"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/n10/setup.h",
+      "sha256": "6c381aed1123e8b8b3cc9a7ff5c50b7963679341d061865a50448eef092e3e66"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/n10/spend.c",
+      "sha256": "990672d927ecfdbb3cd229a83cacf9ee32471f01a6a92e3bec9a8b39747ce633"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/n10/spend.h",
+      "sha256": "17ffe3330e59fbd0cbe1d20c165718b6e1a057eda5923e201d3cd80aa8fdb91b"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/n10/verify.c",
+      "sha256": "154f36213c58312173ea99076f8c616831227761f282389eb88b9a64dc78c6cc"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/n10/verify.h",
+      "sha256": "15872d97bc8c42dddf759af69305ab973007e0d3e99511535d0d03b99f9be5c8"
+    }
+  ],
+  "source_files": [
+    {
+      "path": "research/pq-ringct/Cargo.toml",
+      "sha256": "236ceba6aa6f976aae973394dea79032a4ccba4ff1f9b3563214d792d7a499bf"
+    },
+    {
+      "path": "research/pq-ringct/build.rs",
+      "sha256": "518070a38630b652e75b66d6bc453d0d8393b3dd5305f958c89db90be436ef79"
+    },
+    {
+      "path": "research/pq-ringct/native/cpu_generation.h",
+      "sha256": "7f4e22ddbf812ea759b6e86d508469d2be55dab8a35aac170a9e9e0df959cf19"
+    },
+    {
+      "path": "research/pq-ringct/native/cpu_generation.inc",
+      "sha256": "d9d508f5914938b5f371a747a99b846fdc3fb37f4e194c7dd001107a477a0e50"
+    },
+    {
+      "path": "research/pq-ringct/native/cpu_generation_footprint.inc",
+      "sha256": "970911b2b65143d534409070c73490c126315650a926f867c7faf56ba8a11c14"
+    },
+    {
+      "path": "research/pq-ringct/native/declared_footprint.inc",
+      "sha256": "34e2e50e68cb46196878cfbf0a97dc10b908a4a09619f0c323c3f54f0943701e"
+    },
+    {
+      "path": "research/pq-ringct/native/matrict.c",
+      "sha256": "b36fb20246b57559ad3461fba12550f2bedb3563d2fcd9f6a5d18922a7d61259"
+    },
+    {
+      "path": "research/pq-ringct/src/bin/matrict-bench.rs",
+      "sha256": "4b88b57838736126f32d0c587ca2e622c0744a764614ed5344bfece910c4ade4"
+    },
+    {
+      "path": "research/pq-ringct/src/bin/matrict_bench/generation.rs",
+      "sha256": "2707ff605bccb64bf7c0282b34a5493b54ad8bea4043a577749c96da95daef54"
+    },
+    {
+      "path": "research/pq-ringct/src/bin/pq_ringct_full_workflow.rs",
+      "sha256": "7b1c839703795e2138d2be2c949849dc38343de09af91edd38280737ef94f1c4"
+    },
+    {
+      "path": "research/pq-ringct/src/component_tree/native_shape/precomputed/data.rs",
+      "sha256": "7dd77defb7f45bb9936c05daa0e3b34294c4e4afe9adbeb40d477e4742a4c1da"
+    },
+    {
+      "path": "research/pq-ringct/src/execution/diagnostics/generation.rs",
+      "sha256": "bc8b141b7385240759ffc6c4202320d65fcdd2d8a7ee93190a22af7712134471"
+    },
+    {
+      "path": "research/pq-ringct/src/execution/generation_terminal.rs",
+      "sha256": "bc03e7b6b8bf3e496b5feb5bc01ce27f46e778a14a0c65c0c7802826f082194a"
+    },
+    {
+      "path": "research/pq-ringct/src/execution/generation_terminal/cpu.rs",
+      "sha256": "52aa512c2936610e9651f5a291c0bb6132c84086b1a29beb2a8f4b61a0c13e3f"
+    },
+    {
+      "path": "research/pq-ringct/src/execution/generation_terminal/memory.rs",
+      "sha256": "55e5c7032be02e651ebfb495c154e9a50475ec7f8b94ea452b354f7c54306153"
+    },
+    {
+      "path": "research/pq-ringct/src/execution/generation_terminal/planning_startup.rs",
+      "sha256": "7a369b5589c7ea4853a190af5ccb271ea5aeb5d5fc5facebbd48bc752d6e1f8f"
+    },
+    {
+      "path": "research/pq-ringct/src/native.rs",
+      "sha256": "914def0ba47a49fb0a594ef4d6cfbfc3018187554f22d9f7330c4f33430a3aaa"
+    },
+    {
+      "path": "research/pq-ringct/src/native/cpu_generation.rs",
+      "sha256": "eb6574b4efbe2b78205483cc5f6cb552a94f2e3e9166e7aa234d69cbf6bce634"
+    },
+    {
+      "path": "research/pq-ringct/src/native/cpu_generation/tests.rs",
+      "sha256": "17228e313cac622f860e5c2db992ec2041f8382c1ba6cbebba99586f36eb84a6"
+    },
+    {
+      "path": "research/pq-ringct/src/native/declared_footprint.rs",
+      "sha256": "5b1a6124bed47b048644a0d5a31d47e7e4f180e4cba4f74801d2c22a07f04352"
+    },
+    {
+      "path": "research/pq-ringct/src/native/declared_footprint/sources.rs",
+      "sha256": "05abf9dc2195e562d24ea0135439b88bdaf104575eb472099bc547ac9eb0fbda"
+    },
+    {
+      "path": "research/pq-ringct/src/spend_pipeline/full_workflow/driver/case_report.rs",
+      "sha256": "66fd7e03f54e66b4bffabebd961c7a54ce68ea01de9db338fa5f894c960f2c59"
+    },
+    {
+      "path": "research/pq-ringct/src/spend_pipeline/full_workflow/fresh_generation.rs",
+      "sha256": "7f1e257ecdca8e610bd05cc24196f5c07d54579c8112cce9c2712123f541219f"
+    },
+    {
+      "path": "research/pq-ringct/src/spend_pipeline/full_workflow/fresh_generation/case_lifetime.rs",
+      "sha256": "0ce53c2e2f30ee5b4de6f20abbcee57a809e95a8c223def36c3b48e49b8365c3"
+    },
+    {
+      "path": "research/pq-ringct/src/spend_pipeline/full_workflow/fresh_generation/case_lifetime/metadata_seal.rs",
+      "sha256": "a221d9fdf7f7860db53bc831ade2b4ec2bc72b5db09c0eeac6e7b518f099c193"
+    },
+    {
+      "path": "research/pq-ringct/src/spend_pipeline/full_workflow/fresh_generation/inputs.rs",
+      "sha256": "236a4a331632377b422f2fdff3257beb14c4d801566bb53420f6795a338a02e1"
+    },
+    {
+      "path": "research/pq-ringct/tools/cpu_generation_census.py",
+      "sha256": "e0dfc7dce42caea07ca8aadb9af3e58d6c96ba4362d1b9a1e810e48eaa5aa881"
+    },
+    {
+      "path": "research/pq-ringct/tools/cpu_generation_profile.py",
+      "sha256": "22960eb61dd1ba6c80c68041cd2dd02f662aead20cf765d36ef2e19f35322542"
+    },
+    {
+      "path": "research/pq-ringct/tools/cpu_generation_receipts.py",
+      "sha256": "8df6bdc76a435172a846c5a69c069c10b869268c9cfa0a81bd4283caec4a7906"
+    },
+    {
+      "path": "research/pq-ringct/tools/opencl_private_spend_validate.py",
+      "sha256": "ab847d8d8569962f3c5510f660a7a4212ebdb514ea31861858a1dec6ead4f4a1"
+    },
+    {
+      "path": "research/pq-ringct/tools/owned_workflow_case_receipts.py",
+      "sha256": "df8b04da460cf58199c8beb97aea83d7b272d45accaeacb870bfed66e06a3e19"
+    },
+    {
+      "path": "research/pq-ringct/tools/test_cpu_generation_profile.py",
+      "sha256": "d587950ef30e2ed2ab0e6fb00878bd9dfc6f61ef1fa43bb58338635e737c2de4"
+    },
+    {
+      "path": "research/pq-ringct/tools/test_cpu_generation_receipts.py",
+      "sha256": "b807306222c27ad1d18a843b9476eaa230485433c4ea4fb1c198e50ff64054a6"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/n10/fastrandombytes.c",
+      "sha256": "68a2667174a9f05275f41bb489e4f2ff44514f8fd716737807e44615893a65ac"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/n10/gaussian_avx.c",
+      "sha256": "e259bae1977835352a425cf294126bacb18039cf0b0136c35001ab970c367821"
+    },
+    {
+      "path": "research/pq-ringct/vendor/matrict-plus/n10/spend.c",
+      "sha256": "990672d927ecfdbb3cd229a83cacf9ee32471f01a6a92e3bec9a8b39747ce633"
+    }
+  ],
+  "receipts": [
+    {
+      "label": "cpu-generation-bench-build-r2",
+      "record": ".tools/pq-opencl-opt/runs/cpu-generation-bench-build-r2.json",
+      "record_sha256": "95a63ac1299ce925369ddf85de59d69534c3795f948738f1650a0db831e85452",
+      "raw_log": ".tools/pq-opencl-opt/runs/cpu-generation-bench-build-r2.log",
+      "raw_log_sha256": "c40c2c3878c415423233da6168715c7ac038e60bad53cbb9c3b7536c8683e648",
+      "source_inputs_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "command": [
+        "/home/access/code/lattica/.tools/rust-1.96.0/bin/cargo",
+        "build",
+        "--release",
+        "--locked",
+        "--offline",
+        "--manifest-path",
+        "research/pq-ringct/Cargo.toml",
+        "--features",
+        "native-matrict",
+        "--bin",
+        "matrict-bench",
+        "-j2"
+      ]
+    },
+    {
+      "label": "cpu-generation-oracle-build-r4",
+      "record": ".tools/pq-opencl-opt/runs/cpu-generation-oracle-build-r4.json",
+      "record_sha256": "a8431badc77ab488df2aa50f5a4401a0f250652af388eab2a7a8b23ee09e0dbb",
+      "raw_log": ".tools/pq-opencl-opt/runs/cpu-generation-oracle-build-r4.log",
+      "raw_log_sha256": "56adb6252e6e2d3eb44350da198fb71802d79a4c549a2d9d4d94f8d60d590a32",
+      "source_inputs_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "command": [
+        "/home/access/code/lattica/.tools/rust-1.96.0/bin/cargo",
+        "test",
+        "--release",
+        "--locked",
+        "--offline",
+        "--manifest-path",
+        "research/pq-ringct/Cargo.toml",
+        "--features",
+        "native-generation-oracle",
+        "--lib",
+        "--no-run",
+        "-j2"
+      ]
+    },
+    {
+      "label": "cpu-generation-native-and-paired-r3",
+      "record": ".tools/pq-opencl-opt/runs/cpu-generation-native-and-paired-r3.json",
+      "record_sha256": "156e6b819a4c557e56f3b8d12d91b7994527e1dab6349e81066203914aaf7464",
+      "raw_log": ".tools/pq-opencl-opt/runs/cpu-generation-native-and-paired-r3.log",
+      "raw_log_sha256": "5f6e4fc49136e0fc17a2472a6d9f1b5def3b769a044b3a16d3758855bdab9f30",
+      "source_inputs_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "command": [
+        "/home/access/code/lattica/.tools/transaction-generation-cpu/.tools/target-opencl/release/deps/lattica_pq_ringct_research-f0dfdee9275212fb",
+        "native::cpu_generation::tests::",
+        "--include-ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ]
+    },
+    {
+      "label": "cpu-generation-workflow-build-r4",
+      "record": ".tools/pq-opencl-opt/runs/cpu-generation-workflow-build-r4.json",
+      "record_sha256": "9ce20833619413a14a7e10f0da301aa9b291dc771223235f379080b686174eb3",
+      "raw_log": ".tools/pq-opencl-opt/runs/cpu-generation-workflow-build-r4.log",
+      "raw_log_sha256": "a8452e8ec92bd2b9fa51cafa5bf26517f466debc0a7c76ab66b21e98882146c8",
+      "source_inputs_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "command": [
+        "/home/access/code/lattica/.tools/rust-1.96.0/bin/cargo",
+        "test",
+        "--release",
+        "--locked",
+        "--offline",
+        "--manifest-path",
+        "research/pq-ringct/Cargo.toml",
+        "--features",
+        "full-workflow-experiment",
+        "--lib",
+        "--no-run",
+        "-j2"
+      ]
+    },
+    {
+      "label": "cpu-generation-workflow-cli-build-r1",
+      "record": ".tools/pq-opencl-opt/runs/cpu-generation-workflow-cli-build-r1.json",
+      "record_sha256": "676b825722642706a9d070ddca0aa0786adcc1277e4770a205dfe0e4dec7605c",
+      "raw_log": ".tools/pq-opencl-opt/runs/cpu-generation-workflow-cli-build-r1.log",
+      "raw_log_sha256": "5e948462e9d4b479e421ea0b47fd084e350c01f4f943629b288ad86bee8ecced",
+      "source_inputs_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "command": [
+        "/home/access/code/lattica/.tools/rust-1.96.0/bin/cargo",
+        "build",
+        "--release",
+        "--locked",
+        "--offline",
+        "--manifest-path",
+        "research/pq-ringct/Cargo.toml",
+        "--features",
+        "full-workflow-experiment",
+        "--bin",
+        "pq-ringct-full-workflow",
+        "-j2"
+      ]
+    },
+    {
+      "label": "cpu-generation-final-cpu-checks-r1",
+      "record": ".tools/pq-opencl-opt/runs/cpu-generation-final-cpu-checks-r1.json",
+      "record_sha256": "75278bf203594375f8087bf2eaacf3a41fdaaec772b98dd4477451b951d01a32",
+      "raw_log": ".tools/pq-opencl-opt/runs/cpu-generation-final-cpu-checks-r1.log",
+      "raw_log_sha256": "fb71867a8983a24f5bcf3983366d3ebdd82308065cc60ee550e94612293af749",
+      "source_inputs_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "command": [
+        "/home/access/code/lattica/.tools/transaction-generation-cpu/.tools/target-opencl/release/deps/lattica_pq_ringct_research-b04c04b993d51d93",
+        "native::declared_footprint::",
+        "execution::generation_terminal::",
+        "fresh_generation_source_plans_fit_standard_profile",
+        "fresh_cpu_generation_verifies_retires_and_releases_originals",
+        "--test-threads=1",
+        "--nocapture"
+      ]
+    },
+    {
+      "label": "cpu-generation-native-regression-r1",
+      "record": ".tools/pq-opencl-opt/runs/cpu-generation-native-regression-r1.json",
+      "record_sha256": "e575078df93255b2a23ce54b82b969fb7b17a0441074958e6bc54b840a6f4db7",
+      "raw_log": ".tools/pq-opencl-opt/runs/cpu-generation-native-regression-r1.log",
+      "raw_log_sha256": "673b823706305de8fe2db68d1c0c7015f48c06e9eb0588648b8c882ee2467089",
+      "source_inputs_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "command": [
+        "/home/access/code/lattica/.tools/transaction-generation-cpu/.tools/target-opencl/release/deps/lattica_pq_ringct_research-b04c04b993d51d93",
+        "native::",
+        "--test-threads=1",
+        "--nocapture"
+      ]
+    },
+    {
+      "label": "cpu-generation-native-catalog-r2",
+      "record": ".tools/pq-opencl-opt/runs/cpu-generation-native-catalog-r2.json",
+      "record_sha256": "3228fc78d4330c18e7cc867315b40c0ba9c013ce1a9760c6186a496d3d37e04f",
+      "raw_log": ".tools/pq-opencl-opt/runs/cpu-generation-native-catalog-r2.log",
+      "raw_log_sha256": "9d67135bb1f7ae6edb30a3ede05b0b09238280f0cd1e82299bb7d898d2bdf3b6",
+      "source_inputs_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "command": [
+        "/home/access/code/lattica/.tools/transaction-generation-cpu/.tools/target-opencl/release/deps/lattica_pq_ringct_research-b04c04b993d51d93",
+        "component_tree::native_shape::profiling::tests::native_metadata_profile",
+        "--exact",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ]
+    },
+    {
+      "label": "cpu-generation-fresh-metadata-n3-r1",
+      "record": ".tools/pq-opencl-opt/runs/cpu-generation-fresh-metadata-n3-r1.json",
+      "record_sha256": "ec6c6ada38028a67f5041842a916d5fbd7b40d65ec8d72709e8a8c838b4f8931",
+      "raw_log": ".tools/pq-opencl-opt/runs/cpu-generation-fresh-metadata-n3-r1.log",
+      "raw_log_sha256": "563cd0af37a52460dd6a2c8de5d0e98721be546feb98af29bd40469fa814e60d",
+      "source_inputs_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "command": [
+        "/home/access/code/lattica/.tools/transaction-generation-cpu/.tools/target-opencl/release/deps/lattica_pq_ringct_research-b04c04b993d51d93",
+        "spend_pipeline::full_workflow::driver::metadata_profile::tests::complete_n3_metadata_stage",
+        "--exact",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ]
+    },
+    {
+      "label": "cpu-generation-fresh-metadata-n4-r1",
+      "record": ".tools/pq-opencl-opt/runs/cpu-generation-fresh-metadata-n4-r1.json",
+      "record_sha256": "f463f3b5df8eb8f21f3444aaf795dfb39a14e71bc2587fb2d6bbd84b5485a112",
+      "raw_log": ".tools/pq-opencl-opt/runs/cpu-generation-fresh-metadata-n4-r1.log",
+      "raw_log_sha256": "96873c300ae3d78a5a7fe6b2a3971cf4d0f3d2467bf35e5878d1aaec8bb314f1",
+      "source_inputs_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "command": [
+        "/home/access/code/lattica/.tools/transaction-generation-cpu/.tools/target-opencl/release/deps/lattica_pq_ringct_research-b04c04b993d51d93",
+        "spend_pipeline::full_workflow::driver::metadata_profile::tests::complete_n4_metadata_stage",
+        "--exact",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ]
+    },
+    {
+      "label": "cpu-generation-gpu-proofs-r1",
+      "record": ".tools/pq-opencl-opt/runs/cpu-generation-gpu-proofs-r1.json",
+      "record_sha256": "5742abe00632b5a8184d0937e3f57b9370a50124438f94f6643dff34c341dab0",
+      "raw_log": ".tools/pq-opencl-opt/runs/cpu-generation-gpu-proofs-r1.log",
+      "raw_log_sha256": "7f3405249f77b585aa7566f892f5e343bef95bb4f23e83779539fa7d8de05989",
+      "source_inputs_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "command": [
+        "/home/access/code/lattica/.tools/transaction-generation-cpu/.tools/target-opencl/release/deps/lattica_pq_ringct_research-b04c04b993d51d93",
+        "native_quotient_screen::native_quotient_compilation_and_execution_verify_small_and_large_shapes",
+        "--exact",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ]
+    },
+    {
+      "label": "cpu-gen-final-w0-n1-r1",
+      "record": ".tools/pq-opencl-opt/runs/cpu-gen-final-w0-n1-r1.json",
+      "record_sha256": "4fed59c22522c4a987941eddafa912f351a65302bb25a1d65d416c0e6a1047f4",
+      "raw_log": ".tools/pq-opencl-opt/runs/cpu-gen-final-w0-n1-r1.log",
+      "raw_log_sha256": "1cd131234c797cf3869b69c790aaf681019825ab01d84c63271bb5ed60dbf6e5",
+      "source_inputs_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "command": [
+        "/home/access/code/lattica/.tools/transaction-generation-cpu/.tools/target-opencl/release/matrict-bench",
+        "generation",
+        "--transactions",
+        "1",
+        "--samples",
+        "100",
+        "--setup-seed",
+        "1111111111111111111111111111111111111111111111111111111111111111",
+        "--context",
+        "2222222222222222222222222222222222222222222222222222222222222222"
+      ]
+    },
+    {
+      "label": "cpu-gen-final-w0-n3-r1",
+      "record": ".tools/pq-opencl-opt/runs/cpu-gen-final-w0-n3-r1.json",
+      "record_sha256": "a7c0830e99ca61912d6eec17863cf3d581c6857c30ceb6f36fbf365cfb198d4a",
+      "raw_log": ".tools/pq-opencl-opt/runs/cpu-gen-final-w0-n3-r1.log",
+      "raw_log_sha256": "fccc4956c304aa40f13329b047663831f028ad78966a224d35c8bacdab70a878",
+      "source_inputs_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "command": [
+        "/home/access/code/lattica/.tools/transaction-generation-cpu/.tools/target-opencl/release/matrict-bench",
+        "generation",
+        "--transactions",
+        "3",
+        "--samples",
+        "10",
+        "--setup-seed",
+        "1111111111111111111111111111111111111111111111111111111111111111",
+        "--context",
+        "2222222222222222222222222222222222222222222222222222222222222222"
+      ]
+    },
+    {
+      "label": "cpu-gen-final-w0-n4-r1",
+      "record": ".tools/pq-opencl-opt/runs/cpu-gen-final-w0-n4-r1.json",
+      "record_sha256": "03c70d5c682c0dde5b5dddb43e463d1357c017e32167b3c7e27637547a248668",
+      "raw_log": ".tools/pq-opencl-opt/runs/cpu-gen-final-w0-n4-r1.log",
+      "raw_log_sha256": "d34241805af14c7df52ffeca2957441fefff654d693f2ea987dfb487b9941f1e",
+      "source_inputs_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "command": [
+        "/home/access/code/lattica/.tools/transaction-generation-cpu/.tools/target-opencl/release/matrict-bench",
+        "generation",
+        "--transactions",
+        "4",
+        "--samples",
+        "10",
+        "--setup-seed",
+        "1111111111111111111111111111111111111111111111111111111111111111",
+        "--context",
+        "2222222222222222222222222222222222222222222222222222222222222222"
+      ]
+    },
+    {
+      "label": "cpu-gen-final-w1-n1-r1",
+      "record": ".tools/pq-opencl-opt/runs/cpu-gen-final-w1-n1-r1.json",
+      "record_sha256": "ffd6b33e763ce930c5b01ae7f6983fd02d9da25372dad650d808673fc90e2832",
+      "raw_log": ".tools/pq-opencl-opt/runs/cpu-gen-final-w1-n1-r1.log",
+      "raw_log_sha256": "65fd0ecbf3ed2ad75a5d514813ffc3a01456f45e7b71a05475f76cb39c357e81",
+      "source_inputs_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "command": [
+        "/home/access/code/lattica/.tools/transaction-generation-cpu/.tools/target-opencl/release/matrict-bench",
+        "generation",
+        "--transactions",
+        "1",
+        "--samples",
+        "100",
+        "--setup-seed",
+        "3333333333333333333333333333333333333333333333333333333333333333",
+        "--context",
+        "4444444444444444444444444444444444444444444444444444444444444444"
+      ]
+    },
+    {
+      "label": "cpu-gen-final-w1-n3-r1",
+      "record": ".tools/pq-opencl-opt/runs/cpu-gen-final-w1-n3-r1.json",
+      "record_sha256": "93e318f41d1fcd12cc4330c3578e39a5cf55fd6e5c6c8de1142acbfe25807958",
+      "raw_log": ".tools/pq-opencl-opt/runs/cpu-gen-final-w1-n3-r1.log",
+      "raw_log_sha256": "60f22271f9fdec6c0136c43955fcaa76d305c51a315fc24e5d90447825d2c536",
+      "source_inputs_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "command": [
+        "/home/access/code/lattica/.tools/transaction-generation-cpu/.tools/target-opencl/release/matrict-bench",
+        "generation",
+        "--transactions",
+        "3",
+        "--samples",
+        "10",
+        "--setup-seed",
+        "3333333333333333333333333333333333333333333333333333333333333333",
+        "--context",
+        "4444444444444444444444444444444444444444444444444444444444444444"
+      ]
+    },
+    {
+      "label": "cpu-gen-final-w1-n4-r1",
+      "record": ".tools/pq-opencl-opt/runs/cpu-gen-final-w1-n4-r1.json",
+      "record_sha256": "33c5ab0af4a637d20816ae4ba154f0699fd9579b712458e523e8799c0c5a0f56",
+      "raw_log": ".tools/pq-opencl-opt/runs/cpu-gen-final-w1-n4-r1.log",
+      "raw_log_sha256": "28bc8ed099fcdefa52b683e85ccac96108665ba3e51ef385953cc85dfc22552f",
+      "source_inputs_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "command": [
+        "/home/access/code/lattica/.tools/transaction-generation-cpu/.tools/target-opencl/release/matrict-bench",
+        "generation",
+        "--transactions",
+        "4",
+        "--samples",
+        "10",
+        "--setup-seed",
+        "3333333333333333333333333333333333333333333333333333333333333333",
+        "--context",
+        "4444444444444444444444444444444444444444444444444444444444444444"
+      ]
+    }
+  ]
+}

@@ -24,7 +24,7 @@ pub(crate) struct CompletedCaseSummary {
     pub(crate) ledger_peak_device_bytes: u64,
     pub(crate) cache_statistics: Option<[FamilyStatistics; 5]>,
     pub(crate) cache_counter_scope: &'static str,
-    pub(crate) generation_session_id: u64,
+    pub(crate) generation_session_id: Option<u64>,
     pub(crate) generation: NativeGenerationTotals,
     pub(crate) source_preparation: SourcePreparationSnapshot,
     pub(crate) owned_observations: OwnedWorkflowSnapshot,

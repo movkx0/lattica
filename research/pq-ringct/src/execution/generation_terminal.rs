@@ -53,23 +53,28 @@ impl report_transport::FixedPayload for NativeGenerationTotals {}
 #[derive(serde::Serialize)]
 struct TerminalRecord {
     schema: &'static str,
-    session_id: u64,
+    session_id: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    cpu_run_id: Option<u64>,
     operations: NativeGenerationTotals,
-    session: NativeSessionRecord,
+    session: Option<NativeSessionRecord>,
     stark_proofs: u64,
     registrations: u64,
 }
 impl report_transport::FixedPayload for TerminalRecord {}
 
-/// Nonclone proof of the exact finished generation context. The runtime and
-/// its original are gone; only this small terminal original remains retained.
+/// Nonclone proof of the exact finished generation owner. A CPU terminal
+/// follows workspace destruction; a GPU terminal follows actual Session
+/// retirement. Only this small terminal original remains retained.
 pub(crate) struct NativeGenerationTerminal {
     record: TerminalRecord,
     ledger: Ledger,
     original: Reservation,
 }
 impl NativeGenerationTerminal {
-    pub(crate) fn session_id(&self) -> u64 { self.record.session_id }
+    pub(crate) fn session_id(&self) -> Option<u64> { self.record.session_id }
+    /// Internal generation identity; CPU runs are never GPU session receipts.
+    pub(crate) fn identity(&self) -> u64 { self.record.cpu_run_id.or(self.record.session_id).expect("generation identity") }
     pub(crate) fn spend_count(&self) -> usize { self.record.operations.spends as usize }
     pub(crate) fn totals(&self) -> NativeGenerationTotals { self.record.operations }
     pub(crate) fn belongs_to(&self, ledger: &Ledger) -> bool { self.original.belongs_to(ledger) }
@@ -78,13 +83,13 @@ impl NativeGenerationTerminal {
     /// still live in this ledger, including its packet/data/static claims.
     /// This numeric observation alone cannot issue a fresh planning context.
     pub(crate) fn live_generation_bytes(&self) -> Bytes { self.ledger.snapshot().current }
-    /// Read-only ordering and pristine-context check. The terminal can only
-    /// be constructed by consuming the actual retired generation Session.
-    /// It cannot adopt a context that predates that retirement.
+    /// Read-only check, not authority to adopt a context. PlanningStartupPlan
+    /// constructs a new context only after borrowing this terminal. Legacy
+    /// GPU generations additionally require strict Session identifier order.
     pub(crate) fn validate_planning_context(&self, context: &ProvingContext) -> GenerationResult<()> {
         if !self.original.belongs_to(&self.ledger)
             || !matches!(self.spend_count(), 3 | 4)
-            || context.session_id <= self.session_id()
+            || self.session_id().is_some_and(|id| context.session_id <= id)
         { return Err(GenerationError::Authority); }
         pristine_registry(context)?;
         context.workflow_enclosing_footprint().map_err(|_| GenerationError::Authority)?;
@@ -282,8 +287,8 @@ impl OwnedGenerationContext {
         };
         let result = completion.and_then(|completion| {
             let record = TerminalRecord { schema: "ringct-native-generation-terminal-v1",
-                session_id: completion.session_id(), operations: completion.totals(),
-                session: retired.record()?, stark_proofs: 0, registrations: 0 };
+                session_id: Some(completion.session_id()), cpu_run_id: None, operations: completion.totals(),
+                session: Some(retired.record()?), stark_proofs: 0, registrations: 0 };
             report_transport::emit(b"owned_generation_terminal ", &record)
                 .map_err(|_| GenerationError::Report)?;
             Ok(record)
@@ -307,3 +312,4 @@ impl Drop for OwnedGenerationContext {
 
 #[cfg(test)]
 mod tests;
+pub(crate) mod cpu;

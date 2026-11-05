@@ -10,6 +10,7 @@ use sha3::{Sha3_256, Shake256, Shake256Reader};
 
 unsafe extern "C" {
     fn lattica_matrict_declared_footprint_v1(out: *mut u64, words: usize) -> i32;
+    fn lattica_cpu_generation_frame_bytes() -> u64;
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -17,6 +18,7 @@ pub(crate) struct DeclaredNativeFootprint {
     shared_static: u64,
     fixture: u64,
     verifier: u64,
+    cpu_frames: u64,
 }
 
 impl DeclaredNativeFootprint {
@@ -35,11 +37,13 @@ impl DeclaredNativeFootprint {
             return Err("native declaration census requires non-oracle n10 ABI v1");
         }
         let callback = Self::callback_frames()?;
+        let cpu_frames = unsafe { lattica_cpu_generation_frame_bytes() };
         let sum = |a: u64, b: u64| a.checked_add(b).ok_or("native census overflow");
         Ok(Self {
             shared_static: sum(words[3], sources::retained_source_bytes()?)?,
-            fixture: sum(sum(sum(words[2], words[4])?, words[5])?, callback)?,
+            fixture: sum(sum(sum(sum(words[2], words[4])?, words[5])?, callback)?, cpu_frames)?,
             verifier: sum(sum(sum(words[2], words[6])?, words[7])?, callback)?,
+            cpu_frames,
         })
     }
 
@@ -47,6 +51,7 @@ impl DeclaredNativeFootprint {
     pub(crate) fn shared_static_bytes(self) -> u64 { self.shared_static }
     pub(crate) fn fixture_bytes(self) -> u64 { self.fixture }
     pub(crate) fn verifier_bytes(self) -> u64 { self.verifier }
+    pub(crate) fn cpu_generation_frames(self) -> u64 { self.cpu_frames }
 
     pub(crate) fn inspection_frame_bytes() -> Result<u64, &'static str> {
         // Source hash state, getter output, returned census and forwarding
@@ -74,10 +79,10 @@ mod tests {
     #[test]
     fn source_pinned_census_preserves_shared_and_phase_lifetimes() {
         let census = DeclaredNativeFootprint::reviewed().unwrap();
-        assert_eq!(sources::retained_source_bytes().unwrap(), 167_505);
-        assert_eq!(census.shared_static_bytes(), 2_289_570 + 167_505);
+        assert_eq!(sources::retained_source_bytes().unwrap(), 181_888);
+        assert_eq!(census.shared_static_bytes(), 2_289_578 + 181_888);
         let callback = DeclaredNativeFootprint::callback_frames().unwrap();
-        assert_eq!(census.fixture_bytes(), 1_112_848 + 55_090 + callback);
+        assert_eq!(census.fixture_bytes(), 1_112_848 + 55_090 + callback + census.cpu_generation_frames());
         assert_eq!(census.verifier_bytes(), 1_112_848 + 29_310 + callback);
         assert!(DeclaredNativeFootprint::inspection_frame_bytes().unwrap() > 0);
     }

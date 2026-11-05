@@ -110,12 +110,12 @@ impl FreshPlanningContext<'_> {
     pub(crate) fn belongs_to_original_generation(&self, ledger: &Ledger, generation_session: u64) -> bool {
         self.permanent.as_ref().is_some_and(|original| original.belongs_to(ledger))
             && self.terminal.belongs_to(ledger)
-            && self.terminal.session_id() == generation_session
+            && self.terminal.identity() == generation_session
             && self.belongs_to_generation(self.terminal)
     }
     pub(crate) fn belongs_to_generation(&self, terminal: &NativeGenerationTerminal) -> bool {
         core::ptr::eq(self.terminal, terminal) && terminal.belongs_to(&self.startup.ledger)
-            && self.context().session_id > terminal.session_id()
+            && terminal.session_id().is_none_or(|id| self.context().session_id > id)
     }
     pub(crate) fn original_requirements(&self) -> GenerationResult<Requirements> {
         super::memory::combine(self.permanent.as_ref().ok_or(GenerationError::Authority)?.requirements(),

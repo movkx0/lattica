@@ -5,23 +5,20 @@ mod retirement_guard;
 mod observation;
 pub(crate) mod case_lifetime;
 pub(crate) use observation::FreshLedgerObservation;
-use retirement_guard::GenerationRetirementGuard;
 
 use inputs::{FreshNativeInput, GeneratedInputSlot, InputPlan, VerifiedInput};
 use super::InitialNativeSource;
 use crate::{
     execution::{
-            generation_terminal::{GenerationContextPlan, GenerationError, GenerationFailure,
-            GenerationSpendSummary, NativeGenerationTerminal,
+            generation_terminal::{GenerationError, GenerationFailure,
+            cpu::{CpuGenerationPlan, CpuSpendSummary}, NativeGenerationTerminal,
         planning_startup::{PlanningStartupPlan, FreshPlanningContext}},
         retained_resources::{Bytes, Category, Ledger, Requirements, Reservation, Snapshot, WorkerAllowance},
     },
     native::{self, declared_footprint::DeclaredNativeFootprint,
-        private_spend_fixture::{self, generate_spend_fixture}, FixtureAmounts, NativeError},
-    opencl::Limits,
+        FixtureAmounts, NativeError},
 };
 use core::mem::size_of;
-use lattica_prover_p3::block_v2::native_gpu::private_spend::{NativeSpendOperationPlan, SpendLimits};
 use std::time::Instant;
 
 #[derive(Debug)]
@@ -49,8 +46,7 @@ fn split(original: &mut Reservation, requirements: Requirements) -> Result<Reser
 }
 
 struct FreshGenerationPlan<const N: usize> {
-    context: GenerationContextPlan,
-    native: NativeSpendOperationPlan,
+    context: CpuGenerationPlan,
     inputs: InputPlan,
     shared: Requirements,
     frames: Requirements,
@@ -65,54 +61,67 @@ fn fresh_generation_source_plans_fit_standard_profile() {
         let plan = FreshGenerationPlan::<N>::new().unwrap();
         let total = plan.complete.total().unwrap();
         assert!(total.host > 0 && total.host <= 32 << 30);
-        assert!(total.device > 0 && total.device <= 8 << 30);
-        assert_eq!(plan.native.managed_bytes(), 3_151_744);
-        assert!(plan.native.requirements().get(Category::PhaseScratch).host < 24 << 30);
+        assert_eq!(total.device, 0);
+        assert!(total.host < 32 << 20);
         println!("FRESH_GENERATION_SOURCE_PLAN transactions={N} host={} device={}", total.host, total.device);
     }
     check::<3>();
     check::<4>();
 }
+#[cfg(all(test, not(feature = "native-spend-oracle"), not(feature = "native-generation-oracle")))]
+#[test]
+fn fresh_cpu_generation_verifies_retires_and_releases_originals() {
+    if cfg!(debug_assertions) { return; }
+    fn check<const N:usize>(first:usize) {
+        let batch=FreshGenerationBatch::<N>::generate([17;32],[34;32],first).unwrap();
+        let observation=batch.ledger_observation();
+        assert_eq!(batch.generation_session_id(),None);
+        let totals=batch.generation_totals();
+        let cpu=totals.cpu.unwrap();
+        assert_eq!(cpu.verified,N as u64);
+        assert!(cpu.cleanup_complete);
+        assert_eq!(cpu.gpu_contexts,0);
+        assert_eq!(cpu.gpu_generation_calls,0);
+        assert_eq!(totals.witness_device_calls,0);
+        assert_eq!(observation.snapshot().peak.device,0);
+        batch.owned_generation_bytes().unwrap();
+        drop(batch);
+        observation.confirm_empty().unwrap();
+    }
+    check::<3>(0);
+    check::<4>(3);
+}
 impl<const N: usize> FreshGenerationPlan<N> {
     fn new() -> Result<Self> { Self::with_host_profile(crate::host_memory_profile::HostMemoryProfile::Standard) }
     fn with_host_profile(profile: crate::host_memory_profile::HostMemoryProfile) -> Result<Self> {
         if !matches!(N, 3 | 4) { return Err(source("fresh generation requires N3 or N4")); }
-        let context = GenerationContextPlan::new(N, Limits {
-            host_bytes: profile.worker_bytes(), device_bytes: 8 << 30, max_rows: 1 << 20,
-        }).map_err(FreshGenerationError::Context)?;
-        let native = NativeSpendOperationPlan::new(SpendLimits::bounded(24 << 30))
-            .map_err(FreshGenerationError::NativeSource)?;
         let c = DeclaredNativeFootprint::reviewed().map_err(source)?;
+        let context = CpuGenerationPlan::new(N,c).map_err(FreshGenerationError::Context)?;
         let inputs = InputPlan::new(c).map_err(source)?;
-        for minimum in [native.output_requirements(),
-            GenerationContextPlan::minimum_output_requirements().map_err(FreshGenerationError::Context)?]
-        {
-            if Category::ALL.into_iter().any(|category| {
-                let have = inputs.output_requirements().get(category);
-                let need = minimum.get(category);
-                have.host < need.host || have.device < need.device
-            }) { return Err(source("native output source exceeds generated-input original")); }
-        }
-        let shared = combine(native.shared_static_requirements(),
-            host(Category::RegisteredMetadata, usize::try_from(c.shared_static_bytes())
-                .map_err(|_| source("native shared census width"))?)?)?;
+        let shared = host(Category::RegisteredMetadata, usize::try_from(c.shared_static_bytes())
+            .map_err(|_| source("native shared census width"))?
+            + core::mem::size_of::<std::sync::Mutex<()>>() + core::mem::size_of::<std::sync::atomic::AtomicU64>())?;
         let inspection = usize::try_from(DeclaredNativeFootprint::inspection_frame_bytes().map_err(source)?)
             .map_err(|_| source("native inspection census width"))?;
-        let fixture = private_spend_fixture::footprint::requested_host_bytes().map_err(source)?
-            .checked_add(usize::try_from(c.fixture_bytes()).map_err(|_| source("fixture census width"))?)
-            .and_then(|bytes| bytes.checked_add(inspection))
-            .ok_or_else(|| source("fixture and inspection census overflow"))?;
-        let operation = combine(native.requirements(), host(Category::PhaseScratch, fixture)?)?;
+        // Conservatively retain both reviewed legacy call inventories plus
+        // the newly inventoried spend/Gaussian/CPU adapter frames. The actual
+        // owned CPU workspace is separately charged by CpuGenerationPlan.
+        let fixture = c.fixture_bytes().checked_add(c.verifier_bytes())
+            .and_then(|n| n.checked_add(c.cpu_generation_frames()))
+            .ok_or_else(|| source("CPU generation census overflow"))?;
+        let operation = host(Category::PhaseScratch, usize::try_from(fixture)
+            .map_err(|_| source("CPU generation census width"))?.checked_add(inspection)
+            .ok_or_else(|| source("CPU generation inspection overflow"))?)?;
         // One fixed report belongs to the whole case, not to every producer.
         #[cfg(test)]
         let profiling_frames = super::driver::profiling_frame_bytes();
         #[cfg(not(test))]
         let profiling_frames = 0;
         let inline = [size_of::<Self>(), size_of::<FreshGenerationBatch<N>>(),
-            size_of::<GenerationHoldings<N>>(), size_of::<GenerationRetirementGuard<GenerationHoldings<N>>>(),
+            size_of::<GenerationHoldings<N>>(),
             size_of::<[Option<VerifiedInput>; N]>(), size_of::<Result<GenerationHoldings<N>>>(),
             size_of::<[Option<GeneratedInputSlot>; N]>(), size_of::<[Option<FreshNativeInput>; N]>(),
-            size_of::<[Option<GenerationSpendSummary>; N]>(), size_of::<Result<FreshGenerationBatch<N>>>(),
+            size_of::<[Option<CpuSpendSummary>; N]>(), size_of::<Result<FreshGenerationBatch<N>>>(),
             size_of::<Ledger>(), size_of::<Snapshot>() + 2 * size_of::<usize>(),
             size_of::<[Reservation; 8]>(), size_of::<[Requirements; 8]>(),
             size_of::<[InitialNativeSource<'static>; N]>(), size_of::<Instant>(),
@@ -137,7 +146,7 @@ impl<const N: usize> FreshGenerationPlan<N> {
         if total.host > profile.worker_bytes() || total.device > 8 << 30 {
             return Err(source("fresh generation exceeds selected worker allowance"));
         }
-        Ok(Self { context, native, inputs, shared, frames, operation, complete })
+        Ok(Self { context, inputs, shared, frames, operation, complete })
     }
 }
 
@@ -157,7 +166,7 @@ pub(crate) struct FreshGenerationBatch<const N: usize> {
     started: Instant,
     planning_started: std::cell::Cell<bool>,
     inputs: [Option<FreshNativeInput>; N],
-    summaries: [Option<GenerationSpendSummary>; N],
+    summaries: [Option<CpuSpendSummary>; N],
     terminal: NativeGenerationTerminal,
     shared: Reservation,
     frames: Reservation,
@@ -194,36 +203,32 @@ impl<const N: usize> FreshGenerationBatch<N> {
             return Err(source("generation preissue left unmatched credit"));
         }
         drop(original);
-        let holdings = GenerationHoldings { verified: core::array::from_fn(|_| None),
+        // The CPU owner is declared after holdings: every error or unwind
+        // wipes/drops it before these packet, scratch and shared originals.
+        let mut holdings = GenerationHoldings { verified: core::array::from_fn(|_| None),
             slots, shared, frames, operation };
-        // Declared before the runtime: unwinding destroys the runtime first.
-        // Without its terminal receipt, the guard preserves every original.
-        let mut guarded = GenerationRetirementGuard::new(holdings);
-        let mut summaries: [Option<GenerationSpendSummary>; N] = core::array::from_fn(|_| None);
-        let mut generation = plan.context.start(runtime, &ledger).map_err(FreshGenerationError::Retirement)?;
-        guarded.started();
+        let mut summaries: [Option<CpuSpendSummary>; N] = core::array::from_fn(|_| None);
+        let mut generation = plan.context.start(runtime, &ledger, setup_seed, context)
+            .map_err(FreshGenerationError::Context)?;
         for ordinal in 0..N {
             let profile_step = super::driver::workflow_profile::Step::input(ordinal);
             let index = (first_case_index + ordinal) as u64;
-            let fixture = generate_spend_fixture(context, Some(setup_seed), index % native::RING_PAIRS,
-                FixtureAmounts { input: [7 + index, 11], output: [9, 9 + index] })
-                .map_err(FreshGenerationError::Native)?;
-            let request = fixture.into_gpu_request().map_err(FreshGenerationError::Native)?;
-            plan.native.check_request(&request).map_err(|_| source("fresh fixture request source mismatch"))?;
-            let held = guarded.get();
-            let slot = held.slots[ordinal].as_ref().ok_or_else(|| source("fresh input slot reused"))?;
-            let (output, summary) = generation.create_matrict_spend_on_gpu(request, &plan.native,
-                &held.operation, slot.original()).map_err(FreshGenerationError::Context)?;
+            let slot = holdings.slots[ordinal].as_ref().ok_or_else(|| source("fresh input slot reused"))?;
+            let (output, summary) = generation.create_spend(index % native::RING_PAIRS,
+                FixtureAmounts { input: [7 + index, 11], output: [9, 9 + index] },
+                &holdings.operation, slot.verifier_original(), &holdings.shared, slot.original())
+                .map_err(FreshGenerationError::Context)?;
             if summary.ordinal != ordinal { return Err(source("fresh generation report order mismatch")); }
-            let verified = slot.finish(output, setup_seed, context).map_err(source)?;
-            guarded.get_mut().verified[ordinal] = Some(verified);
+            let verified = slot.finish_cpu(output, setup_seed, context).map_err(source)?;
+            holdings.verified[ordinal] = Some(verified);
             summaries[ordinal] = Some(summary);
             profile_step.complete();
         }
-        let terminal = generation.finish().map_err(FreshGenerationError::Retirement)?;
-        let GenerationHoldings { mut verified, mut slots, shared, frames, operation } =
-            guarded.after_retirement(&terminal, &ledger, N).map_err(source)?;
-        // Neither native queue nor operation backing survives this terminal.
+        let terminal = generation.finish().map_err(FreshGenerationError::Context)?;
+        if !terminal.belongs_to(&ledger) || terminal.spend_count()!=N {
+            return Err(source("CPU generation terminal owner mismatch"));
+        }
+        let GenerationHoldings { mut verified, mut slots, shared, frames, operation } = holdings;
         drop(operation);
         let mut inputs: [Option<FreshNativeInput>; N] = core::array::from_fn(|_| None);
         for ordinal in 0..N {
@@ -241,7 +246,7 @@ impl<const N: usize> FreshGenerationBatch<N> {
     pub(crate) fn generation_totals(&self) -> crate::execution::generation_terminal::NativeGenerationTotals {
         self.terminal.totals()
     }
-    pub(crate) fn generation_session_id(&self) -> u64 { self.terminal.session_id() }
+    pub(crate) fn generation_session_id(&self) -> Option<u64> { self.terminal.session_id() }
     /// Claims startup and permanent planning storage in the same generation
     /// ledger before opening the next OpenCL session. This batch never retries.
     pub(crate) fn begin_planning(&self) -> Result<FreshPlanningContext<'_>> {
@@ -277,7 +282,7 @@ impl<const N: usize> FreshGenerationBatch<N> {
         for (ordinal, (input, summary)) in self.inputs.iter().zip(&self.summaries).enumerate() {
             let input = input.as_ref().ok_or_else(|| source("missing fresh native input"))?;
             if !input.belongs_to(&self.ledger) || !summary.is_some_and(|summary|
-                summary.ordinal == ordinal && summary.session_id == self.terminal.session_id()) {
+                summary.ordinal == ordinal && summary.run_id == self.terminal.identity()) {
                 return Err(source("fresh input owner mismatch"));
             }
             expected = combine(expected, input.original_requirements())?;

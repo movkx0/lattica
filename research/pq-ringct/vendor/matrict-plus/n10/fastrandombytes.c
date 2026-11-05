@@ -4,6 +4,7 @@
  */
 
 #include "fastrandombytes.h"
+#include "cpu_generation.h"
 #include <string.h>
 #include <stdint.h>
 #ifdef LATTICA_NATIVE_SPEND_ORACLE
@@ -152,6 +153,40 @@ void fastrandombytes_setseed_pub(const unsigned char *randomness) {
   fastrandombytes_setseed(round_key_pub, randomness);
 }
 
+/* Independent CTR blocks share a round key, preserving the scalar stream and
+ * its whole-block consumption at each call boundary. Only private generation
+ * selects this path; public/challenge RNG behavior remains the reference. */
+static inline __attribute__((always_inline)) void AES_ctr_group(__m128i *keys, __m128i *iv,
+                                 unsigned char *out, unsigned lanes) {
+  __m128i blocks[8];
+  #pragma GCC unroll 8
+  for (unsigned i=0;i<lanes;i++) {
+    blocks[i]=_mm_xor_si128(*iv,keys[0]);
+    *iv=_mm_add_epi32(*iv,ONE);
+  }
+  for (unsigned round=1;round<14;round++) {
+    #pragma GCC unroll 8
+    for (unsigned i=0;i<lanes;i++) blocks[i]=_mm_aesenc_si128(blocks[i],keys[round]);
+  }
+  #pragma GCC unroll 8
+  for (unsigned i=0;i<lanes;i++) {
+    blocks[i]=_mm_aesenclast_si128(blocks[i],keys[14]);
+    _mm_storeu_si128((__m128i *)(out+16*i),blocks[i]);
+  }
+  volatile __m128i *wipe_blocks=blocks;
+  #pragma GCC unroll 8
+  for (unsigned i=0;i<lanes;i++) wipe_blocks[i]=_mm_setzero_si128();
+}
+static void fastrandombytes_private(unsigned char *out, uint64_t bytes, unsigned lanes) {
+  if (lanes==1) { fastrandombytes(round_key_prv,&iv_prv,out,bytes); return; }
+  while (bytes >= 16*lanes) {
+    if (lanes==4) AES_ctr_group(round_key_prv,&iv_prv,out,4);
+    else AES_ctr_group(round_key_prv,&iv_prv,out,8);
+    out+=16*lanes; bytes-=16*lanes;
+  }
+  fastrandombytes(round_key_prv,&iv_prv,out,bytes);
+}
+
 void fastrandombytes_setseed_prv(const unsigned char *randomness) {
   fastrandombytes_setseed(round_key_prv, randomness);
   iv_prv = _mm_setzero_si128();
@@ -175,13 +210,14 @@ void fastrandombytes_pub(unsigned char *r, unsigned long long rlen) {
 }
 
 void fastrandombytes_prv(unsigned char *r, unsigned long long rlen) {
+  lattica_cpu_generation_random_request(rlen);
 #ifdef LATTICA_NATIVE_SPEND_ORACLE
   uint64_t blocks=rlen/16+(rlen%16!=0);
   if(blocks>(UINT64_C(1)<<32)-oracle_blocks || oracle_calls==UINT64_MAX)
     lattica_matrict_abort();
   oracle_blocks+=blocks;oracle_calls++;
 #endif
-  fastrandombytes(round_key_prv, &iv_prv, r, rlen);
+  fastrandombytes_private(r,rlen,lattica_cpu_generation_aes_lanes());
 }
 
 void fastrandombytes_tmp(unsigned char *r, unsigned long long rlen) {
@@ -210,4 +246,19 @@ void fastrandombytes_clear_private_state(void) {
 #ifdef LATTICA_NATIVE_SPEND_ORACLE
 uint64_t fastrandombytes_oracle_private_blocks(void){return oracle_blocks;}
 uint64_t fastrandombytes_oracle_private_calls(void){return oracle_calls;}
+#endif
+
+#ifdef LATTICA_CPU_GENERATION_ORACLE
+int lattica_cpu_generation_test_rng(const uint8_t seed[32], uint64_t counter,
+    unsigned lanes, uint8_t *out, size_t bytes, uint64_t *next_counter) {
+  uint64_t blocks=bytes/16+(bytes%16!=0);
+  if (!seed || !out || !next_counter || counter>(UINT64_C(1)<<32) ||
+      blocks>(UINT64_C(1)<<32)-counter || (lanes!=1 && lanes!=4 && lanes!=8)) return 0;
+  fastrandombytes_setseed_prv(seed);
+  iv_prv=_mm_set_epi64x(0,(long long)counter);
+  fastrandombytes_private(out,bytes,lanes);
+  *next_counter=counter+blocks;
+  fastrandombytes_clear_private_state();
+  return 1;
+}
 #endif

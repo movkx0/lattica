@@ -26,7 +26,7 @@ fn run() -> Result<(), String> {
             println!("Host memory: --host-profile standard|expanded-36|expanded-40 (default standard); must match the runner. No automatic escalation.");
             println!("Planning: --planning-cache off|geometry-v1 (default geometry-v1), 64 numerical entries within the 64 MiB metadata allowance. --metadata-cpu-workers auto|INTEGER (1..=16, default auto), further limited by the original planning reservation.");
             println!("Identity hashing: --identity-cpu-workers auto|INTEGER (1..=16, default auto). CPU hashing with GPU preprocessing and proof generation.");
-            println!("pq-ringct-full-workflow --case n3|n4 --layout singleton|paired-v1 --seed HEX64 --context HEX64\nFresh transaction generation, complete proof graphs, aggregation and CPU verification. Run with the serialized resource guard. Artifact and mutation qualification are explicit report fields.");
+            println!("pq-ringct-full-workflow --case n3|n4 --layout singleton|paired-v1 --seed HEX64 --context HEX64\nFresh CPU transaction generation, GPU proof graphs and aggregation, and independent CPU verification. Run with the serialized resource guard. Artifact and mutation qualification are explicit report fields.");
             return Ok(());
         }
         let value = args.next().ok_or("missing option value")?;

@@ -97,7 +97,7 @@ impl CaseRetirementState {
         if original.requirements() != state { return Err(source("case state original mismatch")); }
         Ok(Self {
             state: Cell::new(State::Prepared), ledger: batch.ledger.clone(),
-            generation_session: batch.terminal.session_id(), transactions: N,
+            generation_session: batch.terminal.identity(), transactions: N,
             #[cfg(test)] fixture_context: None,
             batch_identity: Cell::new(core::ptr::null()),
             sealed_plan: Cell::new(core::ptr::null()),
@@ -114,7 +114,7 @@ impl CaseRetirementState {
         -> Result<CaseOwnerSlot<'_, FreshGenerationBatch<N>>>
     {
         if self.state.get() != State::Prepared || self.transactions != N
-            || self.generation_session != batch.terminal.session_id()
+            || self.generation_session != batch.terminal.identity()
             || !batch.terminal.belongs_to(&self.ledger)
         { return Err(source("case batch does not match generation")); }
         let original = self.batch_original.borrow_mut().take()
@@ -151,7 +151,7 @@ impl CaseRetirementState {
         if self.state.get() != State::Armed || !core::ptr::eq(batch_slot.state, self)
             || !core::ptr::eq(plan_slot.state, self)
             || self.batch_identity.get() != batch as *const FreshGenerationBatch<N> as *const ()
-            || self.transactions != N || self.generation_session != batch.terminal.session_id()
+            || self.transactions != N || self.generation_session != batch.terminal.identity()
             || !batch.terminal.belongs_to(&self.ledger)
             || !planning.belongs_to_generation(&batch.terminal)
             || !core::ptr::eq(closed.context(), planning.context())
@@ -175,7 +175,7 @@ impl CaseRetirementState {
         let batch = batch_slot.get()?;
         if self.state.get() != State::Sealed || !core::ptr::eq(batch_slot.state, self)
             || self.batch_identity.get() != batch as *const FreshGenerationBatch<N> as *const ()
-            || self.transactions != N || self.generation_session != batch.terminal.session_id()
+            || self.transactions != N || self.generation_session != batch.terminal.identity()
             || !batch.terminal.belongs_to(&self.ledger)
             || !planning.belongs_to_generation(&batch.terminal)
             || !cleanup.belongs_to(planning) || !cleanup.belongs_to_generation(&batch.terminal)
@@ -198,7 +198,7 @@ impl<const N: usize> CaseOwnerSlot<'_, FreshGenerationBatch<N>> {
         let batch = self.get()?;
         if self.state.state.get() != State::Prepared || batch.planning_started.get()
             || self.state.transactions != N
-            || self.state.generation_session != batch.terminal.session_id()
+            || self.state.generation_session != batch.terminal.identity()
             || !batch.terminal.belongs_to(&self.state.ledger)
             || self.state.batch_original.borrow().is_some()
         { return Err(source("case startup identity mismatch")); }

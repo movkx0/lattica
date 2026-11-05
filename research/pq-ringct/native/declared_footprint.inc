@@ -13,6 +13,7 @@
  */
 #include <immintrin.h>
 #include "declared_footprint.h"
+#include "cpu_generation_footprint.inc"
 
 _Static_assert(sizeof(void *) == 8 && sizeof(size_t) == 8 &&
     sizeof(unsigned long long) == 8 && sizeof(unsigned) == 4,
@@ -32,7 +33,7 @@ int lattica_matrict_declared_footprint_v1(uint64_t *out, size_t words) {
       38 * sizeof(__m256i) + 5 * sizeof(__m256d) + 6 * sizeof(__m128d) +
       477160 * sizeof(unsigned char) + sizeof(jmp_buf) + sizeof(int) +
       46 * sizeof(uint8_t) + 218 * sizeof(POLY_R) + 574 * sizeof(POLY_Q) +
-      89 * sizeof(POLY_QHAT);
+    89 * sizeof(POLY_QHAT) + sizeof(cpu_generation_active);
   out[4] =
       7 * sizeof(__m128i) + sizeof(unsigned) + sizeof(ssize_t) +
       7 * sizeof(void *) + 6261 * sizeof(unsigned char) +
@@ -54,6 +55,9 @@ int lattica_matrict_declared_footprint_v1(uint64_t *out, size_t words) {
   out[1] = 1;
   out[3] += 4 * sizeof(uint64_t) + 7 * sizeof(size_t) + sizeof(void *);
   out[4] += sizeof(uint64_t);
+#endif
+#ifdef LATTICA_CPU_GENERATION_ORACLE
+  out[1] = 1; /* Diagnostic entropy is never an admitted workflow backend. */
 #endif
   return 1;
 }

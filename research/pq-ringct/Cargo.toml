@@ -57,6 +57,8 @@ native-verification-allocation-audit = ["recursive-wide"]
 native-trace-audit = ["opencl", "lattica-prover-p3/native-trace-audit"]
 default = []
 native-matrict = []
+# CPU-only deterministic diagnostics; never selected by the workflow feature.
+native-generation-oracle = ["native-matrict"]
 # Explicit deterministic private diagnostics; never enable in production.
 native-spend-oracle = ["native-matrict", "opencl", "lattica-prover-p3/native-spend-oracle"]
 recursive = ["dep:lattica-prover-p3", "dep:p3-field", "dep:p3-batch-stark", "dep:p3-air", "dep:p3-uni-stark", "dep:p3-keccak-air", "dep:p3-matrix", "dep:p3-goldilocks", "dep:p3-poseidon2-air", "dep:p3-symmetric"]

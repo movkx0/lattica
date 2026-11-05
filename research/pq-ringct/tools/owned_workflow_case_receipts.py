@@ -28,7 +28,7 @@ MACHINE_ENTRIES = ('block_v2_preprocessing', 'block_v2_registered_program')
 OWNED_PREPARATION_PREFIXES = frozenset(('owned_group_report', 'owned_final_compile_report'))
 GPU_PREFIXES = frozenset(NATIVE_PREFIXES) | OWNED_PREPARATION_PREFIXES | frozenset((
     'proving_stage_report', 'owned_generation_report'))
-GENERATION_RECORDS = frozenset(('owned_generation_spend', 'owned_generation_terminal'))
+GENERATION_RECORDS = frozenset(('owned_generation_spend', 'owned_generation_cpu_spend', 'owned_generation_terminal'))
 REPORT_FIELDS = frozenset(('schema', 'entry_point', 'policy', 'capabilities', 'elapsed_ns',
     'succeeded', 'stage_coverage_complete', 'completion_rejected', 'observation_errors',
     'observations', 'components'))
@@ -211,8 +211,11 @@ def validate(content, report, collect_gpu_receipts, *, verification_mode):
     require(count in (3, 4), 'owned case requires exactly N3 or N4')
     native_count = integer(report.get('native_proofs'), 'native_proofs', positive=True)
     recursive_count = integer(report.get('recursive_proofs'), 'recursive_proofs', positive=True)
-    generation_id = integer(report.get('generation_session_id'), 'generation_session_id', positive=True)
-    generation = object_fields(report.get('generation'), GENERATION_FIELDS, 'generation')
+    cpu_generation = type(report.get('generation')) is dict and 'cpu' in report['generation']
+    generation_id = None if cpu_generation else integer(report.get('generation_session_id'), 'generation_session_id', positive=True)
+    if cpu_generation:
+        require(report.get('generation_session_id') is None, 'CPU generation cannot claim a GPU session')
+    generation = object_fields(report.get('generation'), GENERATION_FIELDS | ({'cpu'} if cpu_generation else set()), 'generation')
     source = object_fields(report.get('source_preparation'), SOURCE_FIELDS, 'source_preparation')
     observed = report.get('owned_observations')
     extra = ('identity_preprocessing',) if type(observed) is dict and 'identity_preprocessing' in observed else ()
@@ -226,7 +229,7 @@ def validate(content, report, collect_gpu_receipts, *, verification_mode):
             'wrong owned observation schema')
     planning_id = integer(owned['session_id'], 'owned.session_id', positive=True)
     require(integer(source['session_id'], 'source.session_id', positive=True) == planning_id
-            and planning_id > generation_id, 'generation/planning context session mismatch')
+            and (cpu_generation or planning_id > generation_id), 'generation/planning context session mismatch')
 
     normalized, source_lines, owned_lines = [], [], []
     spend_summaries = []
@@ -254,7 +257,13 @@ def validate(content, report, collect_gpu_receipts, *, verification_mode):
         require(line == stripped and stripped.startswith(prefix + ' ') and payload.startswith('{'),
                 'invalid receipt framing: ' + prefix)
         value = parse_record(payload, prefix)
+        if prefix == 'owned_generation_cpu_spend':
+            require(cpu_generation and terminal is None and pending_spend is None and len(spend_summaries) < count,
+                    'extra, mixed or reordered CPU generation summary')
+            spend_summaries.append(value)
+            continue
         if prefix == 'owned_generation_spend':
+            require(not cpu_generation, 'CPU case contains GPU generation summary')
             require(terminal is None and pending_spend is not None,
                     'extra or reordered generation spend summary')
             generation_spend(value, pending_spend, len(spend_summaries), generation_id)
@@ -270,6 +279,7 @@ def validate(content, report, collect_gpu_receipts, *, verification_mode):
         normalized_line = 'proving_stage_report ' + payload
         normalized.append(normalized_line)
         if prefix == 'owned_generation_report':
+            require(not cpu_generation, 'CPU case contains GPU generation report')
             require(terminal is None and pending_spend is None and len(spend_summaries) < count,
                     'extra or reordered generation receipt')
             pending_spend = value
@@ -333,41 +343,47 @@ def validate(content, report, collect_gpu_receipts, *, verification_mode):
     require(receipts['preparation_reports'] == observed_source['reports'] + observed_owned['reports'],
             'unaccounted preparation receipt')
 
-    object_fields(terminal, ('schema', 'session_id', 'operations', 'session', 'stark_proofs', 'registrations'),
-                  'owned_generation_terminal')
-    require(terminal['schema'] == 'ringct-native-generation-terminal-v1'
-            and integer(terminal['session_id'], 'terminal.session_id', positive=True) == generation_id,
-            'generation terminal identity mismatch')
-    for key in ('stark_proofs', 'registrations'):
-        require(integer(terminal[key], 'terminal.' + key) == 0, 'generation terminal contains proving work')
-    generation_numbers(generation, 'generation')
-    generation_numbers(terminal['operations'], 'terminal.operations')
-    require(terminal['operations'] == generation, 'generation terminal differs from actual snapshot')
-    observed_generation = entry_totals(receipts, SPEND_ENTRY)
-    require(integer(generation['spends'], 'generation.spends') == count
-            and receipts['private_spend_reports'] == count, 'generation receipt inventory mismatch')
-    witness_totals(generation, observed_generation, 'generation')
     generation_seconds = seconds(generation['seconds'], 'generation.seconds')
-    time_covered(observed_generation['elapsed_ns'], generation_seconds, count, 'generation')
-    require(integer(generation['managed_peak_bytes'], 'generation.managed_peak_bytes', positive=True)
-            == max(item['managed_bytes'] for item in spend_summaries),
-            'generation managed peak differs from actual spend evidence')
-    first = spend_summaries[0]
-    require(all(item['source_fingerprint'] == first['source_fingerprint']
-                and item['kernel_source_sha256'] == first['kernel_source_sha256']
-                for item in spend_summaries), 'generation source identities changed within the case')
-    session = object_fields(terminal['session'], ('allocations', 'commits', 'managed_peak_bytes',
-        'uploaded_bytes', 'downloaded_bytes', 'queue_drained', 'context_closed',
-        'managed_live_bytes', 'host_tree_live_bytes'), 'generation terminal session')
-    integer(session['allocations'], 'session.allocations', positive=True)
-    for key in ('commits', 'managed_live_bytes', 'host_tree_live_bytes'):
-        require(integer(session[key], 'session.' + key) == 0, 'generation session is not retired')
-    for key in ('uploaded_bytes', 'downloaded_bytes'):
-        integer(session[key], 'session.' + key)
-    require(integer(session['managed_peak_bytes'], 'session.managed_peak_bytes', positive=True)
-            <= MANAGED_DEVICE_BYTES and session['queue_drained'] is True
-            and session['context_closed'] is True, 'generation session cleanup or peak mismatch')
-
+    cpu_generation_audit = None
+    if cpu_generation:
+        import cpu_generation_receipts
+        cpu_generation_audit = cpu_generation_receipts.validate(generation, terminal, spend_summaries,
+                                                               count, receipts['private_spend_reports'])
+    else:
+        object_fields(terminal, ('schema', 'session_id', 'operations', 'session', 'stark_proofs', 'registrations'),
+                      'owned_generation_terminal')
+        require(terminal['schema'] == 'ringct-native-generation-terminal-v1'
+                and integer(terminal['session_id'], 'terminal.session_id', positive=True) == generation_id,
+                'generation terminal identity mismatch')
+        for key in ('stark_proofs', 'registrations'):
+            require(integer(terminal[key], 'terminal.' + key) == 0, 'generation terminal contains proving work')
+        generation_numbers(generation, 'generation')
+        generation_numbers(terminal['operations'], 'terminal.operations')
+        require(terminal['operations'] == generation, 'generation terminal differs from actual snapshot')
+        observed_generation = entry_totals(receipts, SPEND_ENTRY)
+        require(integer(generation['spends'], 'generation.spends') == count
+                and receipts['private_spend_reports'] == count, 'generation receipt inventory mismatch')
+        witness_totals(generation, observed_generation, 'generation')
+        generation_seconds = seconds(generation['seconds'], 'generation.seconds')
+        time_covered(observed_generation['elapsed_ns'], generation_seconds, count, 'generation')
+        require(integer(generation['managed_peak_bytes'], 'generation.managed_peak_bytes', positive=True)
+                == max(item['managed_bytes'] for item in spend_summaries),
+                'generation managed peak differs from actual spend evidence')
+        first = spend_summaries[0]
+        require(all(item['source_fingerprint'] == first['source_fingerprint']
+                    and item['kernel_source_sha256'] == first['kernel_source_sha256']
+                    for item in spend_summaries), 'generation source identities changed within the case')
+        session = object_fields(terminal['session'], ('allocations', 'commits', 'managed_peak_bytes',
+            'uploaded_bytes', 'downloaded_bytes', 'queue_drained', 'context_closed',
+            'managed_live_bytes', 'host_tree_live_bytes'), 'generation terminal session')
+        integer(session['allocations'], 'session.allocations', positive=True)
+        for key in ('commits', 'managed_live_bytes', 'host_tree_live_bytes'):
+            require(integer(session[key], 'session.' + key) == 0, 'generation session is not retired')
+        for key in ('uploaded_bytes', 'downloaded_bytes'):
+            integer(session[key], 'session.' + key)
+        require(integer(session['managed_peak_bytes'], 'session.managed_peak_bytes', positive=True)
+                <= MANAGED_DEVICE_BYTES and session['queue_drained'] is True
+                and session['context_closed'] is True, 'generation session cleanup or peak mismatch')
     planning_ns = integer(report.get('generation_and_planning_ns'),
                           'generation_and_planning_ns', bits=128, positive=True)
     execution_ns = integer(report.get('proving_and_verification_ns'),
@@ -391,6 +407,7 @@ def validate(content, report, collect_gpu_receipts, *, verification_mode):
         'cpu_verification': cpu_audit,
         'proof_rows': row_audit,
             'generation_session_id': generation_id, 'planning_session_id': planning_id,
+            'cpu_transaction_generation': cpu_generation_audit,
             'gpu_receipts': receipts, 'source_preparation': observed_source,
             'owned_preparation': observed_owned, 'final_compile_reports': final_compiles,
             'generation_terminal_checked': True, 'completed_stage_receipts_checked': True,

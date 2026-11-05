@@ -18,7 +18,7 @@ impl CaseRetirementState {
         if self.state.get() != State::Armed || !core::ptr::eq(batch_slot.state, self)
             || !core::ptr::eq(plan_slot.state, self)
             || self.batch_identity.get() != batch as *const FreshGenerationBatch<N> as *const ()
-            || self.transactions != N || self.generation_session != batch.terminal.session_id()
+            || self.transactions != N || self.generation_session != batch.terminal.identity()
             || !batch.terminal.belongs_to(&self.ledger)
             || !planning.belongs_to_generation(&batch.terminal)
             || !core::ptr::eq(closed.context(), planning.context())

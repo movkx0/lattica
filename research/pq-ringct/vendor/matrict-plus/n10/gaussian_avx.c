@@ -1,5 +1,6 @@
 #include "lattica_guard.h"
 #include "gaussian_avx.h"
+#include "cpu_generation.h"
 #include "comp.h"
 #include "fastrandombytes.h"
 #include "littleendian.h"
@@ -355,6 +356,7 @@ static inline void gaussian_sampler(
   while (j < slen) {
     do {
       if (i == 8) {
+        lattica_cpu_generation_proposals(8);
         /* x<--D_sigma_0, y<--U([0,k-1]), z=kx+y */
         fastrandombytes_prv(r, 2 * (BASE_TABLE_SIZE + BERNOULLI_TABLE_SIZE) +
                                    uniform_r_size + 1);

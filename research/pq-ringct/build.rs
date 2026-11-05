@@ -48,6 +48,7 @@ fn main() {
         "verify",
     ];
     let oracle = env::var_os("CARGO_FEATURE_NATIVE_SPEND_ORACLE").is_some();
+    let generation_oracle = env::var_os("CARGO_FEATURE_NATIVE_GENERATION_ORACLE").is_some();
     let mut objects = Vec::new();
     for (name, path) in names
         .iter()
@@ -61,6 +62,9 @@ fn main() {
         let mut compiler = Command::new(env::var_os("CC").unwrap_or_else(|| "cc".into()));
         if oracle {
             compiler.arg("-DLATTICA_NATIVE_SPEND_ORACLE=1");
+        }
+        if generation_oracle {
+            compiler.arg("-DLATTICA_CPU_GENERATION_ORACLE=1");
         }
         run(compiler
             .args([
