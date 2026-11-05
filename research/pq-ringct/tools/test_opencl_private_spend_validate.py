@@ -412,7 +412,7 @@ class CorrectnessPolicyTests(unittest.TestCase):
         values = dict(profile='direct-full', expect_tests=True, build_label='owned-runtime-build',
                       device_uuid='GPU-b28db334-b11d-c7ec-1e24-d2f408b0a55c',
                       owned_runtime_test=selector,
-                      retained_tree_storage='host' if selector in ('outer', 'native-shake-host', 'native-shake-continuation', 'native-shake-continuation-rejection', 'native-to-outer', 'outer-continuation', 'native-pair-sequence', 'native-odd-tail-sequence') else 'device',
+                      retained_tree_storage='host' if selector in ('identity-cohort', 'outer', 'native-shake-host', 'native-shake-continuation', 'native-shake-continuation-rejection', 'native-to-outer', 'outer-continuation', 'native-pair-sequence', 'native-odd-tail-sequence') else 'device',
                       command=[executable,
                                runner.OWNED_RUNTIME_TESTS[selector], '--exact', '--ignored',
                                '--test-threads=1', '--nocapture'])
@@ -436,12 +436,27 @@ class CorrectnessPolicyTests(unittest.TestCase):
                 with self.subTest(selector=selector, changes=changes), self.assertRaises(ValueError):
                     runner.build_plan(self.runtime_arguments(selector, **changes))
 
+    def test_owned_identity_cohort_requires_exact_guarded_host_selector(self):
+        selector = 'identity-cohort'
+        for changes in [dict(device_uuid=None), dict(profile='smoke'),
+                        dict(retained_tree_storage='device'), dict(expect_tests=False),
+                        dict(build_label=None), dict(public_hash_kernel='sbox-pair-v1'),
+                        dict(command=['/tmp/lattica_pq_ringct_research-recorded',
+                                      runner.OWNED_RUNTIME_TESTS['runtime'], '--exact',
+                                      '--ignored', '--test-threads=1', '--nocapture'])]:
+            with self.subTest(changes=changes), self.assertRaises(ValueError):
+                runner.build_plan(self.runtime_arguments(selector, **changes))
+
     def test_owned_runtime_selectors_preserve_the_fixed_envelope(self):
         base = runner.build_plan(self.note_arguments(profile='direct-full'))
         for selector in runner.OWNED_RUNTIME_TESTS:
             with self.subTest(selector=selector):
                 plan = runner.build_plan(self.runtime_arguments(selector))
                 expected = dict(base['environment'])
+                if selector == 'identity-cohort':
+                    expected['LATTICA_OWNED_IDENTITY_COHORT_QUALIFICATION'] = '1'
+                    expected['LATTICA_V2_GPU_RETAINED_TREE_STORAGE'] = 'host'
+                    expected['LATTICA_V2_GPU_RETAINED_TREE_HOST_BYTES'] = str(8 * runner.GIB)
                 if selector == 'outer':
                     expected['LATTICA_OWNED_OUTER_QUALIFICATION'] = '1'
                     expected['LATTICA_V2_GPU_RETAINED_TREE_STORAGE'] = 'host'

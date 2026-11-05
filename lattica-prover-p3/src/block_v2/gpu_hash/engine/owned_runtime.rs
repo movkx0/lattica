@@ -28,6 +28,9 @@ pub(crate) struct Retirement {
 /// No Clone or epoch extraction is provided.
 pub(crate) struct OwnedRuntime {
     epoch: Option<Arc<JobLease>>,
+    // Only RuntimeBinding receives weak references to this marker. Read-only
+    // retirement fences observe the lease, so cannot count as phase bindings.
+    binding_owner: Arc<()>,
     // Exact selected handle used to initialize this epoch. Never queried from
     // ProQue under a capacity lock: Queue::device would allocate a driver reply.
     selected_device: ocl::Device,
@@ -38,9 +41,14 @@ impl OwnedRuntime {
     pub(super) fn new(epoch: Arc<JobLease>, selected_device: ocl::Device) -> Self {
         Self {
             epoch: Some(epoch),
+            binding_owner: Arc::new(()),
             selected_device,
             _thread_bound: core::marker::PhantomData,
         }
+    }
+
+    pub(crate) fn binding_allocation_bytes() -> usize {
+        crate::block_v2::gpu_hash::cache_metadata::arc_bytes::<()>()
     }
 
     /// Recheck the exact runtime before a new operation. Active configuration,

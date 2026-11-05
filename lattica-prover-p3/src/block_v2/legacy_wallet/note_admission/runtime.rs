@@ -139,8 +139,10 @@ impl Resources {
         // Configuration has a separate runtime charge. Retain this original
         // outer charge until after its config/session aliases and Engine die,
         // so the configuration's earlier drop cannot lend runtime bytes back.
-        let retained_runtime =
-            gpu_hash::device::opening_runtime_host_bound().map_err(|_| Error::ResourceLimit)?;
+        let retained_runtime = add(
+            gpu_hash::device::opening_runtime_host_bound().map_err(|_| Error::ResourceLimit)?,
+            OwnedRuntime::binding_allocation_bytes(),
+        )?;
         let environment = SealedNoteEnvironment::requested_bytes()?;
         let inline = add(size_of::<NoteRuntime<'static>>(), size_of::<Self>())?;
         let startup = add(

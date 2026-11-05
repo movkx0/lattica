@@ -60,6 +60,7 @@ pub(crate) fn execute_constructed_case<const N: usize>(
     let (report, owned_observations, source_preparation) = match attempted {
         Ok(report) => report,
         Err(error) => {
+            eprintln!("owned_workflow_execution_failure stage={stage:?} cause={error:?}");
             // Terminal cleanup can never re-enable execution or choose another layout.
             stage.runtime_abort(true);
             return match workflow.abort() {

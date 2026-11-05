@@ -275,6 +275,7 @@ impl StartupPlan {
             size_of::<Selection>(),
             size_of::<Self>(),
             size_of::<Engine>(),
+            engine::owned_runtime::OwnedRuntime::binding_allocation_bytes(),
             physical.fixed_selection_inline,
             physical.diagnostic_inline,
             bounded::fixed::inline_bytes(),

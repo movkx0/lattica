@@ -211,7 +211,10 @@ pub(super) unsafe fn prepare<'request>(
                 expected.host_bytes,
                 expected.managed_bytes,
             )
-            .map_err(|_| OuterOwnedError::Partition)?;
+            .map_err(|error| {
+                eprintln!("owned_identity_prefix_failure stage=plan_borrowed cause={error:?}");
+                OuterOwnedError::Partition
+            })?;
         if batch.footprint().borrowed_program_host_bytes > expected.borrowed_program_host_bytes {
             return Err(OuterOwnedError::Partition);
         }
@@ -220,16 +223,23 @@ pub(super) unsafe fn prepare<'request>(
                 policy: Policy::GpuRequired,
                 emit_report: false,
             })
-            .map_err(|_| OuterOwnedError::Setup)
+            .map_err(|error| {
+                eprintln!("owned_identity_prefix_failure stage=execute cause={error:?}");
+                OuterOwnedError::Setup
+            })
     })();
     let attempted = RetirementGuard::new(attempted, retirement);
     let retired = session
         .finish_reserved_with_owner(&ledger)
-        .map_err(|_| OuterOwnedError::Runtime)?;
+        .map_err(|error| {
+            eprintln!("owned_identity_prefix_failure stage=finish_runtime cause={error:?}");
+            OuterOwnedError::Runtime
+        })?;
     telemetry.retirement = Some(retired.receipt());
     let startup = retired
         .into_outer_host_original(&ledger)
-        .map_err(|(_error, owner)| {
+        .map_err(|(error, owner)| {
+            eprintln!("owned_identity_prefix_failure stage=restore_startup cause={error:?}");
             core::mem::forget(owner);
             OuterOwnedError::Runtime
         })?;
@@ -240,7 +250,10 @@ pub(super) unsafe fn prepare<'request>(
         let (tokens, report) = attempted
             .into_original()?
             .complete_after_retirement()
-            .map_err(|_| OuterOwnedError::Runtime)?;
+            .map_err(|error| {
+                eprintln!("owned_identity_prefix_failure stage=complete_prefixes cause={error:?}");
+                OuterOwnedError::Runtime
+            })?;
         if tokens.len() != count {
             return Err(OuterOwnedError::Authority);
         }

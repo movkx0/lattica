@@ -53,6 +53,8 @@ impl RetiredRuntime {
 }
 
 pub(super) fn additional_host_bytes() -> usize {
+    // Startup and moved retirement owners independently fund binding-marker
+    // backing; the startup census also applies without research quota support.
     // Include success/refusal paths and moved/final headers independently.
     // Arc control-block backing is retained after its last strong owner dies.
     2 * size_of::<RetiredRuntime>()

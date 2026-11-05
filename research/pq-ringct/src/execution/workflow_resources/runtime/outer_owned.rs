@@ -355,6 +355,7 @@ impl WorkflowPhase<'_, '_, '_> {
         // Compiled input ownership survives the actual runtime's retirement.
         // The consumed-input slot must be free before the common cleanup gate.
         if retirement.is_required() {
+            eprintln!("owned_outer_failure retirement_pending=true cause={:?}", result.as_ref().err());
             // The output, failure, compiler and backend originals remain
             // pinned together with any returned proof. Never extract an
             // original or continue the workflow on uncertain retirement.

@@ -44,29 +44,53 @@ fn weak_identity_is_exact_and_does_not_change_last_strong_owner_rule() {
 #[test]
 fn sole_binding_fact_requires_a_live_epoch_and_no_other_phase_binding() {
     let original = lease();
-    let runtime = Arc::downgrade(&original);
-    assert!(sole_live_binding(&runtime));
-    let phase = Arc::downgrade(&original);
-    assert!(!sole_live_binding(&runtime));
-    assert!(!sole_live_binding(&phase));
+    let epoch = Arc::downgrade(&original);
+    let bindings = Arc::new(());
+    let runtime = Arc::downgrade(&bindings);
+    assert!(sole_live_binding(&epoch, &runtime));
+    let phase = Arc::downgrade(&bindings);
+    assert!(!sole_live_binding(&epoch, &runtime));
+    assert!(!sole_live_binding(&epoch, &phase));
     drop(phase);
-    assert!(sole_live_binding(&runtime));
-    let captured_before_retirement = sole_live_binding(&runtime);
+    assert!(sole_live_binding(&epoch, &runtime));
+    let captured_before_retirement = sole_live_binding(&epoch, &runtime);
     drop(original);
     assert!(captured_before_retirement);
-    assert!(!sole_live_binding(&runtime));
-    assert_eq!(runtime.strong_count(), 0);
+    assert!(!sole_live_binding(&epoch, &runtime));
+    assert_eq!(epoch.strong_count(), 0);
 }
 
 #[test]
 fn retiring_with_another_phase_binding_never_gains_the_sole_binding_fact() {
     let original = lease();
-    let runtime = Arc::downgrade(&original);
-    let phase = Arc::downgrade(&original);
-    let captured_before_retirement = sole_live_binding(&runtime);
+    let epoch = Arc::downgrade(&original);
+    let bindings = Arc::new(());
+    let runtime = Arc::downgrade(&bindings);
+    let phase = Arc::downgrade(&bindings);
+    let captured_before_retirement = sole_live_binding(&epoch, &runtime);
     drop(original);
     drop(phase);
     assert!(!captured_before_retirement);
     // Dropping the phase later does not revise the captured refusal fact.
-    assert!(!sole_live_binding(&runtime));
+    assert!(!sole_live_binding(&epoch, &runtime));
+}
+
+#[test]
+fn retirement_observers_are_not_phase_bindings() {
+    let original = lease();
+    let epoch = Arc::downgrade(&original);
+    let observer = Arc::downgrade(&original);
+    let bindings = Arc::new(());
+    let runtime = Arc::downgrade(&bindings);
+    assert_eq!(epoch.weak_count(), 2);
+    assert!(sole_live_binding(&epoch, &runtime));
+    let phase = Arc::downgrade(&bindings);
+    assert!(!sole_live_binding(&epoch, &runtime));
+    drop(phase);
+    assert!(sole_live_binding(&epoch, &runtime));
+    // Neither weak observer can keep the GPU lease alive.
+    assert_eq!(Arc::strong_count(&original), 1);
+    drop(original);
+    assert_eq!(observer.strong_count(), 0);
+    assert!(!sole_live_binding(&epoch, &runtime));
 }

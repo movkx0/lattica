@@ -135,6 +135,7 @@ NOTE_CPU_WORKFLOW_TEST = ('note_gpu::workflow::tests::'
 DIRECT_RING_SCREEN_TEST = ('ring_screen::tests::'
                            'gpu_seven_distinct_ring_workflows_verify_roundtrips_and_retire')
 OWNED_RUNTIME_TESTS = {
+    'identity-cohort': 'opencl::session::retained_runtime::continuity::tests::gpu_owned_identity_cohort_retires_before_cpu_workers',
     'runtime': 'opencl::session::retained_runtime::tests::gpu_reserved_runtime_rechecks_original_ledger_and_retires_startup',
     'raw-error': 'execution::preparation::owned::gpu_tests::gpu_reserved_session_raw_negation_and_overflow_cleanup',
     'raw-graph': 'execution::preparation::owned::gpu_tests::gpu_reserved_session_genuine_source_graph_original_owners',
@@ -212,7 +213,7 @@ def owned_runtime_environment(args, argv, tree_storage, public_hash_kernel):
     require(selector in OWNED_RUNTIME_TESTS, 'unknown owned runtime qualification')
     require(args.profile in ('full', 'direct-full') and args.expect_tests and args.build_label,
             'owned runtime test requires a full recorded-test profile')
-    expected_storage = 'host' if selector in ('outer', 'native-shake-host', 'native-shake-continuation', 'native-shake-continuation-rejection', 'native-to-outer', 'outer-continuation', 'native-pair-sequence', 'native-odd-tail-sequence') else 'device'
+    expected_storage = 'host' if selector in ('identity-cohort', 'outer', 'native-shake-host', 'native-shake-continuation', 'native-shake-continuation-rejection', 'native-to-outer', 'outer-continuation', 'native-pair-sequence', 'native-odd-tail-sequence') else 'device'
     require(tree_storage == expected_storage and public_hash_kernel == 'baseline',
             'owned runtime test requires its exact storage and hashing profile')
     binary_prefix = ('lattica_prover_p3-' if selector == 'native-shake-rejection'
@@ -224,6 +225,12 @@ def owned_runtime_environment(args, argv, tree_storage, public_hash_kernel):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     environment, base = module.build_environment(0, getattr(args, 'device_uuid', None))
+    if selector == 'identity-cohort':
+        require(getattr(args, 'device_uuid', None) is not None,
+                'owned identity cohort requires a physical GPU pin')
+        environment['LATTICA_OWNED_IDENTITY_COHORT_QUALIFICATION'] = '1'
+        environment['LATTICA_V2_GPU_RETAINED_TREE_STORAGE'] = 'host'
+        environment['LATTICA_V2_GPU_RETAINED_TREE_HOST_BYTES'] = str(8 * GIB)
     if selector == 'outer':
         environment['LATTICA_OWNED_OUTER_QUALIFICATION'] = '1'
         environment['LATTICA_V2_GPU_RETAINED_TREE_STORAGE'] = 'host'
