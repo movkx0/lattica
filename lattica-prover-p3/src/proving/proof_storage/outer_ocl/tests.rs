@@ -17,7 +17,7 @@ fn outer_ocl_census_is_pure_checked_and_additive() {
     );
     assert_eq!(
         source_liveness_bytes(MAX_INSTRUCTIONS, MAX_REGISTERS),
-        Some(129 * 64)
+        Some(257 * 64)
     );
     assert_eq!(source_copy_requests(usize::MAX), None);
     assert_eq!(source_liveness_bytes(usize::MAX, MAX_REGISTERS), None);
@@ -75,7 +75,7 @@ fn program(extension: Extension, instructions: usize) -> Program {
 #[test]
 fn actual_specialization_liveness_and_source_emission_fit_fixed_bound() {
     for extension in [Extension::Quadratic, Extension::Cubic] {
-        for instructions in [2, 64, 65, MAX_INSTRUCTIONS] {
+        for instructions in [2, 32, 33, 64, 65, MAX_INSTRUCTIONS] {
             let program = program(extension, instructions);
             let (source, requests) =
                 measure(|| specialize::source(&program, specialize::Backend::OpenCl).unwrap());

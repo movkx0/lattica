@@ -6,7 +6,7 @@
 //! none of its raw-kernel or source allowance is subtracted here.
 use super::super::Error;
 use crate::block_v2::quotient_program::specialize::{
-    BLOCK, MAX_INSTRUCTIONS, MAX_REGISTERS, MAX_SOURCE_BYTES,
+    OPENCL_BLOCK as BLOCK, MAX_INSTRUCTIONS, MAX_REGISTERS, MAX_SOURCE_BYTES,
 };
 use core::mem::size_of;
 
@@ -43,8 +43,8 @@ fn source_copy_requests(source: usize) -> Option<usize> {
 }
 
 fn source_liveness_bytes(instructions: usize, registers: usize) -> Option<usize> {
-    // specialize.rs stores one [u64;8] at each 64-instruction boundary.
-    if BLOCK != 64 || registers > 512 {
+    // specialize.rs stores one [u64;8] at each 32-instruction boundary.
+    if BLOCK != 32 || registers > 512 {
         return None;
     }
     instructions

@@ -893,6 +893,7 @@ def build_plan(args):
             'full-workflow profiling requires the complete case acceptance mode')
     identity_qualification = getattr(args, 'identity_cpu_qualification', False)
     native_quotient_screen = getattr(args, 'native_quotient_screen', False)
+    serial_identity_diagnostic = getattr(args, 'serial_identity_diagnostic', False)
     metadata_qualification = getattr(args, 'metadata_cpu_qualification', False)
     native_metadata_profile = getattr(args, 'native_metadata_profile', False)
     metadata_stage_profile = getattr(args, 'metadata_stage_profile', False)
@@ -1000,8 +1001,17 @@ def build_plan(args):
                 and getattr(args, 'device_uuid', None) is not None
                 and getattr(args, 'public_hash_kernel', 'baseline') == 'baseline',
                 'native quotient screen requires host trees, physical GPU pin and baseline hash')
-    identity_cpus = identity_physical_cpus() if complete_case or identity_qualification or native_quotient_screen or metadata_qualification or native_metadata_profile or scaling or metadata_stage_profile else None
-    if identity_qualification or native_quotient_screen or metadata_qualification or native_metadata_profile or scaling or metadata_stage_profile:
+    if serial_identity_diagnostic:
+        from serial_identity_diagnostic import SELECTOR
+        require(args.profile == 'full' and args.expect_tests and args.build_label
+                and exact_owned_test(argv, 'lattica_pq_ringct_research-', SELECTOR),
+                'serial identity diagnostic requires its exact recorded full-profile test')
+        require(getattr(args, 'retained_tree_storage', 'device') == 'host'
+                and getattr(args, 'device_uuid', None) is not None
+                and getattr(args, 'public_hash_kernel', 'baseline') == 'baseline',
+                'serial identity diagnostic requires host trees, physical GPU pin and baseline hash')
+    identity_cpus = identity_physical_cpus() if complete_case or identity_qualification or native_quotient_screen or serial_identity_diagnostic or metadata_qualification or native_metadata_profile or scaling or metadata_stage_profile else None
+    if identity_qualification or native_quotient_screen or serial_identity_diagnostic or metadata_qualification or native_metadata_profile or scaling or metadata_stage_profile:
         require(len(identity_cpus) == 16, '16-worker qualification requires sixteen physical cores')
     host_profile = selected_host_profile(getattr(args, 'host_profile', 'standard'))
     require(host_profile['name'] == 'standard' or (args.profile == 'full' and
@@ -1017,7 +1027,7 @@ def build_plan(args):
     require(sum((bool(complete_case), bool(getattr(args, 'note_owned_proof', False)),
                  bool(getattr(args, 'note_workflow_cpu', False)),
                  getattr(args, 'owned_runtime_test', None) is not None,
-                 bool(direct_ring_screen), bool(metadata_qualification), bool(identity_qualification), bool(native_quotient_screen), bool(native_metadata_profile), bool(scaling), bool(metadata_stage_profile),
+                 bool(direct_ring_screen), bool(metadata_qualification), bool(identity_qualification), bool(native_quotient_screen), bool(serial_identity_diagnostic), bool(native_metadata_profile), bool(scaling), bool(metadata_stage_profile),
                  bool(getattr(args, 'direct_ring_aggregate', False)),
                  bool(getattr(args, 'owned_source_shape_test', False)),
                  bool(getattr(args, 'active_hashx_preflight', False)),
@@ -1110,6 +1120,8 @@ def build_plan(args):
     if native_quotient_screen:
         from native_quotient_screen import ENVIRONMENT
         environment[ENVIRONMENT] = '1'
+    if serial_identity_diagnostic:
+        environment['LATTICA_RINGCT_FULL_WORKFLOW_PROFILE'] = 'detail'
     if scaling:
         environment['LATTICA_CPU_SCALING_PROFILE'] = '1'
         environment['LATTICA_CPU_SCALING_PLACEMENT'] = scaling_selection['placement']
@@ -1272,6 +1284,7 @@ def build_plan(args):
             'cpu_quota': '1600%' if identity_cpus is not None else str(threads * 100) + '%',
             'identity_physical_cpus': identity_cpus, 'identity_cpu_qualification': identity_qualification,
             'native_quotient_screen': native_quotient_screen,
+            'serial_identity_diagnostic': serial_identity_diagnostic,
             'metadata_cpu_qualification': metadata_qualification, 'native_metadata_profile': native_metadata_profile,
             'metadata_stage_profile': metadata_stage_profile,
             'metadata_transactions': metadata_transactions if metadata_stage_profile else None,
@@ -1956,6 +1969,9 @@ def validate_output(log, plan):
     if plan.get('native_quotient_screen'):
         from native_quotient_screen import validate
         plan['native_quotient_screen_acceptance'] = validate(content)
+    if plan.get('serial_identity_diagnostic'):
+        from serial_identity_diagnostic import validate
+        plan['serial_identity_diagnostic_acceptance'] = validate(content)
     if plan.get('cpu_scaling_profile'):
         if plan['cpu_scaling_profile'].get('callgraph'):
             from cpu_callgraph_profile import validate
@@ -2325,6 +2341,8 @@ def main():
     parser.add_argument('--expect-result', action='store_true')
     parser.add_argument('--expect-direct-result', action='store_true')
     parser.add_argument('--identity-cpu-qualification', action='store_true')
+    parser.add_argument('--serial-identity-diagnostic', action='store_true',
+                        help='serial recursive identity counting and hashing clocks')
     parser.add_argument('--native-quotient-screen', action='store_true',
                         help='exact AES/affine quotient compilation and execution screen')
     parser.add_argument('--metadata-fixture-out')

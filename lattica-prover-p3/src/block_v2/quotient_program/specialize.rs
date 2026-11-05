@@ -1,8 +1,11 @@
-//! Shared 64-instruction specialization and liveness analysis for public AIRs.
+//! Shared bounded-block specialization and liveness analysis for public AIRs.
 use super::Program;
 use std::fmt::Write;
 
+#[cfg(feature = "gpu-cuda")]
 pub(crate) const BLOCK: usize = 64;
+#[cfg(feature = "gpu")]
+pub(crate) const OPENCL_BLOCK: usize = 32;
 pub(crate) const MAX_INSTRUCTIONS: usize = 8192;
 pub(crate) const MAX_REGISTERS: usize = 512;
 pub(crate) const MAX_SOURCE_BYTES: usize = 2 << 20;
@@ -15,6 +18,22 @@ pub(crate) enum Backend {
     Cuda,
 }
 impl Backend {
+    fn block_size(self) -> usize {
+        match self {
+            #[cfg(feature = "gpu")]
+            Self::OpenCl => OPENCL_BLOCK,
+            #[cfg(feature = "gpu-cuda")]
+            Self::Cuda => BLOCK,
+        }
+    }
+    fn indirect_constants(self) -> bool {
+        match self {
+            #[cfg(feature = "gpu")]
+            Self::OpenCl => true,
+            #[cfg(feature = "gpu-cuda")]
+            Self::Cuda => false,
+        }
+    }
     fn prelude(self) -> &'static str {
         match self {
             #[cfg(feature = "gpu")]
@@ -138,8 +157,10 @@ pub(crate) fn source(program: &Program, backend: Backend) -> Result<Option<Strin
     }
     let degree = program.extension.degree();
     let count = program.instructions.len() / 5;
-    let blocks = count.div_ceil(BLOCK);
-    // Only block boundaries survive. At most 129 fixed 64-byte bitmaps.
+    let block_size = backend.block_size();
+    let blocks = count.div_ceil(block_size);
+    // Only block boundaries survive: 257 fixed 64-byte bitmaps on OpenCL,
+    // 129 on CUDA. The OpenCL wrapper census reserves the larger count.
     let mut boundaries = vec![Slots::default(); blocks + 1];
     let mut live = Slots::default();
     for pc in (0..count).rev() {
@@ -148,8 +169,8 @@ pub(crate) fn source(program: &Program, backend: Backend) -> Result<Option<Strin
             live.remove(instruction[1] as usize);
         }
         live.read(instruction);
-        if pc % BLOCK == 0 {
-            boundaries[pc / BLOCK] = live;
+        if pc % block_size == 0 {
+            boundaries[pc / block_size] = live;
         }
     }
     if live.0.iter().any(|word| *word != 0) {
@@ -167,8 +188,8 @@ pub(crate) fn source(program: &Program, backend: Backend) -> Result<Option<Strin
         writeln!(output, "\n#define QUOTIENT_DEGREE {degree}")?;
         writeln!(output, "#define QUOTIENT_MUL {}", backend.multiply(degree))?;
         for block in 0..blocks {
-            let first = block * BLOCK;
-            let end = (first + BLOCK).min(count);
+            let first = block * block_size;
+            let end = (first + block_size).min(count);
             let chunk = &program.instructions[first * 5..end * 5];
             let mut used = Slots::default();
             let mut written = Slots::default();
@@ -183,6 +204,9 @@ pub(crate) fn source(program: &Program, backend: Backend) -> Result<Option<Strin
                 "{} void quotient_block_{block}(",
                 backend.noinline()
             )?;
+            if backend.indirect_constants() {
+                output.write_str("__global const ulong *code, ")?;
+            }
             output.write_str("__global const ulong *input, uint width, __global const ulong *parameters,\n__global const ulong *weights, __global ulong *scratch, uint rows, uint row,\nulong first, ulong last, ulong transition, __private ulong *accumulator) {\n")?;
             writeln!(output, "ulong value[{degree}];")?;
             for slot in 0..program.registers {
@@ -199,7 +223,7 @@ pub(crate) fn source(program: &Program, backend: Backend) -> Result<Option<Strin
                     }
                 }
             }
-            for instruction in chunk.chunks_exact(5) {
+            for (offset, instruction) in chunk.chunks_exact(5).enumerate() {
                 let [op, dst, a, b, c] = <[u64; 5]>::try_from(instruction).unwrap();
                 if op == 14 {
                     writeln!(output, "QUOTIENT_MUL(reg_{a}, reg_{b}, value);")?;
@@ -217,6 +241,11 @@ pub(crate) fn source(program: &Program, backend: Backend) -> Result<Option<Strin
                     for j in 0..degree {
                         write!(output, "value[{j}] = ")?;
                         match op {
+                            // Keep zero/one folding; other constants come from the
+                            // exact instruction buffer already owned by this proof.
+                            0 if backend.indirect_constants() && [a, b, c][j] > 1 => {
+                                write!(output, "code[{}UL]", (first + offset) * 5 + 2 + j)?
+                            }
                             0 => write!(output, "{}UL", [a, b, c][j])?,
                             1 | 2 if op == 2 || j == 0 => {
                                 write!(output, "input[(size_t)row * width + {}UL]", a + j as u64)?
@@ -273,10 +302,14 @@ pub(crate) fn source(program: &Program, backend: Backend) -> Result<Option<Strin
             output.write_str("}\n")?;
         }
         // OpenCL C 1.2 does not support variadic macros.
-        const ARGUMENTS: &str = "input, width, parameters, weights, scratch, rows, row, first, last, transition, accumulator";
-        writeln!(output, "#define QUOTIENT_SPECIALIZED({ARGUMENTS}) \\")?;
+        let arguments = if backend.indirect_constants() {
+            "code, input, width, parameters, weights, scratch, rows, row, first, last, transition, accumulator"
+        } else {
+            "input, width, parameters, weights, scratch, rows, row, first, last, transition, accumulator"
+        };
+        writeln!(output, "#define QUOTIENT_SPECIALIZED({arguments}) \\")?;
         for block in 0..blocks {
-            writeln!(output, "quotient_block_{block}({ARGUMENTS}); \\")?;
+            writeln!(output, "quotient_block_{block}({arguments}); \\")?;
         }
         output.write_str("\n#define QUOTIENT_ALPHA specialized_alpha\n#define QUOTIENT_EVALUATE specialized_quotient\n")?;
         output.write_str(backend.evaluator())?;

@@ -5,7 +5,7 @@ use crate::block_v2::quotient_program::specialize::{
     MAX_INSTRUCTIONS, MAX_REGISTERS, MAX_SOURCE_BYTES,
 };
 use crate::block_v2::quotient_program::{
-    specialize::{self, Backend, BLOCK},
+    specialize::{self, Backend, OPENCL_BLOCK as BLOCK},
     Program,
 };
 use sha3::{Digest, Sha3_256};
@@ -117,6 +117,29 @@ pub(in crate::block_v2::gpu_hash::engine) fn prepare(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn compiler_source_reuses_nontrivial_constants_and_keeps_global_code_offsets() {
+        let mut program = super::super::tests::program();
+        program.instructions = vec![0, 0, 13, 17, 19, 16, 0, 0, 0, 0];
+        let first = source(&program).unwrap().unwrap();
+        program.instructions[2..5].copy_from_slice(&[97, 101, 103]);
+        assert_eq!(source(&program).unwrap().unwrap(), first);
+        for word in 2..5 {
+            assert!(first.contains(&format!("code[{word}UL]")));
+        }
+        program.instructions[2] = 1;
+        assert_ne!(source(&program).unwrap().unwrap(), first);
+        program.instructions = vec![0, 0, 13, 17, 19];
+        for _ in 1..BLOCK {
+            program.instructions.extend_from_slice(&[10, 0, 0, 0, 0]);
+        }
+        program.instructions.extend_from_slice(&[0, 0, 29, 31, 37, 16, 0, 0, 0, 0]);
+        let wide = source(&program).unwrap().unwrap();
+        for word in BLOCK * 5 + 2..BLOCK * 5 + 5 {
+            assert!(wide.contains(&format!("code[{word}UL]")));
+        }
+    }
 
     #[test]
     fn invalid_bytecode_is_rejected_before_compilation_or_device_access() {

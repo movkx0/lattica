@@ -1,0 +1,895 @@
+{
+  "schema": "ringct-full-workflow-component-optimization-v1",
+  "measurement_date": "2026-11-05 UTC",
+  "base_commit": "aeaac239cb972d622a16023b48e2216c611e9b2c",
+  "scope": "Isolated component comparisons and combined correctness/resource qualification. Complete fresh N3/N4 workflow performance remains unqualified.",
+  "selection_basis": "Completed fresh N3 pilot: recursive crypto wrappers 32.51% and CPU identity 18.72% of total wall time. User requested stopping the partial N4 pilot to test optimizations immediately.",
+  "n4_interruption": {
+    "path": ".tools/full-workflow-profile/n4-r4-user-interruption.json",
+    "sha256": "dbaae9560764b48bda1372550fc701a5faded59322e01f3bad32ed4e29eb450a"
+  },
+  "selected_changes": [
+    "Use 32-instruction OpenCL specialization blocks; retain 64-instruction CUDA blocks.",
+    "Read nontrivial OpenCL constants from the existing instruction buffer while preserving zero/one folding."
+  ],
+  "cpu_implementation": "Original scalar streaming hash retained; two vector implementations passed correctness but regressed measured identity latency.",
+  "build_control": "Combined candidate explicitly targets x86-64-v3 on the admitted host; the generic build remains supported.",
+  "isolated_gpu_screens": {
+    "block32": {
+      "schema": "ringct-component-screen-summary-v1",
+      "variant": "opencl-block32",
+      "source_record": ".tools/full-workflow-profile/optimization-screen-block32-r1.json",
+      "measurements": [
+        {
+          "role": "baseline",
+          "pair": 1,
+          "cpu_identity_seconds": 9.188075982,
+          "hash_seconds": 8.903597321,
+          "recursive_proofs": [
+            {
+              "proof_wall_seconds": 3.67971037,
+              "quotient_device_seconds": 1.0475552,
+              "compiler_seconds": 0.025223249,
+              "private_bytes": 1520,
+              "selected": false,
+              "source_sha3": "edd13c778e6c03de6cd6da2718f5dbb40556b05df76a4de43208d1eb5fd2b9cf"
+            },
+            {
+              "proof_wall_seconds": 3.64217176,
+              "quotient_device_seconds": 1.048573952,
+              "compiler_seconds": 0.024656548,
+              "private_bytes": 1520,
+              "selected": false,
+              "source_sha3": "edd13c778e6c03de6cd6da2718f5dbb40556b05df76a4de43208d1eb5fd2b9cf"
+            }
+          ],
+          "native_rounds": [
+            {
+              "round": 0,
+              "proof_wall_seconds": 9.817996853,
+              "quotient_device_seconds": 0.431705664
+            },
+            {
+              "round": 1,
+              "proof_wall_seconds": 9.787443327,
+              "quotient_device_seconds": 0.431798112
+            }
+          ]
+        },
+        {
+          "role": "candidate",
+          "pair": 1,
+          "cpu_identity_seconds": 8.902931283,
+          "hash_seconds": 8.610258263,
+          "recursive_proofs": [
+            {
+              "proof_wall_seconds": 88.343896589,
+              "quotient_device_seconds": 0.351028,
+              "compiler_seconds": 85.387249451,
+              "private_bytes": 88,
+              "selected": true,
+              "source_sha3": "d8d3e7eb8e4999b086ba9c91c8b98369a95b9d842dee24ad1111862d89bb2d9c"
+            },
+            {
+              "proof_wall_seconds": 2.943583203,
+              "quotient_device_seconds": 0.35114576,
+              "compiler_seconds": 0.02837859,
+              "private_bytes": 88,
+              "selected": true,
+              "source_sha3": "d8d3e7eb8e4999b086ba9c91c8b98369a95b9d842dee24ad1111862d89bb2d9c"
+            }
+          ],
+          "native_rounds": [
+            {
+              "round": 0,
+              "proof_wall_seconds": 349.288751902,
+              "quotient_device_seconds": 0.45787468800000003
+            },
+            {
+              "round": 1,
+              "proof_wall_seconds": 9.858548088,
+              "quotient_device_seconds": 0.458194336
+            }
+          ]
+        },
+        {
+          "role": "candidate",
+          "pair": 2,
+          "cpu_identity_seconds": 8.973193055,
+          "hash_seconds": 8.685798215,
+          "recursive_proofs": [
+            {
+              "proof_wall_seconds": 2.959708997,
+              "quotient_device_seconds": 0.351622848,
+              "compiler_seconds": 0.02965938,
+              "private_bytes": 88,
+              "selected": true,
+              "source_sha3": "d8d3e7eb8e4999b086ba9c91c8b98369a95b9d842dee24ad1111862d89bb2d9c"
+            },
+            {
+              "proof_wall_seconds": 2.940033933,
+              "quotient_device_seconds": 0.351431136,
+              "compiler_seconds": 0.027525025,
+              "private_bytes": 88,
+              "selected": true,
+              "source_sha3": "d8d3e7eb8e4999b086ba9c91c8b98369a95b9d842dee24ad1111862d89bb2d9c"
+            }
+          ],
+          "native_rounds": [
+            {
+              "round": 0,
+              "proof_wall_seconds": 9.842666466,
+              "quotient_device_seconds": 0.458275712
+            },
+            {
+              "round": 1,
+              "proof_wall_seconds": 9.875930186,
+              "quotient_device_seconds": 0.45835948800000004
+            }
+          ]
+        },
+        {
+          "role": "baseline",
+          "pair": 2,
+          "cpu_identity_seconds": 9.298403554,
+          "hash_seconds": 9.012466899,
+          "recursive_proofs": [
+            {
+              "proof_wall_seconds": 3.676886037,
+              "quotient_device_seconds": 1.049441568,
+              "compiler_seconds": 0.025606605,
+              "private_bytes": 1520,
+              "selected": false,
+              "source_sha3": "edd13c778e6c03de6cd6da2718f5dbb40556b05df76a4de43208d1eb5fd2b9cf"
+            },
+            {
+              "proof_wall_seconds": 3.650271225,
+              "quotient_device_seconds": 1.049604224,
+              "compiler_seconds": 0.025525883,
+              "private_bytes": 1520,
+              "selected": false,
+              "source_sha3": "edd13c778e6c03de6cd6da2718f5dbb40556b05df76a4de43208d1eb5fd2b9cf"
+            }
+          ],
+          "native_rounds": [
+            {
+              "round": 0,
+              "proof_wall_seconds": 9.792389753,
+              "quotient_device_seconds": 0.431942208
+            },
+            {
+              "round": 1,
+              "proof_wall_seconds": 9.795670531,
+              "quotient_device_seconds": 0.432117216
+            }
+          ]
+        }
+      ],
+      "repeated_source_medians": {
+        "baseline": {
+          "recursive_proof_wall_seconds": 3.6462214925,
+          "quotient_device_seconds": 1.0490890880000001,
+          "cpu_identity_seconds": 9.243239768,
+          "native_second_round_wall_seconds": 9.791556929
+        },
+        "candidate": {
+          "recursive_proof_wall_seconds": 2.941808568,
+          "quotient_device_seconds": 0.351288448,
+          "cpu_identity_seconds": 8.938062168999998,
+          "native_second_round_wall_seconds": 9.867239136999999
+        }
+      },
+      "candidate_to_baseline_ratios": {
+        "recursive_proof_wall_seconds": 0.8068101660996393,
+        "quotient_device_seconds": 0.3348509216406986,
+        "cpu_identity_seconds": 0.96698369763635,
+        "native_second_round_wall_seconds": 1.0077293333990478
+      },
+      "complete_workflow": false,
+      "performance_qualified": false,
+      "scope": "Component observations only. Compiler clocks are nested in proof wall time. Repeated-source timings do not prove driver-cache hits or qualify workflow speedups."
+    },
+    "indirect": {
+      "schema": "ringct-component-screen-summary-v1",
+      "variant": "indirect-constants",
+      "source_record": ".tools/full-workflow-profile/optimization-screen-indirect-r1.json",
+      "measurements": [
+        {
+          "role": "baseline",
+          "pair": 1,
+          "cpu_identity_seconds": 9.050771918,
+          "hash_seconds": 8.77156679,
+          "recursive_proofs": [
+            {
+              "proof_wall_seconds": 3.630659046,
+              "quotient_device_seconds": 1.046604256,
+              "compiler_seconds": 0.025009555,
+              "private_bytes": 1520,
+              "selected": false,
+              "source_sha3": "edd13c778e6c03de6cd6da2718f5dbb40556b05df76a4de43208d1eb5fd2b9cf"
+            },
+            {
+              "proof_wall_seconds": 3.633720056,
+              "quotient_device_seconds": 1.046938368,
+              "compiler_seconds": 0.024473274,
+              "private_bytes": 1520,
+              "selected": false,
+              "source_sha3": "edd13c778e6c03de6cd6da2718f5dbb40556b05df76a4de43208d1eb5fd2b9cf"
+            }
+          ],
+          "native_rounds": [
+            {
+              "round": 0,
+              "proof_wall_seconds": 9.751227104,
+              "quotient_device_seconds": 0.431647328
+            },
+            {
+              "round": 1,
+              "proof_wall_seconds": 9.705070833,
+              "quotient_device_seconds": 0.431507456
+            }
+          ]
+        },
+        {
+          "role": "candidate",
+          "pair": 1,
+          "cpu_identity_seconds": 9.069443435,
+          "hash_seconds": 8.785106554,
+          "recursive_proofs": [
+            {
+              "proof_wall_seconds": 68.674738306,
+              "quotient_device_seconds": 1.048935104,
+              "compiler_seconds": 65.071865474,
+              "private_bytes": 1552,
+              "selected": false,
+              "source_sha3": "7381b38fdb70230f043893129422296bd7be54e756dccfcb4e146eebbcb78c98"
+            },
+            {
+              "proof_wall_seconds": 3.628819328,
+              "quotient_device_seconds": 1.049531136,
+              "compiler_seconds": 0.025735832,
+              "private_bytes": 1552,
+              "selected": false,
+              "source_sha3": "7381b38fdb70230f043893129422296bd7be54e756dccfcb4e146eebbcb78c98"
+            }
+          ],
+          "native_rounds": [
+            {
+              "round": 0,
+              "proof_wall_seconds": 129.624514118,
+              "quotient_device_seconds": 0.434341024
+            },
+            {
+              "round": 1,
+              "proof_wall_seconds": 9.776253681,
+              "quotient_device_seconds": 0.434712416
+            }
+          ]
+        },
+        {
+          "role": "candidate",
+          "pair": 2,
+          "cpu_identity_seconds": 9.067521932,
+          "hash_seconds": 8.785073231,
+          "recursive_proofs": [
+            {
+              "proof_wall_seconds": 3.646896637,
+              "quotient_device_seconds": 1.050121376,
+              "compiler_seconds": 0.024848444,
+              "private_bytes": 1552,
+              "selected": false,
+              "source_sha3": "7381b38fdb70230f043893129422296bd7be54e756dccfcb4e146eebbcb78c98"
+            },
+            {
+              "proof_wall_seconds": 3.644587331,
+              "quotient_device_seconds": 1.05071056,
+              "compiler_seconds": 0.024932965,
+              "private_bytes": 1552,
+              "selected": false,
+              "source_sha3": "7381b38fdb70230f043893129422296bd7be54e756dccfcb4e146eebbcb78c98"
+            }
+          ],
+          "native_rounds": [
+            {
+              "round": 0,
+              "proof_wall_seconds": 9.783134363,
+              "quotient_device_seconds": 0.434828
+            },
+            {
+              "round": 1,
+              "proof_wall_seconds": 9.758504792,
+              "quotient_device_seconds": 0.434740064
+            }
+          ]
+        },
+        {
+          "role": "baseline",
+          "pair": 2,
+          "cpu_identity_seconds": 9.178380675,
+          "hash_seconds": 8.898237146,
+          "recursive_proofs": [
+            {
+              "proof_wall_seconds": 3.643449409,
+              "quotient_device_seconds": 1.049412736,
+              "compiler_seconds": 0.025854887,
+              "private_bytes": 1520,
+              "selected": false,
+              "source_sha3": "edd13c778e6c03de6cd6da2718f5dbb40556b05df76a4de43208d1eb5fd2b9cf"
+            },
+            {
+              "proof_wall_seconds": 3.635802419,
+              "quotient_device_seconds": 1.049237568,
+              "compiler_seconds": 0.024951219,
+              "private_bytes": 1520,
+              "selected": false,
+              "source_sha3": "edd13c778e6c03de6cd6da2718f5dbb40556b05df76a4de43208d1eb5fd2b9cf"
+            }
+          ],
+          "native_rounds": [
+            {
+              "round": 0,
+              "proof_wall_seconds": 9.827173969,
+              "quotient_device_seconds": 0.431809184
+            },
+            {
+              "round": 1,
+              "proof_wall_seconds": 9.736879925,
+              "quotient_device_seconds": 0.431876512
+            }
+          ]
+        }
+      ],
+      "repeated_source_medians": {
+        "baseline": {
+          "recursive_proof_wall_seconds": 3.6347612375000002,
+          "quotient_device_seconds": 1.048087968,
+          "cpu_identity_seconds": 9.114576296500001,
+          "native_second_round_wall_seconds": 9.720975379
+        },
+        "candidate": {
+          "recursive_proof_wall_seconds": 3.6367033295,
+          "quotient_device_seconds": 1.050120848,
+          "cpu_identity_seconds": 9.068482683500001,
+          "native_second_round_wall_seconds": 9.7673792365
+        }
+      },
+      "candidate_to_baseline_ratios": {
+        "recursive_proof_wall_seconds": 1.0005343107492077,
+        "quotient_device_seconds": 1.0019396081837284,
+        "cpu_identity_seconds": 0.9949428682694005,
+        "native_second_round_wall_seconds": 1.0047735803960829
+      },
+      "complete_workflow": false,
+      "performance_qualified": false,
+      "scope": "Component observations only. Compiler clocks are nested in proof wall time. Repeated-source timings do not prove driver-cache hits or qualify workflow speedups."
+    }
+  },
+  "compiler_source_reuse": {
+    "scope": "Compiler-source reuse and reported build clocks; driver cache hits are not asserted",
+    "complete_workflow": false,
+    "performance_qualified": false,
+    "roles": {
+      "baseline": {
+        "record": ".tools/full-workflow-candidate/.tools/pq-opencl-opt/runs/ffc-indirect-r1-baseline-p1-native.json",
+        "compiler_inputs": 24,
+        "distinct_source_digests": 12,
+        "sum_reported_compiler_ns": 445296126,
+        "first_round_compiler_ns": [
+          24951214,
+          25989626,
+          21852419,
+          22032733,
+          13797570,
+          16075717,
+          17570099,
+          19415978,
+          13295360,
+          16297752,
+          16300883,
+          19086071
+        ],
+        "source_sha3": [
+          "c4f50b796ab95e9f2346596f7c73757f8b48a7b22f2afbbf96432ff4e3b75372",
+          "83d048582e2f194715e041fb6b7a214b27613e0402f7c7cf14a3de83937d27d0",
+          "e31c1d4f77793ddaecc4fd2e960a6f4ddf39e3c43044b51edd4a5d4eeb0b6a83",
+          "9ae32f820ad206981a5431f75af82ba8862e5deb9587c14bee84f76548a06a83",
+          "a1fb1ab3ca110817226b68ba38baed952030c81ec6cb363f912803bfae6ba94a",
+          "8642c566fbcb3cc875eafe91cbd4366b2a441eba76f80f2abde20dabbacf9b52",
+          "c8c0a1684138a928972f036e3a50441baf41800e8c4225d590eb20358e4db653",
+          "6ff2074120de2010127d49ce451dbb02435740e65ac872e8b351d9039a84cabb",
+          "f493b3b68681f65e2edf8029ef7f732390e0cd40af457941ee55d974ebc71319",
+          "1eed290fca5aef540e7c640a13b77323d6e92680a0a845215c98ac322d572e40",
+          "63879d07a5cd2a3b4ef7fc618e9535dc6d25f7215b105119b4f75b70ed75e550",
+          "9f8faa898cd682584092e99c2de26b48b4f1dd8fdc8b36ce1f6fc3c10cc6cdab",
+          "c4f50b796ab95e9f2346596f7c73757f8b48a7b22f2afbbf96432ff4e3b75372",
+          "83d048582e2f194715e041fb6b7a214b27613e0402f7c7cf14a3de83937d27d0",
+          "e31c1d4f77793ddaecc4fd2e960a6f4ddf39e3c43044b51edd4a5d4eeb0b6a83",
+          "9ae32f820ad206981a5431f75af82ba8862e5deb9587c14bee84f76548a06a83",
+          "a1fb1ab3ca110817226b68ba38baed952030c81ec6cb363f912803bfae6ba94a",
+          "8642c566fbcb3cc875eafe91cbd4366b2a441eba76f80f2abde20dabbacf9b52",
+          "c8c0a1684138a928972f036e3a50441baf41800e8c4225d590eb20358e4db653",
+          "6ff2074120de2010127d49ce451dbb02435740e65ac872e8b351d9039a84cabb",
+          "f493b3b68681f65e2edf8029ef7f732390e0cd40af457941ee55d974ebc71319",
+          "1eed290fca5aef540e7c640a13b77323d6e92680a0a845215c98ac322d572e40",
+          "63879d07a5cd2a3b4ef7fc618e9535dc6d25f7215b105119b4f75b70ed75e550",
+          "9f8faa898cd682584092e99c2de26b48b4f1dd8fdc8b36ce1f6fc3c10cc6cdab"
+        ]
+      },
+      "candidate": {
+        "record": ".tools/full-workflow-candidate/.tools/pq-opencl-opt/runs/ffc-indirect-r1-candidate-p1-native.json",
+        "compiler_inputs": 24,
+        "distinct_source_digests": 6,
+        "sum_reported_compiler_ns": 120347581207,
+        "first_round_compiler_ns": [
+          27236972464,
+          23330341,
+          27196985088,
+          22557155,
+          11559341742,
+          16063541478,
+          17017462993,
+          20935345006,
+          14050546,
+          16458186,
+          16540349,
+          19731975
+        ],
+        "source_sha3": [
+          "d0fb8b3522542ad264ae32971fbeff4dbe5e368db9c6e1b6506d11624053080d",
+          "d0fb8b3522542ad264ae32971fbeff4dbe5e368db9c6e1b6506d11624053080d",
+          "112430d7f3424d26d429758e84f63db845a15fe5af09409a70d3689b5161eb30",
+          "112430d7f3424d26d429758e84f63db845a15fe5af09409a70d3689b5161eb30",
+          "a2884aeeb193fb8d7fa577426c1181cd7aed6dfb9c56ce494cf7811d2d775a94",
+          "e752ec8cae287b8e17cb391bb0f08c8d84b3d78c871f20519eb01f9be7f9a2a8",
+          "6fbbba16579a3398873fb9a1598cb26f3e656b238753521174ba7cdc4d203188",
+          "d2a5b2c4aa876b726ee23710a27aee7051b723cad3fb1f2027d8b367002aeb35",
+          "a2884aeeb193fb8d7fa577426c1181cd7aed6dfb9c56ce494cf7811d2d775a94",
+          "e752ec8cae287b8e17cb391bb0f08c8d84b3d78c871f20519eb01f9be7f9a2a8",
+          "6fbbba16579a3398873fb9a1598cb26f3e656b238753521174ba7cdc4d203188",
+          "d2a5b2c4aa876b726ee23710a27aee7051b723cad3fb1f2027d8b367002aeb35",
+          "d0fb8b3522542ad264ae32971fbeff4dbe5e368db9c6e1b6506d11624053080d",
+          "d0fb8b3522542ad264ae32971fbeff4dbe5e368db9c6e1b6506d11624053080d",
+          "112430d7f3424d26d429758e84f63db845a15fe5af09409a70d3689b5161eb30",
+          "112430d7f3424d26d429758e84f63db845a15fe5af09409a70d3689b5161eb30",
+          "a2884aeeb193fb8d7fa577426c1181cd7aed6dfb9c56ce494cf7811d2d775a94",
+          "e752ec8cae287b8e17cb391bb0f08c8d84b3d78c871f20519eb01f9be7f9a2a8",
+          "6fbbba16579a3398873fb9a1598cb26f3e656b238753521174ba7cdc4d203188",
+          "d2a5b2c4aa876b726ee23710a27aee7051b723cad3fb1f2027d8b367002aeb35",
+          "a2884aeeb193fb8d7fa577426c1181cd7aed6dfb9c56ce494cf7811d2d775a94",
+          "e752ec8cae287b8e17cb391bb0f08c8d84b3d78c871f20519eb01f9be7f9a2a8",
+          "6fbbba16579a3398873fb9a1598cb26f3e656b238753521174ba7cdc4d203188",
+          "d2a5b2c4aa876b726ee23710a27aee7051b723cad3fb1f2027d8b367002aeb35"
+        ]
+      }
+    }
+  },
+  "rejected_cpu_screens": {
+    "sbox_only": {
+      "schema": "ringct-component-screen-summary-v1",
+      "variant": "identity-packed-sbox",
+      "source_record": ".tools/full-workflow-profile/optimization-screen-packed-r2.json",
+      "measurements": [
+        {
+          "role": "baseline",
+          "pair": 1,
+          "cpu_identity_seconds": 8.885843751,
+          "hash_seconds": 8.625152279,
+          "recursive_proofs": [
+            {
+              "proof_wall_seconds": 3.637115724,
+              "quotient_device_seconds": 1.0461336,
+              "compiler_seconds": 0.025243432,
+              "private_bytes": 1520,
+              "selected": false,
+              "source_sha3": "edd13c778e6c03de6cd6da2718f5dbb40556b05df76a4de43208d1eb5fd2b9cf"
+            },
+            {
+              "proof_wall_seconds": 3.632184916,
+              "quotient_device_seconds": 1.046264064,
+              "compiler_seconds": 0.024474436,
+              "private_bytes": 1520,
+              "selected": false,
+              "source_sha3": "edd13c778e6c03de6cd6da2718f5dbb40556b05df76a4de43208d1eb5fd2b9cf"
+            }
+          ]
+        },
+        {
+          "role": "candidate",
+          "pair": 1,
+          "cpu_identity_seconds": 9.461956152,
+          "hash_seconds": 9.156705887,
+          "recursive_proofs": [
+            {
+              "proof_wall_seconds": 3.639219602,
+              "quotient_device_seconds": 1.048680512,
+              "compiler_seconds": 0.025726832,
+              "private_bytes": 1520,
+              "selected": false,
+              "source_sha3": "edd13c778e6c03de6cd6da2718f5dbb40556b05df76a4de43208d1eb5fd2b9cf"
+            },
+            {
+              "proof_wall_seconds": 3.641650142,
+              "quotient_device_seconds": 1.049423872,
+              "compiler_seconds": 0.024969575,
+              "private_bytes": 1520,
+              "selected": false,
+              "source_sha3": "edd13c778e6c03de6cd6da2718f5dbb40556b05df76a4de43208d1eb5fd2b9cf"
+            }
+          ]
+        },
+        {
+          "role": "candidate",
+          "pair": 2,
+          "cpu_identity_seconds": 9.57840049,
+          "hash_seconds": 9.295489864,
+          "recursive_proofs": [
+            {
+              "proof_wall_seconds": 3.631551102,
+              "quotient_device_seconds": 1.049346016,
+              "compiler_seconds": 0.025280342,
+              "private_bytes": 1520,
+              "selected": false,
+              "source_sha3": "edd13c778e6c03de6cd6da2718f5dbb40556b05df76a4de43208d1eb5fd2b9cf"
+            },
+            {
+              "proof_wall_seconds": 3.637492628,
+              "quotient_device_seconds": 1.04967904,
+              "compiler_seconds": 0.024600467,
+              "private_bytes": 1520,
+              "selected": false,
+              "source_sha3": "edd13c778e6c03de6cd6da2718f5dbb40556b05df76a4de43208d1eb5fd2b9cf"
+            }
+          ]
+        },
+        {
+          "role": "baseline",
+          "pair": 2,
+          "cpu_identity_seconds": 8.771643792,
+          "hash_seconds": 8.51079694,
+          "recursive_proofs": [
+            {
+              "proof_wall_seconds": 3.645808844,
+              "quotient_device_seconds": 1.04934752,
+              "compiler_seconds": 0.025621219,
+              "private_bytes": 1520,
+              "selected": false,
+              "source_sha3": "edd13c778e6c03de6cd6da2718f5dbb40556b05df76a4de43208d1eb5fd2b9cf"
+            },
+            {
+              "proof_wall_seconds": 3.648809497,
+              "quotient_device_seconds": 1.049190784,
+              "compiler_seconds": 0.024762451,
+              "private_bytes": 1520,
+              "selected": false,
+              "source_sha3": "edd13c778e6c03de6cd6da2718f5dbb40556b05df76a4de43208d1eb5fd2b9cf"
+            }
+          ]
+        }
+      ],
+      "repeated_source_medians": {
+        "baseline": {
+          "recursive_proof_wall_seconds": 3.6404972065,
+          "quotient_device_seconds": 1.047727424,
+          "cpu_identity_seconds": 8.828743771500001
+        },
+        "candidate": {
+          "recursive_proof_wall_seconds": 3.639571385,
+          "quotient_device_seconds": 1.049551456,
+          "cpu_identity_seconds": 9.520178321
+        }
+      },
+      "candidate_to_baseline_ratios": {
+        "recursive_proof_wall_seconds": 0.999745688171839,
+        "quotient_device_seconds": 1.0017409413538458,
+        "cpu_identity_seconds": 1.0783163004154694
+      },
+      "complete_workflow": false,
+      "performance_qualified": false,
+      "scope": "Component observations only. Compiler clocks are nested in proof wall time. Repeated-source timings do not prove driver-cache hits or qualify workflow speedups."
+    },
+    "packed_external_layer": {
+      "schema": "ringct-component-screen-summary-v1",
+      "variant": "identity-packed-mds",
+      "source_record": ".tools/full-workflow-profile/optimization-screen-packedmds-r1.json",
+      "measurements": [
+        {
+          "role": "baseline",
+          "pair": 1,
+          "cpu_identity_seconds": 8.76688056,
+          "hash_seconds": 8.506760825,
+          "recursive_proofs": [
+            {
+              "proof_wall_seconds": 3.639396968,
+              "quotient_device_seconds": 1.047009728,
+              "compiler_seconds": 0.025191656,
+              "private_bytes": 1520,
+              "selected": false,
+              "source_sha3": "edd13c778e6c03de6cd6da2718f5dbb40556b05df76a4de43208d1eb5fd2b9cf"
+            },
+            {
+              "proof_wall_seconds": 3.642443298,
+              "quotient_device_seconds": 1.048083488,
+              "compiler_seconds": 0.024673756,
+              "private_bytes": 1520,
+              "selected": false,
+              "source_sha3": "edd13c778e6c03de6cd6da2718f5dbb40556b05df76a4de43208d1eb5fd2b9cf"
+            }
+          ]
+        },
+        {
+          "role": "candidate",
+          "pair": 1,
+          "cpu_identity_seconds": 9.847941727,
+          "hash_seconds": 9.544610246,
+          "recursive_proofs": [
+            {
+              "proof_wall_seconds": 3.635537191,
+              "quotient_device_seconds": 1.048914304,
+              "compiler_seconds": 0.024231289,
+              "private_bytes": 1520,
+              "selected": false,
+              "source_sha3": "edd13c778e6c03de6cd6da2718f5dbb40556b05df76a4de43208d1eb5fd2b9cf"
+            },
+            {
+              "proof_wall_seconds": 3.644939599,
+              "quotient_device_seconds": 1.049091264,
+              "compiler_seconds": 0.024750219,
+              "private_bytes": 1520,
+              "selected": false,
+              "source_sha3": "edd13c778e6c03de6cd6da2718f5dbb40556b05df76a4de43208d1eb5fd2b9cf"
+            }
+          ]
+        },
+        {
+          "role": "candidate",
+          "pair": 2,
+          "cpu_identity_seconds": 9.958018367,
+          "hash_seconds": 9.660755292,
+          "recursive_proofs": [
+            {
+              "proof_wall_seconds": 3.659835045,
+              "quotient_device_seconds": 1.049844064,
+              "compiler_seconds": 0.026423785,
+              "private_bytes": 1520,
+              "selected": false,
+              "source_sha3": "edd13c778e6c03de6cd6da2718f5dbb40556b05df76a4de43208d1eb5fd2b9cf"
+            },
+            {
+              "proof_wall_seconds": 3.696751608,
+              "quotient_device_seconds": 1.04957184,
+              "compiler_seconds": 0.024436645,
+              "private_bytes": 1520,
+              "selected": false,
+              "source_sha3": "edd13c778e6c03de6cd6da2718f5dbb40556b05df76a4de43208d1eb5fd2b9cf"
+            }
+          ]
+        },
+        {
+          "role": "baseline",
+          "pair": 2,
+          "cpu_identity_seconds": 8.763729858,
+          "hash_seconds": 8.503313281,
+          "recursive_proofs": [
+            {
+              "proof_wall_seconds": 3.63543414,
+              "quotient_device_seconds": 1.049312672,
+              "compiler_seconds": 0.02517263,
+              "private_bytes": 1520,
+              "selected": false,
+              "source_sha3": "edd13c778e6c03de6cd6da2718f5dbb40556b05df76a4de43208d1eb5fd2b9cf"
+            },
+            {
+              "proof_wall_seconds": 3.644968686,
+              "quotient_device_seconds": 1.04920272,
+              "compiler_seconds": 0.024837154,
+              "private_bytes": 1520,
+              "selected": false,
+              "source_sha3": "edd13c778e6c03de6cd6da2718f5dbb40556b05df76a4de43208d1eb5fd2b9cf"
+            }
+          ]
+        }
+      ],
+      "repeated_source_medians": {
+        "baseline": {
+          "recursive_proof_wall_seconds": 3.643705992,
+          "quotient_device_seconds": 1.048643104,
+          "cpu_identity_seconds": 8.765305209000001
+        },
+        "candidate": {
+          "recursive_proof_wall_seconds": 3.6708456035,
+          "quotient_device_seconds": 1.049331552,
+          "cpu_identity_seconds": 9.902980047
+        }
+      },
+      "candidate_to_baseline_ratios": {
+        "recursive_proof_wall_seconds": 1.00744835383524,
+        "quotient_device_seconds": 1.0006565131619842,
+        "cpu_identity_seconds": 1.1297929519706698
+      },
+      "complete_workflow": false,
+      "performance_qualified": false,
+      "scope": "Component observations only. Compiler clocks are nested in proof wall time. Repeated-source timings do not prove driver-cache hits or qualify workflow speedups."
+    }
+  },
+  "cpu_worker_measurements": {
+    "source_screen": ".tools/full-workflow-profile/optimization-screen-packed-r2.json",
+    "role_to_workers": {
+      "baseline": {
+        "measurements": {
+          "1": {
+            "full_batch_seconds": 27.729366028,
+            "single_tail_seconds": 1.7248531814999999,
+            "repetitions": 2
+          },
+          "2": {
+            "full_batch_seconds": 14.0250295795,
+            "single_tail_seconds": 1.7258082410000002,
+            "repetitions": 2
+          },
+          "4": {
+            "full_batch_seconds": 7.224095224,
+            "single_tail_seconds": 1.724444247,
+            "repetitions": 2
+          },
+          "8": {
+            "full_batch_seconds": 3.714886203,
+            "single_tail_seconds": 1.7244268395,
+            "repetitions": 2
+          },
+          "16": {
+            "full_batch_seconds": 2.0509656815,
+            "single_tail_seconds": 1.7228781039999999,
+            "repetitions": 2
+          }
+        },
+        "selected_workers": 16
+      },
+      "candidate": {
+        "measurements": {
+          "1": {
+            "full_batch_seconds": 29.566510710499998,
+            "single_tail_seconds": 1.8381349695,
+            "repetitions": 2
+          },
+          "2": {
+            "full_batch_seconds": 14.974220146499999,
+            "single_tail_seconds": 1.8412609545,
+            "repetitions": 2
+          },
+          "4": {
+            "full_batch_seconds": 7.717885702,
+            "single_tail_seconds": 1.8410577485,
+            "repetitions": 2
+          },
+          "8": {
+            "full_batch_seconds": 3.9760393115,
+            "single_tail_seconds": 1.8335654125,
+            "repetitions": 2
+          },
+          "16": {
+            "full_batch_seconds": 2.1436198975,
+            "single_tail_seconds": 1.8563293595,
+            "repetitions": 2
+          }
+        },
+        "selected_workers": 16
+      }
+    },
+    "selected_optimization": false,
+    "reason": "S-box-only packing regressed serial and parallel identity hashing",
+    "complete_workflow": false,
+    "performance_qualified": false
+  },
+  "combined": {
+    "manifest": {
+      "path": ".tools/full-workflow-profile/prototypes/opencl-block32-indirect/manifest.json",
+      "sha256": "4b0da302bdf99bbdd7d1f49aee578e67fe5787cf3e30237e2258c49d94dc4bd6"
+    },
+    "source_sha256": {
+      "lattica-prover-p3/src/block_v2/gpu_hash/engine/quotient/specialized.rs": "a07a5096c2fd94a31e07d73292a1763f6ffdcda1e165fa567d126fa7fbb4ea13",
+      "lattica-prover-p3/src/block_v2/gpu_hash/engine/quotient_kernels.cl": "62a31ace4415adfe87e555673b5807c12f0ce0b3d19006151ff5ef7cf4221963",
+      "lattica-prover-p3/src/block_v2/quotient_program/specialize.rs": "9c9e1dff86ef4f9f5a34d63d6557a1db03f2d043c1b758aafe26a3fe3f516c91",
+      "lattica-prover-p3/src/proving/proof_storage/outer_ocl.rs": "b6db128d7e752896397a31b97bda703c4351056c30ce4d745a460a9011d06104",
+      "lattica-prover-p3/src/proving/proof_storage/outer_ocl/tests.rs": "d5468808467ee62ef0ec6e8045bb9dc1b938828534c5a06661828da653cc6136"
+    },
+    "private_memory_limit_bytes": 512,
+    "representative_recursive_private_bytes": 96,
+    "unchanged_limits_gib": {
+      "standard_worker": 32,
+      "expanded_n4_worker": 36,
+      "native_operation": 24,
+      "registered_operation": 32,
+      "managed_gpu": 8,
+      "opaque_driver": 4
+    },
+    "outer_wrapper_host_bytes": 11141326,
+    "outer_wrapper_host_increase_bytes": 8192,
+    "repeated_source_recursive_proof_seconds": 2.953832084,
+    "mean_quotient_device_seconds": 0.35374952,
+    "core_tests_passed": 149,
+    "focused_python_tests_passed": 39,
+    "catalogs": [
+      {
+        "family": "native",
+        "rows": 317,
+        "changed_numeric_rows": 0
+      },
+      {
+        "family": "registered",
+        "rows": 72,
+        "changed_numeric_rows": 0
+      }
+    ],
+    "generated_tables_reproduced": true,
+    "validation": [
+      {
+        "label": "ffc-combined-r1-core-build",
+        "record": ".tools/full-workflow-candidate/.tools/pq-opencl-opt/runs/ffc-combined-r1-core-build.json",
+        "record_sha256": "ee3780c37ba4b46e79b85076adc5ddcd435a90624f6615165a4ae47e18712c48",
+        "raw_log_sha256": "17a1101dca6b95fd00adcef03f1b90c511c452173aab392cdf34c45fdf576bf2",
+        "source_manifest_sha256": "7129b8993553b22954b254f69deb4fcda8b9b86a42a5b94937c1630e1168870a"
+      },
+      {
+        "label": "ffc-combined-r1-core-tests",
+        "record": ".tools/full-workflow-candidate/.tools/pq-opencl-opt/runs/ffc-combined-r1-core-tests.json",
+        "record_sha256": "57b1b1435a92be5a4de6ddfaa49bdeaa36c27ab26978cd6b4a237a72da9bae78",
+        "raw_log_sha256": "52f86750862e80b36b2b2927086e9e334b8b3a5f11cccf54e4c793a21ebb39d9",
+        "source_manifest_sha256": "7129b8993553b22954b254f69deb4fcda8b9b86a42a5b94937c1630e1168870a"
+      },
+      {
+        "label": "ffc-combined-r1-research-build",
+        "record": ".tools/full-workflow-candidate/.tools/pq-opencl-opt/runs/ffc-combined-r1-research-build.json",
+        "record_sha256": "2a69bf42287aede623fd847a919810932cda1ee8fbc2412bf4cfabb40dfad2a4",
+        "raw_log_sha256": "be32fc2269b8cdcc52107e59882ae1d97b88b52e6517fac289d6099b3d8cdb99",
+        "source_manifest_sha256": "7129b8993553b22954b254f69deb4fcda8b9b86a42a5b94937c1630e1168870a"
+      },
+      {
+        "label": "ffc-combined-r1-serial",
+        "record": ".tools/full-workflow-candidate/.tools/pq-opencl-opt/runs/ffc-combined-r1-serial.json",
+        "record_sha256": "4eee40dc0d3ed01062b3c886aa1f26ab92470819a027b7fe478dc7e4cc9d695a",
+        "raw_log_sha256": "be296b75b52fb61fee71ce275fe5f5937eac1a34604278ea2517d95d46af3b5d",
+        "source_manifest_sha256": "7129b8993553b22954b254f69deb4fcda8b9b86a42a5b94937c1630e1168870a"
+      },
+      {
+        "label": "ffc-combined-r1-native",
+        "record": ".tools/full-workflow-candidate/.tools/pq-opencl-opt/runs/ffc-combined-r1-native.json",
+        "record_sha256": "7423c2815f2548f8c5fa2d1f878b356c3e176b762ce436b1bf7981518ced11b6",
+        "raw_log_sha256": "0db679dd05b4de4115bceec4893694f39dbf8e8ea782292ded52c78208b9142a",
+        "source_manifest_sha256": "7129b8993553b22954b254f69deb4fcda8b9b86a42a5b94937c1630e1168870a"
+      },
+      {
+        "label": "ffc-combined-r1-owned-identity",
+        "record": ".tools/full-workflow-candidate/.tools/pq-opencl-opt/runs/ffc-combined-r1-owned-identity.json",
+        "record_sha256": "96eac46aae2523bded216dde18cc63100840dc41625a7510d9e2288a287be936",
+        "raw_log_sha256": "acf2084568d59650f2a2902cea7cfd9d8483a0f1631c424fe2b3f5a7b8c88b42",
+        "source_manifest_sha256": "7129b8993553b22954b254f69deb4fcda8b9b86a42a5b94937c1630e1168870a"
+      },
+      {
+        "label": "ffc-combined-r1-preissue",
+        "record": ".tools/full-workflow-candidate/.tools/pq-opencl-opt/runs/ffc-combined-r1-preissue.json",
+        "record_sha256": "db38be4cb3c1b31050a738891829516218f9a9447117c24836237509426b499f",
+        "raw_log_sha256": "86a978ebd98b5c5aeaf5a0b4d92962d540662e4e797877e350d113c5865a2288",
+        "source_manifest_sha256": "7129b8993553b22954b254f69deb4fcda8b9b86a42a5b94937c1630e1168870a"
+      },
+      {
+        "label": "ffc-combined-r1-native-catalog",
+        "record": ".tools/full-workflow-candidate/.tools/pq-opencl-opt/runs/ffc-combined-r1-native-catalog.json",
+        "record_sha256": "dd721abeebfd28f27d98a26b60c51a07d2c73ff79aa4bab0260781c546901a21",
+        "raw_log_sha256": "4be08f2ad5eab23028a5357f12d5b60871aeb06c944b5327833033905614c212",
+        "source_manifest_sha256": "7129b8993553b22954b254f69deb4fcda8b9b86a42a5b94937c1630e1168870a"
+      },
+      {
+        "label": "ffc-combined-r1-registered-catalog",
+        "record": ".tools/full-workflow-candidate/.tools/pq-opencl-opt/runs/ffc-combined-r1-registered-catalog.json",
+        "record_sha256": "1001c39502500368061fd0e867766859d247c40da7ced3c973deee208f467209",
+        "raw_log_sha256": "4d77122d1dd469635669a0ccdacff2ea351848159496c1e58de11338045d53cb",
+        "source_manifest_sha256": "7129b8993553b22954b254f69deb4fcda8b9b86a42a5b94937c1630e1168870a"
+      }
+    ]
+  },
+  "limitations": [
+    "First uses of new kernel sources incurred substantial compiler time; repeated-source timings are reported separately and do not prove driver-cache hits.",
+    "Component gains are not complete-workflow speedups. The approved balanced fresh N3/N4 comparison, worker selection and final promotion remain pending.",
+    "The fused metadata prototype remains available; the existing 36 GiB N4 evidence is preserved in ringct-metadata-n4-expanded36-2026-11-05.json."
+  ]
+}

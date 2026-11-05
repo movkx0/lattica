@@ -35,7 +35,7 @@ __kernel void QUOTIENT_EVALUATE(__global const ulong *code, uint instructions,
     ulong last = gl_mul(z, gl_pow(transition, 0xfffffffeffffffffUL));
     ulong accumulator[QUOTIENT_DEGREE] = {0};
 #ifdef QUOTIENT_SPECIALIZED
-    QUOTIENT_SPECIALIZED(input, width, parameters, weights, scratch, rows, row,
+    QUOTIENT_SPECIALIZED(code, input, width, parameters, weights, scratch, rows, row,
         first, last, transition, accumulator);
 #else
     for (uint pc = 0; pc < instructions; ++pc) {

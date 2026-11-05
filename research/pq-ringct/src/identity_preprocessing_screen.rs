@@ -56,7 +56,12 @@ fn initialize() {
 }
 
 fn fixtures(count: usize) -> Vec<Fixture> {
+    fixtures_with_public_values(count, 1)
+}
+
+fn fixtures_with_public_values(count: usize, public_values: usize) -> Vec<Fixture> {
     assert!(matches!(count, 5 | 9 | 17 | 25));
+    assert!(matches!(public_values, 1 | 46));
     let mut fixtures = Vec::with_capacity(count);
     let mut retained_host = (fixtures.capacity() * core::mem::size_of::<Fixture>()) as u64;
     // Includes the next program's full compiler allowance, bounded input backing
@@ -92,8 +97,17 @@ fn fixtures(count: usize) -> Vec<Fixture> {
         };
         // Each compiler is bounded independently; the enclosing retained fixture
         // pool is checked above without increasing the worker or backend limits.
-        let mut builder = ScopedProgramBuilder::new_with_construction_limits(1, limits).unwrap();
+        let mut builder =
+            ScopedProgramBuilder::new_with_construction_limits(public_values, limits).unwrap();
         let outer_public = [builder.public(0).unwrap()];
+        let mut public = public.to_vec();
+        for i in 1..public_values {
+            let value = Val::from_u64(100 + index + i as u64);
+            let wire = builder.public(i).unwrap();
+            let constant = builder.constant(value);
+            builder.assert_equal(wire, constant);
+            public.push(value);
+        }
         let cap: Vec<_> = child
             .preprocessing_cap()
             .roots()
@@ -128,7 +142,7 @@ fn fixtures(count: usize) -> Vec<Fixture> {
         };
         let fixture = Fixture {
             program,
-            public: public.to_vec(),
+            public,
             witness: inputs.values,
             gpu_reference_identity,
         };
@@ -241,4 +255,104 @@ fn cpu_recursive_identity_worker_qualification() {
             })
         );
     }
+}
+
+#[test]
+#[ignore = "guarded detailed serial CPU identity clocks on actual recursive verifier programs"]
+fn cpu_recursive_serial_identity_diagnostic() {
+    assert_eq!(
+        std::env::var("LATTICA_RINGCT_FULL_WORKFLOW_PROFILE").as_deref(),
+        Ok("detail"),
+        "build with lattica-prover-p3/gpu-tuning and select detail profiling"
+    );
+    // Crypto outer programs expose 46 public fields. Keep the existing worker
+    // screen's one-public fixtures unchanged; this diagnostic also exercises
+    // the quotient shape observed in the complete workflow's crypto outers.
+    let fixtures = fixtures_with_public_values(5, 46);
+    for (index, fixture) in fixtures.iter().enumerate() {
+        initialize();
+        eprintln!("SERIAL_IDENTITY_BEGIN {index}");
+        let started = Instant::now();
+        let (registered, registration_reports) =
+            RegisteredProgram::new_with_cpu_identity_and_report(
+                MachineAir::from_shared_program(Arc::clone(&fixture.program)),
+                HOST,
+                REQUEST,
+            )
+            .unwrap();
+        let registration_ns = started.elapsed().as_nanos();
+        eprintln!("SERIAL_IDENTITY_END {index}");
+        assert_eq!(registration_reports.identity.policy, Policy::CpuRequired);
+        assert_eq!(
+            registration_reports.preprocessing.policy,
+            Policy::GpuRequired
+        );
+        assert!(registration_reports
+            .identity
+            .observations
+            .iter()
+            .all(|observation| {
+                observation.backend == lattica_prover_p3::proving::Backend::Cpu
+                    && observation.device_calls == 0
+            }));
+        if let Some(reference) = fixture.gpu_reference_identity {
+            assert_eq!(
+                registered.id(),
+                reference,
+                "independent GPU identity oracle"
+            );
+        }
+        let verified = index < 2;
+        let mut proof_wall_ns = None;
+        let mut verification_ns = None;
+        let mut proof_report = None;
+        if verified {
+            let started = Instant::now();
+            let (proof, report) = registered
+                .prove_with_request_and_report(&fixture.public, &fixture.witness, REQUEST)
+                .unwrap();
+            proof_wall_ns = Some(started.elapsed().as_nanos());
+            assert_eq!(report.policy, Policy::GpuRequired);
+            assert!(report.succeeded && report.stage_coverage_complete);
+            assert!(!report.completion_rejected);
+            assert_eq!(report.observation_errors, 0);
+            let started = Instant::now();
+            registered
+                .verifier()
+                .verify(&proof, &fixture.public)
+                .unwrap();
+            let mut changed_public = fixture.public.clone();
+            changed_public[0] += Val::ONE;
+            assert!(registered
+                .verifier()
+                .verify(&proof, &changed_public)
+                .is_err());
+            verification_ns = Some(started.elapsed().as_nanos());
+            proof_report = Some(report);
+        }
+        eprintln!(
+            "SERIAL_IDENTITY_DIAGNOSTIC {}",
+            serde_json::json!({
+                "schema": "ringct-serial-cpu-identity-diagnostic-v1",
+                "scope": "actual recursive metadata component, not whole RingCT workflow",
+                "program": index,
+                "height": fixture.program.height(),
+                "public_values": fixture.public.len(),
+                "registration_ns": registration_ns,
+                "cpu_identity_ns": registration_reports.identity.elapsed_ns,
+                "gpu_preprocessing_ns": registration_reports.preprocessing.elapsed_ns,
+                "identity": registered.id(),
+                "gpu_reference_checked": fixture.gpu_reference_identity.is_some(),
+                "independent_cpu_verified_proof": verified,
+                "changed_public_rejected": verified,
+                "proof_wall_ns": proof_wall_ns,
+                "verification_ns": verification_ns,
+                "proof_report": proof_report,
+                "complete_workflow": false,
+            })
+        );
+        drop(registered);
+        gpu_hash::shutdown().unwrap();
+    }
+    eprintln!("SERIAL_IDENTITY_COMPLETE programs=5 gpu_oracles=1 verified=2 mutations_rejected=2 complete_workflow=false");
 }
