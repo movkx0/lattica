@@ -181,7 +181,7 @@ impl Backend for CommittedBackend<'_> {
                 .filter(|&v| v <= i32::MAX as u32)
                 .expect("fixed signed affine bound")
         });
-        let values = witness_value!(self,
+        let values: [i64; D] = witness_value!(self,
             device => device.signed_sub_poly(&a.map(|v| v.value), &b.map(|v| v.value)),
             core::array::from_fn(|i| a[i].value - b[i].value), [0; D]);
         core::array::from_fn(|i| {

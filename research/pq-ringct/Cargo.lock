@@ -352,6 +352,7 @@ dependencies = [
  "p3-symmetric",
  "p3-uni-stark",
  "postcard",
+ "rayon",
  "serde",
  "serde_json",
  "sha3",

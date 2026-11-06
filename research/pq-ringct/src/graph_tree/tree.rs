@@ -13,6 +13,8 @@ use p3_batch_stark::BatchProof;
 #[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
 pub(crate) mod owned_parent;
 mod cache;
+#[cfg(feature = "cpu-proof-experiment")]
+mod cpu;
 mod prover;
 pub use prover::{GraphProver, ProofCache, ProvenNode};
 

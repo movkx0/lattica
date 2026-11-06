@@ -7,6 +7,7 @@ use crate::component_tree::{self, CompiledNode, Geometry, NodeKey, NodeProof};
 pub(crate) mod paired;
 #[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
 pub(crate) mod numeric_bounds;
+#[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
 pub(crate) mod numeric_leaves;
 #[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
 pub(crate) mod identity_keys;
@@ -102,6 +103,14 @@ fn admit(stage: &str, first: usize, units: usize, geometry: &Geometry, budget: u
     ))
 }
 
+#[cfg(feature = "cpu-proof-experiment")]
+fn admit_cpu(stage: &str, first: usize, units: usize, geometry: &Geometry, budget: u64) -> Result<()> {
+    let required = component_tree::cpu::admission(geometry).map_err(err)?;
+    require(required <= budget, &format!(
+        "{stage} CPU proof [{first}, {}) refused before registration: estimated work {required} exceeds allowance {budget}",
+        first.saturating_add(units)))
+}
+
 impl<'a> RequestProver<'a> {
     /// This budget gates actual retained-LDE geometry before registration.
     /// It does not bound peak RSS; callers still need process memory guards.
@@ -146,6 +155,13 @@ impl<'a> RequestProver<'a> {
         report: &mut RequestProvingReport,
     ) -> Result<ActualNode> {
         let geometry = compiled.geometry().map_err(err)?;
+        // The CPU port must check the complete work estimate for both leaves
+        // and merged parents; retained LDE bytes alone are only a lower bound.
+        #[cfg(feature = "cpu-proof-experiment")]
+        if self.execution.is_some_and(|execution|
+            execution.policy() == lattica_prover_p3::proving::Policy::CpuRequired) {
+            admit_cpu(stage, first, units, &geometry, self.outer_memory_budget_bytes)?;
+        }
         admit(
             stage,
             first,
@@ -264,6 +280,34 @@ impl<'a> RequestProver<'a> {
                 compiled,
                 &mut report,
             )?;
+            stack.push(node, |left, right| self.merge(left, right, &mut report))?;
+        }
+        self.finish(stack, request, &endpoints, report)
+    }
+
+    /// Opt-in CPU port of paired-v1. This does not admit the legacy GPU route.
+    #[cfg(feature = "cpu-proof-experiment")]
+    pub fn prove_paired_cpu(&self, request: &Request, context: &graph_tree::GraphContext)
+        -> Result<CompleteRequestProof> {
+        let execution = self.execution.ok_or_else(|| err("explicit CPU context required"))?;
+        require(execution.policy() == lattica_prover_p3::proving::Policy::CpuRequired,
+            "paired CPU execution requires CpuRequired")?;
+        require(self.native_cache.policy() == crate::proof_cache_policy::ProofCachePolicy::FreshOnly
+            && self.outer_cache.policy() == crate::proof_cache_policy::ProofCachePolicy::FreshOnly,
+            "CPU paired experiment requires fresh proofs")?;
+        let endpoints = request.endpoint_context_hint(context);
+        let mut report = RequestProvingReport::default();
+        let mut stack = CarryStack::new();
+        for span in request.shake_wrapper_schedule(ShakeWrapperLayout::PairedV1)?.groups() {
+            let mut children = Vec::with_capacity(2);
+            for index in span.first_segment..span.first_segment + span.segment_count {
+                children.push(request.prove_segment_with_context(index, Some(execution))?);
+                report.native_children += 1;
+            }
+            let compiled = crate::component_tree::cpu::compile_pair(request, context,
+                span.first_segment, &children).map_err(err)?;
+            drop(children);
+            let node = self.prove_node("paired CPU leaf", span.first_unit, span.units, compiled, &mut report)?;
             stack.push(node, |left, right| self.merge(left, right, &mut report))?;
         }
         self.finish(stack, request, &endpoints, report)

@@ -115,3 +115,36 @@ fn actual_complete_request_replays_verified_native_and_outer_caches() {
     assert_eq!(replay.report.outer_cache_hits, 3);
     eprintln!("complete_request_cache_replay={:?}", replay.report);
 }
+
+#[cfg(feature = "cpu-proof-experiment")]
+#[test]
+fn cpu_parent_admission_counts_workspace_beyond_retained_lde() {
+    // Actual two-child geometry from the guarded CPU profile. Retained LDE
+    // alone fits 36 GiB, but salts, trees and opening work make it too large.
+    let geometry = Geometry {
+        active_rows: 244432,
+        padded_rows: 262144,
+        wires: 0,
+        main_width: 94,
+        preprocessed_width: 200,
+        permutation_width_base: 51,
+        quotient_chunks: 16,
+        constraints: 0,
+        max_constraint_degree: 0,
+        fri_ali_bits: 0,
+        retained_lde_bytes: 31_675_383_808,
+    };
+    assert!(admit("parent", 0, 32, &geometry, 36 << 30).is_ok());
+    let message = admit_cpu("parent", 0, 32, &geometry, 36 << 30)
+        .unwrap_err()
+        .0;
+    for expected in [
+        "parent",
+        "CPU proof [0, 32)",
+        "before registration",
+        "45499809792",
+        "38654705664",
+    ] {
+        assert!(message.contains(expected), "missing {expected}: {message}");
+    }
+}

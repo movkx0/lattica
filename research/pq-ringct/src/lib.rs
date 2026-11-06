@@ -97,6 +97,10 @@ pub use transaction::{
 #[cfg(feature = "recursive")]
 pub mod execution;
 pub mod host_memory_profile;
+#[cfg(feature = "cpu-proof-experiment")]
+pub mod cpu_proof;
+#[cfg(all(feature = "cpu-proof-experiment", any(feature = "opencl", feature = "native-generation-oracle", feature = "native-spend-oracle")))]
+compile_error!("CPU proof experiments require a CPU-only build with fresh entropy");
 
 #[cfg(feature = "recursive")]
 pub mod proof_cache_policy;

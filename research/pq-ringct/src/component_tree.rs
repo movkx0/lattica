@@ -22,6 +22,8 @@ use p3_field::{PrimeCharacteristicRing, PrimeField64};
 use std::sync::Arc;
 
 mod cache;
+#[cfg(feature = "cpu-proof-experiment")]
+pub(crate) mod cpu;
 mod classified_verification;
 pub use crate::outer_cache::ProofCache as OuterProofCache;
 pub use cache::CacheOutcome;

@@ -1,4 +1,6 @@
 use super::*;
+#[cfg(feature = "recursive")]
+use p3_field::PrimeCharacteristicRing;
 use std::collections::BTreeSet;
 impl CommittedBackend<'_> {
     pub(super) fn expression(&mut self, expression: Expression) -> usize {

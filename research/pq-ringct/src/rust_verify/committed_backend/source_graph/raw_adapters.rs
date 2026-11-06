@@ -149,15 +149,20 @@ impl RawAdapterPlan {
         // These are the core raw API's admission checks, not estimates of the
         // complete constructor. The largest is the mat3 AES byte generator.
         let operation_host_allowance = add(32, add(mul(16, 37232 * 5 + 1)?, 80 << 10)?)?;
+        #[cfg(feature = "opencl")]
         let workspace = lattica_prover_p3::block_v2::native_gpu::RawPreparationWorkspaceStorage::fixed();
-        let operation_host_allowance = add(operation_host_allowance, workspace.host_bytes)?;
+        #[cfg(feature = "opencl")]
+        let (workspace_host, workspace_device) = (workspace.host_bytes, workspace.device_bytes);
+        #[cfg(not(feature = "opencl"))]
+        let (workspace_host, workspace_device) = (0, 0);
+        let operation_host_allowance = add(operation_host_allowance, workspace_host)?;
         // Each byte is one device u64. Operations scrub their used prefixes and
         // finish before returning. The separately charged scope workspace stays
         // live alongside transient operations that exceed its capacities. Hash
         // alpha dominates AES (32+5+256*66+186161 words), uniform mat3
         // (186160+5+1+37121), arithmetic and two-buffer node commitments.
         let device_bytes = if cfg!(feature = "opencl") {
-            add(backing::<u64>(add(alpha_input, 5 + 1 + 32 + 1)?)?, workspace.device_bytes)?
+            add(backing::<u64>(add(alpha_input, 5 + 1 + 32 + 1)?)?, workspace_device)?
         } else {
             0
         };

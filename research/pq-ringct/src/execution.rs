@@ -388,6 +388,16 @@ pub struct ProvingContext {
     phases: phase_lifecycle::ContextPhases,
 }
 impl ProvingContext {
+    /// Explicit CPU research envelope; legacy `cpu` retains its 32 GiB ceiling.
+    #[cfg(feature = "cpu-proof-experiment")]
+    pub(crate) fn cpu_research(profile: crate::host_memory_profile::HostMemoryProfile) -> Result<Self, String> {
+        use crate::host_memory_profile::HostMemoryProfile;
+        if !matches!(profile, HostMemoryProfile::Standard | HostMemoryProfile::Expanded36) {
+            return Err("unsupported CPU proof research profile".into());
+        }
+        Self::new(profile, profile.worker_bytes(), Request { policy: Policy::CpuRequired, emit_report: true },
+            Value::Null, #[cfg(feature = "opencl")] None)
+    }
     pub fn cpu(host_bytes: u64) -> Result<Self, String> {
         Self::new(
             crate::host_memory_profile::HostMemoryProfile::Standard,
@@ -614,6 +624,18 @@ impl ProvingContext {
             self.diagnostics
                 .failure("native_cpu", Value::Null, message, None);
         }
+        result
+    }
+
+    /// CPU experiment only. The coordinator retains the original cache claim
+    /// alongside the independent native-work claim until this call completes.
+    #[cfg(feature = "cpu-proof-experiment")]
+    pub(crate) fn with_retained_native_cpu<T>(&self, f: impl FnOnce() -> Result<T, String>) -> Result<T, String> {
+        if self.policy() != Policy::CpuRequired { return Err("CPU retention requires CpuRequired".into()); }
+        let _serial = self.registry.try_borrow_mut().map_err(|_| "reentrant CPU native work")?;
+        let start = Instant::now();
+        let result = f();
+        self.diagnostics.native_finished(start.elapsed().as_secs_f64(), result.is_ok());
         result
     }
     pub fn with_registered<T>(

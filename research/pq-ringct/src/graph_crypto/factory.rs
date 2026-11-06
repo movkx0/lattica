@@ -1,3 +1,9 @@
+#[derive(Default)]
+pub(crate) struct NativeCpuTimings {
+    pub witness_ns: u128,
+    pub proving_ns: u128,
+    pub verification_ns: u128,
+}
 use super::*;
 use aes::{
     cipher::{BlockEncrypt, KeyInit},
@@ -245,15 +251,25 @@ impl Request {
     /// Estimated admission is not a memory guarantee; use a process-level cap
     /// when benchmarking unmeasured batches. Never calls a full-request loop.
     pub fn prove_segment(&self, index: usize) -> Result<SegmentArtifact> {
+        self.prove_segment_profiled(index).map(|(artifact, _)| artifact)
+    }
+    pub(crate) fn prove_segment_profiled(&self, index: usize) -> Result<(SegmentArtifact, NativeCpuTimings)> {
+        let mut times = NativeCpuTimings::default();
         self.admit(index)?;
         let config = profile::make_cpu_config();
         let artifact = match (&self.partition, &self.payload) {
             (Partition::Aes(partition), Payload::Aes(key)) => {
                 let air = &partition.segments()[index];
+                let start = std::time::Instant::now();
                 let witness = air.generate(*key).map_err(err)?;
+                times.witness_ns = start.elapsed().as_nanos();
+                let start = std::time::Instant::now();
                 let proof =
                     p3_uni_stark::prove(&config, air, witness.trace, &witness.public_values);
+                times.proving_ns = start.elapsed().as_nanos();
+                let start = std::time::Instant::now();
                 p3_uni_stark::verify(&config, air, &proof, &witness.public_values).map_err(err)?;
+                times.verification_ns = start.elapsed().as_nanos();
                 SegmentArtifact::Aes(AesLaneSegmentProof {
                     public_values: witness.public_values,
                     proof,
@@ -261,10 +277,16 @@ impl Request {
             }
             (Partition::Shake(partition), Payload::Shake(input)) => {
                 let air = &partition.segments()[index];
+                let start = std::time::Instant::now();
                 let witness = air.generate(input).map_err(err)?;
+                times.witness_ns = start.elapsed().as_nanos();
+                let start = std::time::Instant::now();
                 let proof =
                     p3_uni_stark::prove(&config, air, witness.trace, &witness.public_values);
+                times.proving_ns = start.elapsed().as_nanos();
+                let start = std::time::Instant::now();
                 p3_uni_stark::verify(&config, air, &proof, &witness.public_values).map_err(err)?;
+                times.verification_ns = start.elapsed().as_nanos();
                 SegmentArtifact::Shake(LaneShakeProof {
                     public_values: witness.public_values,
                     proof,
@@ -276,7 +298,7 @@ impl Request {
             artifact.proof().degree_bits == self.segments[index].height.ilog2() as usize + 1,
             "crypto child logical trace height",
         )?;
-        Ok(artifact)
+        Ok((artifact, times))
     }
     /// Independent CPU checks authenticate cache contents, never graph coverage. Public
     /// endpoints are independently regenerated from the fixed request hints;

@@ -28,6 +28,7 @@ from host_memory_profiles import HOST_PROFILES, selected_host_profile
 GIB = 1 << 30
 PROFILES = {
     'build': (8, 6, 10, 2, 7200),
+    'cpu-proof': (47, 45, 49, 16, 1200),
     # Exact source planner only: no context, queue, runtime, or proof creation.
     # Modeled native/worker/device allowances stay unchanged. This lower real
     # process envelope cannot admit a proving or benchmarking command.
@@ -44,7 +45,7 @@ PROFILES = {
     'direct-full': (45, 43, 47, 8, 86400),
 }
 RESEARCH_CPU_PROFILES = frozenset(('research-compile', 'research-compile-large'))
-CPU_PROFILES = RESEARCH_CPU_PROFILES | frozenset(('build',))
+CPU_PROFILES = RESEARCH_CPU_PROFILES | frozenset(('build', 'cpu-proof'))
 GPU_SWITCHES = (
     'HASH', 'RETAIN_TREES', 'QUERY_GATHER', 'RESIDENT_LDE', 'OPENINGS',
     'QUOTIENT_FUSION', 'QUOTIENT_LDE', 'QUOTIENT_EVAL', 'QUOTIENT_RESIDENT',
@@ -891,6 +892,10 @@ def build_plan(args):
     complete_case = getattr(args, 'full_workflow_case', False)
     from cpu_generation_profile import selection as generation_selection
     generation_only = generation_selection(args, argv)
+    from cpu_proof_profile import selection as cpu_proof_selection
+    cpu_proof = cpu_proof_selection(args, argv)
+    require(not getattr(args, 'cpu_proof_detail', False) or cpu_proof is not None, 'CPU proof detail requires CPU proof mode')
+    require(args.profile != 'cpu-proof' or cpu_proof is not None, 'CPU proof profile requires CPU proof acceptance')
     require(getattr(args, 'full_workflow_profile', 'off') == 'off' or complete_case,
             'full-workflow profiling requires the complete case acceptance mode')
     identity_qualification = getattr(args, 'identity_cpu_qualification', False)
@@ -1012,15 +1017,15 @@ def build_plan(args):
                 and getattr(args, 'device_uuid', None) is not None
                 and getattr(args, 'public_hash_kernel', 'baseline') == 'baseline',
                 'serial identity diagnostic requires host trees, physical GPU pin and baseline hash')
-    identity_cpus = identity_physical_cpus() if complete_case or identity_qualification or native_quotient_screen or serial_identity_diagnostic or metadata_qualification or native_metadata_profile or scaling or metadata_stage_profile else None
-    if identity_qualification or native_quotient_screen or serial_identity_diagnostic or metadata_qualification or native_metadata_profile or scaling or metadata_stage_profile:
+    identity_cpus = identity_physical_cpus() if complete_case or identity_qualification or native_quotient_screen or serial_identity_diagnostic or metadata_qualification or native_metadata_profile or scaling or metadata_stage_profile or cpu_proof is not None else None
+    if identity_qualification or native_quotient_screen or serial_identity_diagnostic or metadata_qualification or native_metadata_profile or scaling or metadata_stage_profile or cpu_proof is not None:
         require(len(identity_cpus) == 16, '16-worker qualification requires sixteen physical cores')
     host_profile = selected_host_profile(getattr(args, 'host_profile', 'standard'))
-    require(host_profile['name'] == 'standard' or (args.profile == 'full' and
+    require(host_profile['name'] == 'standard' or cpu_proof is not None or (args.profile == 'full' and
             (complete_case or metadata_stage_profile and metadata_transactions == 4)),
             'expanded host profiles require an explicit complete RingCT workflow or N4 metadata profile')
-    if complete_case or metadata_stage_profile:
-        require(args.profile == 'full', 'complete workflow requires the full process profile')
+    if complete_case or metadata_stage_profile or cpu_proof is not None:
+        require(args.profile == ('cpu-proof' if cpu_proof is not None else 'full'), 'workflow process profile')
         maximum = host_profile['memory_max_bytes'] // GIB
         high = host_profile['memory_high_bytes'] // GIB
         admission = host_profile['fresh_memavailable_required_bytes'] // GIB
@@ -1063,7 +1068,7 @@ def build_plan(args):
                 'faithful public hash candidate requires the full GPU profile')
         require(args.expect_tests or direct_result or args.expect_result or complete_case,
                 'public hash candidate requires execution evidence acceptance')
-    require(sum((args.expect_tests, args.expect_result, direct_result, complete_case, generation_only is not None)) <= 1,
+    require(sum((args.expect_tests, args.expect_result, direct_result, complete_case, generation_only is not None, cpu_proof is not None)) <= 1,
             'choose one acceptance output')
     require(args.profile != 'direct-full' or direct_result or args.expect_tests,
             'direct-full requires direct research result or correctness tests')
@@ -1113,6 +1118,10 @@ def build_plan(args):
         'LATTICA_PROVING_REPORT': '1',
         'LATTICA_PROVING_POLICY': 'cpu-required' if args.profile in CPU_PROFILES else 'gpu-required',
     }
+    if cpu_proof is not None:
+        environment['LATTICA_RINGCT_HOST_PROFILE'] = host_profile['name']
+    if cpu_proof is not None and getattr(args, 'cpu_proof_detail', False):
+        environment.update(LATTICA_PROFILE='1', LATTICA_PROFILE_TIMELINE='1')
     cpu_target = getattr(args, 'build_cpu_target', None)
     from cpu_build_target import configure as configure_cpu_target
     configure_cpu_target(cpu_target, args.profile, argv, environment)
@@ -1307,7 +1316,7 @@ def build_plan(args):
             'comparison_baseline': False, 'performance_qualified': False,
             'benchmark': benchmark, 'correctness_label': correctness_label,
             'expect_tests': args.expect_tests, 'expect_result': args.expect_result,
-        'expect_direct_result': direct_result, 'generation_only': generation_only,
+        'expect_direct_result': direct_result, 'generation_only': generation_only, 'cpu_proof': cpu_proof,
             'full_workflow_case_environment': full_case_environment, 'direct_output_directory': direct_output,
             'build_label': args.build_label, 'record_artifacts': args.record_artifact,
             'launch': False, 'status': 'planned'}
@@ -1952,6 +1961,9 @@ def validate_active_hashx_preflight(content):
 
 def validate_output(log, plan):
     content = log.read_text(errors='replace')
+    if plan.get('cpu_proof') is not None:
+        from cpu_proof_profile import validate as validate_cpu_proof
+        plan['cpu_proof_acceptance'] = validate_cpu_proof(content, plan['cpu_proof'])
     if plan.get('generation_only') is not None:
         from cpu_generation_profile import validate
         plan['generation_only_acceptance'] = validate(content, plan['generation_only'])
@@ -2150,6 +2162,8 @@ def execute(args, plan):
         executable = executable_provenance(plan, before, runs)
         from cpu_generation_profile import require_build as require_generation_build
         require_generation_build(plan, executable)
+        from cpu_proof_profile import require_build as require_cpu_proof_build
+        require_cpu_proof_build(plan, executable)
         require_direct_ring_recursion_build(plan, executable)
         first_leaf_module('direct_ring_aggregate_guard').require_build(plan, executable, ROOT)
         recursion = plan.get('direct_ring_recursion_environment')
@@ -2344,6 +2358,8 @@ def identity_physical_cpus(allowed=None, topology=Path('/sys/devices/system/cpu'
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--profile', choices=PROFILES, required=True)
+    parser.add_argument('--cpu-proof-detail', action='store_true', help='Collect nested CPU prover stage observations.')
+    parser.add_argument('--cpu-proof', action='store_true', help='Accept CPU-only paired component/slice proof evidence.')
     parser.add_argument('--generation-only', action='store_true',
                         help='Accept only a CPU transaction-generation profile; never a GPU proof/workflow result.')
     parser.add_argument('--host-profile', choices=HOST_PROFILES, default='standard',

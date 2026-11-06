@@ -773,7 +773,7 @@ class CorrectnessPolicyTests(unittest.TestCase):
                     'cpu_quota', 'profile']:
             self.assertEqual(pinned[key], default[key])
         for profile in runner.CPU_PROFILES:
-            with self.subTest(profile=profile), self.assertRaisesRegex(ValueError, 'GPU profile'):
+            with self.subTest(profile=profile), self.assertRaisesRegex(ValueError, 'GPU profile|CPU proof profile'):
                 runner.build_plan(arguments(profile=profile, device_uuid=uuid))
         for invalid in ['', uuid + '\n', uuid + '\0', uuid.lower(), uuid[:-1], 7]:
             with self.subTest(uuid=invalid), self.assertRaisesRegex(ValueError, 'GPU UUID'):

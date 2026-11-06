@@ -91,6 +91,8 @@ impl Default for Budgets {
 }
 
 pub struct SpendPipeline {
+    #[cfg(feature = "cpu-proof-experiment")]
+    cpu_paired: bool,
     sources: SourceCache,
     algebra: graph_proofs::ProofCache,
     crypto: graph_crypto::ProofCache,
@@ -116,6 +118,16 @@ impl CompleteGraphProof {
     }
 }
 impl SpendPipeline {
+    /// Explicit CPU research port. Existing GPU layout admission is unchanged.
+    #[cfg(feature = "cpu-proof-experiment")]
+    pub fn with_cpu_paired_layout(mut self) -> Result<Self> {
+        if self.budgets.transcripts != TranscriptLayout::Serial
+            || self.cache_control.policy() != ProofCachePolicy::FreshOnly {
+            return Err(Error("CPU paired layout requires serial native SHAKE and fresh proofs".into()));
+        }
+        self.cpu_paired = true;
+        Ok(self)
+    }
     /// Select the wrapper research candidate independently of native batching,
     /// transcript layout, AES layout and proof-payload caching. PairedV1 is
     /// refused before any proof dispatch until resource and closure admission
@@ -150,6 +162,8 @@ impl SpendPipeline {
         let directory = directory.as_ref();
         let cache_control = Control::new(policy);
         Ok(Self {
+            #[cfg(feature = "cpu-proof-experiment")]
+            cpu_paired: false,
             sources: SourceCache::new_with_control(
                 directory.join("sources"),
                 budgets.cache_entry_bytes,
@@ -245,6 +259,11 @@ impl SpendPipeline {
         private_proof: &[u8],
         execution: Option<&ProvingContext>,
     ) -> Result<CompleteGraphProof> {
+        #[cfg(feature = "cpu-proof-experiment")]
+        if self.cpu_paired && !execution.is_some_and(|e|
+            e.policy() == lattica_prover_p3::proving::Policy::CpuRequired) {
+            return Err(Error("CPU paired layout requires an explicit CPU proving context".into()));
+        }
         if let Some(execution) = execution {
             execution.release_prepared().map_err(err)?;
         }
@@ -355,6 +374,8 @@ impl SpendPipeline {
         };
         let transcript_request = |operation| -> Result<CompleteRequestProof> {
             let registered = request(operation, 0)?;
+            #[cfg(feature = "cpu-proof-experiment")]
+            if self.cpu_paired { return requests.prove_paired_cpu(registered, context).map_err(err); }
             match self.budgets.transcripts {
                 TranscriptLayout::Serial => requests.prove_serial(registered, context).map_err(err),
                 TranscriptLayout::Wide {

@@ -319,6 +319,16 @@ fn reuse_distinct_inputs(context: ProvingContext) {
             0
         );
     } else {
+        #[cfg(feature = "cpu-proof-experiment")]
+        {
+            context.with_retained_native_cpu(|| {
+                assert!(context.release_prepared().is_err());
+                assert!(context.with_retained_native_cpu(|| Ok(())).is_err());
+                Ok(())
+            }).unwrap();
+            assert_eq!(context.report()["prepared_entries"], 1);
+            assert_eq!(context.report()["registrations"], 1);
+        }
         context.with_native_cpu(|| Ok(())).unwrap();
     }
     assert_eq!(context.report()["prepared_entries"], 0);
@@ -338,6 +348,7 @@ fn reuse_distinct_inputs(context: ProvingContext) {
         report["metadata_cache_payload_bytes"].as_u64().unwrap(),
         report["verifier_metadata_cache_bytes"].as_u64().unwrap()
             + report["identity_receipt_cache_bytes"].as_u64().unwrap()
+            + report["source_geometry_cache_limit_bytes"].as_u64().unwrap()
             + report["registration_telemetry_reserved_bytes"]
                 .as_u64()
                 .unwrap()
