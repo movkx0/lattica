@@ -7,6 +7,7 @@ mod arithmetic;
 mod inputs;
 mod jobs;
 mod scheduler;
+mod target;
 #[cfg(test)]
 mod tests;
 type Result<T> = std::result::Result<T, String>;
@@ -14,11 +15,7 @@ fn error(e: impl std::fmt::Display) -> String {
     e.to_string()
 }
 fn ensure(ok: bool, why: &str) -> Result<()> {
-    if ok {
-        Ok(())
-    } else {
-        Err(why.into())
-    }
+    if ok { Ok(()) } else { Err(why.into()) }
 }
 fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
@@ -27,6 +24,11 @@ fn hex(bytes: &[u8]) -> String {
 #[derive(Clone, Debug, serde::Serialize)]
 pub struct Options {
     pub cpu_variant: lattica_prover_p3::block_v2::cpu_commitment::Variant,
+    pub cpu_hash_kernel: lattica_prover_p3::block_v2::cpu_commitment::HashKernel,
+    pub identity_overlap: bool,
+    pub transaction: Option<usize>,
+    pub compare_target: bool,
+    pub candidate_first: bool,
     pub transactions: usize,
     pub workload: usize,
     pub workers: usize,
@@ -42,6 +44,11 @@ impl Options {
     fn parse(args: impl Iterator<Item = String>) -> Result<(Self, bool)> {
         let mut options = Self {
             cpu_variant: Default::default(),
+            cpu_hash_kernel: Default::default(),
+            identity_overlap: false,
+            transaction: None,
+            compare_target: false,
+            candidate_first: false,
             transactions: 3,
             workload: 0,
             workers: 1,
@@ -60,7 +67,26 @@ impl Options {
             ensure(seen.insert(key.clone()), "repeated option")?;
             let value = args.next().ok_or("every option requires a value")?;
             match key.as_str() {
-                "--cpu-variant" => options.cpu_variant = lattica_prover_p3::block_v2::cpu_commitment::Variant::parse(&value)?,
+                "--cpu-variant" => {
+                    options.cpu_variant =
+                        lattica_prover_p3::block_v2::cpu_commitment::Variant::parse(&value)?
+                }
+                "--cpu-hash-kernel" => {
+                    options.cpu_hash_kernel =
+                        lattica_prover_p3::block_v2::cpu_commitment::HashKernel::parse(&value)?
+                }
+                "--identity-overlap" | "--compare-target" | "--candidate-first" => {
+                    ensure(
+                        matches!(value.as_str(), "0" | "1"),
+                        "boolean option must be 0 or 1",
+                    )?;
+                    match key.as_str() {
+                        "--identity-overlap" => options.identity_overlap = value == "1",
+                        "--compare-target" => options.compare_target = value == "1",
+                        _ => options.candidate_first = value == "1",
+                    }
+                }
+                "--transaction" => options.transaction = Some(value.parse().map_err(error)?),
                 "--case" => {
                     options.transactions = match value.as_str() {
                         "n3" => 3,
@@ -122,6 +148,31 @@ impl Options {
             "native-mix requires request 0 and segments 1",
         )?;
         ensure(!options.input.as_os_str().is_empty(), "--input required")?;
+        ensure(
+            options.transaction.is_none_or(|i| i < options.transactions),
+            "transaction outside case",
+        )?;
+        ensure(
+            options.cpu_hash_kernel == Default::default() || options.cpu_variant.tiled(),
+            "interleaved hashes require a tiled CPU variant",
+        )?;
+        ensure(
+            !options.candidate_first || options.compare_target,
+            "candidate-first requires target comparison",
+        )?;
+        ensure(
+            !options.compare_target
+                || (options.transaction.is_some()
+                    && options.workers == 1
+                    && options.threads_per_proof == 16
+                    && options.repetitions == 1
+                    && !options.retain
+                    && options.segments == 2
+                    && matches!(options.mode.as_str(), "paired" | "graph-parent")
+                    && options.cpu_variant
+                        == lattica_prover_p3::block_v2::cpu_commitment::Variant::Combined),
+            "target comparison requires one transaction, combined, 1x16, two children, one repetition and no retention",
+        )?;
         Ok((options, generate))
     }
     fn host_bytes(&self) -> u64 {
@@ -178,7 +229,16 @@ pub fn main(args: impl Iterator<Item = String>) -> Result<()> {
                     graph[report.id].cost = u64::try_from(report.elapsed_ns).map_err(error)?;
                 }
             }
-            records.push(scheduler::run(&options, graph, repetition)?);
+            let mut record = scheduler::run(&options, graph, repetition)?;
+            for job in &mut record.jobs {
+                if matches!(job.kind, "native" | "arithmetic") {
+                    // Conservatively charge the entire shared input-loading /
+                    // metadata-lowering stage to each native proof. Do not hide
+                    // this preparation cost behind an already-loaded fixture.
+                    job.cold_input_service_upper_ns = Some(job.service_ns + preparation_ns);
+                }
+            }
+            records.push(record);
         }
     }
     if let Some(profiling) = profiling {
@@ -186,11 +246,11 @@ pub fn main(args: impl Iterator<Item = String>) -> Result<()> {
     }
     println!(
         "CPU_PROOF_PROFILE {}",
-        serde_json::json!({"schema":"ringct-cpu-proof-profile-v2",
+        serde_json::json!({"schema":"ringct-cpu-proof-profile-v3",
         "backend":"cpu", "layout":"paired-v1", "options":options,"input_sha3_256":input_digest,
         "preparation_ns":preparation_ns,"records":records,"gpu_contexts":0,"gpu_proof_calls":0,
         "fresh_stark_randomness":true,"complete_workflow":false,"cleanup_complete":true,
-        "timing_scope":"slice wall includes mutation checks and proof serialization; arithmetic proving includes witness and first verification",
+        "timing_scope":"service_ns includes per-proof preparation, compilation-to-proof queueing, proving, serialization and verification; excludes negative mutation checks; native cold_input_service_upper_ns additionally charges the entire shared input-loading/lowering stage; target service starts at compilation with verified children available; slice wall includes dependencies and cleanup",
         "memory_admission":"CPU research estimates plus external cgroup; not measured allocation bounds"})
     );
     Ok(())

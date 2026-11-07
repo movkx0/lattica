@@ -12,6 +12,33 @@ use rayon::prelude::*;
 use std::{sync::Mutex, time::Instant};
 
 type Packed = <Val as Field>::Packing;
+mod interleaved;
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum HashKernel {
+    #[default]
+    Existing,
+    Interleaved2,
+    Interleaved4,
+}
+impl HashKernel {
+    pub fn parse(value: &str) -> Result<Self, String> {
+        match value {
+            "existing" => Ok(Self::Existing),
+            "interleaved2" => Ok(Self::Interleaved2),
+            "interleaved4" => Ok(Self::Interleaved4),
+            _ => Err("CPU hash kernel must be existing, interleaved2, or interleaved4".into()),
+        }
+    }
+    pub fn states(self) -> usize {
+        match self {
+            Self::Existing => 1,
+            Self::Interleaved2 => 2,
+            Self::Interleaved4 => 4,
+        }
+    }
+}
 type Digest = [Val; 4];
 const SALT_WIDTH: usize = 4;
 pub const HASH_SCRATCH_BYTES: usize = 64 << 20;
@@ -61,6 +88,7 @@ pub struct CpuMmcs {
     rng: Mutex<ChaCha20Rng>,
     variant: Variant,
     tile_rows: usize,
+    hash_kernel: HashKernel,
 }
 impl Clone for CpuMmcs {
     fn clone(&self) -> Self {
@@ -72,6 +100,7 @@ impl Clone for CpuMmcs {
             rng: Mutex::new(self.rng.lock().unwrap().clone()),
             variant: self.variant,
             tile_rows: self.tile_rows,
+            hash_kernel: self.hash_kernel,
         }
     }
 }
@@ -85,6 +114,7 @@ impl CpuMmcs {
             rng: Mutex::new(rng),
             variant: Variant::Reference,
             tile_rows: TILE_ROWS,
+            hash_kernel: HashKernel::Existing,
         }
     }
     pub fn with_variant(mut self, variant: Variant) -> Self {
@@ -92,6 +122,13 @@ impl CpuMmcs {
         // Keep the memory-only control aligned with its replay checkpoint;
         // the tiled candidates use the separately screened hash tile.
         self.tile_rows = if variant.tiled() { TILE_ROWS } else { 1024 };
+        self
+    }
+    /// Explicit per-config research selection. The portable existing kernel is
+    /// also available in SIMD builds; no runtime/global environment selection.
+    pub fn with_hash_kernel(mut self, kernel: HashKernel) -> Self {
+        assert!(kernel == HashKernel::Existing || self.variant.tiled());
+        self.hash_kernel = kernel;
         self
     }
     /// Explicit research-only tile selection; never a process-global switch.
@@ -248,14 +285,26 @@ impl CpuMmcs {
                     }
                     column += matrix.width() + SALT_WIDTH;
                 }
-                for (batch, dest) in out.chunks_mut(packed_width).enumerate() {
-                    let digest: [Packed; 4] = self.hash.hash_iter(
-                        packed[batch * columns..(batch + 1) * columns]
-                            .iter()
-                            .copied(),
-                    );
-                    for (lane, value) in dest.iter_mut().enumerate() {
-                        *value = std::array::from_fn(|col| digest[col].as_slice()[lane]);
+                let states = self.hash_kernel.states();
+                for (group, dest) in out.chunks_mut(packed_width * states).enumerate() {
+                    let first = group * states * columns;
+                    let count = dest.len().div_ceil(packed_width);
+                    let rows = &packed[first..first + count * columns];
+                    let mut digests = [[Packed::default(); 4]; 4];
+                    match self.hash_kernel {
+                        HashKernel::Existing => {
+                            digests[0] = self.hash.hash_iter(rows.iter().copied())
+                        }
+                        HashKernel::Interleaved2 => {
+                            digests[..2].copy_from_slice(&interleaved::hash::<2>(rows, columns))
+                        }
+                        HashKernel::Interleaved4 => digests = interleaved::hash::<4>(rows, columns),
+                    }
+                    for (batch, dest) in dest.chunks_mut(packed_width).enumerate() {
+                        for (lane, value) in dest.iter_mut().enumerate() {
+                            *value =
+                                std::array::from_fn(|col| digests[batch][col].as_slice()[lane]);
+                        }
                     }
                 }
             });
@@ -351,9 +400,20 @@ impl CpuMmcs {
             layers.push(next);
         }
         let cap = MerkleCap::new(layers[layers.len() - 1 - cap_height].clone());
-        eprintln!("CPU_COMMITMENT {{\"variant\":\"{}\",\"height\":{},\"matrices\":{},\"salt_bytes\":{},\"tree_bytes\":{},\"salt_ns\":{},\"leaf_ns\":{},\"hash_scratch_limit\":{}}}",
-            self.variant.name(),max_height,matrices.len(),salts.iter().map(Salts::bytes).sum::<usize>(),
-            layers.iter().map(|v| v.capacity()*size_of::<Digest>()).sum::<usize>(),salt_ns,leaf_ns,HASH_SCRATCH_BYTES);
+        eprintln!(
+            "CPU_COMMITMENT {{\"variant\":\"{}\",\"height\":{},\"matrices\":{},\"salt_bytes\":{},\"tree_bytes\":{},\"salt_ns\":{},\"leaf_ns\":{},\"hash_scratch_limit\":{}}}",
+            self.variant.name(),
+            max_height,
+            matrices.len(),
+            salts.iter().map(Salts::bytes).sum::<usize>(),
+            layers
+                .iter()
+                .map(|v| v.capacity() * size_of::<Digest>())
+                .sum::<usize>(),
+            salt_ns,
+            leaf_ns,
+            HASH_SCRATCH_BYTES
+        );
         (
             cap,
             Tree {
@@ -451,9 +511,15 @@ mod tests {
                 .unwrap()
                 .install(|| {
                     for tile in [256, 1024, 4096] {
-                        for variant in [Variant::Hash, Variant::Memory, Variant::Combined] {
+                        for (variant, kernel) in [
+                            (Variant::Hash, HashKernel::Existing),
+                            (Variant::Memory, HashKernel::Existing),
+                            (Variant::Combined, HashKernel::Existing),
+                            (Variant::Combined, HashKernel::Interleaved2),
+                            (Variant::Combined, HashKernel::Interleaved4),
+                        ] {
                             let reference = config(Variant::Reference, tile);
-                            let candidate = config(variant, tile);
+                            let candidate = config(variant, tile).with_hash_kernel(kernel);
                             // Successive commitments also verify the continuing salt stream.
                             for heights in [vec![1], vec![4, 2], vec![2048, 1024, 2048]] {
                                 let matrices: Vec<_> = heights
@@ -512,9 +578,9 @@ mod pcs_tests {
     use p3_uni_stark::StarkGenericConfig;
     #[test]
     fn bounded_openings_match_complete_reference_transcript() {
-        let run = |variant| {
+        let run = |variant, kernel| {
             // Fixed public seeds only for differential testing, not proving APIs.
-            let config = profile::cpu_preprocessing_config(variant);
+            let config = profile::cpu_preprocessing_config_with_kernel(variant, kernel);
             let reference = profile::cpu_preprocessing_config(Variant::Reference);
             let pcs = config.pcs();
             let domains: Vec<_> = [8, 16, 4]
@@ -558,9 +624,12 @@ mod pcs_tests {
                 .unwrap();
             postcard::to_allocvec(&(cap, values, proof)).unwrap()
         };
-        let expected = run(Variant::Reference);
+        let expected = run(Variant::Reference, HashKernel::Existing);
         for variant in [Variant::Hash, Variant::Memory, Variant::Combined] {
-            assert_eq!(run(variant), expected);
+            assert_eq!(run(variant, HashKernel::Existing), expected);
+        }
+        for kernel in [HashKernel::Interleaved2, HashKernel::Interleaved4] {
+            assert_eq!(run(Variant::Combined, kernel), expected);
         }
     }
 }

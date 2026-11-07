@@ -1,5 +1,25 @@
 //! CPU research adapters retain the actual registered graph key and scope.
 use super::*;
+impl NodeKey {
+    /// Newly retained key backing. The shared plan is already held by the
+    /// coordinator's live input Case and remains under its metadata reservation.
+    pub(crate) fn cpu_retained_key_bytes(&self) -> Result<u64> {
+        let cap = self
+            .cap
+            .capacity()
+            .checked_mul(std::mem::size_of::<[Val; 4]>())
+            .ok_or_else(|| err("key capacity overflow"))?;
+        let bytes = self
+            .verifier
+            .cached_metadata_bytes()
+            .checked_add(cap)
+            .and_then(|n| {
+                n.checked_add(std::mem::size_of::<Self>() + 4 * std::mem::size_of::<usize>())
+            })
+            .ok_or_else(|| err("key capacity overflow"))?;
+        u64::try_from(bytes).map_err(err)
+    }
+}
 use crate::{component_tree::cpu::Timings, execution::ProvingContext};
 use lattica_prover_p3::proving::Policy;
 use sha3::{Digest, Sha3_256};

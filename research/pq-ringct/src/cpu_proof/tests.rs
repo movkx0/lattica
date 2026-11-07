@@ -1,4 +1,35 @@
 use super::*;
+#[test]
+fn cold_target_selection_and_kernel_validation() {
+    let parse = |args: &[&str]| Options::parse(args.iter().map(|s| s.to_string()));
+    for args in [
+        vec!["--input", "x", "--cpu-hash-kernel", "interleaved2"],
+        vec!["--input", "x", "--transaction", "3"],
+        vec!["--input", "x", "--candidate-first", "1"],
+        vec!["--input", "x", "--compare-target", "1"],
+        vec!["--input", "x", "--identity-overlap", "yes"],
+    ] {
+        assert!(parse(&args).is_err());
+    }
+    let (options, _) = parse(&[
+        "--input",
+        "x",
+        "--cpu-variant",
+        "combined",
+        "--cpu-hash-kernel",
+        "interleaved2",
+        "--identity-overlap",
+        "1",
+        "--mode",
+        "paired",
+        "--transaction",
+        "0",
+        "--compare-target",
+        "1",
+    ])
+    .unwrap();
+    assert!(options.compare_target && options.identity_overlap);
+}
 
 #[test]
 fn research_profile_is_explicit_and_keeps_legacy_cpu_cap() {
@@ -17,25 +48,29 @@ fn research_profile_is_explicit_and_keeps_legacy_cpu_cap() {
 }
 #[test]
 fn worker_budget_is_shared_and_options_are_unambiguous() {
-    assert!(Options::parse(
-        [
-            "--input",
-            "fixture",
-            "--mode",
-            "native-mix",
-            "--segments",
-            "1"
-        ]
-        .map(str::to_owned)
-        .into_iter()
-    )
-    .is_ok());
-    assert!(Options::parse(
-        ["--input", "fixture", "--mode", "native-mix"]
+    assert!(
+        Options::parse(
+            [
+                "--input",
+                "fixture",
+                "--mode",
+                "native-mix",
+                "--segments",
+                "1"
+            ]
             .map(str::to_owned)
             .into_iter()
-    )
-    .is_err());
+        )
+        .is_ok()
+    );
+    assert!(
+        Options::parse(
+            ["--input", "fixture", "--mode", "native-mix"]
+                .map(str::to_owned)
+                .into_iter()
+        )
+        .is_err()
+    );
     for (workers, threads) in [(1, 16), (2, 8), (4, 4), (8, 2), (16, 1)] {
         let args = [
             "--input",

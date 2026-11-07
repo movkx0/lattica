@@ -2,8 +2,8 @@
 use super::program::Val;
 use super::{ExecutionError, MachineAir};
 use crate::block_v2::profile::{self, Config};
-use p3_air::{symbolic::AirLayout, BaseAir};
-use p3_batch_stark::{prove_batch, verify_batch, BatchProof, ProverData, StarkInstance};
+use p3_air::{BaseAir, symbolic::AirLayout};
+use p3_batch_stark::{BatchProof, ProverData, StarkInstance, prove_batch, verify_batch};
 use p3_field::PrimeCharacteristicRing;
 use p3_field::PrimeField64;
 
@@ -15,17 +15,17 @@ pub(crate) const NATIVE_VERIFIER_COMPONENT_BYTES: u64 = 257 << 20;
 pub(crate) mod cache_storage;
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 mod consuming;
-mod identity_receipt;
-mod identity_stream;
 pub mod identity_batch;
 pub mod identity_cpu;
+mod identity_receipt;
+mod identity_stream;
 #[cfg(feature = "verifier-metadata-screen")]
 pub mod metadata_screen;
 pub use identity_receipt::RegisteredIdentityReceipt;
 #[cfg(test)]
 mod identity_receipt_tests;
 mod proof_capacity;
-pub use proof_capacity::retained_proof_capacity_bytes;
+pub use proof_capacity::{retained_native_proof_capacity_bytes, retained_proof_capacity_bytes};
 mod verification_call;
 mod verification_outcome;
 pub use verification_outcome::RegisteredVerificationFailure;
@@ -63,7 +63,11 @@ struct PreparedProgram {
 
 enum SetupIdentity<'a> {
     Standalone(Option<&'a RegisteredIdentityReceipt>),
-Cpu(Option<identity_cpu::CompletedIdentityPrefix>, &'a mut Option<crate::proving::Report>, bool),
+    Cpu(
+        Option<identity_cpu::CompletedIdentityPrefix>,
+        &'a mut Option<crate::proving::Report>,
+        bool,
+    ),
     #[cfg(feature = "gpu-tuning")]
     Prefix(identity_batch::CompletedIdentityPrefix),
     RegistryCap(&'a [[Val; 4]]),
@@ -509,8 +513,11 @@ fn program_identity_device(
     })?;
     if let Some(hint) = hint {
         if let Some(id) = hint.matching_id(&cache_fingerprint) {
-            eprintln!("bounded_gpu_program_identity_reuse hit=true fields={} receipt_bytes={} full_stream_checked=true",
-                cache_fingerprint.fields(), hint.accounted_bytes());
+            eprintln!(
+                "bounded_gpu_program_identity_reuse hit=true fields={} receipt_bytes={} full_stream_checked=true",
+                cache_fingerprint.fields(),
+                hint.accounted_bytes()
+            );
             return Ok((id, hint.clone(), true));
         }
     }
@@ -523,18 +530,30 @@ fn program_identity_device(
         crate::proving::Stage::Preprocessing,
     )?;
     let after = session.stats();
-    eprintln!("bounded_gpu_program_identity fields={} batches={} device_ns={} uploaded_bytes={} downloaded_bytes={}",
-        after.public_hash_fields - before.public_hash_fields, after.public_hash_batches - before.public_hash_batches,
+    eprintln!(
+        "bounded_gpu_program_identity fields={} batches={} device_ns={} uploaded_bytes={} downloaded_bytes={}",
+        after.public_hash_fields - before.public_hash_fields,
+        after.public_hash_batches - before.public_hash_batches,
         after.public_hash_device_ns - before.public_hash_device_ns,
-        after.uploaded_bytes - before.uploaded_bytes, after.downloaded_bytes - before.downloaded_bytes);
-    eprintln!("bounded_gpu_manifest host_batch_bytes={} fingerprint_capacity_bytes={} fingerprint_allowance_bytes={}",
-        4096 * 8, fingerprint.capacity() * 8, super::fingerprint::bounded::HOST_BYTES);
+        after.uploaded_bytes - before.uploaded_bytes,
+        after.downloaded_bytes - before.downloaded_bytes
+    );
+    eprintln!(
+        "bounded_gpu_manifest host_batch_bytes={} fingerprint_capacity_bytes={} fingerprint_allowance_bytes={}",
+        4096 * 8,
+        fingerprint.capacity() * 8,
+        super::fingerprint::bounded::HOST_BYTES
+    );
     #[cfg(test)]
     identity_receipt::full_gpu_hash_completed();
     let field_count = cache_fingerprint.fields();
     let receipt = RegisteredIdentityReceipt::from_gpu_result(id, cache_fingerprint);
-    eprintln!("bounded_gpu_program_identity_reuse hit=false hint_present={} fields={} receipt_bytes={} full_stream_checked=true",
-        hint.is_some(), field_count, receipt.accounted_bytes());
+    eprintln!(
+        "bounded_gpu_program_identity_reuse hit=false hint_present={} fields={} receipt_bytes={} full_stream_checked=true",
+        hint.is_some(),
+        field_count,
+        receipt.accounted_bytes()
+    );
     Ok((id, receipt, false))
 }
 
@@ -583,40 +602,78 @@ fn verify_registered(
 
 impl RegisteredProgram {
     /// CPU diagnostic identity with independently enforced preprocessing/proof policy.
-pub fn new_with_cpu_identity_from_env(air: MachineAir, budget: u64)
-    -> Result<Self, super::analysis::AdmissionError> {
-    Self::new_with_cpu_identity(air, budget, crate::proving::Request::from_env()
-        .map_err(super::analysis::AdmissionError::ProvingPolicy)?)
-}
-pub fn new_with_cpu_identity(air: MachineAir, budget: u64, request: crate::proving::Request)
-    -> Result<Self, super::analysis::AdmissionError> {
-    Self::new_with_cpu_identity_and_report(air, budget, request).map(|(program, _)| program)
-}
-pub fn new_with_cpu_identity_and_report(air: MachineAir, budget: u64, request: crate::proving::Request)
-    -> Result<(Self, identity_cpu::RegistrationReports), super::analysis::AdmissionError> {
-    Self::register_cpu_identity(air, budget, request, None)
-}
-pub fn new_with_cpu_identity_prefix_and_report(air: MachineAir, budget: u64,
-    request: crate::proving::Request, context: &identity_cpu::IdentityCpuContext, job: u64,
-    prefix: identity_cpu::CompletedIdentityPrefix)
-    -> Result<(Self, identity_cpu::RegistrationReports), super::analysis::AdmissionError> {
-    prefix.check_owner(context, job, &air).map_err(super::analysis::AdmissionError::Gpu)?;
-    let budget = budget.checked_sub(prefix.retained_host_bytes())
-        .ok_or(super::analysis::AdmissionError::Overflow)?;
-    Self::register_cpu_identity(air, budget, request, Some(prefix))
-}
-fn register_cpu_identity(air: MachineAir, budget: u64, request: crate::proving::Request,
-    prefix: Option<identity_cpu::CompletedIdentityPrefix>)
-    -> Result<(Self, identity_cpu::RegistrationReports), super::analysis::AdmissionError> {
-    let run = crate::proving::Run::new("block_v2_preprocessing", request,
-        profile::preprocessing_capabilities()).map_err(super::analysis::AdmissionError::ProvingPolicy)?;
-    let mut identity = None;
-    let (prepared, id, preprocessing) = PreparedProgram::prepare_with_report(
-        air, budget, run, SetupIdentity::Cpu(prefix, &mut identity, request.emit_report))?;
-    Ok((Self { prepared, id: id.expect("CPU identity completed") },
-        identity_cpu::RegistrationReports { preprocessing, identity: identity.expect("CPU identity report") }))
-}
-pub fn new(air: MachineAir) -> Result<Self, super::analysis::AdmissionError> {
+    pub fn new_with_cpu_identity_from_env(
+        air: MachineAir,
+        budget: u64,
+    ) -> Result<Self, super::analysis::AdmissionError> {
+        Self::new_with_cpu_identity(
+            air,
+            budget,
+            crate::proving::Request::from_env()
+                .map_err(super::analysis::AdmissionError::ProvingPolicy)?,
+        )
+    }
+    pub fn new_with_cpu_identity(
+        air: MachineAir,
+        budget: u64,
+        request: crate::proving::Request,
+    ) -> Result<Self, super::analysis::AdmissionError> {
+        Self::new_with_cpu_identity_and_report(air, budget, request).map(|(program, _)| program)
+    }
+    pub fn new_with_cpu_identity_and_report(
+        air: MachineAir,
+        budget: u64,
+        request: crate::proving::Request,
+    ) -> Result<(Self, identity_cpu::RegistrationReports), super::analysis::AdmissionError> {
+        Self::register_cpu_identity(air, budget, request, None)
+    }
+    pub fn new_with_cpu_identity_prefix_and_report(
+        air: MachineAir,
+        budget: u64,
+        request: crate::proving::Request,
+        context: &identity_cpu::IdentityCpuContext,
+        job: u64,
+        prefix: identity_cpu::CompletedIdentityPrefix,
+    ) -> Result<(Self, identity_cpu::RegistrationReports), super::analysis::AdmissionError> {
+        prefix
+            .check_owner(context, job, &air)
+            .map_err(super::analysis::AdmissionError::Gpu)?;
+        let budget = budget
+            .checked_sub(prefix.retained_host_bytes())
+            .ok_or(super::analysis::AdmissionError::Overflow)?;
+        Self::register_cpu_identity(air, budget, request, Some(prefix))
+    }
+    fn register_cpu_identity(
+        air: MachineAir,
+        budget: u64,
+        request: crate::proving::Request,
+        prefix: Option<identity_cpu::CompletedIdentityPrefix>,
+    ) -> Result<(Self, identity_cpu::RegistrationReports), super::analysis::AdmissionError> {
+        let run = crate::proving::Run::new(
+            "block_v2_preprocessing",
+            request,
+            profile::preprocessing_capabilities(),
+        )
+        .map_err(super::analysis::AdmissionError::ProvingPolicy)?;
+        let mut identity = None;
+        let (prepared, id, preprocessing) = PreparedProgram::prepare_with_report(
+            air,
+            budget,
+            run,
+            SetupIdentity::Cpu(prefix, &mut identity, request.emit_report),
+        )?;
+        Ok((
+            Self {
+                prepared,
+                id: id.expect("CPU identity completed"),
+            },
+            identity_cpu::RegistrationReports {
+                preprocessing,
+                identity: identity.expect("CPU identity report"),
+            },
+        ))
+    }
+    pub fn new(air: MachineAir) -> Result<Self, super::analysis::AdmissionError> {
         Self::new_with_memory_budget(air, super::super::feasibility::RAM_BUDGET_BYTES)
     }
 
@@ -725,29 +782,57 @@ pub fn new(air: MachineAir) -> Result<Self, super::analysis::AdmissionError> {
     /// The complete registration and its commitment are still freshly prepared.
     #[cfg(feature = "gpu-tuning")]
     pub fn new_with_identity_prefix_and_report(
-        air: MachineAir, budget: u64, request: crate::proving::Request,
-        context: &identity_batch::IdentityBatchContext, job: u64,
+        air: MachineAir,
+        budget: u64,
+        request: crate::proving::Request,
+        context: &identity_batch::IdentityBatchContext,
+        job: u64,
         prefix: identity_batch::CompletedIdentityPrefix,
     ) -> Result<(Self, crate::proving::Report), super::analysis::AdmissionError> {
         use super::analysis::AdmissionError;
         if request.policy != crate::proving::Policy::GpuRequired {
-            return Err(AdmissionError::Gpu("identity prefix registration requires GPU-only execution".into()));
+            return Err(AdmissionError::Gpu(
+                "identity prefix registration requires GPU-only execution".into(),
+            ));
         }
-        prefix.check_owner(context, job, &air).map_err(AdmissionError::Gpu)?;
+        prefix
+            .check_owner(context, job, &air)
+            .map_err(AdmissionError::Gpu)?;
         // Retained fingerprints and suffix scratch remain charged alongside
         // the original complete registration partition, within its allowance.
-        let budget = budget.checked_sub(prefix.retained_host_bytes())
-            .and_then(|n| n.checked_sub(1 << 20)).ok_or(AdmissionError::Overflow)?;
-        let run = crate::proving::Run::new("block_v2_preprocessing", request,
-            profile::preprocessing_capabilities()).map_err(AdmissionError::ProvingPolicy)?;
-        let (prepared, id, report) = PreparedProgram::prepare_with_report(air, budget, run, SetupIdentity::Prefix(prefix))?;
-        Ok((Self { prepared, id: id.expect("prefix identity completed") }, report))
+        let budget = budget
+            .checked_sub(prefix.retained_host_bytes())
+            .and_then(|n| n.checked_sub(1 << 20))
+            .ok_or(AdmissionError::Overflow)?;
+        let run = crate::proving::Run::new(
+            "block_v2_preprocessing",
+            request,
+            profile::preprocessing_capabilities(),
+        )
+        .map_err(AdmissionError::ProvingPolicy)?;
+        let (prepared, id, report) =
+            PreparedProgram::prepare_with_report(air, budget, run, SetupIdentity::Prefix(prefix))?;
+        Ok((
+            Self {
+                prepared,
+                id: id.expect("prefix identity completed"),
+            },
+            report,
+        ))
     }
     /// The exact owned preprocessing buffers; compiler source is owned separately.
-    #[cfg(all(feature = "cpu-proof-experiment", not(any(feature = "gpu", feature = "gpu-metal"))))]
+    #[cfg(all(
+        feature = "cpu-proof-experiment",
+        not(any(feature = "gpu", feature = "gpu-metal"))
+    ))]
     pub fn cpu_prepared_storage_bytes(&self) -> Option<u64> {
-        self.prepared.data.prover_only.preprocessed_prover_data.as_ref()?
-            .retained_backing_bytes().and_then(|n| u64::try_from(n).ok())
+        self.prepared
+            .data
+            .prover_only
+            .preprocessed_prover_data
+            .as_ref()?
+            .retained_backing_bytes()
+            .and_then(|n| u64::try_from(n).ok())
     }
     pub fn id(&self) -> [u64; 4] {
         self.id
@@ -910,9 +995,13 @@ impl PreparedProgram {
         #[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
         let preprocessing_config = {
             #[cfg(feature = "cpu-proof-experiment")]
-            { profile::cpu_preprocessing_config(air.cpu_variant) }
+            {
+                profile::cpu_preprocessing_config_with_kernel(air.cpu_variant, air.cpu_hash_kernel)
+            }
             #[cfg(not(feature = "cpu-proof-experiment"))]
-            { profile::preprocessing_config() }
+            {
+                profile::preprocessing_config()
+            }
         };
         #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
         let symbolic = if super::super::quotient_pcs::gpu_witness_enabled() {
@@ -969,43 +1058,78 @@ impl PreparedProgram {
         }
         #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
         let mut gpu_witness = None;
-        let data = run
-            .measure(Stage::Preprocessing, backend, || {
-                #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
-                let _execution_observation =
-                    p3_uni_stark::StarkGenericConfig::pcs(&preprocessing_config)
-                        .observe_execution(&run)
+        #[cfg(feature = "cpu-proof-experiment")]
+        let overlap = air.cpu_identity_overlap
+            && backend == Backend::Cpu
+            && matches!(&identity, SetupIdentity::Cpu(None, ..))
+            && analysis.height >= (1 << 18)
+            && rayon::current_thread_index().is_some()
+            && rayon::current_num_threads() > 1
+            && identity_cpu::overlap_host_bytes(&analysis).is_some_and(|bytes| bytes <= budget);
+        #[cfg(not(feature = "cpu-proof-experiment"))]
+        let overlap = false;
+        let overlap_run = if overlap {
+            let emit = match &identity {
+                SetupIdentity::Cpu(_, _, emit) => *emit,
+                _ => false,
+            };
+            Some(
+                identity_cpu::cpu_run_with_report("block_v2_cpu_identity_overlap", emit)
+                    .map_err(super::analysis::AdmissionError::Gpu)?,
+            )
+        } else {
+            None
+        };
+        let (data, local_prefix) =
+            identity_cpu::alongside(&air, &analysis, overlap_run.as_ref(), || {
+                run.measure(Stage::Preprocessing, backend, || {
+                    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+                    let _execution_observation =
+                        p3_uni_stark::StarkGenericConfig::pcs(&preprocessing_config)
+                            .observe_execution(&run)
+                            .map_err(super::analysis::AdmissionError::Gpu)?;
+                    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+                    let _randomness_observation =
+                        p3_uni_stark::StarkGenericConfig::pcs(&preprocessing_config)
+                            .observe_randomness(&run)
+                            .map_err(super::analysis::AdmissionError::Gpu)?;
+                    #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+                    if let Some(symbolic) = symbolic_layout {
+                        let prepared = super::gpu_backend::prepare_with_symbolic(
+                            &air,
+                            &preprocessing_config,
+                            gpu_host_allowance,
+                            symbolic,
+                        )
                         .map_err(super::analysis::AdmissionError::Gpu)?;
-                #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
-                let _randomness_observation =
-                    p3_uni_stark::StarkGenericConfig::pcs(&preprocessing_config)
-                        .observe_randomness(&run)
-                        .map_err(super::analysis::AdmissionError::Gpu)?;
-                #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
-                if let Some(symbolic) = symbolic_layout {
-                    let prepared = super::gpu_backend::prepare_with_symbolic(
-                        &air,
+                        gpu_witness = Some(prepared.witness);
+                        return Ok(prepared.data);
+                    }
+                    Ok::<_, super::analysis::AdmissionError>(ProverData::from_airs_and_degrees(
                         &preprocessing_config,
-                        gpu_host_allowance,
-                        symbolic,
-                    )
-                    .map_err(super::analysis::AdmissionError::Gpu)?;
-                    gpu_witness = Some(prepared.witness);
-                    return Ok(prepared.data);
-                }
-                Ok::<_, super::analysis::AdmissionError>(ProverData::from_airs_and_degrees(
-                    &preprocessing_config,
-                    core::slice::from_ref(&air),
-                    &[air.program().height().ilog2() as usize + 1],
-                ))
-            })
-            .map_err(super::analysis::AdmissionError::ProvingPolicy)??;
-        // Close the genuine preprocessing scope before any CPU identity work.
+                        core::slice::from_ref(&air),
+                        &[air.program().height().ilog2() as usize + 1],
+                    ))
+                })
+                .map_err(super::analysis::AdmissionError::ProvingPolicy)
+            });
+        let data = data??;
+        let local_prefix = local_prefix
+            .transpose()
+            .map_err(super::analysis::AdmissionError::Gpu)?;
+        // The identity prefix has its own CPU scope, which may overlap this
+        // preprocessing scope. Stage totals are inclusive, not additive.
         let mut run = Some(run);
         let cpu_preprocessing_report = if matches!(&identity, SetupIdentity::Cpu(..)) {
-            Some(run.take().expect("preprocessing run").finish(true)
-                .map_err(super::analysis::AdmissionError::ProvingPolicy)?)
-        } else { None };
+            Some(
+                run.take()
+                    .expect("preprocessing run")
+                    .finish(true)
+                    .map_err(super::analysis::AdmissionError::ProvingPolicy)?,
+            )
+        } else {
+            None
+        };
         let mut identity_receipt = None;
         let mut identity_hint_hit = false;
         let id = match identity {
@@ -1037,41 +1161,83 @@ impl PreparedProgram {
             }
             #[cfg(feature = "gpu-tuning")]
             SetupIdentity::Prefix(prefix) => {
-                let constraints = symbolic_constraints.ok_or_else(|| super::analysis::AdmissionError::Gpu(
-                    "identity prefix requires GPU symbolic analysis".into()))?;
-                let fingerprint = super::fingerprint::bounded::encode(&constraints.base, &constraints.extension,
-                    &constraints.order, super::fingerprint::bounded::HOST_BYTES)
+                let constraints = symbolic_constraints.ok_or_else(|| {
+                    super::analysis::AdmissionError::Gpu(
+                        "identity prefix requires GPU symbolic analysis".into(),
+                    )
+                })?;
+                let fingerprint = super::fingerprint::bounded::encode(
+                    &constraints.base,
+                    &constraints.extension,
+                    &constraints.order,
+                    super::fingerprint::bounded::HOST_BYTES,
+                )
+                .map_err(super::analysis::AdmissionError::Gpu)?;
+                let (id, receipt, _) = prefix
+                    .finish(
+                        &air,
+                        &analysis,
+                        &fingerprint,
+                        &data.common,
+                        &preprocessing_config,
+                        run.as_ref().expect("GPU identity run"),
+                    )
                     .map_err(super::analysis::AdmissionError::Gpu)?;
-                let (id, receipt, _) = prefix.finish(&air, &analysis, &fingerprint, &data.common,
-                    &preprocessing_config, run.as_ref().expect("GPU identity run")).map_err(super::analysis::AdmissionError::Gpu)?;
                 identity_receipt = Some(receipt);
                 Some(id)
             }
             SetupIdentity::Cpu(prefix, report, emit_report) => {
-    let identity_run = identity_cpu::cpu_run_with_report("block_v2_cpu_identity", emit_report)
-        .map_err(super::analysis::AdmissionError::Gpu)?;
-    let id = identity_run.measure(Stage::Preprocessing, Backend::Cpu, || {
-        #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
-        let constraints = symbolic_constraints;
-        #[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
-        let constraints: Option<super::symbolic::Constraints> = None;
-        let constraints = match constraints {
-            Some(constraints) => constraints,
-            None => super::symbolic::prepare_machine(&air, super::compiler_constants::Constants::cpu())
-                .map_err(|e| format!("CPU identity analysis: {e:?}"))?.into_parts().1,
-        };
-        let fingerprint = super::fingerprint::bounded::encode(&constraints.base, &constraints.extension,
-            &constraints.order, super::fingerprint::bounded::HOST_BYTES)?;
-        match prefix {
-            Some(prefix) => prefix.finish(&air, &analysis, &fingerprint, &data.common),
-            None => identity_cpu::hash(&air, &analysis, &fingerprint, &data.common),
-        }
-    }).map_err(super::analysis::AdmissionError::ProvingPolicy)?
-        .map_err(super::analysis::AdmissionError::Gpu)?;
-    *report = Some(identity_run.finish(true).map_err(super::analysis::AdmissionError::ProvingPolicy)?);
-    Some(id)
-}
-SetupIdentity::RegistryCap(expected) => {
+                let identity_run = match overlap_run {
+                    Some(run) => run,
+                    None => identity_cpu::cpu_run_with_report("block_v2_cpu_identity", emit_report)
+                        .map_err(super::analysis::AdmissionError::Gpu)?,
+                };
+                let id = identity_run
+                    .measure(Stage::Preprocessing, Backend::Cpu, || {
+                        if let Some(prefix) = local_prefix {
+                            return prefix.finish(&air, &analysis, &data.common);
+                        }
+                        #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
+                        let constraints = symbolic_constraints;
+                        #[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
+                        let constraints: Option<
+                            super::symbolic::Constraints,
+                        > = None;
+                        let constraints = match constraints {
+                            Some(constraints) => constraints,
+                            None => {
+                                super::symbolic::prepare_machine(
+                                    &air,
+                                    super::compiler_constants::Constants::cpu(),
+                                )
+                                .map_err(|e| format!("CPU identity analysis: {e:?}"))?
+                                .into_parts()
+                                .1
+                            }
+                        };
+                        let fingerprint = super::fingerprint::bounded::encode(
+                            &constraints.base,
+                            &constraints.extension,
+                            &constraints.order,
+                            super::fingerprint::bounded::HOST_BYTES,
+                        )?;
+                        match prefix {
+                            Some(prefix) => {
+                                prefix.finish(&air, &analysis, &fingerprint, &data.common)
+                            }
+                            None => identity_cpu::hash(&air, &analysis, &fingerprint, &data.common),
+                        }
+                    })
+                    .map_err(super::analysis::AdmissionError::ProvingPolicy)?
+                    .map_err(super::analysis::AdmissionError::Gpu)?;
+                *report = Some(
+                    identity_run
+                        .finish(true)
+                        .map_err(super::analysis::AdmissionError::ProvingPolicy)?,
+                );
+                Some(id)
+            }
+            SetupIdentity::RegistryCap(expected) => {
                 let actual = data
                     .common
                     .preprocessed
@@ -1085,7 +1251,10 @@ SetupIdentity::RegistryCap(expected) => {
                 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
                 drop(symbolic_constraints);
                 if std::env::var("LATTICA_PROVING_REPORT").as_deref() == Ok("1") {
-                    eprintln!("bounded_registry_preprocessing expected_roots={} matched=true diagnostic_identity_computed=false", expected.len());
+                    eprintln!(
+                        "bounded_registry_preprocessing expected_roots={} matched=true diagnostic_identity_computed=false",
+                        expected.len()
+                    );
                 }
                 None
             }
@@ -1093,7 +1262,10 @@ SetupIdentity::RegistryCap(expected) => {
         drop(preprocessing_config);
         let report = match cpu_preprocessing_report {
             Some(report) => report,
-            None => run.expect("preprocessing run").finish(true).map_err(super::analysis::AdmissionError::ProvingPolicy)?,
+            None => run
+                .expect("preprocessing run")
+                .finish(true)
+                .map_err(super::analysis::AdmissionError::ProvingPolicy)?,
         };
         let preprocessing_receipt = crate::proving::CachedScope::preprocessing(&report)
             .map_err(super::analysis::AdmissionError::ProvingPolicy)?;
@@ -1294,10 +1466,19 @@ SetupIdentity::RegistryCap(expected) => {
             .measure(Stage::UpstreamProver, backend, || {
                 tracing::info_span!(target: "lattica_block_v2_perf", "native batch prove").in_scope(
                     || {
-                        #[cfg(all(feature = "cpu-proof-experiment", not(any(feature = "gpu", feature = "gpu-metal"))))]
-                        let config=profile::make_cpu_config_with_variant(self.air.cpu_variant);
-                        #[cfg(not(all(feature = "cpu-proof-experiment", not(any(feature = "gpu", feature = "gpu-metal")))))]
-                        let config=profile::make_proving_config();
+                        #[cfg(all(
+                            feature = "cpu-proof-experiment",
+                            not(any(feature = "gpu", feature = "gpu-metal"))
+                        ))]
+                        let config = profile::make_cpu_config_with_kernel(
+                            self.air.cpu_variant,
+                            self.air.cpu_hash_kernel,
+                        );
+                        #[cfg(not(all(
+                            feature = "cpu-proof-experiment",
+                            not(any(feature = "gpu", feature = "gpu-metal"))
+                        )))]
+                        let config = profile::make_proving_config();
                         prove_batch(&config, &[instance], &self.data)
                     },
                 )
@@ -1647,9 +1828,9 @@ mod tests {
     #[cfg(feature = "block-v2-wide-lanes")]
     #[test]
     fn wide_lane_overlap_and_padding_mutations_are_rejected_by_real_proofs() {
-        use super::super::air::d_column;
-        use super::super::program::{Op, Row, EXT_LANES, LANES};
         use super::super::WIDTH;
+        use super::super::air::d_column;
+        use super::super::program::{EXT_LANES, LANES, Op, Row};
         assert_eq!((LANES, EXT_LANES), (23, 7));
         let mut b = ProgramBuilder::new(8).unwrap();
         let inputs: Vec<_> = (0..LANES * 2).map(|_| b.input()).collect();
@@ -1808,8 +1989,8 @@ mod tests {
             .unwrap();
         trace.values[row * super::super::WIDTH + a_column(2)] += Val::ONE; // x becomes x+1
         trace.values[row * super::super::WIDTH + b_column(2)] -= Val::ONE; // 7 becomes 6
-                                                                           // Debug prover intentionally panics on a bad lookup witness; release
-                                                                           // emits an invalid proof. Both are rejections, never a valid aggregate.
+        // Debug prover intentionally panics on a bad lookup witness; release
+        // emits an invalid proof. Both are rejections, never a valid aggregate.
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             prove_batch(
                 &profile::make_config(),

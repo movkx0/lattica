@@ -891,10 +891,12 @@ def build_plan(args):
         argv.pop(0)
     require(argv and Path(argv[0]).is_absolute(), 'command needs an absolute executable path')
     if args.profile == 'cpu-commitment':
-        require(args.build_label and len(argv) == 3
+        require(args.build_label and len(argv) in (3,5)
                 and Path(argv[0]).name == 'cpu_commitment_profile'
                 and argv[1] in ('reference', 'hash', 'memory', 'combined')
                 and argv[2] in ('256', '1024', '4096')
+            and (len(argv)==3 or (argv[3] in ('existing','interleaved2','interleaved4') and argv[4] in ('4','16')
+                and (argv[3]=='existing' or argv[1] in ('hash','combined'))))
                 and not any(getattr(args,name,False) for name in ('expect_tests', 'expect_result',
                     'expect_direct_result', 'full_workflow_case', 'benchmark', 'generation_only', 'cpu_proof')),
                 'CPU commitment screen requires exact recorded example and explicit variant/tile')
@@ -1972,7 +1974,9 @@ def validate_output(log, plan):
     content = log.read_text(errors='replace')
     if plan['profile'] == 'cpu-commitment':
         from cpu_proof_profile import validate_commitment
-        plan['cpu_commitment_acceptance'] = validate_commitment(content, plan['command'][1], int(plan['command'][2]))
+        cmd = plan['command']
+        plan['cpu_commitment_acceptance'] = validate_commitment(content, cmd[1], int(cmd[2]),
+            cmd[3] if len(cmd)==5 else 'existing', int(cmd[4]) if len(cmd)==5 else 16)
     if plan.get('cpu_proof') is not None:
         from cpu_proof_profile import validate as validate_cpu_proof
         plan['cpu_proof_acceptance'] = validate_cpu_proof(content, plan['cpu_proof'])

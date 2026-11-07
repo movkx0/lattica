@@ -50,6 +50,36 @@ impl Backing {
         self.rows(salts)?;
         self.vector(path)
     }
+    fn opening(&mut self, proof: &p3_batch_stark::PcsProof<Config>) -> Result<(), ExecutionError> {
+        let (hiding, fri) = proof;
+        self.vector(hiding)?;
+        for matrices in hiding {
+            self.vector(matrices)?;
+            for points in matrices {
+                self.rows(points)?;
+            }
+        }
+        self.vector(&fri.commit_phase_commits)?;
+        for cap in &fri.commit_phase_commits {
+            self.cap(cap)?;
+        }
+        self.vector(&fri.commit_pow_witnesses)?;
+        self.vector(&fri.final_poly)?;
+        self.vector(&fri.query_proofs)?;
+        for query in &fri.query_proofs {
+            self.vector(&query.input_proof)?;
+            for opening in &query.input_proof {
+                self.rows(&opening.opened_values)?;
+                self.authentication(&opening.opening_proof)?;
+            }
+            self.vector(&query.commit_phase_openings)?;
+            for layer in &query.commit_phase_openings {
+                self.vector(&layer.sibling_values)?;
+                self.authentication(&layer.opening_proof)?;
+            }
+        }
+        Ok(())
+    }
 }
 
 /// Count the requested backing capacity of an already-owned proof, bounded by
@@ -93,36 +123,32 @@ pub fn retained_proof_capacity_bytes(
         heap.vector(&instance.permutation_local)?;
         heap.vector(&instance.permutation_next)?;
     }
-    let (hiding, fri) = &proof.opening_proof;
-    heap.vector(hiding)?;
-    for matrices in hiding {
-        heap.vector(matrices)?;
-        for points in matrices {
-            heap.rows(points)?;
-        }
-    }
-    heap.vector(&fri.commit_phase_commits)?;
-    for cap in &fri.commit_phase_commits {
-        heap.cap(cap)?;
-    }
-    heap.vector(&fri.commit_pow_witnesses)?;
-    heap.vector(&fri.final_poly)?;
-    heap.vector(&fri.query_proofs)?;
-    for query in &fri.query_proofs {
-        heap.vector(&query.input_proof)?;
-        for opening in &query.input_proof {
-            heap.rows(&opening.opened_values)?;
-            heap.authentication(&opening.opening_proof)?;
-        }
-        heap.vector(&query.commit_phase_openings)?;
-        for layer in &query.commit_phase_openings {
-            heap.vector(&layer.sibling_values)?;
-            heap.authentication(&layer.opening_proof)?;
-        }
-    }
+    heap.opening(&proof.opening_proof)?;
     Ok(heap.bytes)
 }
 
+/// Same retained-backing accounting for a native uni-STARK proof. Inline
+/// owners/public arrays and prior allocation peaks are charged by the caller.
+pub fn retained_native_proof_capacity_bytes(
+    proof: &p3_uni_stark::Proof<Config>,
+    max_bytes: usize,
+) -> Result<usize, ExecutionError> {
+    let mut heap = Backing::new(max_bytes);
+    heap.cap(&proof.commitments.trace)?;
+    heap.cap(&proof.commitments.quotient_chunks)?;
+    if let Some(cap) = &proof.commitments.random {
+        heap.cap(cap)?;
+    }
+    let base = &proof.opened_values;
+    heap.vector(&base.trace_local)?;
+    heap.optional(&base.trace_next)?;
+    heap.optional(&base.preprocessed_local)?;
+    heap.optional(&base.preprocessed_next)?;
+    heap.optional(&base.random)?;
+    heap.rows(&base.quotient_chunks)?;
+    heap.opening(&proof.opening_proof)?;
+    Ok(heap.bytes)
+}
 
 #[cfg(test)]
 mod tests;

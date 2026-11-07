@@ -2,10 +2,9 @@ use super::program::*;
 use p3_air::{Air, AirBuilder, BaseAir, WindowAccess};
 use p3_field::{PrimeCharacteristicRing, PrimeField64};
 use p3_goldilocks::{
-    GenericPoseidon2LinearLayersGoldilocks as LL,
     GOLDILOCKS_POSEIDON2_RC_8_EXTERNAL_FINAL as FINAL,
     GOLDILOCKS_POSEIDON2_RC_8_EXTERNAL_INITIAL as INITIAL,
-    GOLDILOCKS_POSEIDON2_RC_8_INTERNAL as INTERNAL,
+    GOLDILOCKS_POSEIDON2_RC_8_INTERNAL as INTERNAL, GenericPoseidon2LinearLayersGoldilocks as LL,
 };
 use p3_lookup::{Count, InteractionBuilder, LookupBus};
 use p3_matrix::dense::RowMajorMatrix;
@@ -75,6 +74,10 @@ pub struct MachineAir {
     pub(crate) program: Arc<Program>,
     #[cfg(feature = "cpu-proof-experiment")]
     pub(crate) cpu_variant: crate::block_v2::cpu_commitment::Variant,
+    #[cfg(feature = "cpu-proof-experiment")]
+    pub(crate) cpu_hash_kernel: crate::block_v2::cpu_commitment::HashKernel,
+    #[cfg(feature = "cpu-proof-experiment")]
+    pub(crate) cpu_identity_overlap: bool,
 }
 
 fn pow7<E: PrimeCharacteristicRing>(x: E) -> E {
@@ -140,10 +143,31 @@ impl MachineAir {
     /// The caller still accounts for the single live program allocation;
     /// sharing ownership neither changes its manifest nor supplies admission.
     pub fn from_shared_program(program: Arc<Program>) -> Self {
-        Self { program, #[cfg(feature = "cpu-proof-experiment")] cpu_variant: Default::default() }
+        Self {
+            program,
+            #[cfg(feature = "cpu-proof-experiment")]
+            cpu_variant: Default::default(),
+            #[cfg(feature = "cpu-proof-experiment")]
+            cpu_hash_kernel: Default::default(),
+            #[cfg(feature = "cpu-proof-experiment")]
+            cpu_identity_overlap: false,
+        }
     }
     #[cfg(feature = "cpu-proof-experiment")]
-    pub fn with_cpu_variant(mut self, variant: crate::block_v2::cpu_commitment::Variant) -> Self { self.cpu_variant=variant; self }
+    pub fn with_cpu_variant(mut self, variant: crate::block_v2::cpu_commitment::Variant) -> Self {
+        self.cpu_variant = variant;
+        self
+    }
+    #[cfg(feature = "cpu-proof-experiment")]
+    pub fn with_cpu_tuning(
+        mut self,
+        kernel: crate::block_v2::cpu_commitment::HashKernel,
+        identity_overlap: bool,
+    ) -> Self {
+        self.cpu_hash_kernel = kernel;
+        self.cpu_identity_overlap = identity_overlap;
+        self
+    }
     pub fn program(&self) -> &Program {
         &self.program
     }

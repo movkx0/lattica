@@ -1,5 +1,4 @@
 //! Small invalid-shaped fixtures only. No proof generation or verification.
-//! Authored during the freeze; none of these tests has been executed.
 use super::*;
 use crate::block_v2::profile::Challenge;
 use p3_batch_stark::proof::OpenedValuesWithLookups;
@@ -9,6 +8,60 @@ use p3_field::PrimeCharacteristicRing;
 use p3_fri::{CommitPhaseProofStep, FriProof, QueryProof};
 use p3_lookup::LookupTerminal;
 use p3_symmetric::MerkleCap;
+
+#[test]
+fn native_capacity_includes_nested_openings_and_spare_backing() {
+    let mut batch = nested_shape();
+    let base = batch
+        .opened_values
+        .instances
+        .pop()
+        .unwrap()
+        .base_opened_values;
+    let mut native = p3_uni_stark::Proof::<Config> {
+        commitments: p3_uni_stark::Commitments {
+            trace: batch.commitments.main,
+            quotient_chunks: batch.commitments.quotient_chunks,
+            random: batch.commitments.random,
+        },
+        opened_values: base,
+        opening_proof: batch.opening_proof,
+        degree_bits: 3,
+    };
+    let before = retained_native_proof_capacity_bytes(&native, usize::MAX).unwrap();
+    assert!(before > 0);
+    assert_eq!(
+        retained_native_proof_capacity_bytes(&native, before).unwrap(),
+        before
+    );
+    assert!(retained_native_proof_capacity_bytes(&native, before - 1).is_err());
+    let old = native.opened_values.trace_local.capacity();
+    native.opened_values.trace_local.reserve(73);
+    let expected = before
+        + (native.opened_values.trace_local.capacity() - old) * std::mem::size_of::<Challenge>();
+    assert_eq!(
+        retained_native_proof_capacity_bytes(&native, usize::MAX).unwrap(),
+        expected
+    );
+    let old = native.opening_proof.1.query_proofs[0].input_proof[0]
+        .opening_proof
+        .0[0]
+        .capacity();
+    native.opening_proof.1.query_proofs[0].input_proof[0]
+        .opening_proof
+        .0[0]
+        .reserve(19);
+    let added = (native.opening_proof.1.query_proofs[0].input_proof[0]
+        .opening_proof
+        .0[0]
+        .capacity()
+        - old)
+        * std::mem::size_of::<Val>();
+    assert_eq!(
+        retained_native_proof_capacity_bytes(&native, usize::MAX).unwrap(),
+        expected + added
+    );
+}
 
 fn cap() -> p3_batch_stark::Commitment<Config> {
     MerkleCap::new(vec![[Val::ZERO; 4]])
@@ -22,7 +75,9 @@ fn minimal_shape() -> BatchProof<Config> {
             quotient_chunks: cap(),
             random: None,
         },
-        opened_values: BatchOpenedValues { instances: Vec::new() },
+        opened_values: BatchOpenedValues {
+            instances: Vec::new(),
+        },
         opening_proof: (
             Vec::new(),
             FriProof {
@@ -43,7 +98,9 @@ fn nested_shape() -> BatchProof<Config> {
     proof.commitments.permutation = Some(cap());
     proof.commitments.random = Some(cap());
     proof.degree_bits.push(3);
-    proof.lookup_terminals.push(Some(LookupTerminal(Challenge::ZERO)));
+    proof
+        .lookup_terminals
+        .push(Some(LookupTerminal(Challenge::ZERO)));
     proof.opened_values.instances.push(OpenedValuesWithLookups {
         base_opened_values: OpenedValues {
             trace_local: vec![Challenge::ZERO],
@@ -56,7 +113,10 @@ fn nested_shape() -> BatchProof<Config> {
         permutation_local: vec![Challenge::ZERO],
         permutation_next: vec![Challenge::ZERO],
     });
-    proof.opening_proof.0.push(vec![vec![vec![Challenge::ZERO]]]);
+    proof
+        .opening_proof
+        .0
+        .push(vec![vec![vec![Challenge::ZERO]]]);
     let fri = &mut proof.opening_proof.1;
     fri.commit_phase_commits.push(cap());
     fri.commit_pow_witnesses.push(Val::ZERO);
@@ -79,17 +139,29 @@ fn nested_shape() -> BatchProof<Config> {
 fn checked_capacity_arithmetic_refuses_overflow_and_accepts_exact_limits() {
     let mut heap = Backing::new(0);
     heap.capacity::<u8>(0).unwrap();
-    assert!(matches!(heap.capacity::<u8>(1), Err(ExecutionError::TooLarge)));
+    assert!(matches!(
+        heap.capacity::<u8>(1),
+        Err(ExecutionError::TooLarge)
+    ));
     let mut heap = Backing::new(usize::MAX);
-    assert!(matches!(heap.capacity::<Val>(usize::MAX), Err(ExecutionError::TooLarge)));
+    assert!(matches!(
+        heap.capacity::<Val>(usize::MAX),
+        Err(ExecutionError::TooLarge)
+    ));
     let mut heap = Backing::new(usize::MAX);
     heap.capacity::<u8>(usize::MAX).unwrap();
-    assert!(matches!(heap.capacity::<u8>(1), Err(ExecutionError::TooLarge)));
+    assert!(matches!(
+        heap.capacity::<u8>(1),
+        Err(ExecutionError::TooLarge)
+    ));
     // Preserve the original verifier's exact 64 MiB arithmetic boundary
     // without allocating any such buffer.
     let mut heap = Backing::new(64 << 20);
     heap.capacity::<u8>(64 << 20).unwrap();
-    assert!(matches!(heap.capacity::<u8>(1), Err(ExecutionError::TooLarge)));
+    assert!(matches!(
+        heap.capacity::<u8>(1),
+        Err(ExecutionError::TooLarge)
+    ));
 }
 
 #[test]
@@ -98,7 +170,10 @@ fn resource_measurement_counts_even_invalid_shapes_without_inline_headers() {
     let expected = (proof.commitments.main.root_capacity()
         + proof.commitments.quotient_chunks.root_capacity())
         * core::mem::size_of::<[Val; 4]>();
-    assert_eq!(retained_proof_capacity_bytes(&proof, expected).unwrap(), expected);
+    assert_eq!(
+        retained_proof_capacity_bytes(&proof, expected).unwrap(),
+        expected
+    );
     assert!(matches!(
         retained_proof_capacity_bytes(&proof, expected - 1),
         Err(ExecutionError::TooLarge)
@@ -136,7 +211,10 @@ fn spare_capacity_at_every_nested_owner_is_counted_once() {
             assert!(added > 0);
             let current = retained_proof_capacity_bytes(&proof, usize::MAX).unwrap();
             assert_eq!(current - previous, added);
-            assert_eq!(retained_proof_capacity_bytes(&proof, current).unwrap(), current);
+            assert_eq!(
+                retained_proof_capacity_bytes(&proof, current).unwrap(),
+                current
+            );
             assert!(matches!(
                 retained_proof_capacity_bytes(&proof, current - 1),
                 Err(ExecutionError::TooLarge)
@@ -152,14 +230,52 @@ fn spare_capacity_at_every_nested_owner_is_counted_once() {
     check!(grow(&mut proof.degree_bits));
     check!(grow(&mut proof.lookup_terminals));
     check!(grow(&mut proof.opened_values.instances));
-    check!(grow(&mut proof.opened_values.instances[0].base_opened_values.trace_local));
-    check!(grow(proof.opened_values.instances[0].base_opened_values.trace_next.as_mut().unwrap()));
-    check!(grow(proof.opened_values.instances[0].base_opened_values.preprocessed_local.as_mut().unwrap()));
-    check!(grow(proof.opened_values.instances[0].base_opened_values.preprocessed_next.as_mut().unwrap()));
-    check!(grow(proof.opened_values.instances[0].base_opened_values.random.as_mut().unwrap()));
-    check!(grow(&mut proof.opened_values.instances[0].base_opened_values.quotient_chunks));
-    check!(grow(&mut proof.opened_values.instances[0].base_opened_values.quotient_chunks[0]));
-    check!(grow(&mut proof.opened_values.instances[0].permutation_local));
+    check!(grow(
+        &mut proof.opened_values.instances[0]
+            .base_opened_values
+            .trace_local
+    ));
+    check!(grow(
+        proof.opened_values.instances[0]
+            .base_opened_values
+            .trace_next
+            .as_mut()
+            .unwrap()
+    ));
+    check!(grow(
+        proof.opened_values.instances[0]
+            .base_opened_values
+            .preprocessed_local
+            .as_mut()
+            .unwrap()
+    ));
+    check!(grow(
+        proof.opened_values.instances[0]
+            .base_opened_values
+            .preprocessed_next
+            .as_mut()
+            .unwrap()
+    ));
+    check!(grow(
+        proof.opened_values.instances[0]
+            .base_opened_values
+            .random
+            .as_mut()
+            .unwrap()
+    ));
+    check!(grow(
+        &mut proof.opened_values.instances[0]
+            .base_opened_values
+            .quotient_chunks
+    ));
+    check!(grow(
+        &mut proof.opened_values.instances[0]
+            .base_opened_values
+            .quotient_chunks[0]
+    ));
+    check!(grow(
+        &mut proof.opened_values.instances[0].permutation_local
+    ));
     check!(grow(&mut proof.opened_values.instances[0].permutation_next));
     check!(grow(&mut proof.opening_proof.0));
     check!(grow(&mut proof.opening_proof.0[0]));
@@ -171,16 +287,48 @@ fn spare_capacity_at_every_nested_owner_is_counted_once() {
     check!(grow(&mut proof.opening_proof.1.final_poly));
     check!(grow(&mut proof.opening_proof.1.query_proofs));
     check!(grow(&mut proof.opening_proof.1.query_proofs[0].input_proof));
-    check!(grow(&mut proof.opening_proof.1.query_proofs[0].input_proof[0].opened_values));
-    check!(grow(&mut proof.opening_proof.1.query_proofs[0].input_proof[0].opened_values[0]));
-    check!(grow(&mut proof.opening_proof.1.query_proofs[0].input_proof[0].opening_proof.0));
-    check!(grow(&mut proof.opening_proof.1.query_proofs[0].input_proof[0].opening_proof.0[0]));
-    check!(grow(&mut proof.opening_proof.1.query_proofs[0].input_proof[0].opening_proof.1));
-    check!(grow(&mut proof.opening_proof.1.query_proofs[0].commit_phase_openings));
-    check!(grow(&mut proof.opening_proof.1.query_proofs[0].commit_phase_openings[0].sibling_values));
-    check!(grow(&mut proof.opening_proof.1.query_proofs[0].commit_phase_openings[0].opening_proof.0));
-    check!(grow(&mut proof.opening_proof.1.query_proofs[0].commit_phase_openings[0].opening_proof.0[0]));
-    check!(grow(&mut proof.opening_proof.1.query_proofs[0].commit_phase_openings[0].opening_proof.1));
+    check!(grow(
+        &mut proof.opening_proof.1.query_proofs[0].input_proof[0].opened_values
+    ));
+    check!(grow(
+        &mut proof.opening_proof.1.query_proofs[0].input_proof[0].opened_values[0]
+    ));
+    check!(grow(
+        &mut proof.opening_proof.1.query_proofs[0].input_proof[0]
+            .opening_proof
+            .0
+    ));
+    check!(grow(
+        &mut proof.opening_proof.1.query_proofs[0].input_proof[0]
+            .opening_proof
+            .0[0]
+    ));
+    check!(grow(
+        &mut proof.opening_proof.1.query_proofs[0].input_proof[0]
+            .opening_proof
+            .1
+    ));
+    check!(grow(
+        &mut proof.opening_proof.1.query_proofs[0].commit_phase_openings
+    ));
+    check!(grow(
+        &mut proof.opening_proof.1.query_proofs[0].commit_phase_openings[0].sibling_values
+    ));
+    check!(grow(
+        &mut proof.opening_proof.1.query_proofs[0].commit_phase_openings[0]
+            .opening_proof
+            .0
+    ));
+    check!(grow(
+        &mut proof.opening_proof.1.query_proofs[0].commit_phase_openings[0]
+            .opening_proof
+            .0[0]
+    ));
+    check!(grow(
+        &mut proof.opening_proof.1.query_proofs[0].commit_phase_openings[0]
+            .opening_proof
+            .1
+    ));
     assert_eq!(mutations, 36);
     assert!(previous > 0);
 }

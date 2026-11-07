@@ -7,10 +7,10 @@
 use lattica_prover_p3::{
     block_v2::{
         machine::{
+            MachineAir, Program,
             analysis::MachineAnalysis,
             backend::{RegisteredProgram, RegisteredVerifier},
             program::Val,
-            MachineAir, Program,
         },
         profile::{self, Config},
     },
@@ -18,7 +18,7 @@ use lattica_prover_p3::{
 };
 use p3_batch_stark::BatchProof;
 use p3_field::PrimeField64;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use sha3::{Digest, Sha3_256};
 use std::{
     cell::RefCell,
@@ -26,26 +26,47 @@ use std::{
     path::PathBuf,
     rc::Rc,
     sync::{
-        atomic::{AtomicU64, Ordering},
         Arc,
+        atomic::{AtomicU64, Ordering},
     },
     time::Instant,
 };
 
 mod diagnostics;
-#[cfg(all(feature = "full-workflow-experiment", target_os = "linux", target_arch = "x86_64"))]
-pub(crate) mod owned_workflow_observation;
-#[cfg(all(feature = "full-workflow-experiment", target_os = "linux", target_arch = "x86_64"))]
+#[cfg(all(
+    feature = "full-workflow-experiment",
+    target_os = "linux",
+    target_arch = "x86_64"
+))]
 pub(crate) mod generation_terminal;
+#[cfg(all(
+    feature = "owned-native-shake",
+    target_os = "linux",
+    target_arch = "x86_64"
+))]
+pub(crate) mod outer_report;
+#[cfg(all(
+    feature = "full-workflow-experiment",
+    target_os = "linux",
+    target_arch = "x86_64"
+))]
+pub(crate) mod owned_workflow_observation;
 pub(crate) mod phase_lifecycle;
 pub(crate) mod phase_report;
-#[cfg(all(feature = "owned-native-shake", target_os = "linux", target_arch = "x86_64"))]
-pub(crate) mod outer_report;
-#[cfg(all(feature = "owned-native-shake", target_os = "linux", target_arch = "x86_64"))]
+#[cfg(all(
+    test,
+    not(debug_assertions),
+    target_arch = "x86_64",
+    feature = "opencl"
+))]
+pub(crate) mod pre_session_outer;
+#[cfg(all(
+    feature = "owned-native-shake",
+    target_os = "linux",
+    target_arch = "x86_64"
+))]
 pub(crate) mod report_transport;
 pub(crate) mod retained_resources;
-#[cfg(all(test, not(debug_assertions), target_arch = "x86_64", feature = "opencl"))]
-pub(crate) mod pre_session_outer;
 pub(crate) mod shake_compilation;
 mod telemetry;
 pub use telemetry::RegistrationTelemetry;
@@ -113,14 +134,18 @@ fn check_cached_cap(
         return Ok(());
     }
     let mut details = identity.public_details();
-    details["expected_preprocessing_cap"] = json!(expected
-        .iter()
-        .map(|r| r.map(|v| v.as_canonical_u64()))
-        .collect::<Vec<_>>());
-    details["preprocessing_cap"] = json!(observed
-        .iter()
-        .map(|r| r.map(|v| v.as_canonical_u64()))
-        .collect::<Vec<_>>());
+    details["expected_preprocessing_cap"] = json!(
+        expected
+            .iter()
+            .map(|r| r.map(|v| v.as_canonical_u64()))
+            .collect::<Vec<_>>()
+    );
+    details["preprocessing_cap"] = json!(
+        observed
+            .iter()
+            .map(|r| r.map(|v| v.as_canonical_u64()))
+            .collect::<Vec<_>>()
+    );
     let message = "same program identity produced different preprocessing cap";
     diagnostics.failure("registration_cap_mismatch", details, message, None);
     Err(message.into())
@@ -268,7 +293,10 @@ impl Registry {
         let metadata = VecDeque::with_capacity(maximum_metadata_entries);
         let trace = RegistrationTrace::new(telemetry);
         let metadata_bytes = metadata.capacity() * std::mem::size_of::<Metadata>()
-            + trace.accounted_bytes() + GEOMETRY_METADATA_BYTES + PLANNING_METADATA_BYTES + NATIVE_METADATA_BYTES;
+            + trace.accounted_bytes()
+            + GEOMETRY_METADATA_BYTES
+            + PLANNING_METADATA_BYTES
+            + NATIVE_METADATA_BYTES;
         assert!(metadata_bytes <= PUBLIC_METADATA_LIMIT_BYTES);
         Self {
             prepared: None,
@@ -341,7 +369,8 @@ impl Registry {
             })
             .ok_or("verifier cache size overflow")?;
         let container_bytes = self.metadata.capacity() * std::mem::size_of::<Metadata>()
-            + self.trace.accounted_bytes() + GEOMETRY_METADATA_BYTES;
+            + self.trace.accounted_bytes()
+            + GEOMETRY_METADATA_BYTES;
         if payload_bytes > PUBLIC_METADATA_LIMIT_BYTES.saturating_sub(container_bytes) {
             self.metadata_oversized_rejections += 1;
             return Ok(payload_bytes);
@@ -377,10 +406,18 @@ impl Registry {
 pub struct ProvingContext {
     #[cfg(feature = "cpu-proof-experiment")]
     cpu_variant: lattica_prover_p3::block_v2::cpu_commitment::Variant,
+    #[cfg(feature = "cpu-proof-experiment")]
+    cpu_hash_kernel: lattica_prover_p3::block_v2::cpu_commitment::HashKernel,
+    #[cfg(feature = "cpu-proof-experiment")]
+    cpu_identity_overlap: bool,
     // Drop prepared handles before the owned Session, including on unwinding.
     registry: RefCell<Registry>,
     diagnostics: Rc<Diagnostics>,
-    #[cfg(all(feature = "full-workflow-experiment", target_os = "linux", target_arch = "x86_64"))]
+    #[cfg(all(
+        feature = "full-workflow-experiment",
+        target_os = "linux",
+        target_arch = "x86_64"
+    ))]
     owned_workflow_observations: owned_workflow_observation::OwnedWorkflowObservations,
     host_bytes: u64,
     host_profile: crate::host_memory_profile::HostMemoryProfile,
@@ -396,20 +433,62 @@ pub struct ProvingContext {
 impl ProvingContext {
     /// Explicit CPU research envelope; legacy `cpu` retains its 32 GiB ceiling.
     #[cfg(feature = "cpu-proof-experiment")]
-    pub(crate) fn cpu_research(profile: crate::host_memory_profile::HostMemoryProfile) -> Result<Self, String> {
+    pub(crate) fn cpu_research(
+        profile: crate::host_memory_profile::HostMemoryProfile,
+    ) -> Result<Self, String> {
         use crate::host_memory_profile::HostMemoryProfile;
-        if !matches!(profile, HostMemoryProfile::Standard | HostMemoryProfile::Expanded36) {
+        if !matches!(
+            profile,
+            HostMemoryProfile::Standard | HostMemoryProfile::Expanded36
+        ) {
             return Err("unsupported CPU proof research profile".into());
         }
-        Self::new(profile, profile.worker_bytes(), Request { policy: Policy::CpuRequired, emit_report: true },
-            Value::Null, #[cfg(feature = "opencl")] None)
+        Self::new(
+            profile,
+            profile.worker_bytes(),
+            Request {
+                policy: Policy::CpuRequired,
+                emit_report: true,
+            },
+            Value::Null,
+            #[cfg(feature = "opencl")]
+            None,
+        )
     }
     #[cfg(feature = "cpu-proof-experiment")]
-    pub(crate) fn cpu_research_with_variant(profile: crate::host_memory_profile::HostMemoryProfile, variant: lattica_prover_p3::block_v2::cpu_commitment::Variant) -> Result<Self,String> {
-        let mut context=Self::cpu_research(profile)?; context.cpu_variant=variant; Ok(context)
+    pub(crate) fn cpu_research_with_variant(
+        profile: crate::host_memory_profile::HostMemoryProfile,
+        variant: lattica_prover_p3::block_v2::cpu_commitment::Variant,
+    ) -> Result<Self, String> {
+        Self::cpu_research_with_tuning(profile, variant, Default::default(), false)
     }
     #[cfg(feature = "cpu-proof-experiment")]
-    pub(crate) fn cpu_variant(&self) -> lattica_prover_p3::block_v2::cpu_commitment::Variant { self.cpu_variant }
+    pub(crate) fn cpu_research_with_tuning(
+        profile: crate::host_memory_profile::HostMemoryProfile,
+        variant: lattica_prover_p3::block_v2::cpu_commitment::Variant,
+        kernel: lattica_prover_p3::block_v2::cpu_commitment::HashKernel,
+        overlap: bool,
+    ) -> Result<Self, String> {
+        use lattica_prover_p3::block_v2::cpu_commitment::HashKernel;
+        if kernel != HashKernel::Existing && !variant.tiled() {
+            return Err("interleaved CPU hashes require the hash or combined variant".into());
+        }
+        let mut context = Self::cpu_research(profile)?;
+        context.cpu_variant = variant;
+        context.cpu_hash_kernel = kernel;
+        context.cpu_identity_overlap = overlap;
+        Ok(context)
+    }
+    #[cfg(feature = "cpu-proof-experiment")]
+    pub(crate) fn cpu_hash_kernel(
+        &self,
+    ) -> lattica_prover_p3::block_v2::cpu_commitment::HashKernel {
+        self.cpu_hash_kernel
+    }
+    #[cfg(feature = "cpu-proof-experiment")]
+    pub(crate) fn cpu_variant(&self) -> lattica_prover_p3::block_v2::cpu_commitment::Variant {
+        self.cpu_variant
+    }
     pub fn cpu(host_bytes: u64) -> Result<Self, String> {
         Self::new(
             crate::host_memory_profile::HostMemoryProfile::Standard,
@@ -442,9 +521,11 @@ impl ProvingContext {
         device: Value,
         #[cfg(feature = "opencl")] session: Option<crate::opencl::Session>,
     ) -> Result<Self, String> {
-        if host_bytes == 0 || host_bytes > host_profile.worker_bytes()
+        if host_bytes == 0
+            || host_bytes > host_profile.worker_bytes()
             || (host_profile != crate::host_memory_profile::HostMemoryProfile::Standard
-                && host_profile.validate_worker(host_bytes).is_err()) {
+                && host_profile.validate_worker(host_bytes).is_err())
+        {
             return Err("context host allowance does not match the selected profile".into());
         }
         let session_id = NEXT_SESSION
@@ -476,9 +557,18 @@ impl ProvingContext {
             registry: RefCell::new(Registry::new()),
             #[cfg(feature = "cpu-proof-experiment")]
             cpu_variant: Default::default(),
+            #[cfg(feature = "cpu-proof-experiment")]
+            cpu_hash_kernel: Default::default(),
+            #[cfg(feature = "cpu-proof-experiment")]
+            cpu_identity_overlap: false,
             diagnostics,
-            #[cfg(all(feature = "full-workflow-experiment", target_os = "linux", target_arch = "x86_64"))]
-            owned_workflow_observations: owned_workflow_observation::OwnedWorkflowObservations::default(),
+            #[cfg(all(
+                feature = "full-workflow-experiment",
+                target_os = "linux",
+                target_arch = "x86_64"
+            ))]
+            owned_workflow_observations:
+                owned_workflow_observation::OwnedWorkflowObservations::default(),
             host_bytes,
             host_profile,
             request,
@@ -491,15 +581,27 @@ impl ProvingContext {
         })
     }
     #[cfg(feature = "opencl")]
-    pub(crate) fn opencl_with_host_profile(limits: crate::opencl::Limits,
-        profile: crate::host_memory_profile::HostMemoryProfile) -> Result<Self, String> {
-        profile.validate_worker(limits.host_bytes).map_err(str::to_owned)?;
+    pub(crate) fn opencl_with_host_profile(
+        limits: crate::opencl::Limits,
+        profile: crate::host_memory_profile::HostMemoryProfile,
+    ) -> Result<Self, String> {
+        profile
+            .validate_worker(limits.host_bytes)
+            .map_err(str::to_owned)?;
         let session = crate::opencl::Session::start_with_host_profile(limits, profile)?;
         let device = serde_json::to_value(session.device_identity()).map_err(error)?;
-        Self::new(profile, limits.host_bytes, crate::opencl::strict_request(), device, Some(session))
+        Self::new(
+            profile,
+            limits.host_bytes,
+            crate::opencl::strict_request(),
+            device,
+            Some(session),
+        )
     }
 
-    pub fn host_profile(&self) -> crate::host_memory_profile::HostMemoryProfile { self.host_profile }
+    pub fn host_profile(&self) -> crate::host_memory_profile::HostMemoryProfile {
+        self.host_profile
+    }
 
     pub fn host_bytes(&self) -> u64 {
         self.host_bytes
@@ -509,9 +611,15 @@ impl ProvingContext {
     }
 
     fn check_legacy_gpu_dispatch(&self) -> Result<(), String> {
-        #[cfg(all(feature = "full-workflow-experiment", target_os = "linux", target_arch = "x86_64"))]
+        #[cfg(all(
+            feature = "full-workflow-experiment",
+            target_os = "linux",
+            target_arch = "x86_64"
+        ))]
         if let Some(session) = &self.session {
-            session.check_legacy_workflow_dispatch().map_err(str::to_owned)?;
+            session
+                .check_legacy_workflow_dispatch()
+                .map_err(str::to_owned)?;
         }
         Ok(())
     }
@@ -519,20 +627,44 @@ impl ProvingContext {
     #[cfg(feature = "opencl")]
     fn ordinary_session_needs_cleanup(&self) -> bool {
         self.session.as_ref().is_some_and(|_session| {
-            #[cfg(all(feature = "full-workflow-experiment", target_os = "linux", target_arch = "x86_64"))]
-            { _session.needs_ordinary_workflow_cleanup() }
-            #[cfg(not(all(feature = "full-workflow-experiment", target_os = "linux", target_arch = "x86_64")))]
-            { true }
+            #[cfg(all(
+                feature = "full-workflow-experiment",
+                target_os = "linux",
+                target_arch = "x86_64"
+            ))]
+            {
+                _session.needs_ordinary_workflow_cleanup()
+            }
+            #[cfg(not(all(
+                feature = "full-workflow-experiment",
+                target_os = "linux",
+                target_arch = "x86_64"
+            )))]
+            {
+                true
+            }
         })
     }
 
     #[cfg(feature = "opencl")]
     fn ordinary_session_can_observe(&self) -> bool {
         self.session.as_ref().is_some_and(|_session| {
-            #[cfg(all(feature = "full-workflow-experiment", target_os = "linux", target_arch = "x86_64"))]
-            { _session.check_legacy_workflow_dispatch().is_ok() }
-            #[cfg(not(all(feature = "full-workflow-experiment", target_os = "linux", target_arch = "x86_64")))]
-            { true }
+            #[cfg(all(
+                feature = "full-workflow-experiment",
+                target_os = "linux",
+                target_arch = "x86_64"
+            ))]
+            {
+                _session.check_legacy_workflow_dispatch().is_ok()
+            }
+            #[cfg(not(all(
+                feature = "full-workflow-experiment",
+                target_os = "linux",
+                target_arch = "x86_64"
+            )))]
+            {
+                true
+            }
         })
     }
     pub fn set_failure_directory(&self, path: impl Into<PathBuf>) -> Result<(), String> {
@@ -610,8 +742,15 @@ impl ProvingContext {
         if self.ordinary_session_needs_cleanup() {
             self.drain_prepared(&state, None, lattica_prover_p3::block_v2::gpu_hash::drain)?;
         }
-        #[cfg(all(feature = "full-workflow-experiment", target_os = "linux", target_arch = "x86_64"))]
-        if self.session.is_some() && !self.ordinary_session_needs_cleanup() && state.prepared.is_some() {
+        #[cfg(all(
+            feature = "full-workflow-experiment",
+            target_os = "linux",
+            target_arch = "x86_64"
+        ))]
+        if self.session.is_some()
+            && !self.ordinary_session_needs_cleanup()
+            && state.prepared.is_some()
+        {
             return Err("retired ordinary Session retained prepared state".into());
         }
         state.release(reason);
@@ -644,12 +783,21 @@ impl ProvingContext {
     /// CPU experiment only. The coordinator retains the original cache claim
     /// alongside the independent native-work claim until this call completes.
     #[cfg(feature = "cpu-proof-experiment")]
-    pub(crate) fn with_retained_native_cpu<T>(&self, f: impl FnOnce() -> Result<T, String>) -> Result<T, String> {
-        if self.policy() != Policy::CpuRequired { return Err("CPU retention requires CpuRequired".into()); }
-        let _serial = self.registry.try_borrow_mut().map_err(|_| "reentrant CPU native work")?;
+    pub(crate) fn with_retained_native_cpu<T>(
+        &self,
+        f: impl FnOnce() -> Result<T, String>,
+    ) -> Result<T, String> {
+        if self.policy() != Policy::CpuRequired {
+            return Err("CPU retention requires CpuRequired".into());
+        }
+        let _serial = self
+            .registry
+            .try_borrow_mut()
+            .map_err(|_| "reentrant CPU native work")?;
         let start = Instant::now();
         let result = f();
-        self.diagnostics.native_finished(start.elapsed().as_secs_f64(), result.is_ok());
+        self.diagnostics
+            .native_finished(start.elapsed().as_secs_f64(), result.is_ok());
         result
     }
     pub fn with_registered<T>(
@@ -668,7 +816,12 @@ impl ProvingContext {
         program: Arc<Program>,
         f: impl FnOnce(&RegisteredTemplate) -> Result<T, String>,
     ) -> Result<T, String> {
-        self.with_registered_shared_inner(program, self.host_bytes.min(crate::host_memory_profile::OPERATION_HOST_BYTES), f)
+        self.with_registered_shared_inner(
+            program,
+            self.host_bytes
+                .min(crate::host_memory_profile::OPERATION_HOST_BYTES),
+            f,
+        )
     }
 
     /// Reserve a smaller GPU backend allowance after accounting for caller-owned
@@ -682,7 +835,12 @@ impl ProvingContext {
         f: impl FnOnce(&RegisteredTemplate) -> Result<T, String>,
     ) -> Result<T, String> {
         self.check_legacy_gpu_dispatch()?;
-        if host_bytes == 0 || host_bytes > self.host_bytes.min(crate::host_memory_profile::OPERATION_HOST_BYTES) {
+        if host_bytes == 0
+            || host_bytes
+                > self
+                    .host_bytes
+                    .min(crate::host_memory_profile::OPERATION_HOST_BYTES)
+        {
             return Err(
                 "registered remaining-host allowance must be nonzero and within context allowance"
                     .into(),
@@ -776,11 +934,13 @@ impl ProvingContext {
             let result = (|| -> Result<(RegisteredTemplate, bool, bool), String> {
                 let registered = RegisteredProgram::new_with_cpu_identity(
                     {
-                    let air=MachineAir::from_shared_program(program);
-                    #[cfg(feature = "cpu-proof-experiment")]
-                    let air=air.with_cpu_variant(self.cpu_variant);
-                    air
-                },
+                        let air = MachineAir::from_shared_program(program);
+                        #[cfg(feature = "cpu-proof-experiment")]
+                        let air = air
+                            .with_cpu_variant(self.cpu_variant)
+                            .with_cpu_tuning(self.cpu_hash_kernel, self.cpu_identity_overlap);
+                        air
+                    },
                     host_bytes,
                     self.request,
                 )
@@ -1023,19 +1183,23 @@ mod admission_diagnostics_tests {
         let expected = [[Val::ONE; 4]];
         let observed = [[Val::ZERO; 4]];
         check_cached_cap(&context.diagnostics, identity, &expected, &expected).unwrap();
-        assert!(context.diagnostics.report()["failures"]
-            .as_array()
-            .unwrap()
-            .is_empty());
+        assert!(
+            context.diagnostics.report()["failures"]
+                .as_array()
+                .unwrap()
+                .is_empty()
+        );
         assert!(check_cached_cap(&context.diagnostics, identity, &expected, &observed).is_err());
 
         let calls = std::cell::Cell::new(0);
-        assert!(context
-            .drain_prepared(&Registry::new(), Some(identity), || {
-                calls.set(calls.get() + 1);
-                Err("injected drain failure".into())
-            })
-            .is_err());
+        assert!(
+            context
+                .drain_prepared(&Registry::new(), Some(identity), || {
+                    calls.set(calls.get() + 1);
+                    Err("injected drain failure".into())
+                })
+                .is_err()
+        );
         assert_eq!(calls.get(), 1);
         let report = context.diagnostics.report();
         let events = report["failures"].as_array().unwrap();
@@ -1100,12 +1264,30 @@ mod admission_diagnostics_tests {
 #[cfg(feature = "opencl")]
 mod preparation;
 
-#[cfg(all(test, not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "owned-gpu-runtime"))]
+#[cfg(all(
+    test,
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "owned-gpu-runtime"
+))]
 pub(crate) use preparation::owned::prepare_owned_graph;
 
-#[cfg(all(feature = "full-workflow-experiment", target_os = "linux", target_arch = "x86_64"))]
-pub(crate) mod workflow_resources;
-#[cfg(all(feature = "full-workflow-experiment", target_os = "linux", target_arch = "x86_64"))]
+#[cfg(all(
+    feature = "full-workflow-experiment",
+    target_os = "linux",
+    target_arch = "x86_64"
+))]
 mod workflow_footprint;
-#[cfg(all(feature = "full-workflow-experiment", target_os = "linux", target_arch = "x86_64"))]
+#[cfg(all(
+    feature = "full-workflow-experiment",
+    target_os = "linux",
+    target_arch = "x86_64"
+))]
+pub(crate) mod workflow_resources;
+#[cfg(all(
+    feature = "full-workflow-experiment",
+    target_os = "linux",
+    target_arch = "x86_64"
+))]
 pub(crate) use workflow_footprint::WorkflowContextFootprint;

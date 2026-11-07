@@ -1,5 +1,5 @@
 //! Bounded CPU identity hashing. GPU preprocessing and proof policy are separate.
-use super::{identity_stream, MachineAir};
+use super::{MachineAir, identity_stream};
 use crate::block_v2::{
     commitment::{self, stream::State},
     machine::{analysis, fingerprint, program::Program},
@@ -8,8 +8,8 @@ use crate::block_v2::{
 use crate::proving::{Backend, Capabilities, CoverageScope, Policy, Report, Request, Run, Stage};
 use p3_field::PrimeField64;
 use std::sync::{
-    atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering},
     Arc,
+    atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering},
 };
 
 const DOMAIN: u64 = 0x4c42563210;
@@ -17,6 +17,135 @@ pub const MAX_IDENTITY_STREAMS: usize = 16;
 pub const WORKER_STACK_BYTES: u64 = 2 << 20;
 pub const IDENTITY_PREFIX_HOST_BYTES: u64 = fingerprint::bounded::RETAINED_BYTES as u64 + 4096;
 const IDENTITY_PREFIX_CONSTRUCTION_BYTES: u64 = fingerprint::bounded::HOST_BYTES as u64 + 4096;
+
+/// Private, one-registration prefix. It cannot be imported, cached, or attached
+/// to another program. Symbolic/fingerprint storage retires on the worker.
+pub(super) struct LocalPrefix {
+    program: Arc<Program>,
+    header: [u64; 10],
+    trailer: [u64; 18],
+    cap_fields: usize,
+    state: State,
+}
+
+/// Conservative preprocessing-phase estimate, inside the existing admitted
+/// operation allowance. The prefix is gone before the larger proving phase.
+/// External process limits remain authoritative; this is not an allocator bound.
+pub(super) fn overlap_host_bytes(analysis: &analysis::MachineAnalysis) -> Option<u64> {
+    let rows = (analysis.height as u64).checked_mul(2 << profile::LOG_BLOWUP)?;
+    let width = analysis.preprocessed_width as u64;
+    rows.checked_mul(width.checked_add(4)?)?
+        .checked_mul(16)?
+        .checked_add(rows.checked_mul(64)?)?
+        .checked_add(
+            (analysis.height as u64)
+                .checked_mul(width)?
+                .checked_mul(16)?,
+        )?
+        .checked_add((512 + 64) << 20)?
+        .checked_add(super::super::symbolic::HOST_BYTES)?
+        .checked_add(IDENTITY_PREFIX_CONSTRUCTION_BYTES)
+}
+
+fn local_prefix(
+    air: &MachineAir,
+    analysis: &analysis::MachineAnalysis,
+) -> Result<LocalPrefix, String> {
+    let constraints = super::super::symbolic::prepare_machine(
+        air,
+        super::super::compiler_constants::Constants::cpu(),
+    )
+    .map_err(|e| format!("CPU prefix analysis: {e:?}"))?
+    .into_parts()
+    .1;
+    let fingerprint = fingerprint::bounded::encode(
+        &constraints.base,
+        &constraints.extension,
+        &constraints.order,
+        fingerprint::bounded::HOST_BYTES,
+    )?;
+    let count = prefix_len(air, analysis, &fingerprint)?;
+    let cap_fields = 4usize
+        .checked_shl(
+            (air.program().height().ilog2() as usize + 1 + profile::LOG_BLOWUP)
+                .min(profile::CAP_HEIGHT) as u32,
+        )
+        .ok_or("CPU prefix cap overflow")?;
+    let mut state = State::new(
+        DOMAIN,
+        count
+            .checked_add(cap_fields)
+            .ok_or("CPU prefix length overflow")?,
+    )
+    .map_err(|e| format!("{e:?}"))?;
+    for field in identity_stream::Cursor::new(air, analysis, &fingerprint) {
+        state.push(field?).map_err(|e| format!("{e:?}"))?;
+    }
+    Ok(LocalPrefix {
+        program: Arc::clone(&air.program),
+        header: identity_stream::header(air),
+        trailer: identity_stream::trailer(analysis),
+        cap_fields,
+        state,
+    })
+}
+
+impl LocalPrefix {
+    pub(super) fn finish(
+        mut self,
+        air: &MachineAir,
+        analysis: &analysis::MachineAnalysis,
+        common: &p3_batch_stark::CommonData<profile::Config>,
+    ) -> Result<[u64; 4], String> {
+        let roots = common
+            .preprocessed
+            .as_ref()
+            .ok_or("identity commitment missing")?
+            .commitment
+            .roots();
+        if !std::ptr::eq(self.program.as_ref(), air.program())
+            || self.header != identity_stream::header(air)
+            || self.trailer != identity_stream::trailer(analysis)
+            || roots.len().checked_mul(4) != Some(self.cap_fields)
+        {
+            return Err("CPU local prefix program or cap geometry changed".into());
+        }
+        for field in roots.iter().flatten() {
+            self.state
+                .push(field.as_canonical_u64())
+                .map_err(|e| format!("{e:?}"))?;
+        }
+        self.state.finish().map_err(|e| format!("{e:?}"))
+    }
+}
+
+/// in_place_scope keeps non-Send preprocessing owners on the calling worker.
+/// The spawned prefix shares its current pool; no auxiliary pool or OS thread.
+/// Scope exit joins it even if preprocessing returns an error or unwinds.
+pub(super) fn alongside<T>(
+    air: &MachineAir,
+    analysis: &analysis::MachineAnalysis,
+    run: Option<&Run>,
+    preprocessing: impl FnOnce() -> T,
+) -> (T, Option<Result<LocalPrefix, String>>) {
+    let Some(run) = run else {
+        return (preprocessing(), None);
+    };
+    let mut prefix = None;
+    let data = rayon::in_place_scope(|scope| {
+        scope.spawn(|_| {
+            prefix = Some(
+                run.measure(Stage::Preprocessing, Backend::Cpu, || {
+                    local_prefix(air, analysis)
+                })
+                .map_err(|e| e.to_string())
+                .and_then(|x| x),
+            );
+        });
+        preprocessing()
+    });
+    (data, prefix)
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
 pub struct IdentityCpuOptions {

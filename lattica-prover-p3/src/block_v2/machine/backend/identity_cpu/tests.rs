@@ -1,15 +1,97 @@
 use super::*;
 use p3_field::PrimeCharacteristicRing;
+#[test]
+fn local_overlap_matches_serial_and_joins_on_error_and_panic() {
+    for threads in [1, 4] {
+        rayon::ThreadPoolBuilder::new()
+            .num_threads(threads)
+            .build()
+            .unwrap()
+            .install(|| {
+                let mut builder = crate::block_v2::machine::ProgramBuilder::new(1).unwrap();
+                let input = builder.input();
+                builder.assert_equal(builder.public(0).unwrap(), input);
+                let air =
+                    MachineAir::from_shared_program(Arc::new(builder.finish(Some(64)).unwrap()));
+                let analysis = analysis::analyze(&air).unwrap();
+                let roots = vec![[super::super::Val::from_u64(17); 4]; 1 << profile::CAP_HEIGHT];
+                let common =
+                    super::super::common_from_cap(&air, p3_symmetric::MerkleCap::new(roots))
+                        .unwrap();
+                let expected = super::super::program_identity(&air, &common, &analysis);
+                let run = cpu_run("overlap-test").unwrap();
+                let (result, prefix) = alongside(&air, &analysis, Some(&run), || {
+                    Err::<(), _>("preprocessing error")
+                });
+                assert_eq!(result, Err("preprocessing error"));
+                assert_eq!(
+                    prefix
+                        .unwrap()
+                        .unwrap()
+                        .finish(&air, &analysis, &common)
+                        .unwrap(),
+                    expected
+                );
+                let report = run.finish(true).unwrap();
+                assert!(
+                    report
+                        .observations
+                        .iter()
+                        .all(|o| o.calls == o.completed_calls)
+                );
+                let run = cpu_run("overlap-panic-test").unwrap();
+                let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    alongside(&air, &analysis, Some(&run), || {
+                        panic!("preprocessing unwind")
+                    });
+                }));
+                assert!(result.is_err());
+                let report = run.finish(false).unwrap();
+                assert_eq!(
+                    report
+                        .observations
+                        .iter()
+                        .map(|o| o.completed_calls)
+                        .sum::<u64>(),
+                    1
+                );
+                let mut changed = analysis.clone();
+                changed.constraints += 1;
+                assert!(
+                    local_prefix(&air, &analysis)
+                        .unwrap()
+                        .finish(&air, &changed, &common)
+                        .is_err()
+                );
+                let foreign = MachineAir::from_shared_program(Arc::new(air.program().clone()));
+                assert!(
+                    local_prefix(&air, &analysis)
+                        .unwrap()
+                        .finish(&foreign, &analysis, &common)
+                        .is_err()
+                );
+            });
+    }
+}
 
 #[test]
 fn completed_prefix_bound_excludes_retired_memos_but_keeps_construction_allowance() {
     for streams in 1..=MAX_IDENTITY_STREAMS {
         let footprint = IdentityBatchFootprint::for_borrowed_program_bounds(streams, 123).unwrap();
-        assert_eq!(footprint.retained_host_bytes, streams as u64 * IDENTITY_PREFIX_HOST_BYTES);
-        assert_eq!(footprint.host_bytes, streams as u64 * ((32 << 20) + 4096)
-            + crate::block_v2::machine::symbolic::HOST_BYTES
-            + streams as u64 * WORKER_STACK_BYTES + (1 << 20));
-        assert!(footprint.retained_host_bytes < streams as u64 * IDENTITY_PREFIX_CONSTRUCTION_BYTES);
+        assert_eq!(
+            footprint.retained_host_bytes,
+            streams as u64 * IDENTITY_PREFIX_HOST_BYTES
+        );
+        assert_eq!(
+            footprint.host_bytes,
+            streams as u64 * ((32 << 20) + 4096)
+                + crate::block_v2::machine::symbolic::HOST_BYTES
+                + streams as u64 * WORKER_STACK_BYTES
+                + (1 << 20)
+        );
+        assert!(
+            footprint.retained_host_bytes < streams as u64 * IDENTITY_PREFIX_CONSTRUCTION_BYTES
+        );
     }
 }
 
@@ -96,9 +178,11 @@ fn real_program_identity_matches_slice_and_rejects_foreign_metadata() {
             state,
         }
     };
-    assert!(make()
-        .check_owner(&IdentityCpuContext::new(), 7, &air)
-        .is_err());
+    assert!(
+        make()
+            .check_owner(&IdentityCpuContext::new(), 7, &air)
+            .is_err()
+    );
     assert!(make().check_owner(&context, 8, &air).is_err());
     assert_eq!(
         make()
@@ -111,19 +195,25 @@ fn real_program_identity_matches_slice_and_rejects_foreign_metadata() {
     assert!(make().finish(&air, &analysis, &changed, &common).is_err());
     let mut token = make();
     token.header[0] ^= 1;
-    assert!(token
-        .finish(&air, &analysis, &fingerprint, &common)
-        .is_err());
+    assert!(
+        token
+            .finish(&air, &analysis, &fingerprint, &common)
+            .is_err()
+    );
     let mut token = make();
     token.trailer[0] ^= 1;
-    assert!(token
-        .finish(&air, &analysis, &fingerprint, &common)
-        .is_err());
+    assert!(
+        token
+            .finish(&air, &analysis, &fingerprint, &common)
+            .is_err()
+    );
     let mut token = make();
     token.cap_fields += 4;
-    assert!(token
-        .finish(&air, &analysis, &fingerprint, &common)
-        .is_err());
+    assert!(
+        token
+            .finish(&air, &analysis, &fingerprint, &common)
+            .is_err()
+    );
 }
 
 #[test]
@@ -148,10 +238,12 @@ fn cpu_cohort_admission_selects_largest_ready_width_and_refuses_one_job_overflow
             .unwrap()
             .host_bytes;
         assert_eq!(options.fit_ready(16, allowance).unwrap().max_streams(), n);
-        assert!(options
-            .fit_ready(16, allowance - 1)
-            .map(|o| o.max_streams() < n)
-            .unwrap_or(n == 1));
+        assert!(
+            options
+                .fit_ready(16, allowance - 1)
+                .map(|o| o.max_streams() < n)
+                .unwrap_or(n == 1)
+        );
     }
     assert!(options.fit_ready(0, u64::MAX).is_err());
     assert!(options.fit_ready(1, 0).is_err());
@@ -161,7 +253,7 @@ fn cpu_cohort_admission_selects_largest_ready_width_and_refuses_one_job_overflow
 #[test]
 #[ignore = "exclusive guarded GPU preprocessing/proof and independent CPU verification"]
 fn cpu_identity_and_prefixes_match_gpu_reference_without_gpu_identity_calls() {
-    use super::super::{identity_receipt, RegisteredProgram};
+    use super::super::{RegisteredProgram, identity_receipt};
     use crate::block_v2::{gpu_hash, quotient_pcs};
     fn initialize() {
         let fusion = quotient_pcs::initialize_research_from_env().unwrap();

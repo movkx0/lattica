@@ -2,10 +2,10 @@
 //! Workers own their non-Send contexts; no ledger or context crosses a thread.
 use super::*;
 use crate::execution::{
-    retained_resources::{Bytes, Category, Ledger, Reservation, WorkerAllowance},
     ProvingContext,
+    retained_resources::{Bytes, Category, Ledger, Reservation, WorkerAllowance},
 };
-use jobs::{Observation, Output, Spec, Task};
+use jobs::{Kind, Observation, Output, Spec, Task};
 use std::sync::mpsc;
 
 // Explicit native joins also wait for thread-local destructors. Scope closure
@@ -159,6 +159,7 @@ pub(super) fn run_with_ledger(
     let mut outputs: Vec<Option<Output>> = (0..count).map(|_| None).collect();
     let mut planned: Vec<_> = jobs.into_iter().map(Some).collect();
     let mut complete = vec![false; count];
+    let mut starts = vec![None; count];
     let mut evicting = vec![false; options.workers];
     let start = Instant::now();
     let mut reports = Vec::with_capacity(count);
@@ -179,6 +180,8 @@ pub(super) fn run_with_ledger(
             let retain = options.retain;
             let profile = options.host_profile();
             let variant = options.cpu_variant;
+            let kernel = options.cpu_hash_kernel;
+            let overlap = options.identity_overlap;
             owners.0.push(
                 std::thread::Builder::new()
                     .name(format!("ringct-cpu-proof-{slot}"))
@@ -205,8 +208,9 @@ pub(super) fn run_with_ledger(
                                 .map_err(error)?;
                             let done = done.clone();
                             let result = pool.install(move || -> Result<()> {
-                                let context =
-                                    ProvingContext::cpu_research_with_variant(profile, variant)?;
+                                let context = ProvingContext::cpu_research_with_tuning(
+                                    profile, variant, kernel, overlap,
+                                )?;
                                 let mut identity = None;
                                 while let Ok(work) = rx.recv() {
                                     match work {
@@ -371,6 +375,20 @@ pub(super) fn run_with_ledger(
                     };
                     let output = reserve(&ledger, output_bytes)?;
                     let spec = planned[id].take().unwrap();
+                    let preceding = if matches!(spec.kind, Kind::Prove | Kind::GraphProve) {
+                        Some(spec.deps[0])
+                    } else {
+                        None
+                    };
+                    let service_started = preceding.and_then(|dep| starts[dep]);
+                    let preceding_compile_ns = preceding
+                        .and_then(|dep| {
+                            reports
+                                .iter()
+                                .find(|report: &&Observation| report.id == dep)
+                        })
+                        .map_or(0, |report| report.compile_ns);
+                    starts[id] = Some(Instant::now());
                     let mut values = Vec::new();
                     let mut originals = Vec::new();
                     for dep in spec.deps {
@@ -397,6 +415,8 @@ pub(super) fn run_with_ledger(
                             kind: spec.kind,
                             inputs: values,
                             retain_native: options.retain,
+                            service_started,
+                            preceding_compile_ns,
                         }))
                         .map_err(error)?;
                     peak_workers = peak_workers.max(active.iter().filter(|s| s.is_some()).count());
@@ -411,6 +431,25 @@ pub(super) fn run_with_ledger(
                     senders[slot].send(Work::Evict).map_err(error)?;
                     evicting[slot] = true;
                 } else {
+                    let ready: Vec<_> = planned
+                        .iter()
+                        .enumerate()
+                        .filter_map(|(id, spec)| {
+                            let spec = spec.as_ref()?;
+                            if !spec.deps.iter().all(|dep| complete[*dep]) {
+                                return None;
+                            }
+                            Some((
+                                id,
+                                spec.admission(&outputs, options.cpu_variant)
+                                    .map(|(work, output, _)| (work, output)),
+                            ))
+                        })
+                        .collect();
+                    eprintln!(
+                        "CPU_PROOF_ADMISSION_BLOCKED remaining_host_bytes={} ready={ready:?}",
+                        ledger.remaining().host
+                    );
                     return Err("CPU DAG cannot make progress within its memory allowance".into());
                 }
             }
