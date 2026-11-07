@@ -299,9 +299,21 @@ pub fn make_cpu_config_with_kernel(
     variant: super::cpu_commitment::Variant,
     kernel: super::cpu_commitment::HashKernel,
 ) -> Config {
+    make_cpu_config_with_path(variant, kernel, Default::default())
+}
+#[cfg(all(
+    feature = "cpu-proof-experiment",
+    not(any(feature = "gpu", feature = "gpu-metal"))
+))]
+pub fn make_cpu_config_with_path(
+    variant: super::cpu_commitment::Variant,
+    kernel: super::cpu_commitment::HashKernel,
+    path: super::cpu_commitment::CommitmentPath,
+) -> Config {
     cpu_config_with_variant(
         variant,
         kernel,
+        path,
         ChaCha20Rng::from_rng(&mut rand::rng()),
         ChaCha20Rng::from_rng(&mut rand::rng()),
     )
@@ -321,9 +333,21 @@ pub(crate) fn cpu_preprocessing_config_with_kernel(
     variant: super::cpu_commitment::Variant,
     kernel: super::cpu_commitment::HashKernel,
 ) -> Config {
+    cpu_preprocessing_config_with_path(variant, kernel, Default::default())
+}
+#[cfg(all(
+    feature = "cpu-proof-experiment",
+    not(any(feature = "gpu", feature = "gpu-metal"))
+))]
+pub(crate) fn cpu_preprocessing_config_with_path(
+    variant: super::cpu_commitment::Variant,
+    kernel: super::cpu_commitment::HashKernel,
+    path: super::cpu_commitment::CommitmentPath,
+) -> Config {
     cpu_config_with_variant(
         variant,
         kernel,
+        path,
         ChaCha20Rng::from_seed([0; 32]),
         ChaCha20Rng::from_seed([0; 32]),
     )
@@ -335,6 +359,7 @@ pub(crate) fn cpu_preprocessing_config_with_kernel(
 fn cpu_config_with_variant(
     variant: super::cpu_commitment::Variant,
     kernel: super::cpu_commitment::HashKernel,
+    path: super::cpu_commitment::CommitmentPath,
     salts: ChaCha20Rng,
     hiding: ChaCha20Rng,
 ) -> Config {
@@ -346,7 +371,8 @@ fn cpu_config_with_variant(
         salts,
     )
     .with_variant(variant)
-    .with_hash_kernel(kernel);
+    .with_hash_kernel(kernel)
+    .with_commitment_path(path);
     let params = fri(ExtensionMmcs::<Val, Challenge, ValMmcs>::new(mmcs.clone()));
     let pcs = super::quotient_pcs::CandidatePcs::new(
         Dft::default(),

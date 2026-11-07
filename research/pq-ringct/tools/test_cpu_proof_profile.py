@@ -17,7 +17,7 @@ class CpuProofAcceptance(unittest.TestCase):
 
     def report(self):
         s=self.selected()
-        return dict(schema='ringct-cpu-proof-profile-v3',backend='cpu',layout='paired-v1',options=s['options'],
+        return dict(schema='ringct-cpu-proof-profile-v4',backend='cpu',layout='paired-v1',options=s['options'],
                     gpu_contexts=0,gpu_proof_calls=0,fresh_stark_randomness=True,complete_workflow=False,
                     cleanup_complete=True,input_sha3_256='12'*32,records=[dict(repetition=0,wall_ns=10,cleanup_complete=True,
                         admitted_device_bytes=0,completed_jobs=3,planned_jobs=3,peak_workers=1,
@@ -60,7 +60,7 @@ class CpuProofAcceptance(unittest.TestCase):
                 selection(args,['/tmp/pq-ringct-cpu-proof','--input','/tmp/public.json',*argv])
     def test_tuning_and_target_selections_are_explicit(self):
         for argv in (['--cpu-hash-kernel','interleaved2'], ['--transaction','3'],
-            ['--identity-overlap','yes'], ['--compare-target','1'], ['--candidate-first','1']):
+            ['--identity-overlap','yes'], ['--cpu-commitment-path','replay'], ['--baseline-identity-overlap','1'], ['--compare-target','1'], ['--candidate-first','1']):
             with self.assertRaises(RuntimeError):
                 selection(self.args(), ['/tmp/pq-ringct-cpu-proof','--input','fixture',*argv])
         chosen=selection(self.args(), ['/tmp/pq-ringct-cpu-proof','--input','fixture',
@@ -79,7 +79,7 @@ class CpuProofAcceptance(unittest.TestCase):
         row['jobs']=row['jobs'][:2]+[
             dict(id=2,kind='target_compile',elapsed_ns=2,service_ns=2,compiled_storage_bytes=5000,dependency_storage_bytes=10),
             dict(id=3,kind='target_comparison',elapsed_ns=40,service_ns=40,mutation_checks=4,
-                comparisons=[dict(candidate=c,hash_kernel='interleaved2' if c else 'existing',identity_overlap=c,
+                comparisons=[dict(candidate=c,hash_kernel='interleaved2' if c else 'existing',identity_overlap=c,commitment_path='existing',
                     observation=dict(id=3,kind='recursive_proof',elapsed_ns=20,service_ns=22,
                         compile_ns=2,registration_ns=3,prepared_hit=False,mutation_checks=2,proof_digest=f'{10+i:064x}'))
                     for i,c in enumerate((False,True))])]
@@ -96,10 +96,19 @@ class CpuProofAcceptance(unittest.TestCase):
         changed['records'][0]['jobs'][3]['comparisons'][1]['hash_kernel']='existing'
         with self.assertRaises(RuntimeError):validate(output(changed),selected)
 
+    def test_latest_baseline_and_candidate_paths_are_bound(self):
+        args=['/tmp/pq-ringct-cpu-proof','--input','fixture','--cpu-variant','combined',
+            '--cpu-commitment-path','packed','--identity-overlap','1','--baseline-identity-overlap','1',
+            '--mode','paired','--transaction','0','--compare-target','1']
+        chosen=selection(self.args(),args)['options']
+        self.assertEqual(chosen['cpu_commitment_path'],'packed')
+        self.assertTrue(chosen['baseline_identity_overlap'])
+        with self.assertRaises(RuntimeError): selection(self.args(),args+['--cpu-hash-kernel','interleaved2'])
+
 
 class CommitmentAcceptance(unittest.TestCase):
     def rows(self):
-        return [dict(variant='combined',hash_kernel='existing',tile_rows=1024,threads=16,height=1<<18,width=w,matrices=n,
+        return [dict(variant='combined',hash_kernel='existing',commitment_path='existing',tile_rows=1024,threads=16,height=1<<18,width=w,matrices=n,
             repetition=i,commit_ns=1,verified=True) for w,n in ((94,1),(200,1),(51,1),(3,16)) for i in range(3)]
     def output(self, rows):
         return '\n'.join('CPU_COMMITMENT_SCREEN '+json.dumps(r) for r in rows)

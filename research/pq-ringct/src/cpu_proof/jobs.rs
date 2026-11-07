@@ -123,6 +123,8 @@ pub fn build(options: &Options, cases: &[Arc<inputs::Case>]) -> Result<Vec<Spec>
             original: Box::new(original),
             profile: options.host_profile(),
             kernel: options.cpu_hash_kernel,
+            path: options.cpu_commitment_path,
+            baseline_overlap: options.baseline_identity_overlap,
             overlap: options.identity_overlap,
             candidate_first: options.candidate_first,
         });
@@ -531,9 +533,10 @@ pub fn execute(
         } => {
             report.kind = "native";
             let request = &case.plan.requests()[request];
-            let config = lattica_prover_p3::block_v2::profile::make_cpu_config_with_kernel(
+            let config = lattica_prover_p3::block_v2::profile::make_cpu_config_with_path(
                 context.cpu_variant(),
                 context.cpu_hash_kernel(),
+                context.cpu_commitment_path(),
             );
             let work = || {
                 request

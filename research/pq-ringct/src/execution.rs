@@ -410,6 +410,8 @@ pub struct ProvingContext {
     cpu_hash_kernel: lattica_prover_p3::block_v2::cpu_commitment::HashKernel,
     #[cfg(feature = "cpu-proof-experiment")]
     cpu_identity_overlap: bool,
+    #[cfg(feature = "cpu-proof-experiment")]
+    cpu_commitment_path: lattica_prover_p3::block_v2::cpu_commitment::CommitmentPath,
     // Drop prepared handles before the owned Session, including on unwinding.
     registry: RefCell<Registry>,
     diagnostics: Rc<Diagnostics>,
@@ -469,6 +471,28 @@ impl ProvingContext {
         kernel: lattica_prover_p3::block_v2::cpu_commitment::HashKernel,
         overlap: bool,
     ) -> Result<Self, String> {
+        Self::cpu_research_with_commitment_path(
+            profile,
+            variant,
+            kernel,
+            overlap,
+            Default::default(),
+        )
+    }
+    #[cfg(feature = "cpu-proof-experiment")]
+    pub(crate) fn cpu_research_with_commitment_path(
+        profile: crate::host_memory_profile::HostMemoryProfile,
+        variant: lattica_prover_p3::block_v2::cpu_commitment::Variant,
+        kernel: lattica_prover_p3::block_v2::cpu_commitment::HashKernel,
+        overlap: bool,
+        path: lattica_prover_p3::block_v2::cpu_commitment::CommitmentPath,
+    ) -> Result<Self, String> {
+        use lattica_prover_p3::block_v2::cpu_commitment::{CommitmentPath, Variant};
+        if path != CommitmentPath::Existing
+            && (variant != Variant::Combined || kernel != Default::default())
+        {
+            return Err("CPU commitment path requires combined/existing hash".into());
+        }
         use lattica_prover_p3::block_v2::cpu_commitment::HashKernel;
         if kernel != HashKernel::Existing && !variant.tiled() {
             return Err("interleaved CPU hashes require the hash or combined variant".into());
@@ -477,6 +501,7 @@ impl ProvingContext {
         context.cpu_variant = variant;
         context.cpu_hash_kernel = kernel;
         context.cpu_identity_overlap = overlap;
+        context.cpu_commitment_path = path;
         Ok(context)
     }
     #[cfg(feature = "cpu-proof-experiment")]
@@ -488,6 +513,12 @@ impl ProvingContext {
     #[cfg(feature = "cpu-proof-experiment")]
     pub(crate) fn cpu_variant(&self) -> lattica_prover_p3::block_v2::cpu_commitment::Variant {
         self.cpu_variant
+    }
+    #[cfg(feature = "cpu-proof-experiment")]
+    pub(crate) fn cpu_commitment_path(
+        &self,
+    ) -> lattica_prover_p3::block_v2::cpu_commitment::CommitmentPath {
+        self.cpu_commitment_path
     }
     pub fn cpu(host_bytes: u64) -> Result<Self, String> {
         Self::new(
@@ -561,6 +592,8 @@ impl ProvingContext {
             cpu_hash_kernel: Default::default(),
             #[cfg(feature = "cpu-proof-experiment")]
             cpu_identity_overlap: false,
+            #[cfg(feature = "cpu-proof-experiment")]
+            cpu_commitment_path: Default::default(),
             diagnostics,
             #[cfg(all(
                 feature = "full-workflow-experiment",
@@ -938,7 +971,8 @@ impl ProvingContext {
                         #[cfg(feature = "cpu-proof-experiment")]
                         let air = air
                             .with_cpu_variant(self.cpu_variant)
-                            .with_cpu_tuning(self.cpu_hash_kernel, self.cpu_identity_overlap);
+                            .with_cpu_tuning(self.cpu_hash_kernel, self.cpu_identity_overlap)
+                            .with_cpu_commitment_path(self.cpu_commitment_path);
                         air
                     },
                     host_bytes,

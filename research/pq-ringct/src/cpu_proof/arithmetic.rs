@@ -131,9 +131,10 @@ pub fn prove(
     let plan = case.algebra()?;
     report.compile_ns = started.elapsed().as_nanos();
     let start = Instant::now();
-    let config = lattica_prover_p3::block_v2::profile::make_cpu_config_with_kernel(
+    let config = lattica_prover_p3::block_v2::profile::make_cpu_config_with_path(
         context.cpu_variant(),
         context.cpu_hash_kernel(),
+        context.cpu_commitment_path(),
     );
     let work = || {
         plan.prove_batch_with_cpu_config(batch, &config)

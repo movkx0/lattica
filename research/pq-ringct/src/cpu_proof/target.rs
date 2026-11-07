@@ -3,12 +3,14 @@
 use super::*;
 use crate::execution::ProvingContext;
 use jobs::{Kind, Observation, Output, Task};
-use lattica_prover_p3::block_v2::cpu_commitment::{HashKernel, Variant};
+use lattica_prover_p3::block_v2::cpu_commitment::{CommitmentPath, HashKernel, Variant};
 
 pub struct Selection {
     pub original: Box<Kind>,
     pub profile: crate::host_memory_profile::HostMemoryProfile,
     pub kernel: HashKernel,
+    pub path: CommitmentPath,
+    pub baseline_overlap: bool,
     pub overlap: bool,
     pub candidate_first: bool,
 }
@@ -41,6 +43,7 @@ pub struct Comparison {
     pub candidate: bool,
     pub hash_kernel: HashKernel,
     pub identity_overlap: bool,
+    pub commitment_path: CommitmentPath,
     pub observation: Observation,
 }
 
@@ -243,12 +246,22 @@ impl Prepared {
             } else {
                 HashKernel::Existing
             };
-            let overlap = candidate && self.selection.overlap;
-            let context = ProvingContext::cpu_research_with_tuning(
+            let overlap = if candidate {
+                self.selection.overlap
+            } else {
+                self.selection.baseline_overlap
+            };
+            let path = if candidate {
+                self.selection.path
+            } else {
+                CommitmentPath::Existing
+            };
+            let context = ProvingContext::cpu_research_with_commitment_path(
                 self.selection.profile,
                 Variant::Combined,
                 kernel,
                 overlap,
+                path,
             )?;
             let kind = match &compiled {
                 Output::Compiled(..) => Kind::Prove,
@@ -283,6 +296,7 @@ impl Prepared {
                 candidate,
                 hash_kernel: kernel,
                 identity_overlap: overlap,
+                commitment_path: path,
                 observation,
             });
         }

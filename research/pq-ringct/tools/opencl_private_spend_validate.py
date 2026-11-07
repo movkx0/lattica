@@ -891,12 +891,14 @@ def build_plan(args):
         argv.pop(0)
     require(argv and Path(argv[0]).is_absolute(), 'command needs an absolute executable path')
     if args.profile == 'cpu-commitment':
-        require(args.build_label and len(argv) in (3,5)
+        require(args.build_label and len(argv) in (3,5,8)
                 and Path(argv[0]).name == 'cpu_commitment_profile'
                 and argv[1] in ('reference', 'hash', 'memory', 'combined')
                 and argv[2] in ('256', '1024', '4096')
             and (len(argv)==3 or (argv[3] in ('existing','interleaved2','interleaved4') and argv[4] in ('4','16')
                 and (argv[3]=='existing' or argv[1] in ('hash','combined'))))
+                and (len(argv)!=8 or (argv[5] in ('existing','replay','packed','chunked') and argv[6] in ('18','21') and argv[7] in ('1','3')
+                    and argv[1:4]==['combined','256','existing']))
                 and not any(getattr(args,name,False) for name in ('expect_tests', 'expect_result',
                     'expect_direct_result', 'full_workflow_case', 'benchmark', 'generation_only', 'cpu_proof')),
                 'CPU commitment screen requires exact recorded example and explicit variant/tile')
@@ -1028,7 +1030,7 @@ def build_plan(args):
                 and getattr(args, 'device_uuid', None) is not None
                 and getattr(args, 'public_hash_kernel', 'baseline') == 'baseline',
                 'serial identity diagnostic requires host trees, physical GPU pin and baseline hash')
-    identity_cpus = identity_physical_cpus() if complete_case or identity_qualification or native_quotient_screen or serial_identity_diagnostic or metadata_qualification or native_metadata_profile or scaling or metadata_stage_profile or cpu_proof is not None else None
+    identity_cpus = identity_physical_cpus() if args.profile == 'cpu-commitment' or complete_case or identity_qualification or native_quotient_screen or serial_identity_diagnostic or metadata_qualification or native_metadata_profile or scaling or metadata_stage_profile or cpu_proof is not None else None
     if identity_qualification or native_quotient_screen or serial_identity_diagnostic or metadata_qualification or native_metadata_profile or scaling or metadata_stage_profile or cpu_proof is not None:
         require(len(identity_cpus) == 16, '16-worker qualification requires sixteen physical cores')
     host_profile = selected_host_profile(getattr(args, 'host_profile', 'standard'))
@@ -1976,7 +1978,8 @@ def validate_output(log, plan):
         from cpu_proof_profile import validate_commitment
         cmd = plan['command']
         plan['cpu_commitment_acceptance'] = validate_commitment(content, cmd[1], int(cmd[2]),
-            cmd[3] if len(cmd)==5 else 'existing', int(cmd[4]) if len(cmd)==5 else 16)
+            cmd[3] if len(cmd)>=5 else 'existing', int(cmd[4]) if len(cmd)>=5 else 16,
+            cmd[5] if len(cmd)==8 else 'existing', int(cmd[6]) if len(cmd)==8 else 18, int(cmd[7]) if len(cmd)==8 else 3)
     if plan.get('cpu_proof') is not None:
         from cpu_proof_profile import validate as validate_cpu_proof
         plan['cpu_proof_acceptance'] = validate_cpu_proof(content, plan['cpu_proof'])

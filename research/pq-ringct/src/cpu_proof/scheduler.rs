@@ -182,6 +182,7 @@ pub(super) fn run_with_ledger(
             let variant = options.cpu_variant;
             let kernel = options.cpu_hash_kernel;
             let overlap = options.identity_overlap;
+            let path = options.cpu_commitment_path;
             owners.0.push(
                 std::thread::Builder::new()
                     .name(format!("ringct-cpu-proof-{slot}"))
@@ -208,8 +209,8 @@ pub(super) fn run_with_ledger(
                                 .map_err(error)?;
                             let done = done.clone();
                             let result = pool.install(move || -> Result<()> {
-                                let context = ProvingContext::cpu_research_with_tuning(
-                                    profile, variant, kernel, overlap,
+                                let context = ProvingContext::cpu_research_with_commitment_path(
+                                    profile, variant, kernel, overlap, path,
                                 )?;
                                 let mut identity = None;
                                 while let Ok(work) = rx.recv() {

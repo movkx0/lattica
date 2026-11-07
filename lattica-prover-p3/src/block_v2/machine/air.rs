@@ -78,6 +78,8 @@ pub struct MachineAir {
     pub(crate) cpu_hash_kernel: crate::block_v2::cpu_commitment::HashKernel,
     #[cfg(feature = "cpu-proof-experiment")]
     pub(crate) cpu_identity_overlap: bool,
+    #[cfg(feature = "cpu-proof-experiment")]
+    pub(crate) cpu_commitment_path: crate::block_v2::cpu_commitment::CommitmentPath,
 }
 
 fn pow7<E: PrimeCharacteristicRing>(x: E) -> E {
@@ -151,6 +153,8 @@ impl MachineAir {
             cpu_hash_kernel: Default::default(),
             #[cfg(feature = "cpu-proof-experiment")]
             cpu_identity_overlap: false,
+            #[cfg(feature = "cpu-proof-experiment")]
+            cpu_commitment_path: Default::default(),
         }
     }
     #[cfg(feature = "cpu-proof-experiment")]
@@ -166,6 +170,14 @@ impl MachineAir {
     ) -> Self {
         self.cpu_hash_kernel = kernel;
         self.cpu_identity_overlap = identity_overlap;
+        self
+    }
+    #[cfg(feature = "cpu-proof-experiment")]
+    pub fn with_cpu_commitment_path(
+        mut self,
+        path: crate::block_v2::cpu_commitment::CommitmentPath,
+    ) -> Self {
+        self.cpu_commitment_path = path;
         self
     }
     pub fn program(&self) -> &Program {

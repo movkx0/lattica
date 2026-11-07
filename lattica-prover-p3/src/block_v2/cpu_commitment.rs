@@ -13,6 +13,29 @@ use std::{sync::Mutex, time::Instant};
 
 type Packed = <Val as Field>::Packing;
 mod interleaved;
+mod leaves;
+
+/// Cumulative, opt-in data-handling experiments; permutation semantics are unchanged.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum CommitmentPath {
+    #[default]
+    Existing,
+    Replay,
+    Packed,
+    Chunked,
+}
+impl CommitmentPath {
+    pub fn parse(value: &str) -> Result<Self, String> {
+        match value {
+            "existing" => Ok(Self::Existing),
+            "replay" => Ok(Self::Replay),
+            "packed" => Ok(Self::Packed),
+            "chunked" => Ok(Self::Chunked),
+            _ => Err("CPU commitment path must be existing, replay, packed, or chunked".into()),
+        }
+    }
+}
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize)]
 #[serde(rename_all = "kebab-case")]
@@ -89,6 +112,7 @@ pub struct CpuMmcs {
     variant: Variant,
     tile_rows: usize,
     hash_kernel: HashKernel,
+    commitment_path: CommitmentPath,
 }
 impl Clone for CpuMmcs {
     fn clone(&self) -> Self {
@@ -101,6 +125,7 @@ impl Clone for CpuMmcs {
             variant: self.variant,
             tile_rows: self.tile_rows,
             hash_kernel: self.hash_kernel,
+            commitment_path: self.commitment_path,
         }
     }
 }
@@ -115,6 +140,7 @@ impl CpuMmcs {
             variant: Variant::Reference,
             tile_rows: TILE_ROWS,
             hash_kernel: HashKernel::Existing,
+            commitment_path: CommitmentPath::Existing,
         }
     }
     pub fn with_variant(mut self, variant: Variant) -> Self {
@@ -129,6 +155,16 @@ impl CpuMmcs {
     pub fn with_hash_kernel(mut self, kernel: HashKernel) -> Self {
         assert!(kernel == HashKernel::Existing || self.variant.tiled());
         self.hash_kernel = kernel;
+        self
+    }
+    pub fn with_commitment_path(mut self, path: CommitmentPath) -> Self {
+        assert!(
+            path == CommitmentPath::Existing
+                || (self.variant == Variant::Combined
+                    && self.hash_kernel == HashKernel::Existing
+                    && self.tile_rows == TILE_ROWS)
+        );
+        self.commitment_path = path;
         self
     }
     /// Explicit research-only tile selection; never a process-global switch.
@@ -203,115 +239,8 @@ impl Data<p3_matrix::dense::RowMajorMatrix<Val>> {
 }
 
 impl CpuMmcs {
-    /// Hash a same-height group. Scratch is bounded across the entire pool;
-    /// each task owns one tile and never publishes its private salt material.
-    fn leaves<M: Matrix<Val>>(
-        &self,
-        matrices: &[M],
-        salts: &[Salts],
-        group: &[usize],
-    ) -> Vec<Digest> {
-        let height = matrices[group[0]].height();
-        let columns: usize = group
-            .iter()
-            .map(|&i| matrices[i].width() + SALT_WIDTH)
-            .sum();
-        let threads = rayon::current_num_threads().max(1);
-        let packed_width = Packed::WIDTH;
-        // Packed row storage plus the largest salt tile. No worker-local cache.
-        let row_bytes = columns
-            .checked_add(SALT_WIDTH)
-            .and_then(|n| n.checked_mul(size_of::<Val>()))
-            .expect("CPU hash width overflow");
-        let allowance = HASH_SCRATCH_BYTES / threads;
-        let available_rows = allowance / row_bytes;
-        assert!(
-            available_rows >= packed_width,
-            "CPU hash tile exceeds scratch allowance"
-        );
-        let rows =
-            self.tile_rows.min(available_rows).max(packed_width) / packed_width * packed_width;
-        let mut output = vec![[Val::default(); 4]; height];
-        output
-            .par_chunks_mut(rows)
-            .enumerate()
-            .for_each(|(tile, out)| {
-                let first = tile * rows;
-                let batches = out.len().div_ceil(packed_width);
-                let mut packed = vec![Packed::default(); batches * columns];
-                let mut salt_rows = vec![Val::default(); out.len() * SALT_WIDTH];
-                let mut column = 0;
-                for &index in group {
-                    let matrix = &matrices[index];
-                    salts[index].fill(first, &mut salt_rows);
-                    for batch in 0..batches {
-                        let row = batch * packed_width;
-                        let valid = (out.len() - row).min(packed_width);
-                        if self.variant.tiled() {
-                            // Read each source row contiguously, then pack its lanes.
-                            // Avoid heap-backed row copies and nested matrix iterators.
-                            for lane in 0..valid {
-                                for (col, value) in matrix
-                                    .row(first + row + lane)
-                                    .unwrap()
-                                    .into_iter()
-                                    .enumerate()
-                                {
-                                    packed[batch * columns + column + col].as_slice_mut()[lane] =
-                                        value;
-                                }
-                            }
-                        } else {
-                            for col in 0..matrix.width() {
-                                packed[batch * columns + column + col] = Packed::from_fn(|lane| {
-                                    if lane < valid {
-                                        matrix.get(first + row + lane, col).unwrap()
-                                    } else {
-                                        Val::default()
-                                    }
-                                });
-                            }
-                        }
-                        for col in 0..SALT_WIDTH {
-                            packed[batch * columns + column + matrix.width() + col] =
-                                Packed::from_fn(|lane| {
-                                    if lane < valid {
-                                        salt_rows[(row + lane) * SALT_WIDTH + col]
-                                    } else {
-                                        Val::default()
-                                    }
-                                });
-                        }
-                    }
-                    column += matrix.width() + SALT_WIDTH;
-                }
-                let states = self.hash_kernel.states();
-                for (group, dest) in out.chunks_mut(packed_width * states).enumerate() {
-                    let first = group * states * columns;
-                    let count = dest.len().div_ceil(packed_width);
-                    let rows = &packed[first..first + count * columns];
-                    let mut digests = [[Packed::default(); 4]; 4];
-                    match self.hash_kernel {
-                        HashKernel::Existing => {
-                            digests[0] = self.hash.hash_iter(rows.iter().copied())
-                        }
-                        HashKernel::Interleaved2 => {
-                            digests[..2].copy_from_slice(&interleaved::hash::<2>(rows, columns))
-                        }
-                        HashKernel::Interleaved4 => digests = interleaved::hash::<4>(rows, columns),
-                    }
-                    for (batch, dest) in dest.chunks_mut(packed_width).enumerate() {
-                        for (lane, value) in dest.iter_mut().enumerate() {
-                            *value =
-                                std::array::from_fn(|col| digests[batch][col].as_slice()[lane]);
-                        }
-                    }
-                }
-            });
-        output
-    }
-
     fn build<M: Matrix<Val>>(&self, matrices: Vec<M>) -> (MerkleCap<Val, Digest>, Tree<M>) {
+        let commitment_started = Instant::now();
         assert!(!matrices.is_empty());
         assert!(
             matrices.iter().all(|m| m.height().is_power_of_two()),
@@ -348,8 +277,11 @@ impl CpuMmcs {
         let group: Vec<_> = (0..matrices.len())
             .filter(|&i| matrices[i].height() == max_height)
             .collect();
-        let mut layers = vec![self.leaves(&matrices, &salts, &group)];
+        let (first_layer, mut metrics) = leaves::build(self, &matrices, &salts, &group);
+        let mut layers = vec![first_layer];
         let mut leaf_ns = start.elapsed().as_nanos();
+        let top_leaf_ns = leaf_ns;
+        let tree_started = Instant::now();
         while layers.last().unwrap().len() > 1 {
             let previous = layers.last().unwrap();
             let height = previous.len() / 2;
@@ -360,59 +292,72 @@ impl CpuMmcs {
                 None
             } else {
                 let start = Instant::now();
-                let result = self.leaves(&matrices, &salts, &group);
+                let (result, extra) = leaves::build(self, &matrices, &salts, &group);
+                metrics = metrics.add(extra);
                 leaf_ns += start.elapsed().as_nanos();
                 Some(result)
             };
             let mut next = vec![[Val::default(); 4]; height];
-            next.par_chunks_mut(Packed::WIDTH)
+            let chunk_rows = if self.commitment_path == CommitmentPath::Chunked {
+                256
+            } else {
+                Packed::WIDTH
+            };
+            next.par_chunks_mut(chunk_rows)
                 .enumerate()
-                .for_each(|(batch, out)| {
-                    let first = batch * Packed::WIDTH;
-                    if out.len() == Packed::WIDTH {
-                        let left = std::array::from_fn(|col| {
-                            Packed::from_fn(|lane| previous[2 * (first + lane)][col])
-                        });
-                        let right = std::array::from_fn(|col| {
-                            Packed::from_fn(|lane| previous[2 * (first + lane) + 1][col])
-                        });
-                        let mut digest: [Packed; 4] = self.compress.compress([left, right]);
-                        if let Some(values) = &injected {
-                            let injected = std::array::from_fn(|col| {
-                                Packed::from_fn(|lane| values[first + lane][col])
+                .for_each(|(tile, chunk)| {
+                    for (batch, out) in chunk.chunks_mut(Packed::WIDTH).enumerate() {
+                        let first = tile * chunk_rows + batch * Packed::WIDTH;
+                        if out.len() == Packed::WIDTH {
+                            let left = std::array::from_fn(|col| {
+                                Packed::from_fn(|lane| previous[2 * (first + lane)][col])
                             });
-                            digest = self.compress.compress([digest, injected]);
-                        }
-                        Packed::unpack_into(&digest, out);
-                    } else {
-                        for (offset, out) in out.iter_mut().enumerate() {
-                            let index = first + offset;
-                            let mut digest = self
-                                .compress
-                                .compress([previous[2 * index], previous[2 * index + 1]]);
+                            let right = std::array::from_fn(|col| {
+                                Packed::from_fn(|lane| previous[2 * (first + lane) + 1][col])
+                            });
+                            let mut digest: [Packed; 4] = self.compress.compress([left, right]);
                             if let Some(values) = &injected {
-                                digest = self.compress.compress([digest, values[index]]);
+                                let injected = std::array::from_fn(|col| {
+                                    Packed::from_fn(|lane| values[first + lane][col])
+                                });
+                                digest = self.compress.compress([digest, injected]);
                             }
-                            *out = digest;
+                            Packed::unpack_into(&digest, out);
+                        } else {
+                            for (offset, out) in out.iter_mut().enumerate() {
+                                let index = first + offset;
+                                let mut digest = self
+                                    .compress
+                                    .compress([previous[2 * index], previous[2 * index + 1]]);
+                                if let Some(values) = &injected {
+                                    digest = self.compress.compress([digest, values[index]]);
+                                }
+                                *out = digest;
+                            }
                         }
                     }
                 });
             layers.push(next);
         }
         let cap = MerkleCap::new(layers[layers.len() - 1 - cap_height].clone());
+        let tree_ns = tree_started
+            .elapsed()
+            .as_nanos()
+            .saturating_sub(leaf_ns - top_leaf_ns);
         eprintln!(
-            "CPU_COMMITMENT {{\"variant\":\"{}\",\"height\":{},\"matrices\":{},\"salt_bytes\":{},\"tree_bytes\":{},\"salt_ns\":{},\"leaf_ns\":{},\"hash_scratch_limit\":{}}}",
-            self.variant.name(),
-            max_height,
-            matrices.len(),
-            salts.iter().map(Salts::bytes).sum::<usize>(),
-            layers
-                .iter()
-                .map(|v| v.capacity() * size_of::<Digest>())
-                .sum::<usize>(),
-            salt_ns,
-            leaf_ns,
-            HASH_SCRATCH_BYTES
+            "CPU_COMMITMENT {}",
+            serde_json::json!({
+                "schema":"cpu-commitment-timing-v2", "variant":self.variant.name(),
+                "commitment_path":self.commitment_path, "height":max_height,"matrices":matrices.len(),
+                "salt_bytes":salts.iter().map(Salts::bytes).sum::<usize>(),
+                "tree_bytes":layers.iter().map(|v|v.capacity()*size_of::<Digest>()).sum::<usize>(),
+                "salt_ns":salt_ns,"leaf_ns":leaf_ns,"tree_ns":tree_ns,
+                "commit_wall_ns":commitment_started.elapsed().as_nanos(),
+                "replay_worker_ns":metrics.replay_worker_ns,"pack_worker_ns":metrics.pack_worker_ns,
+                "hash_worker_ns":metrics.hash_worker_ns,"replayed_rows":metrics.replayed_rows,
+                "buffer_sets":metrics.buffer_sets,"scratch_peak_bytes":metrics.scratch_peak_bytes,
+                "hash_scratch_limit":HASH_SCRATCH_BYTES,"worker_times":"overlapping_nonadditive"
+            })
         );
         (
             cap,
@@ -578,9 +523,9 @@ mod pcs_tests {
     use p3_uni_stark::StarkGenericConfig;
     #[test]
     fn bounded_openings_match_complete_reference_transcript() {
-        let run = |variant, kernel| {
+        let run = |variant, kernel, path| {
             // Fixed public seeds only for differential testing, not proving APIs.
-            let config = profile::cpu_preprocessing_config_with_kernel(variant, kernel);
+            let config = profile::cpu_preprocessing_config_with_path(variant, kernel, path);
             let reference = profile::cpu_preprocessing_config(Variant::Reference);
             let pcs = config.pcs();
             let domains: Vec<_> = [8, 16, 4]
@@ -624,12 +569,29 @@ mod pcs_tests {
                 .unwrap();
             postcard::to_allocvec(&(cap, values, proof)).unwrap()
         };
-        let expected = run(Variant::Reference, HashKernel::Existing);
+        let expected = run(
+            Variant::Reference,
+            HashKernel::Existing,
+            CommitmentPath::Existing,
+        );
         for variant in [Variant::Hash, Variant::Memory, Variant::Combined] {
-            assert_eq!(run(variant, HashKernel::Existing), expected);
+            assert_eq!(
+                run(variant, HashKernel::Existing, CommitmentPath::Existing),
+                expected
+            );
+        }
+        for path in [
+            CommitmentPath::Replay,
+            CommitmentPath::Packed,
+            CommitmentPath::Chunked,
+        ] {
+            assert_eq!(run(Variant::Combined, HashKernel::Existing, path), expected);
         }
         for kernel in [HashKernel::Interleaved2, HashKernel::Interleaved4] {
-            assert_eq!(run(Variant::Combined, kernel), expected);
+            assert_eq!(
+                run(Variant::Combined, kernel, CommitmentPath::Existing),
+                expected
+            );
         }
     }
 }

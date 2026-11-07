@@ -7,13 +7,13 @@ const MEMORY_BACKEND: &str = "cpu";
 use crate::config::Val;
 use p3_matrix::dense::RowMajorMatrix;
 use rand::{
-    distr::{Distribution, StandardUniform},
     Rng,
+    distr::{Distribution, StandardUniform},
 };
 use rand_chacha::ChaCha20Rng;
 use std::collections::BTreeMap;
 
-const ROWS: usize = 1024;
+pub(crate) const ROWS: usize = 1024;
 const WIDTH: usize = 4;
 
 // Deliberately no Debug, serde, seed accessor, or mutable replay API.
@@ -21,7 +21,28 @@ pub(crate) struct Checkpoints<R = ChaCha20Rng> {
     height: usize,
     states: Vec<R>,
 }
+/// A private, single-checkpoint replay cursor. No seed/state serialization.
+pub(crate) struct ReplayCursor<R = ChaCha20Rng> {
+    rng: R,
+    remaining: usize,
+}
+impl<R: Rng> ReplayCursor<R> {
+    pub(crate) fn fill(&mut self, output: &mut [Val]) {
+        assert!(output.len() % WIDTH == 0 && output.len() / WIDTH <= self.remaining);
+        for value in output.iter_mut() {
+            *value = StandardUniform.sample(&mut self.rng);
+        }
+        self.remaining -= output.len() / WIDTH;
+    }
+}
 impl<R: Rng + Clone> Checkpoints<R> {
+    pub(crate) fn cursor(&self, first: usize) -> ReplayCursor<R> {
+        assert!(first % ROWS == 0 && first < self.height);
+        ReplayCursor {
+            rng: self.states[first / ROWS].clone(),
+            remaining: ROWS.min(self.height - first),
+        }
+    }
     /// Advance the original stream exactly once without allocating dense salts.
     pub(crate) fn capture(rng: &mut R, height: usize) -> Result<Self, String> {
         height
@@ -152,8 +173,14 @@ impl SaltMatrix {
                 .collect()),
             Self::Replay(c) => {
                 let (rows, regenerated) = c.rows(indices)?;
-                eprintln!("{MEMORY_BACKEND}_salt_queries pid={} height={} queries={} regenerated_rows={} checkpoint_bytes={}",
-                    std::process::id(), c.height, indices.len(), regenerated, c.bytes());
+                eprintln!(
+                    "{MEMORY_BACKEND}_salt_queries pid={} height={} queries={} regenerated_rows={} checkpoint_bytes={}",
+                    std::process::id(),
+                    c.height,
+                    indices.len(),
+                    regenerated,
+                    c.bytes()
+                );
                 Ok(rows)
             }
         }
@@ -197,8 +224,14 @@ pub(crate) fn retain(dense: Vec<RowMajorMatrix<Val>>, replay: Vec<Checkpoints>) 
         assert_eq!(matrix.values.len() / WIDTH, saved.height);
     }
     drop(dense);
-    eprintln!("{MEMORY_BACKEND}_salt_storage pid={} matrices={} dense_bytes={} checkpoint_bytes={} released_bytes={}",
-        std::process::id(), replay.len(), dense_bytes, checkpoint_bytes, dense_bytes.saturating_sub(checkpoint_bytes));
+    eprintln!(
+        "{MEMORY_BACKEND}_salt_storage pid={} matrices={} dense_bytes={} checkpoint_bytes={} released_bytes={}",
+        std::process::id(),
+        replay.len(),
+        dense_bytes,
+        checkpoint_bytes,
+        dense_bytes.saturating_sub(checkpoint_bytes)
+    );
     replay.into_iter().map(SaltMatrix::Replay).collect()
 }
 
@@ -296,5 +329,30 @@ mod tests {
             panic!("dense salt retention");
         };
         assert!(saved.bytes() < dense_bytes / 50);
+    }
+
+    #[test]
+    fn checkpoint_cursor_preserves_rejections_across_tiles_and_rejects_overrun() {
+        let mut rng = Rejecting { calls: 0 };
+        let mut expected = rng.clone();
+        let dense = RowMajorMatrix::<Val>::rand(&mut expected, 2051, WIDTH);
+        let checkpoints = Checkpoints::capture(&mut rng, 2051).unwrap();
+        for first in (0..2051).step_by(ROWS) {
+            let mut cursor = checkpoints.cursor(first);
+            for row in (first..(first + ROWS).min(2051)).step_by(256) {
+                let count = 256.min(2051 - row).min(first + ROWS - row);
+                let mut values = vec![Val::default(); count * WIDTH];
+                cursor.fill(&mut values);
+                assert_eq!(values, dense.values[row * WIDTH..(row + count) * WIDTH]);
+            }
+            assert!(
+                std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    cursor.fill(&mut [Val::default(); WIDTH]);
+                }))
+                .is_err()
+            );
+        }
+        assert_eq!(rng.next_u64(), expected.next_u64());
+        assert!(std::panic::catch_unwind(|| checkpoints.cursor(256)).is_err());
     }
 }

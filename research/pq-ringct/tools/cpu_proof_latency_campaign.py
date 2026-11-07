@@ -23,31 +23,32 @@ GENERIC = ROOT / '.tools/target-opencl'
 
 
 class Campaign:
-    def __init__(self, revision, inputs):
+    def __init__(self, revision, inputs, data=DATA, prefix="cpu-latency"):
+        self.data, self.prefix = data, prefix
         self.revision, self.inputs = revision, inputs
-        DATA.mkdir(parents=True, exist_ok=True)
-        self.budget = Budget(DATA / 'test-budget.json')
+        self.data.mkdir(parents=True, exist_ok=True)
+        self.budget = Budget(self.data / 'test-budget.json')
 
     def label(self, name):
-        return f'cpu-latency-{name}-{self.revision}'
+        return f'{self.prefix}-{name}-{self.revision}'
 
-    def guard(self, name, flags, command, build=False):
+    def guard(self, name, flags, command, build=False, test_seconds=300):
         label = self.label(name)
         def argv(seconds):
             return [sys.executable, str(GUARD), '--label', label, '--seconds', str(seconds),
                 '--execute', '--exclusive-window', *flags, '--', *map(str, command)]
         print('START', label, 'build' if build else f'test_remaining={self.budget.remaining():.1f}s', flush=True)
         if build:
-            with (DATA / (label + '.controller.log')).open('w') as out:
+            with (self.data / (label + '.controller.log')).open('w') as out:
                 code = subprocess.run(argv(1200), cwd=ROOT, stdout=out, stderr=subprocess.STDOUT).returncode
         else:
-            attempt = self.budget.run(label, argv, guard_unit='lattica-opencl-opt-' + label + '.service', cwd=ROOT)
+            attempt = self.budget.run(label, argv, guard_unit='lattica-opencl-opt-' + label + '.service', cwd=ROOT, seconds=test_seconds)
             code = 0 if attempt['status'] == 'passed' else 1
         path = RUNS / (label + '.json')
         record = json.loads(path.read_text()) if path.exists() else {}
         print('DONE', label, record.get('status'), record.get('wall_seconds'), record.get('error', ''), flush=True)
         if code or record.get('status') != 'passed':
-            log = DATA / (label + '.controller.log')
+            log = self.data / (label + '.controller.log')
             raise RuntimeError(log.read_text()[-3000:])
         return record
 
@@ -107,11 +108,11 @@ class Campaign:
         kernel = min(eligible, key=lambda k: scores[k]['geomean_ratio']) if eligible else 'existing'
         selection = dict(schema='cpu-proof-kernel-selection-v1', revision=self.revision,
             hash_kernel=kernel, identity_overlap=True, scores=scores)
-        (DATA / ('selection-' + self.revision + '.json')).write_text(json.dumps(selection, indent=2) + '\n')
+        (self.data / ('selection-' + self.revision + '.json')).write_text(json.dumps(selection, indent=2) + '\n')
         print('SELECTION', json.dumps(selection), flush=True)
 
     def selection(self):
-        selected = json.loads((DATA / ('selection-' + self.revision + '.json')).read_text())
+        selected = json.loads((self.data / ('selection-' + self.revision + '.json')).read_text())
         if selected.get('revision') != self.revision:
             raise RuntimeError('selection build revision mismatch')
         return selected

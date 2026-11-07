@@ -996,7 +996,11 @@ impl PreparedProgram {
         let preprocessing_config = {
             #[cfg(feature = "cpu-proof-experiment")]
             {
-                profile::cpu_preprocessing_config_with_kernel(air.cpu_variant, air.cpu_hash_kernel)
+                profile::cpu_preprocessing_config_with_path(
+                    air.cpu_variant,
+                    air.cpu_hash_kernel,
+                    air.cpu_commitment_path,
+                )
             }
             #[cfg(not(feature = "cpu-proof-experiment"))]
             {
@@ -1470,9 +1474,10 @@ impl PreparedProgram {
                             feature = "cpu-proof-experiment",
                             not(any(feature = "gpu", feature = "gpu-metal"))
                         ))]
-                        let config = profile::make_cpu_config_with_kernel(
+                        let config = profile::make_cpu_config_with_path(
                             self.air.cpu_variant,
                             self.air.cpu_hash_kernel,
+                            self.air.cpu_commitment_path,
                         );
                         #[cfg(not(all(
                             feature = "cpu-proof-experiment",

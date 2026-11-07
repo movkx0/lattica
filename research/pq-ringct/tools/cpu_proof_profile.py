@@ -20,7 +20,7 @@ def selection(args, argv):
             'CPU proof runner and paired options required')
     options = {}
     allowed = {'--case','--workload','--workers','--threads-per-proof','--retain','--mode',
-        '--cpu-hash-kernel','--identity-overlap','--transaction','--compare-target','--candidate-first',
+        '--cpu-hash-kernel','--cpu-commitment-path','--baseline-identity-overlap','--identity-overlap','--transaction','--compare-target','--candidate-first',
                '--input','--request','--segments','--repetitions','--generate','--cpu-variant'}
     for k,v in zip(argv[1::2],argv[2::2]):
         require(k in allowed and k not in options, 'unknown/repeated CPU proof option')
@@ -40,9 +40,13 @@ def selection(args, argv):
     selected['cpu_hash_kernel'] = options.get('--cpu-hash-kernel','existing')
     require(selected['cpu_hash_kernel'] in ('existing','interleaved2','interleaved4'), 'invalid CPU hash kernel')
     require(selected['cpu_hash_kernel']=='existing' or selected['cpu_variant'] in ('hash','combined'), 'interleaving requires tiled CPU hashing')
-    for flag in ('identity-overlap','compare-target','candidate-first'):
+    for flag in ('identity-overlap','baseline-identity-overlap','compare-target','candidate-first'):
         require(options.get('--'+flag,'0') in ('0','1'), 'invalid CPU boolean option')
         selected[flag.replace('-','_')] = options.get('--'+flag,'0') == '1'
+    selected['cpu_commitment_path'] = options.get('--cpu-commitment-path','existing')
+    require(selected['cpu_commitment_path'] in ('existing','replay','packed','chunked'), 'invalid CPU commitment path')
+    require(selected['cpu_commitment_path']=='existing' or (selected['cpu_variant']=='combined' and selected['cpu_hash_kernel']=='existing'), 'commitment path requires combined/existing')
+    require(not selected['baseline_identity_overlap'] or selected['compare_target'], 'baseline overlap requires target comparison')
     selected['transaction'] = int(options['--transaction']) if '--transaction' in options else None
     require(selected['transaction'] is None or 0 <= selected['transaction'] < selected['transactions'], 'transaction outside case')
     require(not selected['candidate_first'] or selected['compare_target'], 'candidate-first requires comparison')
@@ -96,7 +100,7 @@ def validate(content, selected):
                 and r.get('transactions')==selected['options']['transactions']
                 and r.get('workload')==selected['options']['workload'], 'invalid fresh public inputs')
         return r
-    require(r.get('schema')=='ringct-cpu-proof-profile-v3' and r.get('backend')=='cpu'
+    require(r.get('schema')=='ringct-cpu-proof-profile-v4' and r.get('backend')=='cpu'
             and r.get('layout')=='paired-v1' and r.get('options')==selected['options']
             and r.get('gpu_contexts')==0 and r.get('gpu_proof_calls')==0
             and r.get('fresh_stark_randomness') is True and r.get('complete_workflow') is False
@@ -171,7 +175,8 @@ def validate(content, selected):
                 require([c.get('candidate') for c in comparisons]==[options['candidate_first'],not options['candidate_first']], 'target comparison order')
                 for c in comparisons:
                     require(c.get('hash_kernel')==(options['cpu_hash_kernel'] if c['candidate'] else 'existing')
-                        and c.get('identity_overlap')==(options['identity_overlap'] and c['candidate']), 'target tuning mismatch')
+                        and c.get('identity_overlap')==(options['identity_overlap'] if c['candidate'] else options['baseline_identity_overlap'])
+                        and c.get('commitment_path')==(options['cpu_commitment_path'] if c['candidate'] else 'existing'), 'target tuning mismatch')
                     observation=c.get('observation',{})
                     require(observation.get('prepared_hit') is False and observation.get('compile_ns',0)>0
                         and observation.get('kind')==('recursive_proof' if mode=='paired' else 'graph_proof')
@@ -193,14 +198,14 @@ def validate(content, selected):
     return r
 
 
-def validate_commitment(content, variant, tile, kernel='existing', threads=16):
+def validate_commitment(content, variant, tile, kernel='existing', threads=16, path='existing', log_height=18, repetitions=3):
     prefix='CPU_COMMITMENT_SCREEN '
     rows=[json.loads(line[len(prefix):]) for line in content.splitlines() if line.startswith(prefix)]
-    require(len(rows)==12 and {(r.get('width'),r.get('matrices'),r.get('repetition')) for r in rows}
-        =={(w,n,i) for w,n in ((94,1),(200,1),(51,1),(3,16)) for i in range(3)}, 'incomplete commitment screen')
+    require(len(rows)==4*repetitions and {(r.get('width'),r.get('matrices'),r.get('repetition')) for r in rows}
+        =={(w,n,i) for w,n in ((94,1),(200,1),(51,1),(3,16)) for i in range(repetitions)}, 'incomplete commitment screen')
     for r in rows:
         require(r.get('variant')==variant and r.get('tile_rows')==tile and r.get('threads')==threads and r.get('hash_kernel')==kernel
-                and r.get('height')==1<<18 and r.get('verified') is True
+                and r.get('height')==1<<log_height and r.get('commitment_path')==path and r.get('verified') is True
                 and isinstance(r.get('commit_ns'),int) and r['commit_ns']>0,
                 'invalid commitment screen evidence')
     return rows

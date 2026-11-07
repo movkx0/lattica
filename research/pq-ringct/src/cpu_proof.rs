@@ -26,6 +26,8 @@ pub struct Options {
     pub cpu_variant: lattica_prover_p3::block_v2::cpu_commitment::Variant,
     pub cpu_hash_kernel: lattica_prover_p3::block_v2::cpu_commitment::HashKernel,
     pub identity_overlap: bool,
+    pub baseline_identity_overlap: bool,
+    pub cpu_commitment_path: lattica_prover_p3::block_v2::cpu_commitment::CommitmentPath,
     pub transaction: Option<usize>,
     pub compare_target: bool,
     pub candidate_first: bool,
@@ -46,6 +48,8 @@ impl Options {
             cpu_variant: Default::default(),
             cpu_hash_kernel: Default::default(),
             identity_overlap: false,
+            baseline_identity_overlap: false,
+            cpu_commitment_path: Default::default(),
             transaction: None,
             compare_target: false,
             candidate_first: false,
@@ -75,13 +79,23 @@ impl Options {
                     options.cpu_hash_kernel =
                         lattica_prover_p3::block_v2::cpu_commitment::HashKernel::parse(&value)?
                 }
-                "--identity-overlap" | "--compare-target" | "--candidate-first" => {
+                "--cpu-commitment-path" => {
+                    options.cpu_commitment_path =
+                        lattica_prover_p3::block_v2::cpu_commitment::CommitmentPath::parse(&value)?;
+                }
+                "--identity-overlap"
+                | "--baseline-identity-overlap"
+                | "--compare-target"
+                | "--candidate-first" => {
                     ensure(
                         matches!(value.as_str(), "0" | "1"),
                         "boolean option must be 0 or 1",
                     )?;
                     match key.as_str() {
                         "--identity-overlap" => options.identity_overlap = value == "1",
+                        "--baseline-identity-overlap" => {
+                            options.baseline_identity_overlap = value == "1"
+                        }
                         "--compare-target" => options.compare_target = value == "1",
                         _ => options.candidate_first = value == "1",
                     }
@@ -155,6 +169,17 @@ impl Options {
         ensure(
             options.cpu_hash_kernel == Default::default() || options.cpu_variant.tiled(),
             "interleaved hashes require a tiled CPU variant",
+        )?;
+        ensure(
+            options.cpu_commitment_path == Default::default()
+                || (options.cpu_variant
+                    == lattica_prover_p3::block_v2::cpu_commitment::Variant::Combined
+                    && options.cpu_hash_kernel == Default::default()),
+            "commitment path requires combined/existing hash",
+        )?;
+        ensure(
+            !options.baseline_identity_overlap || options.compare_target,
+            "baseline identity overlap requires target comparison",
         )?;
         ensure(
             !options.candidate_first || options.compare_target,
@@ -246,7 +271,7 @@ pub fn main(args: impl Iterator<Item = String>) -> Result<()> {
     }
     println!(
         "CPU_PROOF_PROFILE {}",
-        serde_json::json!({"schema":"ringct-cpu-proof-profile-v3",
+        serde_json::json!({"schema":"ringct-cpu-proof-profile-v4",
         "backend":"cpu", "layout":"paired-v1", "options":options,"input_sha3_256":input_digest,
         "preparation_ns":preparation_ns,"records":records,"gpu_contexts":0,"gpu_proof_calls":0,
         "fresh_stark_randomness":true,"complete_workflow":false,"cleanup_complete":true,
