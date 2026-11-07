@@ -15,8 +15,10 @@ use std::{fmt, marker::PhantomData};
 
 #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
 use crate::block_v2::gpu_hash::CandidateMmcs as ValMmcs;
-#[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
+#[cfg(all(not(feature = "cpu-proof-experiment"), not(any(feature = "gpu", feature = "gpu-metal"))))]
 use crate::config::ValMmcs;
+#[cfg(all(feature = "cpu-proof-experiment", not(any(feature = "gpu", feature = "gpu-metal"))))]
+use crate::block_v2::cpu_commitment::CpuMmcs as ValMmcs;
 
 type Cap = p3_symmetric::MerkleCap<Val, [Val; 4]>;
 type Batch = p3_batch_stark::BatchProof<Config>;

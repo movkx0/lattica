@@ -30,12 +30,15 @@ impl RegisteredLinearMapAir {
         &self.air
     }
     pub fn prove(&self, inputs: &[LinearMapInput]) -> Result<LinearMapProof, JoinError> {
+        self.prove_with_cpu_config(inputs, &profile::make_cpu_config())
+    }
+    pub fn prove_with_cpu_config(&self, inputs: &[LinearMapInput], config: &profile::Config) -> Result<LinearMapProof, JoinError> {
         let witness = self
             .air
             .generate(inputs)
             .map_err(|_| JoinError::Descriptor)?;
         let proof = p3_uni_stark::prove(
-            &profile::make_cpu_config(),
+            config,
             &self.air,
             witness.trace,
             &witness.public_values,

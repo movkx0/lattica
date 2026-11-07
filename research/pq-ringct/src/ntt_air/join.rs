@@ -38,9 +38,12 @@ impl RegisteredNttAir {
         &self.air
     }
     pub fn prove(&self, input: &[[u64; 256]]) -> Result<NttBatchProof, Error> {
+        self.prove_with_cpu_config(input, &profile::make_cpu_config())
+    }
+    pub fn prove_with_cpu_config(&self, input: &[[u64; 256]], config: &profile::Config) -> Result<NttBatchProof, Error> {
         let witness = self.air.generate(input).map_err(|_| Error::Descriptor)?;
         let proof = p3_uni_stark::prove(
-            &profile::make_cpu_config(),
+            config,
             &self.air,
             witness.trace,
             &witness.public_values,

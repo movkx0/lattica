@@ -187,6 +187,9 @@ impl GraphProofPlan<'_> {
     /// Generate one actual component proof from native witness hints, then
     /// verify it and its exact ordered roots. This does not mark graph coverage.
     pub fn prove_batch(&self, batch_index: usize) -> Result<ComponentArtifact> {
+        self.prove_batch_with_cpu_config(batch_index, &profile::make_cpu_config())
+    }
+    pub(crate) fn prove_batch_with_cpu_config(&self, batch_index: usize, config: &profile::Config) -> Result<ComponentArtifact> {
         let batch = self.batch(batch_index)?;
         let first = batch.indices[0];
         let artifact = match &batch.kind {
@@ -210,7 +213,7 @@ impl GraphProofPlan<'_> {
                 ComponentArtifact::Affine(
                     RegisteredAffineAir::new(*kind, *modulus, inputs.len())
                         .map_err(component_error)?
-                        .prove(&inputs)
+                        .prove_with_cpu_config(&inputs, config)
                         .map_err(component_error)?,
                 )
             }
@@ -226,7 +229,7 @@ impl GraphProofPlan<'_> {
                 ComponentArtifact::Ntt(
                     RegisteredNttAir::new(*modulus, inputs.len())
                         .map_err(component_error)?
-                        .prove(&inputs)
+                        .prove_with_cpu_config(&inputs, config)
                         .map_err(component_error)?,
                 )
             }
@@ -246,7 +249,7 @@ impl GraphProofPlan<'_> {
                 ComponentArtifact::Mul(
                     RegisteredMulAir::new(*modulus, left.len())
                         .map_err(component_error)?
-                        .prove(&left, &right)
+                        .prove_with_cpu_config(&left, &right, config)
                         .map_err(component_error)?,
                 )
             }
@@ -257,7 +260,7 @@ impl GraphProofPlan<'_> {
                 ComponentArtifact::GBound(
                     RegisteredGBoundAir::new(*bound)
                         .map_err(component_error)?
-                        .prove(&self.signed(f)?, &self.signed(x)?)
+                        .prove_with_cpu_config(&self.signed(f)?, &self.signed(x)?, config)
                         .map_err(component_error)?,
                 )
             }
@@ -275,7 +278,7 @@ impl GraphProofPlan<'_> {
                 };
                 ComponentArtifact::Permutation(
                     RegisteredPermutationAir::new(*kind)
-                        .prove(&input)
+                        .prove_with_cpu_config(&input, config)
                         .map_err(component_error)?,
                 )
             }
@@ -289,7 +292,7 @@ impl GraphProofPlan<'_> {
                     .collect();
                 ComponentArtifact::LinearMap(
                     RegisteredLinearMapAir::new(descriptor.clone())
-                        .prove(&inputs)
+                        .prove_with_cpu_config(&inputs, config)
                         .map_err(component_error)?,
                 )
             }

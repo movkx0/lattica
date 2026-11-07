@@ -32,6 +32,9 @@ pub enum Kind {
         tag: Option<[u8; 32]>,
         completed: Arc<std::sync::atomic::AtomicUsize>,
         thread_exit: bool,
+        prepared_bytes: Option<u64>,
+        output_bytes: Option<u64>,
+        work_bytes: Option<u64>,
     },
 }
 pub struct Spec {
@@ -78,6 +81,9 @@ pub struct Observation {
     pub mutation_checks: usize,
     pub proof_digest: Option<String>,
     pub prepared_hit: bool,
+    pub compiled_storage_bytes: Option<u64>,
+    pub prepared_storage_bytes: Option<u64>,
+    pub prepared_claim_bytes: Option<u64>,
 }
 pub fn build(options: &Options, cases: &[Arc<inputs::Case>]) -> Result<Vec<Spec>> {
     if options.mode == "native-mix" {
@@ -233,9 +239,36 @@ fn native_mix(options: &Options, cases: &[Arc<inputs::Case>]) -> Result<Vec<Spec
     Ok(jobs)
 }
 impl Spec {
-    pub fn admission(&self, outputs: &[Option<Output>]) -> Result<(u64, u64, Option<[u8; 32]>)> {
+    /// Consume ready inputs before starting more independent roots. Proofs
+    /// retire compiled programs before another compiler output accumulates.
+    pub fn ready_phase(&self) -> u8 {
+        if self.deps.is_empty() {
+            return 2;
+        }
+        match self.kind {
+            Kind::Prove | Kind::GraphProve => 0,
+            #[cfg(test)]
+            Kind::Probe { tag: Some(_), .. } => 0,
+            _ => 1,
+        }
+    }
+    pub fn admission(
+        &self,
+        outputs: &[Option<Output>],
+        variant: lattica_prover_p3::block_v2::cpu_commitment::Variant,
+    ) -> Result<(u64, u64, Option<[u8; 32]>)> {
+        let scratch = if variant == lattica_prover_p3::block_v2::cpu_commitment::Variant::Reference
+        {
+            0
+        } else {
+            lattica_prover_p3::block_v2::cpu_commitment::HASH_SCRATCH_BYTES as u64
+        };
         match &self.kind {
-            Kind::Arithmetic { bytes, .. } => Ok((*bytes, 32 << 20, None)),
+            Kind::Arithmetic { bytes, .. } => Ok((
+                bytes.checked_add(scratch).ok_or("CPU scratch overflow")?,
+                32 << 20,
+                None,
+            )),
             Kind::GraphLeaf { .. } | Kind::GraphMerge => {
                 Ok((4 << 30, (2 << 30) + (32 << 20), None))
             }
@@ -249,7 +282,16 @@ impl Spec {
                 _ => Err("CPU graph prove predecessor type".into()),
             },
             #[cfg(test)]
-            Kind::Probe { tag, .. } => Ok((1 << 20, 1 << 20, *tag)),
+            Kind::Probe {
+                tag,
+                output_bytes,
+                work_bytes,
+                ..
+            } => Ok((
+                work_bytes.unwrap_or(1 << 20),
+                output_bytes.unwrap_or(1 << 20),
+                *tag,
+            )),
             Kind::Native {
                 case,
                 request,
@@ -258,7 +300,13 @@ impl Spec {
                 // Existing native estimate accounts for the CPU trace and its
                 // expanded prover matrices; process limits remain mandatory.
                 let info = &case.plan.requests()[*request].segments()[*segment];
-                Ok((info.estimated_peak_bytes, 32 << 20, None))
+                Ok((
+                    info.estimated_peak_bytes
+                        .checked_add(scratch)
+                        .ok_or("CPU scratch overflow")?,
+                    32 << 20,
+                    None,
+                ))
             }
             Kind::Group { .. } | Kind::Merge => Ok((4 << 30, (2 << 30) + (32 << 20), None)),
             Kind::Prove => match outputs[self.deps[0]]
@@ -303,7 +351,9 @@ pub fn execute(
                 artifact.as_leaf_artifact(),
             )
             .map_err(error)?;
-            let bytes = node.cpu_admission_bytes().map_err(error)?;
+            let bytes = node
+                .cpu_admission_bytes_with_variant(context.cpu_variant())
+                .map_err(error)?;
             let identity = node.cpu_identity().map_err(error)?;
             report.compile_ns = started.elapsed().as_nanos();
             Output::GraphCompiled(node, bytes, identity)
@@ -319,7 +369,9 @@ pub fn execute(
             };
             let node =
                 crate::graph_tree::compile_merge(&left, &right, [&lp, &rp]).map_err(error)?;
-            let bytes = node.cpu_admission_bytes().map_err(error)?;
+            let bytes = node
+                .cpu_admission_bytes_with_variant(context.cpu_variant())
+                .map_err(error)?;
             let identity = node.cpu_identity().map_err(error)?;
             report.compile_ns = started.elapsed().as_nanos();
             Output::GraphCompiled(node, bytes, identity)
@@ -333,6 +385,10 @@ pub fn execute(
             report.prepared_hit = prior_identity == Some(identity);
             let (key, mut proof, times) = node.prove_cpu(context).map_err(error)?;
             report.registration_ns = times.registration_ns;
+            report.prepared_storage_bytes = times.prepared_storage_bytes;
+            report.prepared_claim_bytes = times
+                .prepared_storage_bytes
+                .map(|bytes| bytes + (512 << 20));
             report.proving_ns = times.proving_ns;
             report.verification_ns = times.verification_ns;
             let mutation = Instant::now();
@@ -363,6 +419,9 @@ pub fn execute(
             completed,
             tag,
             thread_exit,
+            prepared_bytes,
+            output_bytes: _,
+            work_bytes: _,
         } => {
             if thread_exit {
                 PROBE_THREAD_EXITS.with(|exits| {
@@ -375,6 +434,7 @@ pub fn execute(
             completed.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
             assert!(!panic, "injected worker failure");
             report.kind = "scheduler_test";
+            report.prepared_claim_bytes = prepared_bytes;
             if let Some(tag) = tag {
                 report.prepared_hit = prior_identity == Some(tag);
                 cache = Some(tag);
@@ -388,7 +448,14 @@ pub fn execute(
         } => {
             report.kind = "native";
             let request = &case.plan.requests()[request];
-            let work = || request.prove_segment_profiled(segment).map_err(error);
+            let config = lattica_prover_p3::block_v2::profile::make_cpu_config_with_variant(
+                context.cpu_variant(),
+            );
+            let work = || {
+                request
+                    .prove_segment_profiled_with_config(segment, &config)
+                    .map_err(error)
+            };
             let (mut artifact, times) = if task.retain_native {
                 context.with_retained_native_cpu(work)?
             } else {
@@ -466,7 +533,9 @@ pub fn execute(
                 &children,
             )
             .map_err(error)?;
-            let bytes = node.cpu_admission_bytes().map_err(error)?;
+            let bytes = node
+                .cpu_admission_bytes_with_variant(context.cpu_variant())
+                .map_err(error)?;
             let identity = node.cpu_identity().map_err(error)?;
             report.compile_ns = started.elapsed().as_nanos();
             Output::Compiled(node, bytes, identity)
@@ -481,7 +550,9 @@ pub fn execute(
                 return Err("right CPU parent predecessor".into());
             };
             let node = component_tree::compile_merge(&left, &right, [&lp, &rp]).map_err(error)?;
-            let bytes = node.cpu_admission_bytes().map_err(error)?;
+            let bytes = node
+                .cpu_admission_bytes_with_variant(context.cpu_variant())
+                .map_err(error)?;
             let identity = node.cpu_identity().map_err(error)?;
             report.compile_ns = started.elapsed().as_nanos();
             Output::Compiled(node, bytes, identity)
@@ -494,6 +565,10 @@ pub fn execute(
             report.prepared_hit = prior_identity == Some(identity);
             let (key, mut proof, timing) = node.prove_cpu(context).map_err(error)?;
             report.registration_ns = timing.registration_ns;
+            report.prepared_storage_bytes = timing.prepared_storage_bytes;
+            report.prepared_claim_bytes = timing
+                .prepared_storage_bytes
+                .map(|bytes| bytes + (512 << 20));
             report.proving_ns = timing.proving_ns;
             report.verification_ns = timing.verification_ns;
             let mutation = Instant::now();

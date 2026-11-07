@@ -27,6 +27,18 @@ def arguments(**changes):
 
 
 class CorrectnessPolicyTests(unittest.TestCase):
+    def test_cpu_commitment_screen_is_bounded_and_explicit(self):
+        options=dict(profile='cpu-commitment',build_label='cpu-example',seconds=1200,
+                     command=['/tmp/cpu_commitment_profile','combined','1024'])
+        plan=runner.build_plan(arguments(**options))
+        self.assertEqual(plan['memory_max_bytes'],8<<30)
+        self.assertEqual(plan['cpu_quota'],'1600%')
+        self.assertEqual(plan['environment']['LATTICA_PROVING_POLICY'],'cpu-required')
+        for changes in [dict(seconds=1201),dict(build_label=None),
+                        dict(command=['/tmp/cpu_commitment_profile','combined','8192']),
+                        dict(command=['/tmp/unknown','combined','1024']),dict(expect_tests=True)]:
+            with self.assertRaises(ValueError):runner.build_plan(arguments(**{**options,**changes}))
+
     def test_callgraph_requires_exact_native_cpu_catalogue_and_reports_sampling_event(self):
         command = ['/tmp/lattica_pq_ringct_research-profile',
                    'component_tree::native_shape::profiling::tests::scaling::native_cpu_scaling_16',
@@ -773,7 +785,7 @@ class CorrectnessPolicyTests(unittest.TestCase):
                     'cpu_quota', 'profile']:
             self.assertEqual(pinned[key], default[key])
         for profile in runner.CPU_PROFILES:
-            with self.subTest(profile=profile), self.assertRaisesRegex(ValueError, 'GPU profile|CPU proof profile'):
+            with self.subTest(profile=profile), self.assertRaisesRegex(ValueError, 'GPU profile|CPU proof profile|CPU commitment screen'):
                 runner.build_plan(arguments(profile=profile, device_uuid=uuid))
         for invalid in ['', uuid + '\n', uuid + '\0', uuid.lower(), uuid[:-1], 7]:
             with self.subTest(uuid=invalid), self.assertRaisesRegex(ValueError, 'GPU UUID'):

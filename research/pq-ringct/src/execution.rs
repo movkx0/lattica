@@ -154,6 +154,10 @@ pub struct RegisteredTemplate {
     metadata_payload_bytes: usize,
 }
 impl RegisteredTemplate {
+    #[cfg(feature = "cpu-proof-experiment")]
+    pub fn cpu_prepared_storage_bytes(&self) -> Option<u64> {
+        self.registered.cpu_prepared_storage_bytes()
+    }
     /// Allowance used to prepare this immutable backend owner.
     pub fn host_allowance_bytes(&self) -> u64 {
         self.host_allowance_bytes
@@ -371,6 +375,8 @@ impl Registry {
 /// One serial worker lifetime. Checked interior borrowing rejects reentrant
 /// work; Rc also prevents sending this context to another OS thread.
 pub struct ProvingContext {
+    #[cfg(feature = "cpu-proof-experiment")]
+    cpu_variant: lattica_prover_p3::block_v2::cpu_commitment::Variant,
     // Drop prepared handles before the owned Session, including on unwinding.
     registry: RefCell<Registry>,
     diagnostics: Rc<Diagnostics>,
@@ -398,6 +404,12 @@ impl ProvingContext {
         Self::new(profile, profile.worker_bytes(), Request { policy: Policy::CpuRequired, emit_report: true },
             Value::Null, #[cfg(feature = "opencl")] None)
     }
+    #[cfg(feature = "cpu-proof-experiment")]
+    pub(crate) fn cpu_research_with_variant(profile: crate::host_memory_profile::HostMemoryProfile, variant: lattica_prover_p3::block_v2::cpu_commitment::Variant) -> Result<Self,String> {
+        let mut context=Self::cpu_research(profile)?; context.cpu_variant=variant; Ok(context)
+    }
+    #[cfg(feature = "cpu-proof-experiment")]
+    pub(crate) fn cpu_variant(&self) -> lattica_prover_p3::block_v2::cpu_commitment::Variant { self.cpu_variant }
     pub fn cpu(host_bytes: u64) -> Result<Self, String> {
         Self::new(
             crate::host_memory_profile::HostMemoryProfile::Standard,
@@ -462,6 +474,8 @@ impl ProvingContext {
         let diagnostics = Rc::new(Diagnostics::new(session_id, request.policy, device.clone()));
         Ok(Self {
             registry: RefCell::new(Registry::new()),
+            #[cfg(feature = "cpu-proof-experiment")]
+            cpu_variant: Default::default(),
             diagnostics,
             #[cfg(all(feature = "full-workflow-experiment", target_os = "linux", target_arch = "x86_64"))]
             owned_workflow_observations: owned_workflow_observation::OwnedWorkflowObservations::default(),
@@ -761,7 +775,12 @@ impl ProvingContext {
             let started = Instant::now();
             let result = (|| -> Result<(RegisteredTemplate, bool, bool), String> {
                 let registered = RegisteredProgram::new_with_cpu_identity(
-                    MachineAir::from_shared_program(program),
+                    {
+                    let air=MachineAir::from_shared_program(program);
+                    #[cfg(feature = "cpu-proof-experiment")]
+                    let air=air.with_cpu_variant(self.cpu_variant);
+                    air
+                },
                     host_bytes,
                     self.request,
                 )

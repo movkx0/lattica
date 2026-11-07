@@ -141,6 +141,14 @@ pub(super) fn run_with_ledger(
     let count = jobs.len();
     let deps: Vec<_> = jobs.iter().map(|j| j.deps.clone()).collect();
     let costs: Vec<_> = jobs.iter().map(|j| j.cost).collect();
+    let mut consumed = vec![false; count];
+    for inputs in &deps {
+        for &id in inputs {
+            if id < count {
+                consumed[id] = true;
+            }
+        }
+    }
     let priority = priorities(&deps, &costs)?;
     let fixed = reserve(&ledger, fixed_bytes(options))?;
     // These live outside the scoped thread region. Even early errors cannot
@@ -170,6 +178,7 @@ pub(super) fn run_with_ledger(
             let threads = options.threads_per_proof;
             let retain = options.retain;
             let profile = options.host_profile();
+            let variant = options.cpu_variant;
             owners.0.push(
                 std::thread::Builder::new()
                     .name(format!("ringct-cpu-proof-{slot}"))
@@ -196,7 +205,8 @@ pub(super) fn run_with_ledger(
                                 .map_err(error)?;
                             let done = done.clone();
                             let result = pool.install(move || -> Result<()> {
-                                let context = ProvingContext::cpu_research(profile)?;
+                                let context =
+                                    ProvingContext::cpu_research_with_variant(profile, variant)?;
                                 let mut identity = None;
                                 while let Ok(work) = rx.recv() {
                                     match work {
@@ -267,7 +277,10 @@ pub(super) fn run_with_ledger(
             // another ready A could reuse the same immutable preparation.
             let mut affinity = vec![false; count];
             for &id in &ready {
-                let (_, _, identity) = planned[id].as_ref().unwrap().admission(&outputs)?;
+                let (_, _, identity) = planned[id]
+                    .as_ref()
+                    .unwrap()
+                    .admission(&outputs, options.cpu_variant)?;
                 affinity[id] = identity.is_some_and(|tag| {
                     (0..options.workers).any(|slot| {
                         active[slot].is_none()
@@ -278,10 +291,18 @@ pub(super) fn run_with_ledger(
                     })
                 });
             }
-            ready.sort_by_key(|&id| (std::cmp::Reverse(priority[id]), !affinity[id], id));
+            ready.sort_by_key(|&id| {
+                (
+                    planned[id].as_ref().unwrap().ready_phase(),
+                    std::cmp::Reverse(priority[id]),
+                    !affinity[id],
+                    id,
+                )
+            });
             for id in ready {
                 let spec = planned[id].as_ref().unwrap();
-                let (work_bytes, output_bytes, identity) = spec.admission(&outputs)?;
+                let (work_bytes, output_bytes, identity) =
+                    spec.admission(&outputs, options.cpu_variant)?;
                 ensure(
                     work_bytes + output_bytes <= options.host_bytes(),
                     &format!(
@@ -315,14 +336,38 @@ pub(super) fn run_with_ledger(
                         dispatched = true;
                         continue;
                     }
-                    let required = output_bytes + if hit { 0 } else { work_bytes };
+                    let retained = if hit {
+                        cache[slot]
+                            .as_ref()
+                            .unwrap()
+                            ._work
+                            .requirements()
+                            .total()
+                            .map_err(error)?
+                            .host
+                    } else {
+                        0
+                    };
+                    let scratch = work_bytes.saturating_sub(retained);
+                    let required = output_bytes
+                        .checked_add(scratch)
+                        .ok_or("CPU scratch overflow")?;
                     if ledger.remaining().host < required {
+                        if hit {
+                            // A hit retains the old compiler source as well
+                            // as preparation. Evict it on its owner before
+                            // starting more roots: otherwise new compiled
+                            // programs can strand a ready proof indefinitely.
+                            senders[slot].send(Work::Evict).map_err(error)?;
+                            evicting[slot] = true;
+                            dispatched = true;
+                        }
                         continue;
                     }
-                    let work = if hit {
+                    let work = if scratch == 0 {
                         None
                     } else {
-                        Some(reserve(&ledger, work_bytes)?)
+                        Some(reserve(&ledger, scratch)?)
                     };
                     let output = reserve(&ledger, output_bytes)?;
                     let spec = planned[id].take().unwrap();
@@ -382,10 +427,35 @@ pub(super) fn run_with_ledger(
                     cache_evictions += 1;
                 }
                 Completion::Done(slot, id, result) => {
-                    let mut held = active[slot].take().ok_or("duplicate CPU completion")?;
+                    let held = active[slot].as_ref().ok_or("duplicate CPU completion")?;
                     ensure(held.id == id && !complete[id], "CPU completion identity")?;
-                    let (output, report, next) = result?;
-                    if let Some(bytes) = output.compiled_output_bytes()? {
+                    let (output, mut report, next) = result?;
+                    let compiled_bytes = output.compiled_output_bytes()?;
+                    report.compiled_storage_bytes = compiled_bytes;
+                    // Validate before taking the original: on any error all
+                    // claims must survive owner/context and compute-thread joins.
+                    if let (Some(tag), Some(bytes)) = (next, report.prepared_claim_bytes) {
+                        let original =
+                            if let Some(old) = cache[slot].as_ref().filter(|c| c.identity == tag) {
+                                &old._work
+                            } else {
+                                held.work
+                                    .as_ref()
+                                    .ok_or("cache has no original reservation")?
+                            };
+                        ensure(
+                            bytes <= original.requirements().total().map_err(error)?.host,
+                            "prepared storage exceeded original CPU reservation",
+                        )?;
+                    }
+                    if let Some(bytes) = compiled_bytes {
+                        ensure(
+                            bytes <= held.output.requirements().total().map_err(error)?.host,
+                            "CPU compiled output exceeded original reservation",
+                        )?;
+                    }
+                    let mut held = active[slot].take().unwrap();
+                    if let Some(bytes) = compiled_bytes {
                         // Keep this original claim. Split and drop only its
                         // unused capacity after the compiler has retired scratch.
                         let reserved = held.output.requirements().total().map_err(error)?.host;
@@ -408,20 +478,44 @@ pub(super) fn run_with_ledger(
                     if let Some(tag) = next {
                         if cache[slot].as_ref().is_none_or(|old| old.identity != tag) {
                             drop(cache[slot].take());
+                            let mut work = held
+                                .work
+                                .take()
+                                .ok_or("cache has no original reservation")?;
+                            if let Some(bytes) = report.prepared_claim_bytes {
+                                let reserved = work.requirements().total().map_err(error)?.host;
+                                drop(
+                                    work.split(
+                                        crate::execution::retained_resources::Requirements::single(
+                                            Category::PhaseScratch,
+                                            Bytes {
+                                                host: reserved - bytes,
+                                                device: 0,
+                                            },
+                                        ),
+                                    )
+                                    .map_err(error)?,
+                                );
+                            }
                             cache[slot] = Some(PreparedClaim {
                                 identity: tag,
-                                _work: held
-                                    .work
-                                    .take()
-                                    .ok_or("cache has no original reservation")?,
+                                _work: work,
                                 _program_originals: std::mem::take(&mut held.inputs),
                             });
                         }
                     } else {
                         drop(cache[slot].take());
                     }
-                    outputs[id] = Some(output);
-                    output_claims[id] = Some(held.output);
+                    if consumed[id] {
+                        outputs[id] = Some(output);
+                        output_claims[id] = Some(held.output);
+                    } else {
+                        // The benchmark returns observations only. Terminal
+                        // proofs have already been verified and hashed; they
+                        // have no DAG consumer and need no retained storage.
+                        drop(output);
+                        drop(held.output);
+                    }
                     eprintln!(
                         "CPU_PROOF_JOB {}",
                         serde_json::to_string(&report).map_err(error)?

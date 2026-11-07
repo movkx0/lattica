@@ -7,6 +7,7 @@ use std::time::Instant;
 
 #[derive(Clone, Copy, Debug, Default, Serialize)]
 pub struct Timings {
+    pub prepared_storage_bytes: Option<u64>,
     pub registration_ns: u128,
     pub proving_ns: u128,
     pub verification_ns: u128,
@@ -77,6 +78,12 @@ impl CompiledNode {
     pub(crate) fn cpu_admission_bytes(&self) -> Result<u64> {
         admission(&self.geometry()?)
     }
+    pub(crate) fn cpu_admission_bytes_with_variant(
+        &self,
+        variant: lattica_prover_p3::block_v2::cpu_commitment::Variant,
+    ) -> Result<u64> {
+        admission_for(&self.geometry()?, variant)
+    }
     pub(crate) fn cpu_identity(&self) -> Result<[u8; 32]> {
         use sha3::{Digest, Sha3_256};
         let mut hash = Sha3_256::new();
@@ -98,7 +105,8 @@ impl CompiledNode {
             "CPU paired proof requires CpuRequired",
         )?;
         require(
-            self.cpu_admission_bytes()? <= execution.host_bytes(),
+            self.cpu_admission_bytes_with_variant(execution.cpu_variant())?
+                <= execution.host_bytes(),
             "CPU proof admission estimate exceeds allowance",
         )?;
         let Self {
@@ -127,6 +135,7 @@ impl CompiledNode {
                     key,
                     NodeProof { public, proof },
                     Timings {
+                        prepared_storage_bytes: registered.cpu_prepared_storage_bytes(),
                         registration_ns,
                         proving_ns,
                         verification_ns,
@@ -159,8 +168,25 @@ pub(crate) fn output_bytes(
 }
 
 pub(crate) fn admission(g: &Geometry) -> Result<u64> {
+    admission_for(
+        g,
+        lattica_prover_p3::block_v2::cpu_commitment::Variant::Reference,
+    )
+}
+
+pub(crate) fn admission_for(
+    g: &Geometry,
+    variant: lattica_prover_p3::block_v2::cpu_commitment::Variant,
+) -> Result<u64> {
+    use lattica_prover_p3::block_v2::profile;
+    require(
+        profile::LOG_BLOWUP == 4
+            && profile::NUM_RANDOM_CODEWORDS == 4
+            && std::mem::size_of::<profile::Challenge>() == 24,
+        "CPU phase model profile changed",
+    )?;
     let rows = (g.padded_rows as u64)
-        .checked_mul(32)
+        .checked_mul(2 << profile::LOG_BLOWUP)
         .ok_or_else(|| err("CPU rows overflow"))?;
     // Source inventory: hiding PCS retains all LDEs, four salts per
     // matrix, five commitment forests, and the opening/FRI workspaces.
@@ -184,7 +210,55 @@ pub(crate) fn admission(g: &Geometry) -> Result<u64> {
         .and_then(|n| n.checked_mul(8))
         .map(|n| n / 8);
     let mut bytes = g.retained_lde_bytes;
-    for value in [salts, trees, opening, natural, Some(512 << 20)] {
+    let replay_bytes = rows.div_ceil(1024).checked_mul(matrices).and_then(|n| {
+        n.checked_mul(lattica_prover_p3::block_v2::cpu_commitment::SALT_CHECKPOINT_BYTES as u64)
+    });
+    // Bounded opening path retires adjusted weights/coset before reduction,
+    // streams compressed rows, and retires denominators before FRI. This
+    // envelope covers two opening points and the retained FRI fold/tree chain.
+    // Temporary natural construction buffers retire before opening; the
+    // caller's borrowed original trace is counted separately below.
+    let bounded_opening = rows.checked_mul(256);
+    // The upstream batch prover borrows the original execution trace until
+    // returning; this storage is live alongside either temporary phase.
+    let retained_trace = (g.padded_rows as u64)
+        .checked_mul(g.main_width as u64)
+        .and_then(|n| n.checked_mul(8));
+    let candidates = if variant.replay() {
+        require(
+            g.quotient_chunks <= 32
+                && g.main_width == 94
+                && g.preprocessed_width == 200
+                && g.permutation_width_base == 51,
+            "CPU phase model requires the audited wide machine geometry",
+        )?;
+        vec![
+            replay_bytes,
+            trees,
+            retained_trace,
+            Some(
+                bounded_opening
+                    .ok_or_else(|| err("CPU opening overflow"))?
+                    .max(natural.ok_or_else(|| err("CPU natural buffers overflow"))?),
+            ),
+            Some(512 << 20),
+            Some(lattica_prover_p3::block_v2::cpu_commitment::HASH_SCRATCH_BYTES as u64),
+        ]
+    } else {
+        vec![
+            salts,
+            trees,
+            opening,
+            natural,
+            Some(512 << 20),
+            Some(if variant.tiled() {
+                lattica_prover_p3::block_v2::cpu_commitment::HASH_SCRATCH_BYTES as u64
+            } else {
+                0
+            }),
+        ]
+    };
+    for value in candidates {
         bytes = bytes
             .checked_add(value.ok_or_else(|| err("CPU memory estimate overflow"))?)
             .ok_or_else(|| err("CPU memory estimate overflow"))?;
@@ -196,7 +270,8 @@ pub(crate) fn admission(g: &Geometry) -> Result<u64> {
             "main_width":g.main_width,"permutation_width_base":g.permutation_width_base,
             "quotient_chunks":g.quotient_chunks,"retained_lde_bytes":g.retained_lde_bytes,
             "salt_bytes":salts,"merkle_bytes":trees,"opening_bytes":opening,
-            "estimated_work_bytes":bytes,"program_and_inputs_separately_charged":true})
+            "estimated_work_bytes":bytes,"cpu_variant":variant.name(),"salt_checkpoint_bytes":replay_bytes,
+            "bounded_opening_bytes":bounded_opening,"retained_trace_bytes":retained_trace,"phase_maximum_used":variant.replay(),"program_and_inputs_separately_charged":true})
     );
     Ok(bytes)
 }

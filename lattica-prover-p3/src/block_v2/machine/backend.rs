@@ -743,6 +743,12 @@ pub fn new(air: MachineAir) -> Result<Self, super::analysis::AdmissionError> {
         let (prepared, id, report) = PreparedProgram::prepare_with_report(air, budget, run, SetupIdentity::Prefix(prefix))?;
         Ok((Self { prepared, id: id.expect("prefix identity completed") }, report))
     }
+    /// The exact owned preprocessing buffers; compiler source is owned separately.
+    #[cfg(all(feature = "cpu-proof-experiment", not(any(feature = "gpu", feature = "gpu-metal"))))]
+    pub fn cpu_prepared_storage_bytes(&self) -> Option<u64> {
+        self.prepared.data.prover_only.preprocessed_prover_data.as_ref()?
+            .retained_backing_bytes().and_then(|n| u64::try_from(n).ok())
+    }
     pub fn id(&self) -> [u64; 4] {
         self.id
     }
@@ -902,7 +908,12 @@ impl PreparedProgram {
             profile::preprocessing_config()
         };
         #[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
-        let preprocessing_config = profile::preprocessing_config();
+        let preprocessing_config = {
+            #[cfg(feature = "cpu-proof-experiment")]
+            { profile::cpu_preprocessing_config(air.cpu_variant) }
+            #[cfg(not(feature = "cpu-proof-experiment"))]
+            { profile::preprocessing_config() }
+        };
         #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
         let symbolic = if super::super::quotient_pcs::gpu_witness_enabled() {
             use p3_uni_stark::StarkGenericConfig;
@@ -1282,7 +1293,13 @@ SetupIdentity::RegistryCap(expected) => {
         let proof = run
             .measure(Stage::UpstreamProver, backend, || {
                 tracing::info_span!(target: "lattica_block_v2_perf", "native batch prove").in_scope(
-                    || prove_batch(&profile::make_proving_config(), &[instance], &self.data),
+                    || {
+                        #[cfg(all(feature = "cpu-proof-experiment", not(any(feature = "gpu", feature = "gpu-metal"))))]
+                        let config=profile::make_cpu_config_with_variant(self.air.cpu_variant);
+                        #[cfg(not(all(feature = "cpu-proof-experiment", not(any(feature = "gpu", feature = "gpu-metal")))))]
+                        let config=profile::make_proving_config();
+                        prove_batch(&config, &[instance], &self.data)
+                    },
                 )
             })
             .map_err(|_| ExecutionError::ProvingPolicy)?;

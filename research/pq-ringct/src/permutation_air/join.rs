@@ -30,12 +30,15 @@ impl RegisteredPermutationAir {
         &self.air
     }
     pub fn prove(&self, input: &PermutationInput) -> Result<PermutationProof, JoinError> {
+        self.prove_with_cpu_config(input, &profile::make_cpu_config())
+    }
+    pub fn prove_with_cpu_config(&self, input: &PermutationInput, config: &profile::Config) -> Result<PermutationProof, JoinError> {
         let witness = self
             .air
             .generate(input)
             .map_err(|_| JoinError::Descriptor)?;
         let proof = p3_uni_stark::prove(
-            &profile::make_cpu_config(),
+            config,
             &self.air,
             witness.trace,
             &witness.public_values,

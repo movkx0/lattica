@@ -19,8 +19,10 @@ use super::gpu_hash::CandidateMmcs as ValMmcs;
 use super::normalization_workspace::HeapNormalizedDft as Dft;
 #[cfg(not(feature = "stream"))]
 use crate::config::Dft;
-#[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
+#[cfg(all(not(feature = "cpu-proof-experiment"), not(any(feature = "gpu", feature = "gpu-metal"))))]
 use crate::config::ValMmcs;
+#[cfg(all(feature = "cpu-proof-experiment", not(any(feature = "gpu", feature = "gpu-metal"))))]
+use super::cpu_commitment::CpuMmcs as ValMmcs;
 use crate::config::{MyCompress, MyHash, Val};
 
 /// Research namespace, NOT a reviewed verifier/program identity or activation ID.
@@ -273,6 +275,25 @@ pub fn make_cpu_config() -> Config {
         None,
         true,
     )
+}
+
+/// Explicit CPU-only research selection, with independent fresh salt/hiding streams.
+#[cfg(all(feature = "cpu-proof-experiment", not(any(feature = "gpu", feature = "gpu-metal"))))]
+pub fn make_cpu_config_with_variant(variant: super::cpu_commitment::Variant) -> Config {
+    cpu_config_with_variant(variant, ChaCha20Rng::from_rng(&mut rand::rng()), ChaCha20Rng::from_rng(&mut rand::rng()))
+}
+#[cfg(all(feature = "cpu-proof-experiment", not(any(feature = "gpu", feature = "gpu-metal"))))]
+pub(crate) fn cpu_preprocessing_config(variant: super::cpu_commitment::Variant) -> Config {
+    cpu_config_with_variant(variant, ChaCha20Rng::from_seed([0;32]), ChaCha20Rng::from_seed([0;32]))
+}
+#[cfg(all(feature = "cpu-proof-experiment", not(any(feature = "gpu", feature = "gpu-metal"))))]
+fn cpu_config_with_variant(variant: super::cpu_commitment::Variant, salts: ChaCha20Rng, hiding: ChaCha20Rng) -> Config {
+    let perm=default_goldilocks_poseidon2_8();
+    let mmcs=ValMmcs::new(MyHash::new(perm.clone()),MyCompress::new(perm.clone()),CAP_HEIGHT,salts).with_variant(variant);
+    let params=fri(ExtensionMmcs::<Val,Challenge,ValMmcs>::new(mmcs.clone()));
+    let pcs=super::quotient_pcs::CandidatePcs::new(Dft::default(),mmcs,params,NUM_RANDOM_CODEWORDS,hiding);
+    let pcs=if variant.replay() { pcs.with_cpu_bounded_openings() } else { pcs };
+    Config::new(pcs,Challenger::new(perm))
 }
 
 /// Candidate execution proving only. Default verification and wallet proving

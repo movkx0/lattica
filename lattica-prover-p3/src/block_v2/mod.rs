@@ -100,3 +100,8 @@ pub mod native_permutation_proof;
 
 #[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
 pub mod native_linear_map_proof;
+
+#[cfg(any(feature = "gpu", feature = "gpu-metal", feature = "cpu-proof-experiment"))]
+pub(crate) mod compact_salts;
+#[cfg(feature = "cpu-proof-experiment")]
+pub mod cpu_commitment;

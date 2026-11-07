@@ -22,6 +22,17 @@ impl CompiledNode {
         )?;
         crate::component_tree::cpu::admission(&self.geometry()?).map_err(err)
     }
+    pub(crate) fn cpu_admission_bytes_with_variant(
+        &self,
+        variant: lattica_prover_p3::block_v2::cpu_commitment::Variant,
+    ) -> Result<u64> {
+        require(
+            self.program.construction_host_bytes() <= 2 << 30
+                && self.public.len().saturating_add(self.witness.len()) <= 1 << 20,
+            "CPU graph compiled output exceeds reserved capacity",
+        )?;
+        crate::component_tree::cpu::admission_for(&self.geometry()?, variant).map_err(err)
+    }
     pub(crate) fn cpu_identity(&self) -> Result<[u8; 32]> {
         let mut hash = Sha3_256::new();
         hash.update(b"ringct-cpu-prepared-program-v1");
@@ -42,7 +53,8 @@ impl CompiledNode {
             "graph CPU proof requires CpuRequired",
         )?;
         require(
-            self.cpu_admission_bytes()? <= execution.host_bytes(),
+            self.cpu_admission_bytes_with_variant(execution.cpu_variant())?
+                <= execution.host_bytes(),
             "CPU graph estimate exceeds allowance",
         )?;
         let Self {
@@ -71,6 +83,7 @@ impl CompiledNode {
                     key,
                     NodeProof { public, proof },
                     Timings {
+                        prepared_storage_bytes: registered.cpu_prepared_storage_bytes(),
                         registration_ns,
                         proving_ns,
                         verification_ns,

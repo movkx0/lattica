@@ -29,6 +29,7 @@ GIB = 1 << 30
 PROFILES = {
     'build': (8, 6, 10, 2, 7200),
     'cpu-proof': (47, 45, 49, 16, 1200),
+    'cpu-commitment': (8, 6, 10, 16, 1200),
     # Exact source planner only: no context, queue, runtime, or proof creation.
     # Modeled native/worker/device allowances stay unchanged. This lower real
     # process envelope cannot admit a proving or benchmarking command.
@@ -45,7 +46,7 @@ PROFILES = {
     'direct-full': (45, 43, 47, 8, 86400),
 }
 RESEARCH_CPU_PROFILES = frozenset(('research-compile', 'research-compile-large'))
-CPU_PROFILES = RESEARCH_CPU_PROFILES | frozenset(('build', 'cpu-proof'))
+CPU_PROFILES = RESEARCH_CPU_PROFILES | frozenset(('build', 'cpu-proof', 'cpu-commitment'))
 GPU_SWITCHES = (
     'HASH', 'RETAIN_TREES', 'QUERY_GATHER', 'RESIDENT_LDE', 'OPENINGS',
     'QUOTIENT_FUSION', 'QUOTIENT_LDE', 'QUOTIENT_EVAL', 'QUOTIENT_RESIDENT',
@@ -106,7 +107,7 @@ def systemd_state(unit):
 def source_manifest():
     paths = set()
     for directory in [ROOT / 'lattica-prover-p3/src', ROOT / 'lattica-prover-p3/vendor',
-                      ROOT / 'research']:
+                      ROOT / 'lattica-prover-p3/examples', ROOT / 'research']:
         paths.update(path for path in directory.rglob('*')
                      if path.is_file() and '__pycache__' not in path.parts
                      and 'target' not in path.parts and '.tools' not in path.relative_to(ROOT).parts)
@@ -889,6 +890,14 @@ def build_plan(args):
     if argv and argv[0] == '--':
         argv.pop(0)
     require(argv and Path(argv[0]).is_absolute(), 'command needs an absolute executable path')
+    if args.profile == 'cpu-commitment':
+        require(args.build_label and len(argv) == 3
+                and Path(argv[0]).name == 'cpu_commitment_profile'
+                and argv[1] in ('reference', 'hash', 'memory', 'combined')
+                and argv[2] in ('256', '1024', '4096')
+                and not any(getattr(args,name,False) for name in ('expect_tests', 'expect_result',
+                    'expect_direct_result', 'full_workflow_case', 'benchmark', 'generation_only', 'cpu_proof')),
+                'CPU commitment screen requires exact recorded example and explicit variant/tile')
     complete_case = getattr(args, 'full_workflow_case', False)
     from cpu_generation_profile import selection as generation_selection
     generation_only = generation_selection(args, argv)
@@ -1961,6 +1970,9 @@ def validate_active_hashx_preflight(content):
 
 def validate_output(log, plan):
     content = log.read_text(errors='replace')
+    if plan['profile'] == 'cpu-commitment':
+        from cpu_proof_profile import validate_commitment
+        plan['cpu_commitment_acceptance'] = validate_commitment(content, plan['command'][1], int(plan['command'][2]))
     if plan.get('cpu_proof') is not None:
         from cpu_proof_profile import validate as validate_cpu_proof
         plan['cpu_proof_acceptance'] = validate_cpu_proof(content, plan['cpu_proof'])

@@ -8,9 +8,11 @@ version = "0.1.0"
 edition = "2021"
 
 [workspace]
-exclude = ["vendor/p3-lookup", "vendor/p3-field", "vendor/p3-symmetric", "vendor/ocl-core"]
+exclude = ["vendor/p3-lookup", "vendor/p3-field", "vendor/p3-symmetric", "vendor/ocl-core", "vendor/p3-fri"]
 
 [patch.crates-io]
+# Pinned 0.6.1; bounded CPU opening reduction is opt-in.
+p3-fri = { path = "vendor/p3-fri" }
 # Pinned upstream behavior by default; bounded metadata queries are opt-in.
 ocl-core = { path = "vendor/ocl-core" }
 # Pinned 0.6.1 with an allocation-free, checked owned-container constructor.
@@ -160,6 +162,8 @@ objc2-foundation = { version = "0.3.2", optional = true }
 objc2-metal = { version = "0.3.2", optional = true }
 
 [features]
+# CPU-only execution research; no global selection or proof parameter changes.
+cpu-proof-experiment = ["block-v2", "p3-fri/bounded-cpu-openings"]
 # Shared original RingCT research reservation ownership; no GPU dependency.
 ringct-research-quota = []
 # Isolated cumulative ownership for private-note research; no GPU dependency.
@@ -238,3 +242,7 @@ tree = ["tip5", "lookup"]
 # unit). Longer compile, faster prover; results bit-identical.
 lto = "thin"
 codegen-units = 1
+
+[[example]]
+name = "cpu_commitment_profile"
+required-features = ["cpu-proof-experiment"]

@@ -131,7 +131,8 @@ pub fn prove(
     let plan = case.algebra()?;
     report.compile_ns = started.elapsed().as_nanos();
     let start = Instant::now();
-    let work = || plan.prove_batch(batch).map_err(error);
+    let config = lattica_prover_p3::block_v2::profile::make_cpu_config_with_variant(context.cpu_variant());
+    let work = || plan.prove_batch_with_cpu_config(batch, &config).map_err(error);
     let mut artifact = if retain {
         context.with_retained_native_cpu(work)?
     } else {

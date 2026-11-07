@@ -32,8 +32,10 @@ use p3_commit::ExtensionMmcs;
 type ChallengeMmcs<E = Challenge> = ExtensionMmcs<Val, E, ValMmcs>;
 #[cfg(not(feature = "stream"))]
 use crate::config::Dft;
-#[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
+#[cfg(all(not(feature = "cpu-proof-experiment"), not(any(feature = "gpu", feature = "gpu-metal"))))]
 use crate::config::ValMmcs;
+#[cfg(all(feature = "cpu-proof-experiment", not(any(feature = "gpu", feature = "gpu-metal"))))]
+use super::cpu_commitment::CpuMmcs as ValMmcs;
 
 type Domain = TwoAdicMultiplicativeCoset<Val>;
 type Inner<E = Challenge> = HidingFriPcs<Val, Dft, ValMmcs, ChallengeMmcs<E>, ChaCha20Rng>;
@@ -647,6 +649,13 @@ pub struct CandidatePcs<E: PcsField = Challenge> {
 }
 
 impl<E: PcsField> CandidatePcs<E> {
+    #[cfg(all(feature = "cpu-proof-experiment", not(any(feature = "gpu", feature = "gpu-metal"))))]
+    pub(crate) fn with_cpu_bounded_openings(mut self) -> Self {
+        let Backend::Reference(inner) = self.inner;
+        self.inner = Backend::Reference(inner.with_bounded_opening_reduction());
+        self
+    }
+
     /// Resident clones share the immutable allowance of their original attempt.
     /// Reference configurations retain their existing process-wide limit.
     #[cfg(any(feature = "gpu", feature = "gpu-metal"))]

@@ -39,6 +39,7 @@ p3-fri = "=0.6.1"
 sha3 = "=0.10.8"
 
 [patch.crates-io]
+p3-fri = { path = "../../lattica-prover-p3/vendor/p3-fri" }
 ocl-core = { path = "../../lattica-prover-p3/vendor/ocl-core" }
 p3-lookup = { path = "../../lattica-prover-p3/vendor/p3-lookup" }
 p3-field = { path = "../../lattica-prover-p3/vendor/p3-field" }
@@ -59,7 +60,7 @@ native-trace-audit = ["opencl", "lattica-prover-p3/native-trace-audit"]
 default = []
 native-matrict = []
 # Explicit CPU paired-proof experiment; never enables a device backend.
-cpu-proof-experiment = ["native-matrict", "recursive-wide", "dep:rayon", "dep:postcard"]
+cpu-proof-experiment = ["native-matrict", "recursive-wide", "dep:rayon", "dep:postcard", "lattica-prover-p3/cpu-proof-experiment"]
 # CPU-only deterministic diagnostics; never selected by the workflow feature.
 native-generation-oracle = ["native-matrict"]
 # Explicit deterministic private diagnostics; never enable in production.

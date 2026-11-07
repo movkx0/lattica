@@ -73,6 +73,8 @@ const BUS: LookupBus<'static> = LookupBus::new("lattica-v2-ssa-wire-wide23-v3");
 #[derive(Clone, Debug)]
 pub struct MachineAir {
     pub(crate) program: Arc<Program>,
+    #[cfg(feature = "cpu-proof-experiment")]
+    pub(crate) cpu_variant: crate::block_v2::cpu_commitment::Variant,
 }
 
 fn pow7<E: PrimeCharacteristicRing>(x: E) -> E {
@@ -138,8 +140,10 @@ impl MachineAir {
     /// The caller still accounts for the single live program allocation;
     /// sharing ownership neither changes its manifest nor supplies admission.
     pub fn from_shared_program(program: Arc<Program>) -> Self {
-        Self { program }
+        Self { program, #[cfg(feature = "cpu-proof-experiment")] cpu_variant: Default::default() }
     }
+    #[cfg(feature = "cpu-proof-experiment")]
+    pub fn with_cpu_variant(mut self, variant: crate::block_v2::cpu_commitment::Variant) -> Self { self.cpu_variant=variant; self }
     pub fn program(&self) -> &Program {
         &self.program
     }

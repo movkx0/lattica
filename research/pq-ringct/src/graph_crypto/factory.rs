@@ -254,9 +254,11 @@ impl Request {
         self.prove_segment_profiled(index).map(|(artifact, _)| artifact)
     }
     pub(crate) fn prove_segment_profiled(&self, index: usize) -> Result<(SegmentArtifact, NativeCpuTimings)> {
+        self.prove_segment_profiled_with_config(index, &profile::make_cpu_config())
+    }
+    pub(crate) fn prove_segment_profiled_with_config(&self, index: usize, config: &profile::Config) -> Result<(SegmentArtifact, NativeCpuTimings)> {
         let mut times = NativeCpuTimings::default();
         self.admit(index)?;
-        let config = profile::make_cpu_config();
         let artifact = match (&self.partition, &self.payload) {
             (Partition::Aes(partition), Payload::Aes(key)) => {
                 let air = &partition.segments()[index];
@@ -265,10 +267,10 @@ impl Request {
                 times.witness_ns = start.elapsed().as_nanos();
                 let start = std::time::Instant::now();
                 let proof =
-                    p3_uni_stark::prove(&config, air, witness.trace, &witness.public_values);
+                    p3_uni_stark::prove(config, air, witness.trace, &witness.public_values);
                 times.proving_ns = start.elapsed().as_nanos();
                 let start = std::time::Instant::now();
-                p3_uni_stark::verify(&config, air, &proof, &witness.public_values).map_err(err)?;
+                p3_uni_stark::verify(config, air, &proof, &witness.public_values).map_err(err)?;
                 times.verification_ns = start.elapsed().as_nanos();
                 SegmentArtifact::Aes(AesLaneSegmentProof {
                     public_values: witness.public_values,
@@ -282,10 +284,10 @@ impl Request {
                 times.witness_ns = start.elapsed().as_nanos();
                 let start = std::time::Instant::now();
                 let proof =
-                    p3_uni_stark::prove(&config, air, witness.trace, &witness.public_values);
+                    p3_uni_stark::prove(config, air, witness.trace, &witness.public_values);
                 times.proving_ns = start.elapsed().as_nanos();
                 let start = std::time::Instant::now();
-                p3_uni_stark::verify(&config, air, &proof, &witness.public_values).map_err(err)?;
+                p3_uni_stark::verify(config, air, &proof, &witness.public_values).map_err(err)?;
                 times.verification_ns = start.elapsed().as_nanos();
                 SegmentArtifact::Shake(LaneShakeProof {
                     public_values: witness.public_values,

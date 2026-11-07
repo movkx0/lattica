@@ -26,6 +26,7 @@ fn hex(bytes: &[u8]) -> String {
 
 #[derive(Clone, Debug, serde::Serialize)]
 pub struct Options {
+    pub cpu_variant: lattica_prover_p3::block_v2::cpu_commitment::Variant,
     pub transactions: usize,
     pub workload: usize,
     pub workers: usize,
@@ -40,6 +41,7 @@ pub struct Options {
 impl Options {
     fn parse(args: impl Iterator<Item = String>) -> Result<(Self, bool)> {
         let mut options = Self {
+            cpu_variant: Default::default(),
             transactions: 3,
             workload: 0,
             workers: 1,
@@ -58,6 +60,7 @@ impl Options {
             ensure(seen.insert(key.clone()), "repeated option")?;
             let value = args.next().ok_or("every option requires a value")?;
             match key.as_str() {
+                "--cpu-variant" => options.cpu_variant = lattica_prover_p3::block_v2::cpu_commitment::Variant::parse(&value)?,
                 "--case" => {
                     options.transactions = match value.as_str() {
                         "n3" => 3,
@@ -183,7 +186,7 @@ pub fn main(args: impl Iterator<Item = String>) -> Result<()> {
     }
     println!(
         "CPU_PROOF_PROFILE {}",
-        serde_json::json!({"schema":"ringct-cpu-proof-profile-v1",
+        serde_json::json!({"schema":"ringct-cpu-proof-profile-v2",
         "backend":"cpu", "layout":"paired-v1", "options":options,"input_sha3_256":input_digest,
         "preparation_ns":preparation_ns,"records":records,"gpu_contexts":0,"gpu_proof_calls":0,
         "fresh_stark_randomness":true,"complete_workflow":false,"cleanup_complete":true,

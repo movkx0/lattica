@@ -20,7 +20,7 @@ def selection(args, argv):
             'CPU proof runner and paired options required')
     options = {}
     allowed = {'--case','--workload','--workers','--threads-per-proof','--retain','--mode',
-               '--input','--request','--segments','--repetitions','--generate'}
+               '--input','--request','--segments','--repetitions','--generate','--cpu-variant'}
     for k,v in zip(argv[1::2],argv[2::2]):
         require(k in allowed and k not in options, 'unknown/repeated CPU proof option')
         options[k] = v
@@ -33,6 +33,8 @@ def selection(args, argv):
                     segments=int(options.get('--segments','2')),
                     repetitions=int(options.get('--repetitions','1')))
     require(options.get('--retain','0') in ('0','1'), 'invalid cache selection')
+    selected['cpu_variant'] = options.get('--cpu-variant','reference')
+    require(selected['cpu_variant'] in ('reference','hash','memory','combined'), 'invalid CPU variant')
     selected['retain'] = options.get('--retain','0') == '1'
     require(selected['input'] and selected['workload'] in (0,1)
             and 1 <= selected['workers'] <= 16 and 1 <= selected['threads_per_proof'] <= 16
@@ -50,6 +52,15 @@ def selection(args, argv):
     return dict(options=selected, generate=generate=='1')
 
 def require_build(plan, executable):
+    if plan.get('profile') == 'cpu-commitment':
+        build=json.loads(Path(executable['build_record']).read_text())
+        argv=build['command']
+        require(argv[1:2]==['build'] and argv.count('--features')==1
+                and argv[argv.index('--features')+1]=='cpu-proof-experiment'
+                and '--no-default-features' in argv and argv.count('--example')==1
+                and argv[argv.index('--example')+1]=='cpu_commitment_profile',
+                'commitment screen requires explicit CPU-only example build')
+        return
     if plan.get('cpu_proof') is None:
         return
     build=json.loads(Path(executable['build_record']).read_text())
@@ -71,7 +82,7 @@ def validate(content, selected):
                 and r.get('transactions')==selected['options']['transactions']
                 and r.get('workload')==selected['options']['workload'], 'invalid fresh public inputs')
         return r
-    require(r.get('schema')=='ringct-cpu-proof-profile-v1' and r.get('backend')=='cpu'
+    require(r.get('schema')=='ringct-cpu-proof-profile-v2' and r.get('backend')=='cpu'
             and r.get('layout')=='paired-v1' and r.get('options')==selected['options']
             and r.get('gpu_contexts')==0 and r.get('gpu_proof_calls')==0
             and r.get('fresh_stark_randomness') is True and r.get('complete_workflow') is False
@@ -134,3 +145,16 @@ def validate(content, selected):
     require(not any('"backend":"open_cl"' in s or '"backend":"cuda"' in s
                     for s in content.splitlines()), 'GPU stage in CPU proof record')
     return r
+
+
+def validate_commitment(content, variant, tile):
+    prefix='CPU_COMMITMENT_SCREEN '
+    rows=[json.loads(line[len(prefix):]) for line in content.splitlines() if line.startswith(prefix)]
+    require(len(rows)==6 and {(r.get('width'),r.get('repetition')) for r in rows}
+            =={(w,i) for w in (94,200) for i in range(3)}, 'incomplete commitment screen')
+    for r in rows:
+        require(r.get('variant')==variant and r.get('tile_rows')==tile and r.get('threads')==16
+                and r.get('height')==1<<18 and r.get('verified') is True
+                and isinstance(r.get('commit_ns'),int) and r['commit_ns']>0,
+                'invalid commitment screen evidence')
+    return rows

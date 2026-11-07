@@ -105,7 +105,13 @@ fn admit(stage: &str, first: usize, units: usize, geometry: &Geometry, budget: u
 
 #[cfg(feature = "cpu-proof-experiment")]
 fn admit_cpu(stage: &str, first: usize, units: usize, geometry: &Geometry, budget: u64) -> Result<()> {
-    let required = component_tree::cpu::admission(geometry).map_err(err)?;
+    admit_cpu_variant(stage, first, units, geometry, budget, lattica_prover_p3::block_v2::cpu_commitment::Variant::Reference)
+}
+
+#[cfg(feature = "cpu-proof-experiment")]
+fn admit_cpu_variant(stage: &str, first: usize, units: usize, geometry: &Geometry, budget: u64,
+    variant: lattica_prover_p3::block_v2::cpu_commitment::Variant) -> Result<()> {
+    let required = component_tree::cpu::admission_for(geometry, variant).map_err(err)?;
     require(required <= budget, &format!(
         "{stage} CPU proof [{first}, {}) refused before registration: estimated work {required} exceeds allowance {budget}",
         first.saturating_add(units)))
@@ -160,7 +166,8 @@ impl<'a> RequestProver<'a> {
         #[cfg(feature = "cpu-proof-experiment")]
         if self.execution.is_some_and(|execution|
             execution.policy() == lattica_prover_p3::proving::Policy::CpuRequired) {
-            admit_cpu(stage, first, units, &geometry, self.outer_memory_budget_bytes)?;
+            admit_cpu_variant(stage, first, units, &geometry, self.outer_memory_budget_bytes,
+                self.execution.unwrap().cpu_variant())?;
         }
         admit(
             stage,

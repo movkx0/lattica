@@ -422,3 +422,14 @@ fn gpu_worker_reuses_program_with_fresh_inputs_and_randomness() {
         .unwrap(),
     );
 }
+
+#[cfg(feature = "cpu-proof-experiment")]
+#[test]
+#[ignore = "real candidate CPU proofs; serialized resource window"]
+fn cpu_candidates_reuse_program_with_fresh_inputs_and_randomness() {
+    use lattica_prover_p3::block_v2::cpu_commitment::Variant;
+    for variant in [Variant::Hash, Variant::Memory, Variant::Combined] {
+        reuse_distinct_inputs(ProvingContext::cpu_research_with_variant(
+            crate::host_memory_profile::HostMemoryProfile::Standard,variant).unwrap());
+    }
+}

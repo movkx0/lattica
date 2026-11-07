@@ -39,12 +39,15 @@ impl RegisteredMulAir {
         &self.air
     }
     pub fn prove(&self, left: &[[u64; 256]], right: &[[u64; 256]]) -> Result<MulBatchProof, Error> {
+        self.prove_with_cpu_config(left, right, &profile::make_cpu_config())
+    }
+    pub fn prove_with_cpu_config(&self, left: &[[u64; 256]], right: &[[u64; 256]], config: &profile::Config) -> Result<MulBatchProof, Error> {
         let witness = self
             .air
             .generate(left, right)
             .map_err(|_| Error::Descriptor)?;
         let proof = p3_uni_stark::prove(
-            &profile::make_cpu_config(),
+            config,
             &self.air,
             witness.trace,
             &witness.public_values,

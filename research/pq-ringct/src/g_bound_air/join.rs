@@ -26,9 +26,12 @@ impl RegisteredGBoundAir {
         &self.air
     }
     pub fn prove(&self, f: &[i64; 256], x: &[i64; 256]) -> Result<GBoundArtifact, Error> {
+        self.prove_with_cpu_config(f, x, &profile::make_cpu_config())
+    }
+    pub fn prove_with_cpu_config(&self, f: &[i64; 256], x: &[i64; 256], config: &profile::Config) -> Result<GBoundArtifact, Error> {
         let witness = self.air.generate(f, x).map_err(|_| Error::Descriptor)?;
         let proof = p3_uni_stark::prove(
-            &profile::make_cpu_config(),
+            config,
             &self.air,
             witness.trace,
             &witness.public_values,

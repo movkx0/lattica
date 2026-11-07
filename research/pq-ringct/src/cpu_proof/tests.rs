@@ -97,6 +97,9 @@ fn workers_join_before_originals_release_on_success_and_panic() {
                     tag: None,
                     completed: Arc::clone(&done),
                     thread_exit: true,
+                    prepared_bytes: None,
+                    output_bytes: None,
+                    work_bytes: None,
                 },
                 deps: vec![],
                 cost: 1,
@@ -123,6 +126,9 @@ fn memory_refusal_never_dispatches_or_leaks() {
             tag: None,
             completed: Arc::clone(&done),
             thread_exit: false,
+            prepared_bytes: None,
+            output_bytes: None,
+            work_bytes: None,
         },
         deps: vec![],
         cost: 1,
@@ -154,6 +160,9 @@ fn equal_priority_ready_jobs_reuse_cached_program_before_eviction() {
                 tag: Some(tag),
                 completed: Arc::clone(&done),
                 thread_exit: false,
+                prepared_bytes: None,
+                output_bytes: None,
+                work_bytes: None,
             },
             deps: vec![],
             cost: 1,
@@ -176,11 +185,11 @@ fn cached_program_keeps_its_compiler_original_until_owner_eviction() {
     options.workers = 1;
     options.threads_per_proof = 1;
     options.retain = true;
-    // Four MiB above the fixed envelope admits each task, but retaining the
+    // Three MiB above the fixed envelope admits each task, but retaining the
     // compiler original leaves too little room for the final native task.
     // The scheduler must evict on its owner before it can release that token.
     let ledger = Ledger::new(WorkerAllowance {
-        host: scheduler::fixed_bytes(&options) + (4 << 20),
+        host: scheduler::fixed_bytes(&options) + (3 << 20),
         device: 0,
     });
     let done = Arc::new(AtomicUsize::new(0));
@@ -192,6 +201,9 @@ fn cached_program_keeps_its_compiler_original_until_owner_eviction() {
                 tag,
                 completed: Arc::clone(&done),
                 thread_exit: false,
+                prepared_bytes: None,
+                output_bytes: None,
+                work_bytes: None,
             },
             deps,
             cost: 1,
@@ -199,5 +211,205 @@ fn cached_program_keeps_its_compiler_original_until_owner_eviction() {
         .collect();
     let record = scheduler::run_with_ledger(&options, jobs, 0, &ledger).unwrap();
     assert_eq!(serde_json::to_value(record).unwrap()["cache_evictions"], 1);
+    assert_eq!(ledger.snapshot().current, Bytes::ZERO);
+}
+
+#[test]
+fn prepared_claim_shrinks_only_after_completion_and_cache_hits_reserve_scratch() {
+    use crate::execution::retained_resources::{Bytes, Ledger, WorkerAllowance};
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    for oversized in [false, true] {
+        let (mut options, _) =
+            Options::parse(["--input", "fixture"].map(str::to_owned).into_iter()).unwrap();
+        options.workers = 1;
+        options.threads_per_proof = 1;
+        options.retain = true;
+        let ledger = Ledger::new(WorkerAllowance {
+            host: scheduler::fixed_bytes(&options) + (9 << 19),
+            device: 0,
+        });
+        let done = Arc::new(AtomicUsize::new(0));
+        let jobs = [
+            (None, vec![]),
+            (Some([17; 32]), vec![0]),
+            (Some([17; 32]), vec![1]),
+            (None, vec![2]),
+        ]
+        .into_iter()
+        .map(|(tag, deps)| jobs::Spec {
+            kind: jobs::Kind::Probe {
+                panic: false,
+                tag,
+                completed: Arc::clone(&done),
+                thread_exit: true,
+                prepared_bytes: tag.map(|_| if oversized { 2 << 20 } else { 1 << 18 }),
+                output_bytes: None,
+                work_bytes: None,
+            },
+            deps,
+            cost: 1,
+        })
+        .collect();
+        let result = scheduler::run_with_ledger(&options, jobs, 0, &ledger);
+        assert_eq!(result.is_err(), oversized);
+        if let Ok(record) = result {
+            assert!(record.jobs[2].prepared_hit);
+            assert_eq!(serde_json::to_value(record).unwrap()["cache_evictions"], 0);
+            assert_eq!(done.load(Ordering::SeqCst), 8);
+        } else {
+            assert_eq!(done.load(Ordering::SeqCst), 4);
+        }
+        assert_eq!(ledger.snapshot().current, Bytes::ZERO);
+    }
+}
+
+#[test]
+fn phase_memory_model_preserves_reference_refusal_and_rejects_unknown_geometry() {
+    use lattica_prover_p3::block_v2::cpu_commitment::Variant;
+    let mut g = component_tree::Geometry {
+        active_rows: 244432,
+        padded_rows: 262144,
+        wires: 1,
+        main_width: 94,
+        preprocessed_width: 200,
+        permutation_width_base: 51,
+        quotient_chunks: 16,
+        constraints: 1,
+        max_constraint_degree: 1,
+        fri_ali_bits: 5,
+        retained_lde_bytes: 31_675_383_808,
+    };
+    let reference = component_tree::cpu::admission_for(&g, Variant::Reference).unwrap();
+    let candidate = component_tree::cpu::admission_for(&g, Variant::Combined).unwrap();
+    assert!(reference > 36 << 30);
+    assert!(candidate > 32 << 30 && candidate < 36 << 30);
+    g.preprocessed_width += 1;
+    assert!(component_tree::cpu::admission_for(&g, Variant::Combined).is_err());
+}
+
+#[test]
+fn ready_proofs_retire_compiler_inputs_before_independent_compilation() {
+    use crate::execution::retained_resources::{Bytes, Ledger, WorkerAllowance};
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    let (mut options, _) =
+        Options::parse(["--input", "fixture"].map(str::to_owned).into_iter()).unwrap();
+    options.workers = 1;
+    options.threads_per_proof = 1;
+    options.retain = true;
+    let ledger = Ledger::new(WorkerAllowance {
+        host: scheduler::fixed_bytes(&options) + (5 << 19),
+        device: 0,
+    });
+    let done = Arc::new(AtomicUsize::new(0));
+    // Compiling both independent roots first strands two 1-MiB originals.
+    // Consuming each root before the next admits both proofs in 2.5 MiB.
+    let jobs = [
+        (None, vec![], 1),
+        (Some([17; 32]), vec![0], 10),
+        (None, vec![], 1),
+        (Some([18; 32]), vec![2], 10),
+    ]
+    .into_iter()
+    .map(|(tag, deps, cost)| jobs::Spec {
+        kind: jobs::Kind::Probe {
+            panic: false,
+            tag,
+            completed: Arc::clone(&done),
+            thread_exit: false,
+            prepared_bytes: None,
+            output_bytes: tag.map(|_| 1024),
+            work_bytes: None,
+        },
+        deps,
+        cost,
+    })
+    .collect();
+    let record = scheduler::run_with_ledger(&options, jobs, 0, &ledger).unwrap();
+    assert_eq!(record.jobs.len(), 4);
+    assert_eq!(done.load(Ordering::SeqCst), 4);
+    assert_eq!(ledger.snapshot().current, Bytes::ZERO);
+}
+
+#[test]
+fn terminal_results_release_their_originals_after_verification() {
+    use crate::execution::retained_resources::{Bytes, Ledger, WorkerAllowance};
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    let (mut options, _) =
+        Options::parse(["--input", "fixture"].map(str::to_owned).into_iter()).unwrap();
+    options.workers = 1;
+    options.threads_per_proof = 1;
+    let ledger = Ledger::new(WorkerAllowance {
+        host: scheduler::fixed_bytes(&options) + (5 << 19),
+        device: 0,
+    });
+    let done = Arc::new(AtomicUsize::new(0));
+    let jobs = (0..3)
+        .map(|_| jobs::Spec {
+            kind: jobs::Kind::Probe {
+                panic: false,
+                tag: None,
+                completed: Arc::clone(&done),
+                thread_exit: false,
+                prepared_bytes: None,
+                output_bytes: None,
+                work_bytes: None,
+            },
+            deps: vec![],
+            cost: 1,
+        })
+        .collect();
+    let record = scheduler::run_with_ledger(&options, jobs, 0, &ledger).unwrap();
+    assert_eq!(record.jobs.len(), 3);
+    assert_eq!(done.load(Ordering::SeqCst), 3);
+    assert_eq!(ledger.snapshot().current, Bytes::ZERO);
+}
+
+#[test]
+fn matching_cache_evicts_before_more_compiler_outputs_strand_its_scratch() {
+    use crate::execution::retained_resources::{Bytes, Ledger, WorkerAllowance};
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    let (mut options, _) =
+        Options::parse(["--input", "fixture"].map(str::to_owned).into_iter()).unwrap();
+    options.workers = 1;
+    options.threads_per_proof = 1;
+    options.retain = true;
+    let ledger = Ledger::new(WorkerAllowance {
+        host: scheduler::fixed_bytes(&options) + (6 << 20),
+        device: 0,
+    });
+    let done = Arc::new(AtomicUsize::new(0));
+    let mut jobs = Vec::new();
+    for _ in 0..4 {
+        let input = jobs.len();
+        jobs.push(jobs::Spec {
+            kind: jobs::Kind::Probe {
+                panic: false,
+                tag: None,
+                completed: Arc::clone(&done),
+                thread_exit: false,
+                prepared_bytes: None,
+                output_bytes: Some(1 << 20),
+                work_bytes: Some(1 << 18),
+            },
+            deps: vec![],
+            cost: 1,
+        });
+        jobs.push(jobs::Spec {
+            kind: jobs::Kind::Probe {
+                panic: false,
+                tag: Some([17; 32]),
+                completed: Arc::clone(&done),
+                thread_exit: false,
+                prepared_bytes: Some(1 << 20),
+                output_bytes: Some(1024),
+                work_bytes: Some(4 << 20),
+            },
+            deps: vec![input],
+            cost: 10,
+        });
+    }
+    let record = scheduler::run_with_ledger(&options, jobs, 0, &ledger).unwrap();
+    assert_eq!(done.load(Ordering::SeqCst), 8);
+    assert_eq!(serde_json::to_value(record).unwrap()["cache_evictions"], 3);
     assert_eq!(ledger.snapshot().current, Bytes::ZERO);
 }
