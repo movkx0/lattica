@@ -1,7 +1,9 @@
 //! Immutable host backing for completed GPU digest trees. Construction keeps
 //! the original device allocation; only completed trees may move to the host.
-//! A query batch uploads one tree and runs the unchanged device gather kernel.
+//! A query batch uploads one tree; aggregation may gather all paths in one kernel.
 use super::*;
+#[cfg(all(feature = "gpu", feature = "gpu-tuning"))]
+pub(crate) mod batch;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 const MODE_ENV: &str = "LATTICA_V2_GPU_RETAINED_TREE_STORAGE";
@@ -307,6 +309,10 @@ impl Engine {
                 .checked_mul(8)
                 .ok_or("retained tree query upload overflow")?,
         };
+        #[cfg(all(feature = "gpu", feature = "gpu-tuning"))]
+        let batch_bytes = if self.tuning.queries { batch::DEVICE_BYTES } else { 0 };
+        #[cfg(not(all(feature = "gpu", feature = "gpu-tuning")))]
+        let batch_bytes = 0;
         let query = if self.query.is_none() && tree.layout.path_len != 0 {
             QUERY_ELEMENTS * 8
         } else {
@@ -318,6 +324,7 @@ impl Engine {
             || live
                 .checked_add(upload)
                 .and_then(|n| n.checked_add(query))
+                .and_then(|n| n.checked_add(batch_bytes))
                 .is_none_or(|n| n > self.limits.managed_bytes)
         {
             return Err("retained tree query batch exceeds managed memory".into());
@@ -338,11 +345,19 @@ impl Engine {
             (Storage::Host(_), Some(device)) => &device.buffer,
             _ => return Err("retained tree query storage mismatch".into()),
         };
+        if std::env::var("LATTICA_V2_GPU_AGGREGATION_DIAGNOSTICS").as_deref() == Ok("1") {
+            self.context_checkpoint("aggregation query batch")?;
+        }
         // Every scalar gather drains before it returns; uploaded stays owned
         // until the entire batch succeeds or a failing gather drains on drop.
-        for &index in indices {
-            output.push(self.open_retained_buffer(tree, source, index)?);
+        #[cfg(all(feature = "gpu", feature = "gpu-tuning"))]
+        if self.tuning.queries {
+            output = self.open_retained_batch_buffer(tree, source, indices)?;
+        } else {
+            for &index in indices { output.push(self.open_retained_buffer(tree, source, index)?); }
         }
+        #[cfg(not(all(feature = "gpu", feature = "gpu-tuning")))]
+        for &index in indices { output.push(self.open_retained_buffer(tree, source, index)?); }
         if let Some(device) = uploaded {
             eprintln!("bounded_retained_tree_query_upload queries={} uploaded_bytes={} actual_gpu_gather=true uploads_per_tree_batch=1",
                 indices.len(), device.buffer.len() * 8);

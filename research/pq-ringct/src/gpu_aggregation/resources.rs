@@ -23,9 +23,10 @@ impl Envelope {
                 },
             "worker/host profile mismatch",
         )?;
+        let device = memory::selected(options)?.and_then(|v| v["managed_bytes"].as_u64()).unwrap_or(8 << 30);
         let ledger = Ledger::new(WorkerAllowance {
             host: host << 30,
-            device: 8 << 30,
+            device,
         });
         let mut owners = Vec::new();
         let mut reserve = |category, host, device| -> Result<()> {
@@ -41,7 +42,7 @@ impl Envelope {
         // Each of two compilers: 2 GiB source + 512 MiB auxiliary workspace.
         reserve(
             Category::SymbolicCompiler,
-            if options.profile == "grouped-v3" {
+            if matches!(options.profile.as_str(), "grouped-v3" | "grouped-v4") {
                 1 << 30
             } else {
                 5 << 30
@@ -57,12 +58,12 @@ impl Envelope {
         // resulting 20 GiB backend phase includes the full 8 GiB tree quota.
         reserve(
             Category::PhaseScratch,
-            if options.profile == "grouped-v3" {
+            if matches!(options.profile.as_str(), "grouped-v3" | "grouped-v4") {
                 CONSUMING_GPU_HOST_BYTES
             } else {
                 16 << 30
             },
-            8 << 30,
+            device,
         )?;
         reserve(Category::Report, 1 << 30, 0)?;
         Ok(Self {

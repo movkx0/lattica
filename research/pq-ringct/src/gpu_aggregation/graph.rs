@@ -367,7 +367,7 @@ fn prove_graph(
             &facts,
             &selection::graph_costs(options, width)?,
             options.max_rows(),
-            if options.profile == "grouped-v3" {
+            if options.profile == "grouped-v4" { 4 } else if options.profile == "grouped-v3" {
                 2
             } else {
                 1
@@ -383,10 +383,10 @@ fn prove_graph(
         execution,
     )
     .map_err(error)?;
-    let prepare = |index| {
+    let preflight = (options.profile == "grouped-v4").then(|| execution.aggregation_backend_limits()).transpose()?;
+    let prepare_group = |first: usize, count: usize| {
         deadline.check()?;
         let start = Instant::now();
-        let (first, count) = groups[index];
         let end = first + count;
         let leaves = (first..end)
             .map(|i| load_leaf(case, i, caches, &sources, &auxiliary, &algebra))
@@ -410,8 +410,14 @@ fn prove_graph(
                 && compiled.program().construction_host_bytes() <= 2 << 30,
             "graph grouping exceeds admitted height/compiler ceiling",
         )?;
+        if let Some(limits) = preflight { compiled.preflight_imported(limits)?; }
         Ok((first, end - first, compiled, start.elapsed().as_nanos()))
     };
+    let groups = if options.profile == "grouped-v4" && groups.iter().any(|g| g.1 > 4) {
+        layout::admit_groups(&groups, |first, count| prepare_group(first, count).map(|_| ()))?
+    } else { groups };
+    let count = groups.len();
+    let prepare = |index: usize| prepare_group(groups[index].0, groups[index].1);
     if execution.consuming_aggregation() {
         let rows = std::sync::Mutex::new(Vec::new());
         let root = prover.prove_imported_tree(count, |i| {
@@ -710,6 +716,11 @@ pub(crate) fn screen(options: &Options, deadline: &Deadline) -> Result<serde_jso
             &execution,
         )
         .map_err(error)?;
+        let admitted;
+        let spans = if options.profile == "grouped-v4" && options.group_width > 4 {
+            admitted = prover.admitted_imported_spans(request, &case.context, &spans, deadline).map_err(error)?;
+            &admitted
+        } else { &spans };
         let mut samples = Vec::new();
         let mut recursive_proofs = 0;
         for repetition in 0..options.repetitions {

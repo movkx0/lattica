@@ -11,6 +11,7 @@ pub(super) struct Tuning {
     pub ntt: bool,
     pub witness: bool,
     pub programs: bool,
+    pub queries: bool,
 }
 
 impl Tuning {
@@ -42,6 +43,7 @@ impl Tuning {
                 "ntt" => &mut result.ntt,
                 "witness" => &mut result.witness,
                 "programs" => &mut result.programs,
+                "queries" => &mut result.queries,
                 _ => return Err(format!("unknown GPU tuning candidate: {item}")),
             };
             if *selected {
@@ -87,7 +89,7 @@ mod tests {
     #[test]
     fn candidates_require_explicit_feature_and_selection() {
         assert_eq!(Tuning::parse("", false).unwrap(), Tuning::default());
-        for value in ["events", "commitment", "scale", "ntt", "witness", "programs"] {
+        for value in ["events", "commitment", "scale", "ntt", "witness", "programs", "queries"] {
             assert!(Tuning::parse(value, false).is_err());
             assert_ne!(Tuning::parse(value, true).unwrap(), Tuning::default());
         }

@@ -48,6 +48,8 @@ impl<'a> GraphProver<'a> {
             .execution
             .ok_or_else(|| err("imported tree requires GPU context"))?;
         let max_rows = execution.aggregation_row_limit();
+        let preflight = (std::env::var("LATTICA_V2_GPU_AGGREGATION_V4").as_deref() == Ok("1"))
+            .then(|| execution.aggregation_backend_limits()).transpose().map_err(err)?;
         let root = crate::gpu_aggregation::pipeline::tree_programs(
             leaves,
             execution,
@@ -69,6 +71,7 @@ impl<'a> GraphProver<'a> {
                 {
                     return Err("imported parent exceeds row ceiling".into());
                 }
+                if let Some(limits) = preflight { compiled.preflight_imported(limits)?; }
                 Ok(compiled)
             },
             |node| node.shared_program(),

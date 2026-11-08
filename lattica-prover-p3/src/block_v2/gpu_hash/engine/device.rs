@@ -405,6 +405,11 @@ impl DeviceCommitment {
 }
 
 impl DeviceSession {
+    #[cfg(feature = "gpu")]
+    pub fn aggregation_memory_checkpoint(&self, label: &str) -> Result<(), String> {
+        if std::env::var("LATTICA_V2_GPU_AGGREGATION_DIAGNOSTICS").as_deref() != Ok("1") { return Ok(()); }
+        self.with_engine(|engine| engine.context_checkpoint(label))
+    }
     #[cfg(all(feature = "gpu", feature = "gpu-tuning"))]
     pub(crate) fn aggregation_boundary(
         &self,

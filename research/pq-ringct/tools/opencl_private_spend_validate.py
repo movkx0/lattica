@@ -1989,6 +1989,8 @@ def validate_output(log, plan):
     if plan.get('gpu_aggregation') is not None:
         from gpu_aggregation_profile import validate as validate_gpu_aggregation
         plan['gpu_aggregation_acceptance'] = validate_gpu_aggregation(content, plan['gpu_aggregation'])
+        from gpu_aggregation_memory import validate as validate_gpu_aggregation_memory
+        validate_gpu_aggregation_memory(content, plan)
     if plan.get('cpu_proof') is not None:
         from cpu_proof_profile import validate as validate_cpu_proof
         plan['cpu_proof_acceptance'] = validate_cpu_proof(content, plan['cpu_proof'])
@@ -2194,6 +2196,8 @@ def execute(args, plan):
         require_cpu_proof_build(plan, executable)
         from gpu_aggregation_profile import require_build as require_gpu_aggregation_build
         require_gpu_aggregation_build(plan, executable)
+        from gpu_aggregation_memory import prepare as prepare_gpu_aggregation_memory
+        prepare_gpu_aggregation_memory(plan, executable)
         require_direct_ring_recursion_build(plan, executable)
         first_leaf_module('direct_ring_aggregate_guard').require_build(plan, executable, ROOT)
         recursion = plan.get('direct_ring_recursion_environment')
@@ -2278,6 +2282,8 @@ def execute(args, plan):
                     break
                 if telemetry is not None:
                     telemetry.sample(state)
+                from gpu_aggregation_memory import observe as observe_gpu_aggregation_memory
+                observe_gpu_aggregation_memory(plan, int(state.get("MainPID", "0")))
                 if plan.get('identity_physical_cpus') is not None and int(state.get('MainPID', '0')) > 0:
                     try:
                         affinity = sorted(os.sched_getaffinity(int(state['MainPID'])))
@@ -2367,6 +2373,13 @@ def execute(args, plan):
             plan.update(status='passed' if error is None else 'failed_or_incomplete', error=error,
                         finished_utc=now(), wall_seconds=time.monotonic() - started,
                         terminal_state=state, raw_log=str(log), raw_log_sha256=sha(log) if log.exists() else None)
+            if error is None:
+                try:
+                    from gpu_aggregation_memory import publish as publish_gpu_aggregation_memory
+                    publish_gpu_aggregation_memory(plan)
+                except Exception as qualification_error:
+                    error = 'memory qualification publication: ' + repr(qualification_error)
+                    plan.update(status='failed_or_incomplete', error=error)
             record.write_text(json.dumps(plan, indent=2) + '\n')
         print(json.dumps({'status': plan['status'], 'record': str(record), 'error': error}))
         return int(error is not None)

@@ -12,6 +12,34 @@ use sha3::{Digest, Sha3_256};
 use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
 const REQUIRED_DRIVER_RESERVE: usize = 4 << 30;
 const MAX_PRIVATE_BYTES: usize = 512;
+fn required_driver_reserve(qualified_aggregation: bool) -> usize {
+    if qualified_aggregation { 2 << 30 } else { REQUIRED_DRIVER_RESERVE }
+}
+
+// The aggregation worker independently checks the source/executable/device
+// qualification and exact program geometry before entering this backend.
+// Keep the original reserve for every other caller and malformed selection.
+fn qualified_aggregation_reserve(engine: &Engine, reserve: usize) -> bool {
+    if std::env::var("LATTICA_V2_GPU_AGGREGATION_V4").as_deref() != Ok("1") {
+        return false;
+    }
+    let Some(value) = std::env::var("LATTICA_V2_GPU_AGGREGATION_MEMORY").ok()
+        .filter(|s| s.len() <= 16 * 1024)
+        .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok()) else { return false; };
+    value["context_bytes"].as_u64() == Some(reserve as u64)
+        && value["managed_bytes"].as_u64() == Some(engine.limits.managed_bytes as u64)
+        && value["qualification_sha256"].as_str().is_some_and(|s| s.len() == 64 && s.bytes().all(|b| b.is_ascii_hexdigit()))
+        && value["qualified_geometries"].as_array().is_some_and(|g| !g.is_empty())
+}
+
+#[test]
+fn smaller_reserve_preserves_specialization_only_after_aggregation_qualification() {
+    assert!(2 << 30 < required_driver_reserve(false));
+    assert!(3 << 30 < required_driver_reserve(false));
+    assert_eq!(required_driver_reserve(false), 4 << 30);
+    assert_eq!(required_driver_reserve(true), 2 << 30);
+    assert!(128 << 20 < required_driver_reserve(true) - (512 << 20));
+}
 fn source(program: &Program) -> Result<Option<String>, String> {
     specialize::source(program, Backend::OpenCl)
 }
@@ -77,11 +105,10 @@ pub(in crate::block_v2::gpu_hash::engine) fn prepare(
 ) -> Result<Option<Arc<Compiled>>, String> {
     use ocl::core::{DeviceInfo, DeviceInfoResult, KernelWorkGroupInfo, KernelWorkGroupInfoResult};
     let device = engine.pq.device();
+    let reserve = super::super::env_bytes("LATTICA_V2_GPU_CONTEXT_BYTES", super::super::DRIVER_RESERVE_BYTES)?;
+    let required_reserve = required_driver_reserve(qualified_aggregation_reserve(engine, reserve));
     if super::row_workgroup(device, 32).is_none()
-        || super::super::env_bytes(
-            "LATTICA_V2_GPU_CONTEXT_BYTES",
-            super::super::DRIVER_RESERVE_BYTES,
-        )? < REQUIRED_DRIVER_RESERVE
+        || reserve < required_reserve
     {
         return Ok(None);
     }
@@ -141,7 +168,7 @@ pub(in crate::block_v2::gpu_hash::engine) fn prepare(
         _ => return Err("GPU private size response".into()),
     };
     // Allow at most 128 MiB of rounded resident private backing within the
-    // 4 GiB opaque driver allowance; no managed workspace is borrowed.
+    // the selected opaque driver allowance; no managed workspace is borrowed.
     if private_bytes > MAX_PRIVATE_BYTES {
         eprintln!("bounded_gpu_quotient_specialization selected=false degree={} instructions={} registers={} source_bytes={} private_bytes={private_bytes} limit_bytes={MAX_PRIVATE_BYTES} source_sha3={source_hash:x} build_ns={}",
             program.extension.degree(), program.instruction_count(), program.registers, source.len(), started.elapsed().as_nanos());
@@ -154,7 +181,7 @@ pub(in crate::block_v2::gpu_hash::engine) fn prepare(
     let private_backing = units * 2048 * private_bytes.div_ceil(256) * 256;
     assert!(private_backing <= 128 << 20);
     engine.context_checkpoint("specialized quotient compilation")?;
-    eprintln!("bounded_gpu_quotient_specialization selected=true degree={} instructions={} registers={} blocks={} source_bytes={} source_capacity={} private_bytes={private_bytes} resident_private_bound_bytes={private_backing} driver_reserve_bytes={REQUIRED_DRIVER_RESERVE} source_sha3={source_hash:x} build_ns={}",
+    eprintln!("bounded_gpu_quotient_specialization selected=true degree={} instructions={} registers={} blocks={} source_bytes={} source_capacity={} private_bytes={private_bytes} resident_private_bound_bytes={private_backing} driver_reserve_bytes={reserve} source_sha3={source_hash:x} build_ns={}",
         program.extension.degree(), program.instruction_count(), program.registers, program.instruction_count().div_ceil(BLOCK), source.len(), source.capacity(), started.elapsed().as_nanos());
     let compiled = Arc::new(Compiled {
         program: compiled,

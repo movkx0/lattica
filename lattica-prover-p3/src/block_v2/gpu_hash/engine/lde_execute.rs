@@ -1348,7 +1348,7 @@ impl Engine {
             self.stats.quotient_lde_commits += 1;
         }
         self.stats.lde_wall_ns += started.elapsed().as_nanos();
-        self.context_checkpoint("resident LDE complete")?;
+        self.context_checkpoint(if std::env::var("LATTICA_V2_GPU_AGGREGATION_DIAGNOSTICS").as_deref() == Ok("1") { "aggregation LDE peak" } else { "resident LDE complete" })?;
         if crate::block_v2::worker_memory::reclaim_enabled() {
             self.workspace = None;
         }

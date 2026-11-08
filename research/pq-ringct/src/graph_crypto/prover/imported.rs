@@ -96,39 +96,10 @@ mod imported_group_layout_tests {
         assert!(group_spans(&request, 8, source::MAX_ROWS).is_err());
     }
 }
-impl RequestProver<'_> {
-    pub(crate) fn prove_imported(
-        &self,
-        request: &Request,
-        context: &graph_tree::GraphContext,
-        spans: &[ShakeWrapperSpan],
-        parallel: bool,
-        gpu_identity: bool,
-        deadline: &Deadline,
-    ) -> Result<CompleteRequestProof> {
-        let execution = self
-            .execution
-            .ok_or_else(|| err("imported recursion requires explicit GPU context"))?;
-        require(
-            execution.policy() == lattica_prover_p3::proving::Policy::GpuRequired,
-            "imported recursion requires GPU proofs",
-        )?;
-        require(
-            self.outer_cache.policy() == crate::proof_cache_policy::ProofCachePolicy::FreshOnly,
-            "imported recursion must produce fresh outer proofs",
-        )?;
-        let endpoints = request.endpoint_context_hint(context);
-        let is_shake = matches!(request.descriptor(), RequestDescriptor::Shake(_));
-        let count = if is_shake {
-            spans.len()
-        } else {
-            request.segments().len()
-        };
-        let native_cache = self.native_cache;
-        let prepare = |index: usize| -> std::result::Result<_, String> {
-            deadline.check()?;
-            if is_shake {
-                let span = spans[index];
+fn compile_imported_shake(native_cache: &ProofCache, request: &Request,
+    context: &graph_tree::GraphContext, span: ShakeWrapperSpan,
+) -> std::result::Result<component_tree::CompiledNode, String> {
+    let endpoints = request.endpoint_context_hint(context);
                 let mut children = Vec::with_capacity(span.segment_count);
                 for index in span.first_segment..span.first_segment + span.segment_count {
                     children.push(
@@ -164,12 +135,84 @@ impl RequestProver<'_> {
                 .map_err(gpu_aggregation::error)?;
                 match outcome {
                     component_tree::ShakeGroupCompileOutcome::Compiled(compiled) => {
-                        Ok((span.first_unit, span.units, span.segment_count, compiled))
+                        Ok(compiled)
                     }
                     component_tree::ShakeGroupCompileOutcome::ResourceRefused(reason) => Err(
                         format!("admitted SHAKE compiler refused: {}", reason.reason),
                     ),
                 }
+}
+impl RequestProver<'_> {
+    pub(crate) fn admitted_imported_spans(&self, request: &Request, context: &graph_tree::GraphContext,
+        spans: &[ShakeWrapperSpan], deadline: &Deadline,
+    ) -> Result<Vec<ShakeWrapperSpan>> {
+        let execution = self.execution.ok_or_else(|| err("preflight requires aggregation context"))?;
+        let limits = execution.aggregation_backend_limits().map_err(err)?;
+        let mut result = Vec::new();
+        let mut pending: std::collections::VecDeque<_> = spans.iter().copied().collect();
+        while let Some(span) = pending.pop_front() {
+            deadline.check().map_err(err)?;
+            let check = compile_imported_shake(self.native_cache, request, context, span)
+                .and_then(|node| node.preflight_imported(limits));
+            match check {
+                Ok(()) => result.push(span),
+                Err(reason) if span.segment_count > 1 => {
+                    let left = span.segment_count.div_ceil(2);
+                    let middle = request.segments()[span.first_segment + left].first_unit;
+                    eprintln!("gpu_aggregation_shake_preflight first={} count={} reason={reason:?} proofs_started=false", span.first_segment, span.segment_count);
+                    pending.push_front(ShakeWrapperSpan { first_segment: span.first_segment + left,
+                        segment_count: span.segment_count - left, first_unit: middle,
+                        units: span.first_unit + span.units - middle });
+                    pending.push_front(ShakeWrapperSpan { segment_count: left, units: middle - span.first_unit, ..span });
+                }
+                Err(reason) => return Err(err(reason)),
+            }
+        }
+        Ok(result)
+    }
+    pub(crate) fn prove_imported(
+        &self,
+        request: &Request,
+        context: &graph_tree::GraphContext,
+        spans: &[ShakeWrapperSpan],
+        parallel: bool,
+        gpu_identity: bool,
+        deadline: &Deadline,
+    ) -> Result<CompleteRequestProof> {
+        let execution = self
+            .execution
+            .ok_or_else(|| err("imported recursion requires explicit GPU context"))?;
+        require(
+            execution.policy() == lattica_prover_p3::proving::Policy::GpuRequired,
+            "imported recursion requires GPU proofs",
+        )?;
+        require(
+            self.outer_cache.policy() == crate::proof_cache_policy::ProofCachePolicy::FreshOnly,
+            "imported recursion must produce fresh outer proofs",
+        )?;
+        let admitted;
+        let spans = if std::env::var("LATTICA_V2_GPU_AGGREGATION_V4").as_deref() == Ok("1")
+            && spans.iter().any(|span| span.segment_count > 4) {
+            admitted = self.admitted_imported_spans(request, context, spans, deadline)?;
+            &admitted[..]
+        } else { spans };
+        let endpoints = request.endpoint_context_hint(context);
+        let is_shake = matches!(request.descriptor(), RequestDescriptor::Shake(_));
+        let count = if is_shake {
+            spans.len()
+        } else {
+            request.segments().len()
+        };
+        let native_cache = self.native_cache;
+        let preflight = (std::env::var("LATTICA_V2_GPU_AGGREGATION_V4").as_deref() == Ok("1"))
+            .then(|| execution.aggregation_backend_limits()).transpose().map_err(err)?;
+        let prepare = |index: usize| -> std::result::Result<_, String> {
+            deadline.check()?;
+            if is_shake {
+                let span = spans[index];
+                let compiled = compile_imported_shake(native_cache, request, context, span)?;
+                if let Some(limits) = preflight { compiled.preflight_imported(limits)?; }
+                Ok((span.first_unit, span.units, span.segment_count, compiled))
             } else {
                 let artifact = native_cache
                     .load(request, index)
@@ -178,6 +221,7 @@ impl RequestProver<'_> {
                 let compiled = request
                     .compile_segment_leaf_with_endpoints(index, &endpoints, &artifact, None)
                     .map_err(gpu_aggregation::error)?;
+                if let Some(limits) = preflight { compiled.preflight_imported(limits)?; }
                 let segment = &request.segments()[index];
                 Ok((segment.first_unit, segment.units, 1, compiled))
             }
@@ -200,6 +244,7 @@ impl RequestProver<'_> {
                         [&left.proof, &right.proof],
                     )
                     .map_err(gpu_aggregation::error)?;
+                    if let Some(limits) = preflight { compiled.preflight_imported(limits)?; }
                     Ok((
                         left.first,
                         left.units

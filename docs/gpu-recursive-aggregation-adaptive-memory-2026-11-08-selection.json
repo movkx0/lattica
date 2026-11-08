@@ -1,0 +1,157 @@
+{
+  "schema": "ringct-gpu-aggregation-selection-v3",
+  "source_sha3": "749d3205d1a3d96046d66aa2a3e7af681d2e87e791ade969aeac9db207a60454",
+  "device_uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615",
+  "costs": [
+    {
+      "family": "graph",
+      "width": 4,
+      "baseline": [
+        53.491054534,
+        53.847248811,
+        53.676477409
+      ],
+      "candidate": [
+        53.10194144,
+        53.039821444,
+        53.293415176
+      ]
+    },
+    {
+      "family": "shake",
+      "width": 4,
+      "baseline": [
+        72.333080286,
+        72.475592536,
+        72.383310192
+      ],
+      "candidate": [
+        71.712682617,
+        71.808959617,
+        71.663771041
+      ]
+    }
+  ],
+  "observations": [
+    {
+      "first_request_seconds": [
+        53.389036934,
+        53.38468416
+      ],
+      "warm_ratio": 0.9892963175541085,
+      "full_aggregation_qualified": false,
+      "baseline_options": {
+        "bundle": "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-r23",
+        "command": "screen",
+        "family": "graph",
+        "first_leaf": 4,
+        "gpu_managed_mib": "8192",
+        "group_width": 4,
+        "identity": "cpu",
+        "input": "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-r23/inputs.json",
+        "leaves": 8,
+        "max_components": 18446744073709551615,
+        "memory_qualification": null,
+        "output": "",
+        "parallel": true,
+        "profile": "grouped-v3",
+        "query_gather": "scalar",
+        "repetitions": 4,
+        "request": null,
+        "seconds": 270,
+        "selection": null,
+        "transactions": 4,
+        "workload": 0
+      },
+      "candidate_options": {
+        "bundle": "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-r23",
+        "command": "screen",
+        "family": "graph",
+        "first_leaf": 4,
+        "gpu_managed_mib": "8192",
+        "group_width": 4,
+        "identity": "cpu",
+        "input": "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-r23/inputs.json",
+        "leaves": 8,
+        "max_components": 18446744073709551615,
+        "memory_qualification": "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/memory12-combined-r23.json",
+        "output": "",
+        "parallel": true,
+        "profile": "grouped-v4",
+        "query_gather": "batch",
+        "repetitions": 4,
+        "request": null,
+        "seconds": 270,
+        "selection": null,
+        "transactions": 4,
+        "workload": 0
+      }
+    },
+    {
+      "first_request_seconds": [
+        73.616898985,
+        73.119625387
+      ],
+      "warm_ratio": 0.9907350524144153,
+      "full_aggregation_qualified": false,
+      "baseline_options": {
+        "bundle": "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-r23",
+        "command": "screen",
+        "family": "shake",
+        "first_leaf": 0,
+        "gpu_managed_mib": "8192",
+        "group_width": 4,
+        "identity": "cpu",
+        "input": "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-r23/inputs.json",
+        "leaves": 8,
+        "max_components": 18446744073709551615,
+        "memory_qualification": null,
+        "output": "",
+        "parallel": true,
+        "profile": "grouped-v3",
+        "query_gather": "scalar",
+        "repetitions": 4,
+        "request": 6,
+        "seconds": 350,
+        "selection": null,
+        "transactions": 4,
+        "workload": 0
+      },
+      "candidate_options": {
+        "bundle": "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-r23",
+        "command": "screen",
+        "family": "shake",
+        "first_leaf": 0,
+        "gpu_managed_mib": "8192",
+        "group_width": 4,
+        "identity": "cpu",
+        "input": "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-r23/inputs.json",
+        "leaves": 8,
+        "max_components": 18446744073709551615,
+        "memory_qualification": "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/memory12-combined-r23.json",
+        "output": "",
+        "parallel": true,
+        "profile": "grouped-v4",
+        "query_gather": "batch",
+        "repetitions": 4,
+        "request": 6,
+        "seconds": 350,
+        "selection": null,
+        "transactions": 4,
+        "workload": 0
+      }
+    }
+  ],
+  "performance_qualified": false,
+  "profile": "grouped-v4",
+  "baseline_width": 4,
+  "memory": {
+    "context_bytes": 2147483648,
+    "driver": "615.78.08",
+    "executable_sha3": "c40ce16ec085811420c2f53ed67c7ac646075deb8a53dd4e4fb79be7b4258fd8",
+    "managed_bytes": 8589934592,
+    "max_rows": 524288,
+    "qualification_sha256": "cf156387d73fcf5638c767f15d9fabd03bce9dcfaa40a2c307c258b997cf5426",
+    "query_gather": "batch"
+  }
+}

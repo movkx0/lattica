@@ -83,7 +83,7 @@ class Campaign:
 
     def python_tests(self):
         result = self.budget.run(self.label('python-tests'), [sys.executable, '-m', 'unittest',
-            'test_gpu_aggregation_profile', 'test_cpu_proof_budget', 'test_opencl_private_spend_validate'],
+            'test_gpu_aggregation_profile', 'test_gpu_aggregation_memory', 'test_cpu_proof_budget', 'test_opencl_private_spend_validate'],
             cwd=ROOT / 'research/pq-ringct/tools')
         if result['status'] != 'passed':
             raise RuntimeError(Path(result['log']).read_text())
@@ -106,7 +106,7 @@ def main():
     parser.add_argument('--revision', default='r1')
     parser.add_argument('--kind', choices=('core', 'research', 'runner'), default='runner')
     parser.add_argument('--label')
-    parser.add_argument('--command', choices=('plan', 'prepare-inputs', 'screen', 'run'))
+    parser.add_argument('--command', choices=('plan', 'prepare-inputs', 'screen', 'run', 'qualify-memory'))
     parser.add_argument('--case', choices=('n3', 'n4'), default='n3')
     parser.add_argument('--bundle', type=Path)
     parser.add_argument('--device-uuid')

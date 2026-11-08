@@ -138,7 +138,8 @@ fn inspect_bounds(
         }
         .reservation(1)?
         .host_bytes,
-        crate::block_v2::challenger::resources::reservation().host_bytes,
+        add(crate::block_v2::challenger::resources::reservation().host_bytes,
+            crate::block_v2::gpu_hash::engine::query_batch_host_bytes()? as u64)?,
     )?;
     let partition = Partition::new(
         native_host_budget_bytes,
@@ -174,7 +175,8 @@ fn inspect_bounds(
         selected.slots,
         selected.transform_allowance,
     )?;
-    let opening = opening::plan(
+    let opening_plan = if limits.aggregation_v4 { opening::aggregation_plan } else { opening::plan };
+    let opening = opening_plan(
         bounds.rows as usize,
         precommit.common_device_bytes,
         partition.pcs as usize,

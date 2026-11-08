@@ -22,6 +22,8 @@ pub(super) struct ExecutionSelection {
     opening_denominator_cache: bool,
     shared_preprocessing: bool,
     worker_assignment: bool,
+    aggregation_v4: bool,
+    query_batch_bytes: usize,
 }
 
 const REQUIRED: [&str; 18] = [
@@ -204,6 +206,8 @@ impl ExecutionSelection {
             ))
             .is_some(),
             worker_assignment: std::env::var_os("LATTICA_V2_WORKER_BUDGET").is_some(),
+            aggregation_v4: switch("LATTICA_V2_GPU_AGGREGATION_V4")?,
+            query_batch_bytes: crate::block_v2::gpu_hash::engine::query_batch_device_bytes()?,
         })
     }
 
@@ -213,7 +217,10 @@ impl ExecutionSelection {
     }
 
     pub(super) fn qualify(self, limits: RegisteredGpuLimits) -> Result<(), String> {
-        if self.required_switches != (1 << REQUIRED.len()) - 1
+        if self.aggregation_v4 != limits.aggregation_v4
+            || (self.query_batch_bytes != 0 && !self.aggregation_v4)
+            || (self.aggregation_v4 && add(add(self.managed_bytes, self.context_bytes)?, 512 << 20)? > self.physical_global_bytes)
+            || self.required_switches != (1 << REQUIRED.len()) - 1
             || self.lde_workspace_bytes != 0
             || self.opening_denominator_cache
             || self.shared_preprocessing
@@ -266,9 +273,30 @@ mod tests {
             opening_denominator_cache: false,
             shared_preprocessing: false,
             worker_assignment: false,
+            aggregation_v4: false,
+            query_batch_bytes: 0,
         }
     }
 
+    #[test]
+    fn aggregation_selection_preserves_legacy_limits_and_checks_headroom() {
+        let base = RegisteredGpuLimits::with_selection(32 << 30, 8 << 30, 4 << 30, 1 << 19,
+            Selection { mode: RetainedTreeStorageMode::HostBacking, host_bytes: 8 << 30 }).unwrap();
+        assert!(RegisteredGpuLimits::with_selection(32 << 30, 12 << 30, 2 << 30, 1 << 19, base.trees).is_err());
+        let mut limits = base;
+        limits.device_bytes = 12 << 30;
+        limits.context_bytes = 2 << 30;
+        limits.aggregation_v4 = true;
+        let mut selected = selected_output(16 << 30);
+        selected.managed_bytes = limits.device_bytes;
+        selected.context_bytes = limits.context_bytes;
+        assert!(selected.qualify(limits).is_err());
+        selected.aggregation_v4 = true;
+        assert!(selected.qualify(limits).is_ok());
+        selected.physical_global_bytes = 14 << 30;
+        assert!(selected.qualify(limits).is_err());
+        assert!(selected.qualify(base).is_err());
+    }
     #[test]
     fn host_output_clamp_refuses_before_backend_partition_and_binds_selection() {
         let required = 24u64 << 30;

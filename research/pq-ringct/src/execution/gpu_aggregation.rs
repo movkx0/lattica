@@ -120,18 +120,14 @@ impl ProvingContext {
         };
         self.check_legacy_gpu_dispatch()?;
         self.check_aggregation_gpu_route(&program)?;
+        crate::gpu_aggregation::memory::check_program(&program)?;
         if !self.consuming_aggregation() {
             return Err("consuming aggregation profile required".into());
         }
         self.release_prepared()?;
         self.diagnostics.mark_stark_work_attempted();
         let session = DeviceSession::new()?;
-        let limits = RegisteredGpuLimits::new(
-            self.host_profile.worker_bytes(),
-            8 << 30,
-            4 << 30,
-            self.aggregation_row_limit(),
-        )?;
+        let limits = self.aggregation_backend_limits()?;
         let native = crate::gpu_aggregation::CONSUMING_GPU_HOST_BYTES
             .checked_sub(limits.retained_tree_host_bytes())
             .ok_or("host tree quota exhausts aggregation backend phase")?;
@@ -139,8 +135,9 @@ impl ProvingContext {
             .admit_in_session(&session)?;
         let footprint = admission.footprint();
         eprintln!(
-            "gpu_aggregation_consuming_admission rows={} device_peak_bytes={} backend_scope_host_bytes={}",
+            "gpu_aggregation_consuming_admission rows={} public_values={} device_peak_bytes={} backend_scope_host_bytes={}",
             program.height(),
+            program.public_values(),
             footprint.device_phase_peak_bytes,
             footprint.backend_scope_host_bytes
         );
@@ -148,6 +145,7 @@ impl ProvingContext {
         let registered =
             self.register_aggregation_program(Arc::clone(&program), admission.host_budget_bytes())?;
         let registration_seconds = started.elapsed().as_secs_f64();
+        session.aggregation_memory_checkpoint("aggregation registration")?;
         let cap = registered.preprocessing_cap().roots().to_vec();
         let verifier = Arc::new(registered.verifier());
         {
@@ -169,6 +167,7 @@ impl ProvingContext {
             program.height(),
         );
         let (proof, _report) = result?;
+        session.aggregation_memory_checkpoint("aggregation proof complete")?;
         let started = Instant::now();
         let verified = verifier.verify(&proof, public);
         self.diagnostics
@@ -180,6 +179,14 @@ impl ProvingContext {
             verifier,
             proof,
         })
+    }
+    pub(crate) fn aggregation_backend_limits(&self) -> Result<lattica_prover_p3::block_v2::machine::RegisteredGpuLimits, String> {
+        use lattica_prover_p3::block_v2::machine::RegisteredGpuLimits;
+        if std::env::var("LATTICA_V2_GPU_AGGREGATION_V4").as_deref() == Ok("1") {
+            let device = self.session.as_ref().ok_or("aggregation needs live session")?.limits().device_bytes;
+            let reserve = std::env::var("LATTICA_V2_GPU_CONTEXT_BYTES").map_err(error)?.parse().map_err(error)?;
+            RegisteredGpuLimits::new_aggregation(self.host_profile.worker_bytes(), device, reserve, self.aggregation_row_limit())
+        } else { RegisteredGpuLimits::new(self.host_profile.worker_bytes(), 8 << 30, 4 << 30, self.aggregation_row_limit()) }
     }
     pub(crate) fn configure_consuming_aggregation(&self) -> Result<(), String> {
         let mut queue = self.aggregation_identity.borrow_mut();
@@ -212,7 +219,7 @@ impl ProvingContext {
     }
     pub(crate) fn aggregation_row_limit(&self) -> usize {
         if self.consuming_aggregation() {
-            crate::gpu_aggregation::MAX_CONSUMING_ROWS
+            self.session.as_ref().map(|s| s.limits().max_rows).unwrap_or(crate::gpu_aggregation::MAX_CONSUMING_ROWS)
         } else {
             crate::gpu_aggregation::MAX_RECURSIVE_ROWS
         }

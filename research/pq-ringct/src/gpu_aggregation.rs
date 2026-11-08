@@ -12,6 +12,7 @@ mod graph;
 mod graph_screen;
 mod inputs;
 mod layout;
+pub(crate) mod memory;
 pub(crate) mod pipeline;
 mod resources;
 mod selection;
@@ -23,6 +24,7 @@ type Result<T> = std::result::Result<T, String>;
 // every proof still requires the same backend phase and allocation checks.
 pub(crate) const MAX_RECURSIVE_ROWS: usize = 1 << 18;
 pub(crate) const MAX_CONSUMING_ROWS: usize = 1 << 19;
+pub(crate) const MAX_ADAPTIVE_ROWS: usize = 1 << 20;
 pub(crate) const CONSUMING_GPU_HOST_BYTES: u64 = 20 << 30;
 pub(crate) fn error(e: impl std::fmt::Display) -> String {
     e.to_string()
@@ -58,10 +60,15 @@ pub struct Options {
     pub family: String,
     pub first_leaf: usize,
     pub leaves: usize,
+    pub gpu_managed_mib: String,
+    pub query_gather: String,
+    pub memory_qualification: Option<PathBuf>,
 }
 impl Options {
     pub(crate) fn max_rows(&self) -> usize {
-        if self.profile == "grouped-v3" {
+        if self.profile == "grouped-v4" {
+            std::env::var("LATTICA_V2_GPU_AGGREGATION_ROWS").ok().and_then(|s| s.parse().ok()).unwrap_or(MAX_ADAPTIVE_ROWS)
+        } else if self.profile == "grouped-v3" {
             MAX_CONSUMING_ROWS
         } else {
             MAX_RECURSIVE_ROWS
@@ -74,7 +81,7 @@ impl Options {
         ensure(
             matches!(
                 command.as_str(),
-                "prepare-inputs" | "plan" | "screen" | "run"
+                "prepare-inputs" | "plan" | "screen" | "run" | "qualify-memory"
             ),
             "unknown aggregation command",
         )?;
@@ -97,6 +104,9 @@ impl Options {
             family: "shake".into(),
             first_leaf: 0,
             leaves: 8,
+            gpu_managed_mib: "auto".into(),
+            query_gather: "batch".into(),
+            memory_qualification: None,
         };
         let mut seen = std::collections::BTreeSet::new();
         while let Some(key) = args.next() {
@@ -132,6 +142,9 @@ impl Options {
                 "--screen-family" => out.family = value,
                 "--first-leaf" => out.first_leaf = value.parse().map_err(error)?,
                 "--leaves" => out.leaves = value.parse().map_err(error)?,
+                "--gpu-managed-mib" => out.gpu_managed_mib = value,
+                "--query-gather" => out.query_gather = value,
+                "--memory-qualification" => out.memory_qualification = Some(value.into()),
                 _ => return Err(format!("unknown aggregation option {key}")),
             }
         }
@@ -142,11 +155,11 @@ impl Options {
                 && (1..=600).contains(&out.seconds)
                 && out.max_components > 0
                 && (1..=4).contains(&out.repetitions)
-                && (out.command == "screen" || out.repetitions == 1),
+                && (matches!(out.command.as_str(), "screen" | "qualify-memory") || out.repetitions == 1),
             "invalid aggregation limits",
         )?;
         ensure(
-            matches!(out.profile.as_str(), "legacy" | "grouped-v2" | "grouped-v3"),
+            matches!(out.profile.as_str(), "legacy" | "grouped-v2" | "grouped-v3" | "grouped-v4"),
             "invalid aggregation profile",
         )?;
         ensure(
@@ -154,7 +167,7 @@ impl Options {
                 && (1..=8).contains(&out.leaves)
                 && (out.family != "graph"
                     || (out.request.is_none()
-                        && matches!(out.command.as_str(), "screen" | "prepare-inputs"))),
+                        && matches!(out.command.as_str(), "screen" | "prepare-inputs" | "qualify-memory"))),
             "invalid graph screen selection",
         )?;
         ensure(
@@ -174,9 +187,20 @@ impl Options {
             out.input = out.bundle.join("inputs.json");
         }
         ensure(
-            out.profile != "grouped-v3" || (out.parallel && out.identity == "cpu"),
+            !matches!(out.profile.as_str(), "grouped-v3" | "grouped-v4") || (out.parallel && out.identity == "cpu"),
             "grouped-v3 requires CPU identity and the lookahead pipeline",
         )?;
+        if out.profile == "grouped-v4" && !seen.contains("--group-width") { out.group_width = 4; }
+        if out.profile != "grouped-v4" {
+            ensure(!seen.contains("--gpu-managed-mib") && !seen.contains("--query-gather")
+                && out.memory_qualification.is_none(), "memory/query selection requires grouped-v4")?;
+            out.gpu_managed_mib = "8192".into(); out.query_gather = "scalar".into();
+        }
+        ensure(matches!(out.query_gather.as_str(), "scalar" | "batch"), "invalid query gather")?;
+        ensure(out.gpu_managed_mib == "auto" || out.gpu_managed_mib.parse::<u64>().ok()
+            .is_some_and(|m| (8192..=12288).contains(&m) && m % 256 == 0), "invalid managed MiB")?;
+        ensure(out.command != "qualify-memory" || (out.profile == "grouped-v4" && !out.output.as_os_str().is_empty()),
+            "memory qualification requires grouped-v4 and a new output path")?;
         Ok(out)
     }
 }
@@ -205,7 +229,9 @@ pub(crate) fn construction() -> lattica_prover_p3::block_v2::machine::program::C
     crate::component_tree::paired_runtime::source::construction()
 }
 pub(crate) fn context(options: &Options) -> Result<crate::execution::ProvingContext> {
-    let expected = if options.profile != "legacy" {
+    let expected = if options.profile == "grouped-v4" && options.command != "prepare-inputs" && options.query_gather == "batch" {
+        "events,witness,programs,queries"
+    } else if options.profile != "legacy" {
         "events,witness,programs"
     } else {
         ""
@@ -216,7 +242,8 @@ pub(crate) fn context(options: &Options) -> Result<crate::execution::ProvingCont
     )?;
     // Native input preparation retains its existing 16 GiB proving partition.
     // Only recursive aggregation uses the consuming backend and worker pool.
-    let consuming = options.profile == "grouped-v3" && options.command != "prepare-inputs";
+    let consuming = matches!(options.profile.as_str(), "grouped-v3" | "grouped-v4") && options.command != "prepare-inputs";
+    let device_bytes = memory::recheck(options)?;
     let context = crate::execution::ProvingContext::opencl(crate::opencl::Limits {
         // Separate CPU compiler/queue reservations fit beside this registered
         // proving allowance in the unchanged 32/36 GiB worker envelope.
@@ -225,7 +252,7 @@ pub(crate) fn context(options: &Options) -> Result<crate::execution::ProvingCont
         } else {
             16 << 30
         },
-        device_bytes: 8 << 30,
+        device_bytes,
         max_rows: options.max_rows(),
     })?;
     if consuming {
@@ -234,7 +261,14 @@ pub(crate) fn context(options: &Options) -> Result<crate::execution::ProvingCont
     Ok(context)
 }
 pub fn run_cli(args: impl Iterator<Item = String>) -> Result<()> {
-    let options = Options::parse(args)?;
+    let args: Vec<String> = args.collect();
+    if args == ["device-inventory"] {
+        let (_, _, device) = lattica_prover_p3::gpu_device::select().map_err(error)?;
+        println!("GPU_AGGREGATION_DEVICE {}", serde_json::json!({"device":device,
+            "source_sha3":hex(&crate::graph_proofs::compiled_source_fingerprint())}));
+        return Ok(());
+    }
+    let options = Options::parse(args.into_iter())?;
     let deadline = Deadline::new(options.seconds);
     ensure(
         cfg!(all(
@@ -257,14 +291,15 @@ pub fn run_cli(args: impl Iterator<Item = String>) -> Result<()> {
     let mut report = match options.command.as_str() {
         "prepare-inputs" => bundle::prepare(&options, &deadline)?,
         "plan" => graph::plan(&options, &deadline)?,
-        "screen" if options.family == "graph" => graph_screen::screen(&options, &deadline)?,
-        "screen" => graph::screen(&options, &deadline)?,
+        "screen" | "qualify-memory" if options.family == "graph" => graph_screen::screen(&options, &deadline)?,
+        "screen" | "qualify-memory" => graph::screen(&options, &deadline)?,
         "run" => graph::run(&options, &deadline)?,
         _ => unreachable!(),
     };
     report["coordinator_metadata"] = serde_json::json!({"native":native.statistics(),"geometry":geometry.statistics(),"planning":planning.statistics()});
     drop((planning, native, geometry));
     report["resources"] = envelope.finish()?;
+    if let Some(memory) = memory::selected(&options)? { report["memory"] = memory; }
     deadline.check()?;
     println!(
         "GPU_AGGREGATION_PROFILE {}",

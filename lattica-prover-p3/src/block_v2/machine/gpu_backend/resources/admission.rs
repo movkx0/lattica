@@ -53,6 +53,7 @@ pub struct RegisteredGpuLimits {
     max_rows: usize,
     trees: Selection,
     execution: Option<ExecutionSelection>,
+    aggregation_v4: bool,
 }
 
 impl RegisteredGpuLimits {
@@ -75,6 +76,26 @@ impl RegisteredGpuLimits {
         {
             limits.execution = Some(ExecutionSelection::capture()?);
         }
+        Ok(limits)
+    }
+
+    /// Opt-in aggregation envelope; legacy constructors retain their 8/4 GiB limits.
+    #[cfg(all(feature = "gpu", feature = "gpu-tuning"))]
+    pub fn new_aggregation(
+        host_bytes: u64, device_bytes: u64, context_bytes: u64, max_rows: usize,
+    ) -> Result<Self, String> {
+        if !(8 << 30..=12 << 30).contains(&device_bytes)
+            || !(2 << 30..=4 << 30).contains(&context_bytes)
+            || device_bytes % (256 << 20) != 0 || context_bytes % (256 << 20) != 0
+        { return Err("aggregation memory envelope outside qualified range".into()); }
+        let mut limits = Self::with_selection(host_bytes, DEVICE_LIMIT, CONTEXT_RESERVE,
+            max_rows, Selection::from_env()?)?;
+        limits.device_bytes = device_bytes;
+        limits.context_bytes = context_bytes;
+        limits.aggregation_v4 = true;
+        let selected = ExecutionSelection::capture()?;
+        selected.qualify(limits)?;
+        limits.execution = Some(selected);
         Ok(limits)
     }
 
@@ -103,6 +124,7 @@ impl RegisteredGpuLimits {
             max_rows,
             trees,
             execution: None,
+            aggregation_v4: false,
         })
     }
 }

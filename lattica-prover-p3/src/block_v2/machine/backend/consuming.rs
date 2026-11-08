@@ -232,6 +232,8 @@ impl PreparedProgram {
                 .map_err(|_| ExecutionError::GpuFailure)?;
             eprintln!("bounded_aggregation_trace_retirement instruction_bytes={retired_bytes} managed_live_bytes={live} completed_trace_fence=true");
         }
+        #[cfg(feature = "gpu")]
+        session.aggregation_memory_checkpoint("aggregation trace").map_err(|_| ExecutionError::GpuFailure)?;
         // The owned variant has retired its instruction allocation and host
         // schedule here. The retained variant leaves its registration intact.
         // Both continue through identical proof machinery and native receipts.

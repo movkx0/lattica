@@ -48,6 +48,21 @@ const DRIVER_RESERVE_BYTES: usize = 4 * GIB;
 const MAX_DEVICE_EVENTS: usize = 65_536;
 const QUERY_ELEMENTS: usize = 32 * 4;
 const RETAINED_PATH_KERNEL: &str = r#"
+__kernel void retained_merkle_paths(
+    __global const ulong *tree, __global const ulong *indices, __global ulong *output,
+    uint height, uint path_len, uint count
+) {
+    ulong item = get_global_id(0);
+    if (path_len == 0 || item >= (ulong)count * path_len) return;
+    uint level = item % path_len;
+    ulong index = indices[item / path_len];
+    if (index >= height) return;
+    ulong rows = ((ulong)height) >> level;
+    ulong preceding = 2ul * (ulong)height - 2ul * rows;
+    ulong sibling = (index >> level) ^ 1ul;
+    ulong offset = (preceding + sibling) * 4ul;
+    for (uint word = 0; word < 4; ++word) output[item * 4ul + word] = tree[offset + word];
+}
 __kernel void retained_merkle_path(
     __global const ulong *tree, __global ulong *output,
     uint height, uint index, uint path_len
@@ -173,7 +188,18 @@ pub(crate) fn retained_query_base_bytes(limits: Limits) -> Result<usize, String>
         .checked_add(limits.staging_bytes)
         .and_then(|n| n.checked_add(transport_bytes(limits)))
         .and_then(|n| n.checked_add(QUERY_ELEMENTS * 8))
+        .and_then(|n| n.checked_add(query_batch_device_bytes().ok()?))
         .ok_or_else(|| "engine retained base overflow".into())
+}
+
+/// Extra batch owners are temporary, but are reserved by every phase census.
+pub(crate) fn query_batch_device_bytes() -> Result<usize, String> {
+    #[cfg(all(feature = "gpu", feature = "gpu-tuning"))]
+    if tuning::Tuning::from_env()?.queries { return Ok(retained_storage::batch::DEVICE_BYTES); }
+    Ok(0)
+}
+pub(crate) fn query_batch_host_bytes() -> Result<usize, String> {
+    Ok(if query_batch_device_bytes()? != 0 { 1 << 20 } else { 0 })
 }
 
 /// A one-shot plan starts before registration creates any shared context.
@@ -3603,6 +3629,7 @@ impl Engine {
         self.resolve_timing()?;
         if std::env::var_os("LATTICA_V2_WORKER_BUDGET").is_none()
             && std::env::var_os("LATTICA_WALLET_WORKER_BUDGET").is_none()
+            && std::env::var("LATTICA_V2_GPU_AGGREGATION_DIAGNOSTICS").as_deref() != Ok("1")
         {
             return Ok(());
         }

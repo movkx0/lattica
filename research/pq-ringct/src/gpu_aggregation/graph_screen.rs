@@ -162,13 +162,10 @@ pub(super) fn screen(options: &Options, deadline: &Deadline) -> Result<serde_jso
         } else {
             options.group_width
         };
-        let count = selected.len().div_ceil(width);
-        for repetition in 0..options.repetitions {
-            let started = Instant::now();
-            let prepare = |i| {
-                deadline.check()?;
-                let first = selected.start + i * width;
-                let end = selected.end.min(first + width);
+        let preflight = (options.profile == "grouped-v4").then(|| execution.aggregation_backend_limits()).transpose()?;
+        let mut groups: Vec<_> = selected.clone().step_by(width).map(|first| (first, width.min(selected.end - first))).collect();
+        let compile = |first: usize, count: usize| {
+                let end = first + count;
                 let loaded = (first..end)
                     .map(|i| graph::load_leaf(case, i, &caches, &sources, &aux, &algebra))
                     .collect::<Result<Vec<_>>>()?;
@@ -189,8 +186,18 @@ pub(super) fn screen(options: &Options, deadline: &Deadline) -> Result<serde_jso
                     compiled.geometry().map_err(error)?.padded_rows <= options.max_rows(),
                     "graph screen exceeds height ceiling",
                 )?;
+                if let Some(limits) = preflight { compiled.preflight_imported(limits)?; }
                 Ok(compiled)
             };
+        if options.profile == "grouped-v4" && width > 4 {
+            groups = layout::admit_groups(&groups, |first, count| { compile(first, count).map(|_| ()) })?;
+        }
+        let count = groups.len();
+        let admitted_width = groups.iter().map(|g| g.1).max().unwrap_or(1);
+        for repetition in 0..options.repetitions {
+            let started = Instant::now();
+            let prepare = |i: usize| { deadline.check()?; compile(groups[i].0, groups[i].1) };
+
             let root = if execution.consuming_aggregation() {
                 prover
                     .prove_imported_tree(count, prepare, deadline)
@@ -233,7 +240,7 @@ pub(super) fn screen(options: &Options, deadline: &Deadline) -> Result<serde_jso
         }
         Ok(
             serde_json::json!({"scope":"native-graph-subtree-screen","complete_aggregation":false,"verified":true,
-            "first_leaf":selected.start,"leaves":selected.len(),"width":width,"samples":samples,"input_sha3":input_sha3,
+            "first_leaf":selected.start,"leaves":selected.len(),"width":width,"admitted_maximum_group":admitted_width,"samples":samples,"input_sha3":input_sha3,
             "source_sha3":hex(&crate::graph_proofs::compiled_source_fingerprint()),"identity":execution.aggregation_identity_report()?}),
         )
     })();

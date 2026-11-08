@@ -69,8 +69,44 @@ pub(super) fn partition_bounded(
     }
     Ok(groups)
 }
+/// Compile/check every contraction before the first proof; a refusal can only
+/// split its original contiguous range. No proof is retried after dispatch.
+pub(crate) fn admit_groups(
+    groups: &[(usize, usize)], mut check: impl FnMut(usize, usize) -> Result<()>,
+) -> Result<Vec<(usize, usize)>> {
+    let mut pending: std::collections::VecDeque<_> = groups.iter().copied().collect();
+    let mut accepted = Vec::new();
+    while let Some((first, count)) = pending.pop_front() {
+        ensure((1..=8).contains(&count) && first.checked_add(count).is_some(), "preflight group geometry")?;
+        match check(first, count) {
+            Ok(()) => accepted.push((first, count)),
+            Err(reason) if count > 1 => {
+                let left = count.div_ceil(2);
+                eprintln!("gpu_aggregation_group_preflight refused_first={first} refused_count={count} reason={reason:?} proofs_started=false");
+                pending.push_front((first + left, count - left));
+                pending.push_front((first, left));
+            }
+            Err(reason) => return Err(format!("singleton aggregation preflight: {reason}")),
+        }
+    }
+    Ok(accepted)
+}
+
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn preflight_splits_before_proving_preserves_odd_coverage_and_refuses_bad_singletons() {
+        let mut attempts = Vec::new();
+        let groups = super::admit_groups(&[(0, 8), (8, 3)], |first, count| {
+            attempts.push((first, count));
+            if count > 2 { Err("phase allowance".into()) } else { Ok(()) }
+        }).unwrap();
+        assert_eq!(groups, vec![(0,2),(2,2),(4,2),(6,2),(8,2),(10,1)]);
+        assert_eq!(attempts[0],(0,8));
+        assert!(super::admit_groups(&[(0,4)], |_,_| Err("invalid singleton".into())).is_err());
+        assert!(super::admit_groups(&[(usize::MAX,2)], |_,_| Ok(())).is_err());
+    }
+
     use super::*;
     #[test]
     fn consuming_layout_keeps_pairs_unless_wider_groups_are_profitable_and_fit() {

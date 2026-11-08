@@ -83,6 +83,14 @@ impl PreparedNode {
 }
 
 impl CompiledNode {
+    #[cfg(feature = "gpu-aggregation-experiment")]
+    pub(crate) fn preflight_imported(&self, limits: lattica_prover_p3::block_v2::machine::RegisteredGpuLimits) -> std::result::Result<(), String> {
+        crate::gpu_aggregation::memory::check_program(&self.program)?;
+        let native = crate::gpu_aggregation::CONSUMING_GPU_HOST_BYTES.checked_sub(limits.retained_tree_host_bytes())
+            .ok_or("tree quota exhausts backend allowance")?;
+        lattica_prover_p3::block_v2::machine::OuterBackendPlan::new(&self.program, &self.public, &self.witness, limits, native)?;
+        Ok(())
+    }
     /// Reuse only exact registered metadata; every returned key belongs to the
     /// current compiled statement, and proof reuse follows the explicit cache policy.
     pub fn prove_or_load_with_context(

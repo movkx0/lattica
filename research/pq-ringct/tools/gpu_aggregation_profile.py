@@ -71,11 +71,11 @@ def selection(args, argv):
     require(Path(argv[0]).name == 'pq-ringct-gpu-aggregate' and len(argv) >= 2,
             'aggregation requires its explicit research executable')
     command = argv[1]
-    require(command in ('plan', 'prepare-inputs', 'screen', 'run'), 'invalid aggregation command')
+    require(command in ('plan', 'prepare-inputs', 'screen', 'run', 'qualify-memory'), 'invalid aggregation command')
     values = {}
     allowed = {'--case', '--workload', '--input-bundle', '--input', '--output', '--profile',
                '--group-width', '--pipeline', '--timeout-seconds', '--max-components',
-               '--identity', '--selection', '--request', '--repetitions', '--screen-family', '--first-leaf', '--leaves'}
+               '--identity', '--selection', '--request', '--repetitions', '--screen-family', '--first-leaf', '--leaves', '--gpu-managed-mib', '--query-gather', '--memory-qualification'}
     require(len(argv[2:]) % 2 == 0, 'aggregation options require values')
     for key, value in zip(argv[2::2], argv[3::2]):
         require(key in allowed and key not in values, 'unknown/duplicate aggregation option')
@@ -86,21 +86,32 @@ def selection(args, argv):
     require(int(values.get('--timeout-seconds', '600')) <= args.seconds,
             'driver timeout exceeds process guard')
     profile = values.get('--profile', 'legacy')
-    require(profile in ('legacy', 'grouped-v2', 'grouped-v3'), 'invalid aggregation profile')
-    require(command != 'run' or '--output' in values, 'full aggregate requires fresh output')
-    if command == 'run':
+    require(profile in ('legacy', 'grouped-v2', 'grouped-v3', 'grouped-v4'), 'invalid aggregation profile')
+    require(command not in ('run', 'qualify-memory') or '--output' in values, 'full aggregate requires fresh output')
+    if command in ('run', 'qualify-memory'):
         output = Path(values['--output'])
         require(output.is_absolute() and not output.exists() and not output.is_symlink(),
                 'aggregate output must be a new absolute path')
-        require(profile == 'legacy' or '--selection' in values,
+        require(command != 'run' or profile == 'legacy' or '--selection' in values,
                 'candidate aggregate requires measured layout selection')
+    require(command != 'qualify-memory' or profile == 'grouped-v4', 'qualification requires grouped-v4')
+    if profile == 'grouped-v4':
+        require(values.get('--query-gather', 'batch') in ('scalar', 'batch'), 'invalid query gather')
+        requested = values.get('--gpu-managed-mib', 'auto')
+        require(requested == 'auto' or (requested.isdecimal() and 8192 <= int(requested) <= 12288
+                and int(requested) % 256 == 0), 'invalid managed MiB')
+    else:
+        require(not any(k in values for k in ('--gpu-managed-mib', '--query-gather', '--memory-qualification')),
+                'memory/query selection requires grouped-v4')
     return dict(command=command, values=values, profile=profile,
                 transactions=int(values['--case'][1:]), complete_fresh_workflow=False)
 
 
 def environment(selected):
-    return {'LATTICA_V2_GPU_TUNING': 'events,witness,programs'
-            if selected['profile'] != 'legacy' else ''}
+    tuning = 'events,witness,programs' if selected['profile'] != 'legacy' else ''
+    if selected['profile'] == 'grouped-v4' and selected['command'] != 'prepare-inputs' and selected['values'].get('--query-gather', 'batch') == 'batch':
+        tuning += ',queries'
+    return {'LATTICA_V2_GPU_TUNING': tuning}
 
 
 def require_build(plan, executable):
@@ -133,7 +144,7 @@ def validate(content, selected):
     elif selected['command'] == 'prepare-inputs':
         require(report['scope'] == 'native-component-preparation' and report['session_closed']
                 and report['aggregation_timed'] is False, 'invalid native preparation terminal')
-    elif selected['command'] == 'screen':
+    elif selected['command'] in ('screen', 'qualify-memory'):
         require(report['verified'] and report['complete_aggregation'] is False
                 and report['session']['session_closed'], 'screen is not complete aggregation')
     else:

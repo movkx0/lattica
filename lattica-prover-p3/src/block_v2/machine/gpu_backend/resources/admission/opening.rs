@@ -168,7 +168,17 @@ pub(super) fn plan(
         ROUND_MATRICES,
         ROUND_COLUMNS,
         false,
+        8 << 30,
     )
+}
+
+/// The opt-in aggregation caller has already captured a bounded physical selection.
+pub(super) fn aggregation_plan(
+    rows: usize, common_device_bytes: usize, pcs_host_budget_bytes: usize,
+    limits: Limits, max_allocation: usize, trees: Selection,
+) -> Result<OpeningBounds, String> {
+    plan_shape(rows, common_device_bytes, pcs_host_budget_bytes, limits, max_allocation,
+        trees, output_geometry(), ROUND_MATRICES, ROUND_COLUMNS, false, 12 << 30)
 }
 
 /// The native uni schedule uses three rounds, no preprocessing or permutation,
@@ -202,6 +212,7 @@ pub(super) fn native_plan(
         [1, 1, 32],
         [7, main, 32 * 7],
         true,
+        8 << 30,
     )
 }
 
@@ -216,6 +227,7 @@ fn plan_shape<const MATRIX_COUNT: usize, const ROUND_COUNT: usize>(
     round_matrices: [usize; ROUND_COUNT],
     round_columns: [usize; ROUND_COUNT],
     native: bool,
+    managed_ceiling: usize,
 ) -> Result<OpeningBounds, String> {
     let device_trees = native && trees.mode == RetainedTreeStorageMode::Device;
     let tree_profile = if device_trees {
@@ -237,7 +249,7 @@ fn plan_shape<const MATRIX_COUNT: usize, const ROUND_COUNT: usize>(
         || !tree_profile
         || pcs_host_budget_bytes == 0
         || limits.managed_bytes == 0
-        || limits.managed_bytes > 8 << 30
+        || limits.managed_bytes > managed_ceiling
         || max_allocation == 0
     {
         return Err("opening phase requires its pinned tree profile".into());
