@@ -2,6 +2,8 @@
 //! A complete request still has to be verified inside its consuming graph leaf.
 use super::*;
 use crate::component_tree::{self, CompiledNode, Geometry, NodeKey, NodeProof};
+#[cfg(feature = "gpu-aggregation-experiment")]
+pub(crate) mod imported;
 
 #[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
 pub(crate) mod paired;
@@ -160,6 +162,13 @@ impl<'a> RequestProver<'a> {
         compiled: CompiledNode,
         report: &mut RequestProvingReport,
     ) -> Result<ActualNode> {
+        self.prove_node_with_admission(stage, first, units, compiled, report, false)
+    }
+    fn prove_node_with_admission(
+        &self, stage: &'static str, first: usize, units: usize,
+        compiled: CompiledNode, report: &mut RequestProvingReport, owned_gpu: bool,
+    ) -> Result<ActualNode> {
+        let owned_gpu = owned_gpu && cfg!(feature = "gpu-aggregation-experiment");
         let geometry = compiled.geometry().map_err(err)?;
         // The CPU port must check the complete work estimate for both leaves
         // and merged parents; retained LDE bytes alone are only a lower bound.
@@ -169,15 +178,26 @@ impl<'a> RequestProver<'a> {
             admit_cpu_variant(stage, first, units, &geometry, self.outer_memory_budget_bytes,
                 self.execution.unwrap().cpu_variant())?;
         }
-        admit(
+        #[cfg(feature = "gpu-aggregation-experiment")]
+        if owned_gpu {
+            self.execution.ok_or_else(||err("imported GPU execution missing"))?
+                .check_aggregation_gpu_route(compiled.program()).map_err(err)?;
+        }
+        if !owned_gpu { admit(
             stage,
             first,
             units,
             &geometry,
             self.outer_memory_budget_bytes,
-        )?;
+        )?; }
         let outcome = match self.execution {
-            Some(execution) => compiled.prove_or_load_with_context(execution, self.outer_cache),
+            Some(execution) => {
+                let prove = || {
+                    #[cfg(feature = "gpu-aggregation-experiment")]
+                    if owned_gpu { return compiled.prove_imported_with_context(execution, self.outer_cache); }
+                    compiled.prove_or_load_with_context(execution, self.outer_cache)
+                }; prove()
+            },
             None => compiled
                 .prepare(self.outer_memory_budget_bytes)
                 .and_then(|prepared| prepared.prove_or_load(self.outer_cache)),

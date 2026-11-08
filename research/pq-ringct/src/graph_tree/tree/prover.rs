@@ -37,6 +37,33 @@ pub struct GraphProver<'a> {
     execution: Option<&'a crate::execution::ProvingContext>,
 }
 impl<'a> GraphProver<'a> {
+    #[cfg(feature = "gpu-aggregation-experiment")]
+    pub(crate) fn prove_imported_node(&self, compiled: CompiledNode) -> Result<ProvenNode> {
+        self.prove_node_with_admission(compiled, true)
+    }
+    #[cfg(feature="gpu-aggregation-experiment")]
+    pub(crate) fn aggregate_imported(&self,mut nodes:Vec<ProvenNode>,parallel:bool,gpu_identity:bool,
+        deadline:&crate::gpu_aggregation::Deadline)->Result<ProvenNode> {
+        require(!nodes.is_empty(),"empty imported graph aggregation")?;
+        for node in &nodes {self.verify_node(node)?;}
+        for pair in nodes.windows(2) {Spec::merge(&pair[0].key.spec,&pair[1].key.spec)?;}
+        let execution=self.execution.ok_or_else(||err("imported graph requires GPU context"))?;
+        while nodes.len()>1 {
+            let mut next=Vec::new();
+            crate::gpu_aggregation::pipeline::programs(nodes.len()/2,parallel,gpu_identity,execution,|index| {
+                deadline.check()?;let left=&nodes[2*index];let right=&nodes[2*index+1];
+                let compiled=merge_impl_limits(&left.key,&right.key,[&left.proof,&right.proof],Some(crate::gpu_aggregation::construction())).map_err(crate::gpu_aggregation::error)?;
+                if compiled.geometry().map_err(crate::gpu_aggregation::error)?.padded_rows>1<<20 {return Err("imported graph parent exceeds row ceiling".into());}
+                Ok(compiled)
+            },|node|node.shared_program(),|cohort| {
+                for (_,compiled) in cohort {deadline.check()?;next.push(self.prove_imported_node(compiled).map_err(crate::gpu_aggregation::error)?);}
+                Ok(())
+            }).map_err(err)?;
+            if nodes.len()%2==1 {next.push(nodes.pop().unwrap());}
+            nodes=next;
+        }
+        let root=nodes.pop().unwrap();self.verify_node(&root)?;Ok(root)
+    }
     /// This budget controls the existing retained-LDE admission check. It is
     /// not a complete process-memory bound; callers must separately guard peak
     /// allocations and coordinate concurrent proving jobs.
@@ -93,6 +120,10 @@ impl<'a> GraphProver<'a> {
     }
 
     fn prove_node(&self, compiled: CompiledNode) -> Result<ProvenNode> {
+        self.prove_node_with_admission(compiled, false)
+    }
+    fn prove_node_with_admission(&self, compiled: CompiledNode, owned_gpu: bool) -> Result<ProvenNode> {
+        let owned_gpu = owned_gpu && cfg!(feature = "gpu-aggregation-experiment");
         self.registered_plan(&compiled.spec)?;
         require(
             compiled.public == header(&compiled.spec, &self.context),
@@ -103,9 +134,15 @@ impl<'a> GraphProver<'a> {
         let (key, proof, cache_hit) =
             match self.execution {
                 Some(execution) => {
-                    require(compiled.geometry()?.retained_lde_bytes <= self.retained_memory_budget,
-                    "graph node exceeds retained-LDE admission; this is not a peak-memory bound")?;
-                    compiled.prove_or_load_with_context(execution, self.cache, &self.context)?
+                    #[cfg(feature = "gpu-aggregation-experiment")]
+                    if owned_gpu { execution.check_aggregation_gpu_route(compiled.program()).map_err(err)?; }
+                    if !owned_gpu { require(compiled.geometry()?.retained_lde_bytes <= self.retained_memory_budget,
+                        "graph node exceeds retained-LDE admission; this is not a peak-memory bound")?; }
+                    let prove = || {
+                        #[cfg(feature = "gpu-aggregation-experiment")]
+                        if owned_gpu { return compiled.prove_imported_with_context(execution, self.cache, &self.context); }
+                        compiled.prove_or_load_with_context(execution, self.cache, &self.context)
+                    }; prove()?
                 }
                 None => {
                     let prepared = compiled.prepare(self.retained_memory_budget)?;

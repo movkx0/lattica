@@ -530,6 +530,19 @@ fn compile_merge_impl_bounded(
     prepared_root: Option<[u64; 4]>,
     source: Option<&super::source::MergeSource>,
 ) -> Result<CompiledNode> {
+    compile_merge_with_limits(children, prepared_root, source, None)
+}
+#[cfg(feature = "gpu-aggregation-experiment")]
+pub(crate) fn compile_imported_merge(children: [Child<'_>; 2]) -> Result<CompiledNode> {
+    compile_merge_with_limits(children.each_ref().map(Child::borrowed), None, None,
+        Some(crate::gpu_aggregation::construction()))
+}
+fn compile_merge_with_limits(
+    children: [ChildRef<'_>; 2], prepared_root: Option<[u64; 4]>,
+    source: Option<&super::source::MergeSource>,
+    limits: Option<lattica_prover_p3::block_v2::machine::program::ConstructionLimits>,
+) -> Result<CompiledNode> {
+    let limits = source.map(|s| s.construction()).or(limits);
     let spec = Spec::merge(children[0].spec(), children[1].spec())?;
     for child in &children {
         child.verify()?;
@@ -545,14 +558,14 @@ fn compile_merge_impl_bounded(
         )?,
     };
     let public = spec.public(root)?;
-    let mut b = match source {
-        Some(source) => ProgramBuilder::new_with_construction_limits(PUBLIC_VALUES, source.construction()),
+    let mut b = match limits {
+        Some(limits) => ProgramBuilder::new_with_construction_limits(PUBLIC_VALUES, limits),
         None => ProgramBuilder::new(PUBLIC_VALUES),
     }.map_err(err)?;
     let outer = public_header(&mut b, &spec)?;
     let mut inputs = ProofInputs::default();
-    let left = emit_child(&mut b, &mut inputs, &outer, 0, &children[0], source.is_some())?;
-    let right = emit_child(&mut b, &mut inputs, &outer, 1, &children[1], source.is_some())?;
+    let left = emit_child(&mut b, &mut inputs, &outer, 0, &children[0], limits.is_some())?;
+    let right = emit_child(&mut b, &mut inputs, &outer, 1, &children[1], limits.is_some())?;
     let recursive_witness_targets = [
         left.recursive_witness_target,
         right.recursive_witness_target,
@@ -760,7 +773,11 @@ memory_budget,
         self,
         execution: &crate::execution::ProvingContext,
     ) -> Result<BatchNode> {
-        self.prove_with_context_impl(execution, None)
+        self.prove_with_context_impl(execution, None, false)
+    }
+    #[cfg(feature = "gpu-aggregation-experiment")]
+    pub(crate) fn prove_imported_with_context(self, execution: &crate::execution::ProvingContext) -> Result<BatchNode> {
+        self.prove_with_context_impl(execution, None, true)
     }
 
     /// The concrete owned aggregate operation supplies its preissued backend
@@ -773,19 +790,23 @@ memory_budget,
         require(execution.policy() == lattica_prover_p3::proving::Policy::GpuRequired
             && host_bytes != 0 && host_bytes <= execution.host_bytes(),
             "aggregate source host partition or backend policy mismatch")?;
-        self.prove_with_context_impl(execution, Some(host_bytes))
+        self.prove_with_context_impl(execution, Some(host_bytes), false)
     }
 
     fn prove_with_context_impl(
         &self,
         execution: &crate::execution::ProvingContext,
         host_bytes: Option<u64>,
+        owned_gpu: bool,
     ) -> Result<BatchNode> {
         self.spec.validate_public(&self.public)?;
-        require(
+        let owned_gpu = owned_gpu && cfg!(feature = "gpu-aggregation-experiment");
+        #[cfg(feature = "gpu-aggregation-experiment")]
+        if owned_gpu { execution.check_aggregation_gpu_route(&self.program).map_err(err)?; }
+        if !owned_gpu { require(
             self.geometry()?.retained_lde_bytes <= host_bytes.unwrap_or_else(|| execution.host_bytes()),
             "batch node exceeds retained-LDE memory admission; this is not a peak-memory bound",
-        )?;
+        )?; }
         let Self {
             spec,
             program,

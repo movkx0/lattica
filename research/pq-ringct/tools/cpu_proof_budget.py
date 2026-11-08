@@ -19,15 +19,18 @@ CLEANUP_SECONDS = 30
 
 
 class Budget:
+    schema = 'cpu-proof-test-budget-v1'
+    job_seconds = JOB_SECONDS
+
     def __init__(self, path):
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
 
     def read(self):
         if not self.path.exists():
-            return dict(schema='cpu-proof-test-budget-v1', limit_seconds=LIMIT_SECONDS, attempts=[])
+            return dict(schema=self.schema, limit_seconds=LIMIT_SECONDS, attempts=[])
         value = json.loads(self.path.read_text())
-        if value.get('schema') != 'cpu-proof-test-budget-v1' or value.get('limit_seconds') != LIMIT_SECONDS:
+        if value.get('schema') != self.schema or value.get('limit_seconds') != LIMIT_SECONDS:
             raise RuntimeError('invalid testing budget ledger')
         return value
 
@@ -48,7 +51,7 @@ class Budget:
         with self.path.with_suffix('.lock').open('a') as lock:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
             remaining = self.remaining()
-            timeout = min(seconds, JOB_SECONDS, int(remaining - CLEANUP_SECONDS))
+            timeout = min(seconds, self.job_seconds, int(remaining - CLEANUP_SECONDS))
             if timeout < 1:
                 raise RuntimeError('one-hour cumulative testing budget exhausted')
             data = self.read()

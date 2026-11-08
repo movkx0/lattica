@@ -350,6 +350,8 @@ pub struct Geometry {
     pub retained_lde_bytes: u64,
 }
 impl CompiledNode {
+    #[cfg(feature = "gpu-aggregation-experiment")]
+    pub(crate) fn shared_program(&self) -> Arc<Program> { Arc::clone(&self.program) }
     pub fn program(&self) -> &Program {
         &self.program
     }
@@ -1116,6 +1118,10 @@ fn bind_merge(b: &mut ProgramBuilder, _spec: &Spec, outer: &[Wire], left: &[Wire
     }
 }
 fn merge_impl(left: &NodeKey, right: &NodeKey, children: [&NodeProof; 2]) -> Result<CompiledNode> {
+    merge_impl_limits(left,right,children,None)
+}
+fn merge_impl_limits(left: &NodeKey, right: &NodeKey, children: [&NodeProof; 2],
+    limits: Option<lattica_prover_p3::block_v2::machine::program::ConstructionLimits>) -> Result<CompiledNode> {
     let spec = Spec::merge(&left.spec, &right.spec)?;
     require(
         children.iter().all(|p| p.public.len() == spec.width()),
@@ -1127,7 +1133,10 @@ fn merge_impl(left: &NodeKey, right: &NodeKey, children: [&NodeProof; 2]) -> Res
     public[LEVEL] = Val::from_u32(spec.level);
     let width = 4;
     public[HEADER + width..].copy_from_slice(&children[1].public[HEADER + width..]);
-    let mut b = ProgramBuilder::new(spec.width()).map_err(err)?;
+    let mut b = match limits {
+        Some(limits)=>ProgramBuilder::new_with_construction_limits(spec.width(),limits),
+        None=>ProgramBuilder::new(spec.width()),
+    }.map_err(err)?;
     let outer = public_wires(&mut b, &spec)?;
     let mut inputs = ProofInputs::default();
     let mut wires = Vec::new();
@@ -1138,8 +1147,9 @@ fn merge_impl(left: &NodeKey, right: &NodeKey, children: [&NodeProof; 2]) -> Res
             .iter()
             .map(|root| root.map(|value| b.constant(value)))
             .collect();
-        verifier::batch::verify(&mut b, &mut inputs, &key.air()?, &child, &cap, &proof.proof)
-            .map_err(err)?;
+        if limits.is_some() {
+            verifier::batch::verify_with_bounded_cpu_symbolic(&mut b,&mut inputs,&key.air()?,&child,&cap,&proof.proof)
+        } else {verifier::batch::verify(&mut b, &mut inputs, &key.air()?, &child, &cap, &proof.proof)}.map_err(err)?;
         wires.push(child);
     }
     bind_merge(&mut b, &spec, &outer, &wires[0], &wires[1]);
@@ -1199,3 +1209,13 @@ pub mod native_shape;
 pub(crate) mod paired_runtime;
 #[cfg(all(feature = "full-workflow-experiment", target_os = "linux", target_arch = "x86_64"))]
 pub(crate) mod aes_verification_memory;
+
+#[cfg(feature="gpu-aggregation-experiment")]
+pub(crate) fn compile_imported_merge(left:&NodeKey,right:&NodeKey,children:[&NodeProof;2])->Result<CompiledNode> {
+    use paired_runtime::source;
+    let facts=source::parent_source(left.height,right.height).map_err(|e|err(format!("parent source admission: {e:?}")))?;
+    Spec::merge(&left.spec,&right.spec)?;left.verify(children[0])?;right.verify(children[1])?;
+    let compiled=merge_impl_limits(left,right,children,Some(source::construction()))?;
+    facts.check_compiled(&compiled).map_err(|e|err(format!("parent source drift: {e:?}")))?;
+    Ok(compiled)
+}

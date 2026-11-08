@@ -68,10 +68,24 @@ impl CompiledNode {
         cache: &ProofCache,
         context: &GraphContext,
     ) -> Result<(NodeKey, NodeProof, bool)> {
-        require(
+        self.prove_with_admission(execution, cache, context, false)
+    }
+    #[cfg(feature = "gpu-aggregation-experiment")]
+    pub(crate) fn prove_imported_with_context(self, execution: &crate::execution::ProvingContext,
+        cache: &ProofCache, context: &GraphContext) -> Result<(NodeKey, NodeProof, bool)> {
+        require(cache.policy() == crate::proof_cache_policy::ProofCachePolicy::FreshOnly,
+            "imported graph requires fresh recursive proofs")?;
+        self.prove_with_admission(execution, cache, context, true)
+    }
+    fn prove_with_admission(self, execution: &crate::execution::ProvingContext,
+        cache: &ProofCache, context: &GraphContext, owned_gpu: bool) -> Result<(NodeKey, NodeProof, bool)> {
+        let owned_gpu = owned_gpu && cfg!(feature = "gpu-aggregation-experiment");
+        #[cfg(feature = "gpu-aggregation-experiment")]
+        if owned_gpu { execution.check_aggregation_gpu_route(&self.program).map_err(err)?; }
+        if !owned_gpu { require(
             self.geometry()?.retained_lde_bytes <= execution.host_bytes(),
             "graph node exceeds retained-LDE host admission; this is not a peak-memory bound",
-        )?;
+        )?; }
         let Self {
             program,
             spec,

@@ -27,6 +27,8 @@ pub struct CompiledNode {
     pub(super) witness: Vec<Val>,
 }
 impl CompiledNode {
+    #[cfg(feature = "gpu-aggregation-experiment")]
+    pub(crate) fn shared_program(&self) -> Arc<Program> { Arc::clone(&self.program) }
     pub fn program(&self) -> &Program {
         &self.program
     }
@@ -253,6 +255,10 @@ pub(super) fn bind_merge(b: &mut ProgramBuilder, outer: &[Wire], left: &[Wire], 
     b.assert_equal(count, outer[COUNT]);
 }
 fn merge_impl(left: &NodeKey, right: &NodeKey, children: [&NodeProof; 2]) -> Result<CompiledNode> {
+    merge_impl_limits(left,right,children,None)
+}
+fn merge_impl_limits(left:&NodeKey,right:&NodeKey,children:[&NodeProof;2],
+    limits:Option<lattica_prover_p3::block_v2::machine::program::ConstructionLimits>)->Result<CompiledNode> {
     let spec = Spec::merge(&left.spec, &right.spec)?;
     require(
         children.iter().all(|p| p.public.len() == PUBLIC_VALUES),
@@ -262,11 +268,14 @@ fn merge_impl(left: &NodeKey, right: &NodeKey, children: [&NodeProof; 2]) -> Res
     public[FIRST] = Val::from_u32(spec.first);
     public[COUNT] = Val::from_u32(spec.count);
     public[LEVEL] = Val::from_u32(spec.level);
-    let mut b = ProgramBuilder::new(PUBLIC_VALUES).map_err(err)?;
+    let mut b = match limits {
+        Some(limits)=>ProgramBuilder::new_with_construction_limits(PUBLIC_VALUES,limits),
+        None=>ProgramBuilder::new(PUBLIC_VALUES),
+    }.map_err(err)?;
     let outer = public_wires(&mut b, &spec)?;
     let mut inputs = ProofInputs::default();
-    let a = left.emit(&mut b, &mut inputs, children[0])?;
-    let z = right.emit(&mut b, &mut inputs, children[1])?;
+    let a = left.emit_impl(&mut b, &mut inputs, children[0],limits.is_some())?;
+    let z = right.emit_impl(&mut b, &mut inputs, children[1],limits.is_some())?;
     bind_merge(&mut b, &outer, &a, &z);
     Ok(CompiledNode {
         spec,

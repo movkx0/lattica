@@ -125,7 +125,7 @@ pub(crate) struct PreparedQuotient {
     program: Arc<Program>,
     code: Allocation,
     #[cfg(feature = "gpu")]
-    specialized: Option<super::super::quotient::specialized::Compiled>,
+    specialized: Option<Arc<super::super::quotient::specialized::Compiled>>,
     context: Arc<JobLease>,
 }
 

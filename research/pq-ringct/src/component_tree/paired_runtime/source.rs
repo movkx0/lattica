@@ -186,9 +186,14 @@ impl ComponentSourceFacts {
 
 /// Allocation-free blueprint of one exact singleton or pair. All native phase
 /// geometries are validated before any symbolic planner is invoked.
+#[cfg(feature = "gpu-aggregation-experiment")]
+const GROUP_CAPACITY: usize = 8;
+#[cfg(not(feature = "gpu-aggregation-experiment"))]
+const GROUP_CAPACITY: usize = 2;
+
 pub(crate) struct GroupBlueprint {
-    descriptors: [Option<NativeDescriptor<'static>>; 2],
-    storage: [Option<NativePlanningStorage>; 2],
+    descriptors: [Option<NativeDescriptor<'static>>; GROUP_CAPACITY],
+    storage: [Option<NativePlanningStorage>; GROUP_CAPACITY],
     members: usize,
     planning: Requirements,
 }
@@ -198,9 +203,9 @@ impl GroupBlueprint {
         let RequestDescriptor::Shake(descriptor) = request.descriptor() else {
             return Err(PairedFailure::Source);
         };
-        if !(1..=2).contains(&span.segment_count) { return Err(PairedFailure::Coverage); }
-        let mut descriptors = [None, None];
-        let mut storage = [None, None];
+        if !(1..=GROUP_CAPACITY).contains(&span.segment_count) { return Err(PairedFailure::Coverage); }
+        let mut descriptors = [None; GROUP_CAPACITY];
+        let mut storage = [None; GROUP_CAPACITY];
         let mut peak = 0;
         let mut next = span.first_unit;
         for offset in 0..span.segment_count {
@@ -233,16 +238,18 @@ impl GroupBlueprint {
     pub(crate) fn inspect(&self) -> Result<ComponentSourceFacts> {
         use crate::component_tree::native_shape::cohort;
         let first = self.descriptors[0].ok_or(PairedFailure::Source)?;
-        let descriptors = [cohort::Descriptor::Native(first),
-            cohort::Descriptor::Native(self.descriptors[1].unwrap_or(first))];
+        let descriptors: [_; GROUP_CAPACITY] = std::array::from_fn(|i| cohort::Descriptor::Native(self.descriptors[i].unwrap_or(first)));
         let auxiliary = self.storage.iter().flatten().map(|s| s.auxiliary_peak_bytes).max().ok_or(PairedFailure::Source)?;
         let bounds = cohort::bounds(&descriptors[..self.members], construction(), auxiliary).map_err(|_| PairedFailure::Source)?;
-        let mut cores: [Option<NativeCoreCounts>; 2] = [None, None];
+        let mut cores: [Option<NativeCoreCounts>; GROUP_CAPACITY] = [None; GROUP_CAPACITY];
         for i in 0..self.members {
             let result = bounds[i].ok_or(PairedFailure::Source)?;
             if result.storage != self.storage[i].ok_or(PairedFailure::Source)? { return Err(PairedFailure::SourceDrift); }
             cores[i] = Some(result.counts);
         }
+        #[cfg(feature = "gpu-aggregation-experiment")]
+        let framing = framing::shake_wrapper_group(self.members).map_err(|_| PairedFailure::Source)?;
+        #[cfg(not(feature = "gpu-aggregation-experiment"))]
         let framing = framing::shake_wrapper(self.members).map_err(|_| PairedFailure::Source)?;
         if framing.cubic != 0 { return Err(PairedFailure::SourceDrift); }
         let mut operations = framing;

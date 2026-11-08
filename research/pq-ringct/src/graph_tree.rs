@@ -39,6 +39,8 @@ mod tree;
 pub(crate) use tree::owned_parent;
 pub use crate::component_tree::Geometry;
 pub use leaf::{compile_group, compile_leaf, AesProof, LeafArtifact, ShakeProof};
+#[cfg(feature = "gpu-aggregation-experiment")]
+pub(crate) use leaf::compile_group_bounded;
 pub use plan::{LeafKind, LeafPlan, OperationFamily, Plan};
 pub use tree::{
     compile_merge, CompiledNode, GraphProver, NodeKey, NodeProof, PreparedNode, ProofCache, ProvenNode,

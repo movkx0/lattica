@@ -311,6 +311,32 @@ impl<'a> SourceFactory<'a> {
     pub fn prove_or_load_statement(&self, cache: &SourceCache) -> Result<StatementProof> {
         self.prove_or_load_statement_with_context(cache, None)
     }
+    /// Import only: missing entries never trigger proving. Verification uses
+    /// this factory's trusted source registration, not the stored cache key.
+    #[cfg(feature = "gpu-aggregation-experiment")]
+    pub(crate) fn load_statement(&self, cache: &SourceCache) -> Result<Option<StatementProof>> {
+        let Some((public, proof)) = cache.load(&self.key(1))? else { return Ok(None); };
+        let artifact = StatementProof { public_values: public.try_into().map_err(|_| Error("source statement public width".into()))?, proof };
+        self.verify_statement(&artifact)?;
+        Ok(Some(artifact))
+    }
+    #[cfg(feature = "gpu-aggregation-experiment")]
+    pub(crate) fn load_private(&self, cache: &SourceCache) -> Result<Option<ProofArtifact>> {
+        let Some((public, proof)) = cache.load(&self.key(2))? else { return Ok(None); };
+        let artifact = ProofArtifact { public_values: public.try_into().map_err(|_| Error("source private public width".into()))?, proof };
+        self.verify_private(&artifact)?;
+        Ok(Some(artifact))
+    }
+    #[cfg(feature = "gpu-aggregation-experiment")]
+    pub(crate) fn store_statement(&self, cache: &SourceCache, artifact: &StatementProof) -> Result<()> {
+        self.verify_statement(artifact)?;
+        cache.store(&self.key(1), &artifact.public_values, &artifact.proof)
+    }
+    #[cfg(feature = "gpu-aggregation-experiment")]
+    pub(crate) fn store_private(&self, cache: &SourceCache, artifact: &ProofArtifact) -> Result<()> {
+        self.verify_private(artifact)?;
+        cache.store(&self.key(2), &artifact.public_values, &artifact.proof)
+    }
     pub fn prove_or_load_statement_with_context(
         &self,
         cache: &SourceCache,

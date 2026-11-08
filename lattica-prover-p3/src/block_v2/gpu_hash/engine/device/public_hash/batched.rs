@@ -43,6 +43,10 @@ pub(crate) struct Prefix {
 
 impl Prefix {
     pub(crate) fn origin_retired(&self) -> bool { self.origin.upgrade().is_none() }
+    pub(crate) fn origin_is_current(&self) -> Result<bool, String> {
+        let session = DeviceSession::new()?;
+        Ok(self.origin.upgrade().is_some_and(|origin| Arc::ptr_eq(&origin, &session.session.context)))
+    }
 }
 
 struct Job<I> {

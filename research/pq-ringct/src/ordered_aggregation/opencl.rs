@@ -132,7 +132,14 @@ pub fn aggregate_with_context<'a>(
     children: Vec<Child<'a>>,
     statements: &[LeafStatement],
 ) -> Result<(Child<'a>, Vec<Value>)> {
-    aggregate_context_impl(execution, plan, children, statements, None)
+    aggregate_context_impl(execution, plan, children, statements, None, false)
+}
+#[cfg(feature = "gpu-aggregation-experiment")]
+pub(crate) fn aggregate_imported_with_context<'a>(
+    execution: &crate::execution::ProvingContext, plan: &Plan,
+    children: Vec<Child<'a>>, statements: &[LeafStatement],
+) -> Result<(Child<'a>, Vec<Value>)> {
+    aggregate_context_impl(execution, plan, children, statements, None, true)
 }
 
 /// Correctness-run variant that checks every aggregate child's altered opening
@@ -155,6 +162,7 @@ pub fn aggregate_with_context_and_witness_checks<'a>(
         children,
         statements,
         Some(evaluation_budget),
+        false,
     )
 }
 
@@ -164,6 +172,7 @@ fn aggregate_context_impl<'a>(
     mut children: Vec<Child<'a>>,
     statements: &[LeafStatement],
     evaluation_budget: Option<u64>,
+    owned_gpu: bool,
 ) -> Result<(Child<'a>, Vec<Value>)> {
     plan.validate_expected(statements)?;
     require(
@@ -194,7 +203,12 @@ fn aggregate_context_impl<'a>(
             // Reclaim a previous registration before compiling the next large
             // verifier. The context still retains bounded public metadata.
             execution.release_prepared().map_err(Error)?;
-            let mut compiled = super::tree::compile_merge_with_context([left, right], execution)
+            let compile = || {
+                #[cfg(feature = "gpu-aggregation-experiment")]
+                if owned_gpu { return super::tree::compile_imported_merge([left, right]); }
+                super::tree::compile_merge_with_context([left, right], execution)
+            };
+            let mut compiled = compile()
                 .map_err(|error| Error(format!("batch children={spans:?} compilation: {error}")))?;
             let geometry = compiled.geometry()?;
             let mut witness_checks = Vec::new();
@@ -216,7 +230,12 @@ fn aggregate_context_impl<'a>(
                     }));
                 }
             }
-            let node = compiled.prove_with_context(execution)?;
+            let prove = || {
+                #[cfg(feature = "gpu-aggregation-experiment")]
+                if owned_gpu { return compiled.prove_imported_with_context(execution); }
+                compiled.prove_with_context(execution)
+            };
+            let node = prove()?;
             node.key().verify(node.proof())?;
             let strict_gpu = execution.policy() == lattica_prover_p3::proving::Policy::GpuRequired;
             reports.push(json!({

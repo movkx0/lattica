@@ -428,7 +428,7 @@ impl<'a> Factory<'a> {
             .map_err(err)?;
         let spec = self.spec(operation, Descriptor::HashX(kinds))?;
         let public = header(&spec, &self.context, [input, output])?;
-        let mut b = ProgramBuilder::new(PUBLIC_VALUES).map_err(err)?;
+        let mut b = branch_builder()?;
         let wires = public_wires(&mut b, &spec)?;
         let context = context_wires(&wires);
         let mut inputs = ProofInputs::default();
@@ -479,6 +479,12 @@ fn context_wires(public: &[Wire]) -> ContextWires {
         statement: public[STATEMENT..NODE_MANIFEST].try_into().unwrap(),
     }
 }
+fn branch_builder() -> Result<ProgramBuilder> {
+    #[cfg(feature = "gpu-aggregation-experiment")]
+    { ProgramBuilder::new_with_construction_limits(PUBLIC_VALUES, crate::gpu_aggregation::construction()).map_err(err) }
+    #[cfg(not(feature = "gpu-aggregation-experiment"))]
+    { ProgramBuilder::new(PUBLIC_VALUES).map_err(err) }
+}
 fn compile_alpha(
     spec: Spec,
     context: &graph_tree::GraphContext,
@@ -489,7 +495,7 @@ fn compile_alpha(
     sampler_proof: &p3_uni_stark::Proof<Config>,
 ) -> Result<CompiledNode> {
     let public = header(&spec, context, roots)?;
-    let mut b = ProgramBuilder::new(PUBLIC_VALUES).map_err(err)?;
+    let mut b = branch_builder()?;
     let wires = public_wires(&mut b, &spec)?;
     let context = context_wires(&wires);
     let mut inputs = ProofInputs::default();

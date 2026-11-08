@@ -717,6 +717,8 @@ struct Engine {
     #[cfg(feature = "gpu")]
     native_private_spend_program: Option<ocl::Program>,
     #[cfg(feature = "gpu")]
+    specialized_programs: quotient::specialized::Cache,
+    #[cfg(feature = "gpu")]
     event_receipts: device::EventReceipts,
     copy_queue: Queue,
     mode: TransferMode,
@@ -1235,8 +1237,8 @@ fn initialize_mode_selected(
     );
     #[cfg(feature = "gpu")]
     if tuning != tuning::Tuning::default() {
-        eprintln!("bounded_gpu_tuning events={} commitment={} scale={} ntt={} nvidia_supported={} production_qualified=false",
-            tuning.events, tuning.commitment, tuning.scale, tuning.ntt,
+        eprintln!("bounded_gpu_tuning events={} commitment={} scale={} ntt={} witness={} programs={} nvidia_supported={} production_qualified=false",
+            tuning.events, tuning.commitment, tuning.scale, tuning.ntt, tuning.witness, tuning.programs,
             !device::public_hash::nvidia::source_prefix(pq.device()).is_empty());
     }
     let engine = Engine {
@@ -1249,6 +1251,8 @@ fn initialize_mode_selected(
         event_receipts: device::EventReceipts::default(),
         #[cfg(feature = "gpu")]
         native_private_spend_program: None,
+        #[cfg(feature = "gpu")]
+        specialized_programs: quotient::specialized::Cache::default(),
         #[cfg(feature = "gpu-metal")]
         _backend_transfer_lease: backend_transfer_lease,
         pq,

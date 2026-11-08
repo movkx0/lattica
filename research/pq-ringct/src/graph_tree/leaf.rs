@@ -356,7 +356,7 @@ pub fn compile_group(
     compile_group_impl(plan, graph, first, context, artifacts, None)
 }
 
-pub(super) fn compile_group_bounded(
+pub(crate) fn compile_group_bounded(
     plan: &Plan,
     graph: &UnprovedRelationGraph,
     first: usize,

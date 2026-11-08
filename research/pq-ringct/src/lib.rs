@@ -99,6 +99,8 @@ pub mod execution;
 pub mod host_memory_profile;
 #[cfg(feature = "cpu-proof-experiment")]
 pub mod cpu_proof;
+#[cfg(feature = "gpu-aggregation-experiment")]
+pub mod gpu_aggregation;
 #[cfg(all(feature = "cpu-proof-experiment", any(feature = "opencl", feature = "native-generation-oracle", feature = "native-spend-oracle")))]
 compile_error!("CPU proof experiments require a CPU-only build with fresh entropy");
 

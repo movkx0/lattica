@@ -1,12 +1,16 @@
 //! Process-local, opt-in candidates; never a change to the proof profile.
 #[cfg(all(test, feature = "gpu-tuning"))]
 mod gpu_tests;
+#[cfg(all(test, feature = "gpu-tuning"))]
+mod witness_tests;
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(super) struct Tuning {
     pub events: bool,
     pub commitment: bool,
     pub scale: bool,
     pub ntt: bool,
+    pub witness: bool,
+    pub programs: bool,
 }
 
 impl Tuning {
@@ -36,6 +40,8 @@ impl Tuning {
                 "commitment" => &mut result.commitment,
                 "scale" => &mut result.scale,
                 "ntt" => &mut result.ntt,
+                "witness" => &mut result.witness,
+                "programs" => &mut result.programs,
                 _ => return Err(format!("unknown GPU tuning candidate: {item}")),
             };
             if *selected {
@@ -62,6 +68,7 @@ pub(super) fn kernel_source(nvidia: bool) -> String {
         source.push_str(include_str!("commitment_shuffle.cl"));
     }
     source.push_str(include_str!("scale_shared.cl"));
+    source.push_str(include_str!("device/witness_fused.cl"));
     source
         .push_str("\n#define LATTICA_TUNED_NTT 1\n#define ntt_tile_cached ntt_tile_cached_tuned\n");
     source.push_str(include_str!("../../../gpu/ntt_cached.cl"));
@@ -80,7 +87,7 @@ mod tests {
     #[test]
     fn candidates_require_explicit_feature_and_selection() {
         assert_eq!(Tuning::parse("", false).unwrap(), Tuning::default());
-        for value in ["events", "commitment", "scale", "ntt"] {
+        for value in ["events", "commitment", "scale", "ntt", "witness", "programs"] {
             assert!(Tuning::parse(value, false).is_err());
             assert_ne!(Tuning::parse(value, true).unwrap(), Tuning::default());
         }

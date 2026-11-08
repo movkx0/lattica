@@ -1,6 +1,7 @@
 //! GPU recursive witness and preprocessing construction. Immutable compiled
 //! metadata can be reused across fresh sessions; private scratch cannot.
 use super::*;
+mod wave_batches;
 use crate::block_v2::machine::{
     gpu_program::{WitnessProgram, WitnessSchedule},
     ExecutionError,
@@ -308,7 +309,30 @@ impl PreparedWitness {
                 };
                 let mut batch = super::event_batch::EventBatch::new(
                     engine, &session.session, crate::proving::Stage::WitnessTrace);
-                for wave in &self.schedule.waves {
+                let mut wave_index = 0;
+                while wave_index < self.schedule.waves.len() {
+                    if batch.engine.tuning.witness {
+                        if let Some(fused) = wave_batches::next(&self.schedule.waves, wave_index) {
+                            let first: [u32; 16] = fused.ends[..16].try_into().unwrap();
+                            let second: [u32; 16] = fused.ends[16..].try_into().unwrap();
+                            let kernel = batch.engine.pq.kernel_builder("device_witness_fused")
+                                .arg(&self.metadata.buffer).arg(fused.first).arg(fused.count as u32)
+                                .arg(ocl::prm::Uint16::from(first)).arg(ocl::prm::Uint16::from(second))
+                                .arg(&input.buffer).arg(&wires.buffer).arg(&status.buffer)
+                                .arg(&batch.engine.constants[0].buffer).arg(&batch.engine.constants[1].buffer)
+                                .arg(&batch.engine.constants[2].buffer).arg(&batch.engine.constants[3].buffer)
+                                .global_work_size(fused.threads).local_work_size(fused.threads)
+                                .build().map_err(|e| e.to_string())?;
+                            let mut event = compute::Event::empty();
+                            // SAFETY: exactly one workgroup executes these consecutive waves;
+                            // all dependencies are ordered by a uniform global-memory barrier.
+                            unsafe { kernel.cmd().enew(&mut event).enq().map_err(|e| e.to_string())?; }
+                            batch.record("device_witness_fused", event)?;
+                            wave_index += fused.count;
+                            continue;
+                        }
+                    }
+                    let wave = &self.schedule.waves[wave_index];
                     let uncached;
                     let kernel = if let Some(kernel) = &cached_wave {
                         kernel.set_arg(1, wave.start as u32).map_err(|e| e.to_string())?;
@@ -327,6 +351,7 @@ impl PreparedWitness {
                             .enq().map_err(|e| e.to_string())?;
                     }
                     batch.record("device_witness_wave", event)?;
+                    wave_index += 1;
                 }
                 batch.finish()?;
                 let mut status_word=[0u64;1];

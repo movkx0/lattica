@@ -61,6 +61,8 @@ default = []
 native-matrict = []
 # Explicit CPU paired-proof experiment; never enables a device backend.
 cpu-proof-experiment = ["native-matrict", "recursive-wide", "dep:rayon", "dep:postcard", "lattica-prover-p3/cpu-proof-experiment"]
+# Imported native proofs, fresh GPU recursion, isolated from the fresh-workflow receipt.
+gpu-aggregation-experiment = ["full-workflow-experiment", "dep:rayon", "lattica-prover-p3/gpu-tuning"]
 # CPU-only deterministic diagnostics; never selected by the workflow feature.
 native-generation-oracle = ["native-matrict"]
 # Explicit deterministic private diagnostics; never enable in production.
@@ -105,3 +107,8 @@ required-features = ["full-workflow-experiment"]
 name = "pq-ringct-cpu-proof"
 path = "src/bin/pq_ringct_cpu_proof.rs"
 required-features = ["cpu-proof-experiment"]
+
+[[bin]]
+name = "pq-ringct-gpu-aggregate"
+path = "src/bin/pq_ringct_gpu_aggregate.rs"
+required-features = ["gpu-aggregation-experiment"]

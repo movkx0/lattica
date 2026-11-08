@@ -90,7 +90,14 @@ impl CompiledNode {
         execution: &crate::execution::ProvingContext,
         cache: &OuterProofCache,
     ) -> Result<CacheOutcome> {
-        self.prove_or_load_with_context_inner(execution, cache, None)
+        self.prove_or_load_with_context_inner(execution, cache, None, false)
+    }
+    #[cfg(feature = "gpu-aggregation-experiment")]
+    pub(crate) fn prove_imported_with_context(self, execution: &crate::execution::ProvingContext,
+        cache: &OuterProofCache) -> Result<CacheOutcome> {
+        require(cache.policy() == crate::proof_cache_policy::ProofCachePolicy::FreshOnly,
+            "imported component requires fresh recursive proofs")?;
+        self.prove_or_load_with_context_inner(execution, cache, None, true)
     }
 
     /// Prove a fresh outer node after the caller reserves retained siblings and
@@ -112,7 +119,7 @@ impl CompiledNode {
             remaining_host_bytes != 0 && remaining_host_bytes <= execution.host_bytes(),
             "bounded outer remaining host allowance",
         )?;
-        self.prove_or_load_with_context_inner(execution, cache, Some(remaining_host_bytes))
+        self.prove_or_load_with_context_inner(execution, cache, Some(remaining_host_bytes), false)
     }
 
     fn prove_or_load_with_context_inner(
@@ -120,12 +127,16 @@ impl CompiledNode {
         execution: &crate::execution::ProvingContext,
         cache: &OuterProofCache,
         remaining_host_bytes: Option<u64>,
+        owned_gpu: bool,
     ) -> Result<CacheOutcome> {
-        require(
+        let owned_gpu = owned_gpu && cfg!(feature = "gpu-aggregation-experiment");
+        #[cfg(feature = "gpu-aggregation-experiment")]
+        if owned_gpu { execution.check_aggregation_gpu_route(&self.program).map_err(err)?; }
+        if !owned_gpu { require(
             self.geometry()?.retained_lde_bytes
                 <= remaining_host_bytes.unwrap_or_else(|| execution.host_bytes()),
             "component exceeds retained-LDE host admission; this is not a peak-memory bound",
-        )?;
+        )?; }
         let Self {
             program,
             spec,

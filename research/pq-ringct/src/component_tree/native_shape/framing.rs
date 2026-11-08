@@ -110,6 +110,16 @@ pub fn shake_wrapper(members: usize) -> Result<OperationCounts, CompileError> {
     Ok(ops(1574 + 108 * (members - 1), 56))
 }
 
+#[cfg(feature = "gpu-aggregation-experiment")]
+pub(crate) fn shake_wrapper_group(members: usize) -> Result<OperationCounts, CompileError> {
+    if !(1..=8).contains(&members) {
+        return Err(CompileError::Shape("imported SHAKE wrapper member count"));
+    }
+    // The unchanged wrapper emits 108 equality checks at each interior
+    // boundary. Only its first/last endpoints are exposed in the header.
+    Ok(ops(1574 + 108 * (members - 1), 56))
+}
+
 fn transcript_bundle(parts: usize) -> Result<OperationCounts, CompileError> {
     if !(1..=256).contains(&parts) {
         return Err(CompileError::Shape("transcript framing part count"));

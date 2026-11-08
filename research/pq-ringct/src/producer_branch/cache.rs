@@ -70,10 +70,24 @@ impl CompiledNode {
         execution: &crate::execution::ProvingContext,
         cache: &OuterProofCache,
     ) -> Result<ProvenBranch> {
-        require(
+        self.prove_with_admission(execution, cache, false)
+    }
+    #[cfg(feature = "gpu-aggregation-experiment")]
+    pub(crate) fn prove_imported_with_context(self, execution: &crate::execution::ProvingContext,
+        cache: &OuterProofCache) -> Result<ProvenBranch> {
+        require(cache.policy() == crate::proof_cache_policy::ProofCachePolicy::FreshOnly,
+            "imported producer requires fresh recursive proofs")?;
+        self.prove_with_admission(execution, cache, true)
+    }
+    fn prove_with_admission(self, execution: &crate::execution::ProvingContext,
+        cache: &OuterProofCache, owned_gpu: bool) -> Result<ProvenBranch> {
+        let owned_gpu = owned_gpu && cfg!(feature = "gpu-aggregation-experiment");
+        #[cfg(feature = "gpu-aggregation-experiment")]
+        if owned_gpu { execution.check_aggregation_gpu_route(&self.program).map_err(err)?; }
+        if !owned_gpu { require(
             self.geometry()?.retained_lde_bytes <= execution.host_bytes(),
             "producer branch exceeds retained-LDE host admission; this is not a peak-memory bound",
-        )?;
+        )?; }
         let Self {
             program,
             spec,

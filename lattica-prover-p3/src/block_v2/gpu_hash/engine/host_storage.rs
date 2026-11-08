@@ -85,6 +85,9 @@ fn census(engine: &Engine) -> Result<RetainedHost, String> {
     metadata = add(metadata, arc_bytes::<Mutex<Accounting>>())?;
     metadata = add(metadata, arc_bytes::<JobLease>())?;
     metadata = add(metadata, arc_bytes::<retained_storage::HostQuota>())?;
+    // The bounded specialization LRU retains only wrapper handles. Driver-owned
+    // code stays in the existing context allowance, checked after compilation.
+    metadata = add(metadata, engine.specialized_programs.retained_host_bytes())?;
     for value in engine.device_selection.iter().flatten() {
         metadata = add(metadata, value.capacity())?;
     }

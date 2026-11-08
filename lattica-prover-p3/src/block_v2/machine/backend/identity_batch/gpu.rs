@@ -136,6 +136,9 @@ pub struct PendingBorrowedIdentityBatch<'program> {
     owners: PhantomData<&'program Arc<Program>>,
 }
 impl PendingBorrowedIdentityBatch<'_> {
+    pub fn complete_in_current_epoch(self) -> Result<(Vec<CompletedIdentityPrefix>, IdentityBatchReport), String> {
+        self.pending.complete_in_current_epoch()
+    }
     pub fn complete_after_retirement(self) -> Result<(Vec<CompletedIdentityPrefix>, IdentityBatchReport), String> {
         self.pending.complete_after_retirement()
     }
@@ -198,6 +201,7 @@ impl IdentityBatchPlan {
             authority: Arc::clone(&self.authority), batch: self.batch, job: p.job, program: p.program,
             header: identity_stream::header(&p.air), trailer: identity_stream::trailer(&p.analysis),
             fingerprint: p.fingerprint, cap_fields: p.cap_fields, tail: p.tail, fields: p.fields, prefix,
+            same_epoch: false,
         }).collect();
         Ok(PendingIdentityBatch { pending, report })
     }
@@ -218,6 +222,17 @@ pub struct IdentityBatchReport {
 
 pub struct PendingIdentityBatch { pending: Vec<CompletedIdentityPrefix>, report: IdentityBatchReport }
 impl PendingIdentityBatch {
+    /// Persistent research sessions may consume a completed host prefix in its
+    /// exact originating epoch. A real queue drain precedes issuing the token;
+    /// registration rechecks that epoch. The retired-epoch API is unchanged.
+    pub fn complete_in_current_epoch(mut self) -> Result<(Vec<CompletedIdentityPrefix>, IdentityBatchReport), String> {
+        crate::block_v2::gpu_hash::drain()?;
+        for prefix in &mut self.pending {
+            if !prefix.prefix.origin_is_current()? { return Err("identity prefix belongs to another GPU epoch".into()); }
+            prefix.same_epoch = true;
+        }
+        Ok((self.pending, self.report))
+    }
     /// A weak reference to the actual GPU lease, not a caller-supplied receipt,
     /// proves that every originating context owner has been destroyed.
     pub fn complete_after_retirement(self) -> Result<(Vec<CompletedIdentityPrefix>, IdentityBatchReport), String> {
@@ -229,6 +244,7 @@ impl PendingIdentityBatch {
 }
 
 pub struct CompletedIdentityPrefix {
+    same_epoch: bool,
     authority: Arc<()>, batch: u64, job: u64, program: Arc<Program>, header: [u64; 10],
     trailer: [u64; 18], fingerprint: Vec<u64>, cap_fields: usize, tail: Vec<u64>,
     fields: usize, prefix: batched::Prefix,
@@ -242,7 +258,8 @@ impl CompletedIdentityPrefix {
     pub(in crate::block_v2::machine::backend) fn check_owner(&self, context: &IdentityBatchContext,
         job: u64, air: &MachineAir) -> Result<(), String> {
         if !Arc::ptr_eq(&self.authority, &context.authority) || self.job != job
-            || !std::ptr::eq(self.program.as_ref(), air.program()) || !self.prefix.origin_retired() {
+            || !std::ptr::eq(self.program.as_ref(), air.program())
+            || !(if self.same_epoch { self.prefix.origin_is_current()? } else { self.prefix.origin_retired() }) {
             return Err("identity prefix workflow, job, program or retirement mismatch".into());
         }
         Ok(())

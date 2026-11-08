@@ -33,6 +33,8 @@ use std::{
 };
 
 mod diagnostics;
+#[cfg(feature = "gpu-aggregation-experiment")]
+mod gpu_aggregation;
 #[cfg(all(
     feature = "full-workflow-experiment",
     target_os = "linux",
@@ -404,6 +406,8 @@ impl Registry {
 /// One serial worker lifetime. Checked interior borrowing rejects reentrant
 /// work; Rc also prevents sending this context to another OS thread.
 pub struct ProvingContext {
+    #[cfg(feature = "gpu-aggregation-experiment")]
+    aggregation_identity: RefCell<gpu_aggregation::IdentityQueue>,
     #[cfg(feature = "cpu-proof-experiment")]
     cpu_variant: lattica_prover_p3::block_v2::cpu_commitment::Variant,
     #[cfg(feature = "cpu-proof-experiment")]
@@ -586,6 +590,8 @@ impl ProvingContext {
         let diagnostics = Rc::new(Diagnostics::new(session_id, request.policy, device.clone()));
         Ok(Self {
             registry: RefCell::new(Registry::new()),
+            #[cfg(feature = "gpu-aggregation-experiment")]
+            aggregation_identity: RefCell::new(gpu_aggregation::IdentityQueue::new()),
             #[cfg(feature = "cpu-proof-experiment")]
             cpu_variant: Default::default(),
             #[cfg(feature = "cpu-proof-experiment")]
@@ -965,7 +971,10 @@ impl ProvingContext {
             let padded_rows = program.height() as u64;
             let started = Instant::now();
             let result = (|| -> Result<(RegisteredTemplate, bool, bool), String> {
-                let registered = RegisteredProgram::new_with_cpu_identity(
+                #[cfg(feature = "gpu-aggregation-experiment")]
+            let registration = self.register_aggregation_program(program, host_bytes);
+            #[cfg(not(feature = "gpu-aggregation-experiment"))]
+            let registration = RegisteredProgram::new_with_cpu_identity(
                     {
                         let air = MachineAir::from_shared_program(program);
                         #[cfg(feature = "cpu-proof-experiment")]
@@ -978,7 +987,8 @@ impl ProvingContext {
                     host_bytes,
                     self.request,
                 )
-                .map_err(|e| {
+                ;
+            let registered = registration.map_err(|e| {
                     let message = error(e);
                     self.diagnostics.failure(
                         "registration",

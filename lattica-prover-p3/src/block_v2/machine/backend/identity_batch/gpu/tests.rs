@@ -76,6 +76,50 @@ fn borrowed_prefix_plan_charges_only_additional_storage_and_retains_no_credit() 
 }
 
 #[test]
+#[cfg(all(feature = "gpu", feature = "gpu-tuning"))]
+#[ignore = "requires strict OpenCL worker; run serially with the existing resource guard"]
+fn gpu_same_epoch_prefix_matches_cpu_identity_and_rejects_restarted_context() {
+    let _shutdown = gpu_hash::TestShutdownGuard;
+    initialize();
+    let authority = IdentityBatchContext::new();
+    let programs = [program(3), program(5)];
+    let request = Request { policy: Policy::GpuRequired, emit_report: false };
+    let pending = authority.plan_borrowed(IdentityBatchLimits::batched(2).unwrap(),
+        programs.iter().enumerate().map(|(i,p)|(i as u64,p)).collect(), 2 << 30, 8 << 30)
+        .unwrap().execute(request).unwrap();
+    let (mut tokens, report) = pending.complete_in_current_epoch().unwrap();
+    assert_eq!(report.streams, 2);
+    let air = MachineAir::from_shared_program(Arc::clone(&programs[0]));
+    assert!(tokens[0].check_owner(&IdentityBatchContext::new(), 0, &air).is_err());
+    assert!(tokens[0].check_owner(&authority, 1, &air).is_err());
+    assert!(tokens[0].check_owner(&authority, 0, &MachineAir::new((*programs[0]).clone())).is_err());
+    let baseline = RegisteredProgram::new_with_cpu_identity(air.clone(), 2 << 30, request).unwrap();
+    let id = baseline.id(); let cap = baseline.preprocessing_cap().clone(); drop(baseline);
+    let cpu_authority=crate::block_v2::machine::backend::identity_cpu::IdentityCpuContext::new();
+    assert!(cpu_authority.prepare_cpu_only(&programs[0],0).is_err());
+    let (cpu_prefix,_)=cpu_authority.prepare_cpu_only(&programs[0],512<<20).unwrap();
+    let job=cpu_prefix.job();
+    let (cpu_registered,_)=RegisteredProgram::new_with_cpu_identity_prefix_and_report(
+        air.clone(),2<<30,request,&cpu_authority,job,cpu_prefix).unwrap();
+    assert_eq!(cpu_registered.id(),id);assert_eq!(cpu_registered.preprocessing_cap(),&cap);
+    drop(cpu_registered);
+    let (registered, _) = RegisteredProgram::new_with_identity_prefix_and_report(
+        air, 2 << 30, request, &authority, 0, tokens.remove(0)).unwrap();
+    assert_eq!(registered.id(), id); assert_eq!(registered.preprocessing_cap(), &cap);
+    let public = [Val::from_u64(12)];
+    let proof = registered.prove_with_request(&public, &[Val::from_u64(9)], request).unwrap();
+    registered.verifier().verify(&proof, &public).unwrap();
+    assert!(registered.verifier().verify(&proof, &[Val::from_u64(13)]).is_err());
+    drop(registered);
+    gpu_hash::shutdown().unwrap(); initialize();
+    assert!(tokens[0].check_owner(&authority, 1,
+        &MachineAir::from_shared_program(Arc::clone(&programs[1]))).is_err());
+    assert!(RegisteredProgram::new_with_identity_prefix_and_report(
+        MachineAir::from_shared_program(Arc::clone(&programs[1])), 2 << 30, request,
+        &authority, 1, tokens.remove(0)).is_err());
+}
+
+#[test]
 #[ignore = "requires strict OpenCL worker; run serially with the existing resource guard"]
 fn gpu_identity_prefix_registration_preserves_caps_ids_and_fresh_proofs() {
     let _shutdown = gpu_hash::TestShutdownGuard;

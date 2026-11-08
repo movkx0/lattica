@@ -28,6 +28,8 @@ mod preparation;
 #[cfg(feature = "opencl")]
 pub(crate) use preparation::ENDPOINT_FRAME_BYTES;
 mod prover;
+#[cfg(feature = "gpu-aggregation-experiment")]
+pub(crate) use prover::imported::group_spans as imported_group_spans;
 mod request_collection;
 mod request_owner;
 mod retention;

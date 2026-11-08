@@ -454,5 +454,7 @@ mod cohort;
 pub use cohort::{
     BorrowedIdentityBatchPlan, CpuWorkerReport, IdentityBatchReport, PendingBorrowedIdentityBatch,
 };
+#[cfg(all(feature = "gpu", feature = "gpu-tuning"))]
+mod pure;
 #[cfg(test)]
 mod tests;

@@ -6,11 +6,10 @@ pub(crate) const KERNEL_SRC: &str = r#"
 __kernel void device_witness_public(__global const ulong *input, __global ulong *wires, uint count) {
     uint i = get_global_id(0); if (i < count) wires[i] = input[i];
 }
-__kernel void device_witness_wave(__global const ulong *program, uint first, uint count,
+LATTICA_WITNESS_FN void device_witness_instruction(__global const ulong *program, uint instruction,
     __global const ulong *input, __global ulong *wires, __global uint *status,
     __global const ulong *rci, __global const ulong *rcp, __global const ulong *rcf, __global const ulong *diag) {
-    uint i = get_global_id(0); if (i >= count) return;
-    __global const ulong *c = program + program[16] + (size_t)(first+i)*18;
+ __global const ulong *c = program + program[16] + (size_t)instruction*18;
     ulong a[3], b[3], result[3], s[8], value = 0;
     uint index = 0;
     switch ((uint)c[0]) {
@@ -48,6 +47,12 @@ __kernel void device_witness_wave(__global const ulong *program, uint first, uin
         }
         wires[c[1]] = wires[program[c[2]+c[3]+index]]; break;
     }
+}
+__kernel void device_witness_wave(__global const ulong *program, uint first, uint count,
+ __global const ulong *input, __global ulong *wires, __global uint *status,
+ __global const ulong *rci, __global const ulong *rcp, __global const ulong *rcf, __global const ulong *diag) {
+ uint i = get_global_id(0); if (i >= count) return;
+ device_witness_instruction(program, first+i, input, wires, status, rci, rcp, rcf, diag);
 }
 LATTICA_WITNESS_FN uint witness_port(uint port, uint lane, uint lanes) {
     return lane < 8 ? port*8+lane : 32+port*(lanes-8)+lane-8;
