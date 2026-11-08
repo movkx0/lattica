@@ -10,6 +10,10 @@ pub(crate) struct Cost {
 #[derive(serde::Serialize, serde::Deserialize)]
 struct Selection {
     schema: String,
+    #[serde(default)]
+    profile: Option<String>,
+    #[serde(default)]
+    baseline_width: Option<usize>,
     source_sha3: String,
     device_uuid: String,
     costs: Vec<Cost>,
@@ -76,8 +80,13 @@ pub(crate) fn widths(options: &Options) -> Result<(usize, usize)> {
     let value: Selection =
         serde_json::from_slice(&std::fs::read(path).map_err(error)?).map_err(error)?;
     ensure(
-        value.schema == "ringct-gpu-aggregation-selection-v1"
-            && value.source_sha3 == hex(&crate::graph_proofs::compiled_source_fingerprint())
+        (if options.profile == "grouped-v3" {
+            value.schema == "ringct-gpu-aggregation-selection-v2"
+                && value.profile.as_deref() == Some("grouped-v3")
+                && value.baseline_width == Some(2)
+        } else {
+            value.schema == "ringct-gpu-aggregation-selection-v1"
+        }) && value.source_sha3 == hex(&crate::graph_proofs::compiled_source_fingerprint())
             && value.device_uuid == std::env::var("LATTICA_GPU_DEVICE_UUID").unwrap_or_default()
             && !value.device_uuid.is_empty()
             && value.costs.len() <= 32,
@@ -85,13 +94,25 @@ pub(crate) fn widths(options: &Options) -> Result<(usize, usize)> {
     )?;
     Ok((
         choose(&value.costs, "shake", options.group_width, 2)?,
-        choose(&value.costs, "graph", options.group_width, 1)?,
+        choose(
+            &value.costs,
+            "graph",
+            options.group_width,
+            if options.profile == "grouped-v3" {
+                2
+            } else {
+                1
+            },
+        )?,
     ))
 }
 pub(super) fn graph_costs(options: &Options, maximum: usize) -> Result<Vec<(usize, f64)>> {
     // widths() validates the source/device binding before this data is used.
     widths(options)?;
     let mut result = vec![(1, 1.0)];
+    if options.profile == "grouped-v3" && maximum >= 2 {
+        result.push((2, 1.0));
+    }
     if let Some(path) = &options.selection {
         let value: Selection =
             serde_json::from_slice(&std::fs::read(path).map_err(error)?).map_err(error)?;
@@ -102,6 +123,7 @@ pub(super) fn graph_costs(options: &Options, maximum: usize) -> Result<Vec<(usiz
         {
             let ratio = median(&cost.candidate)? / median(&cost.baseline)?;
             if ratio <= 0.9 {
+                result.retain(|(width, _)| *width != cost.width);
                 result.push((cost.width, ratio));
             }
         }

@@ -103,6 +103,28 @@ impl CompiledNode {
             public == header(&spec, context),
             &format!("{scope}: prepared graph node context mismatch"),
         )?;
+        #[cfg(feature = "gpu-aggregation-experiment")]
+        if owned_gpu && execution.consuming_aggregation() {
+            cache.proof_attempt();
+            let output = execution
+                .prove_aggregation_once(program, &public, &witness)
+                .map_err(err)?;
+            let key = NodeKey {
+                spec,
+                height: output.height,
+                cap: output.cap,
+                verifier: output.verifier,
+            };
+            cache.fresh_proof();
+            return Ok((
+                key,
+                NodeProof {
+                    public,
+                    proof: output.proof,
+                },
+                false,
+            ));
+        }
         execution.with_registered_shared(program, |registered| {
             let key = NodeKey {
                 spec: spec.clone(), height: registered.air().program().height(),

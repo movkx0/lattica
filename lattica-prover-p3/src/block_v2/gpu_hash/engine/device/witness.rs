@@ -183,6 +183,10 @@ impl DeviceSession {
 }
 
 impl PreparedWitness {
+    #[cfg(feature = "gpu")]
+    pub(crate) fn instruction_bytes(&self) -> usize {
+        self.metadata._lease.bytes
+    }
     pub(crate) fn preprocessing_trace(
         &self,
         session: &DeviceSession,

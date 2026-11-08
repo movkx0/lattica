@@ -1,6 +1,37 @@
 //! CPU-only preparation, one ordered GPU consumer, at most four live jobs.
 //! A permit covers compilation, queued output and consuming GPU work together.
 use super::Result;
+mod ready;
+
+pub(crate) fn tree_programs<T: Send, N: Send + Sync>(
+    leaves: usize,
+    execution: &crate::execution::ProvingContext,
+    prepare_leaf: impl Fn(usize) -> Result<T> + Sync,
+    prepare_parent: impl Fn(&N, &N) -> Result<T> + Sync,
+    program: impl Fn(&T) -> std::sync::Arc<lattica_prover_p3::block_v2::machine::program::Program>
+        + Sync,
+    mut consume: impl FnMut(T) -> Result<N>,
+) -> Result<N> {
+    let pool = execution
+        .aggregation_pool()
+        .ok_or("persistent aggregation pool required")?;
+    let authority = execution.aggregation_cpu_authority();
+    let prepare = |value: T| {
+        let program = program(&value);
+        let prefix = authority.prepare_cpu_only(&program, 512 << 20)?;
+        Ok((value, program, prefix))
+    };
+    ready::tree(
+        &pool,
+        leaves,
+        |i| prepare(prepare_leaf(i)?),
+        |left, right| prepare(prepare_parent(left, right)?),
+        |(value, program, (prefix, report))| {
+            execution.install_aggregation_cpu_prefixes(vec![(program, prefix, report)])?;
+            consume(value)
+        },
+    )
+}
 /// CPU identity hashing shares the same compiler permit and never acquires a
 /// GPU session. Only this ordered consumer installs prefixes or dispatches GPU.
 pub(crate) fn programs<T: Send>(

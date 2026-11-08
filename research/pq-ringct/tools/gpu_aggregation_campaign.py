@@ -102,7 +102,7 @@ class Campaign:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('phase', choices=('build', 'tests', 'gpu-tests', 'python-tests', 'driver', 'summary'))
+    parser.add_argument('phase', choices=('build', 'tests', 'gpu-tests', 'python-tests', 'driver', 'summary', 'extend-budget'))
     parser.add_argument('--revision', default='r1')
     parser.add_argument('--kind', choices=('core', 'research', 'runner'), default='runner')
     parser.add_argument('--label')
@@ -111,11 +111,15 @@ def main():
     parser.add_argument('--bundle', type=Path)
     parser.add_argument('--device-uuid')
     parser.add_argument('--seconds', type=int, default=600)
+    parser.add_argument('--extension-id')
+    parser.add_argument('--additional-seconds', type=int)
     args, extra = parser.parse_known_args()
     if args.phase != 'driver' and extra:
         parser.error('unexpected arguments')
     campaign = Campaign(args.revision)
-    if args.phase == 'build':
+    if args.phase == 'extend-budget':
+        result = campaign.budget.extend(args.extension_id, args.additional_seconds)
+    elif args.phase == 'build':
         result = campaign.build(args.kind)
     elif args.phase in ('tests', 'gpu-tests'):
         result = campaign.test(args.kind, args.phase == 'gpu-tests', args.device_uuid)

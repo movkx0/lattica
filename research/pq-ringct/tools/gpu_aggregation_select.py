@@ -17,7 +17,13 @@ def matched_cost(baseline, candidate):
     for row in (a, b):
         require(row['options']['command'] == 'screen' and row['report']['verified']
                 and row['report']['complete_aggregation'] is False, 'only verified subtree screens provide grouping costs')
-    require(a['options']['profile'] == 'legacy' and b['options']['profile'] == 'grouped-v2', 'legacy/candidate pair required')
+    require((a['options']['profile'], b['options']['profile']) in
+            (('legacy', 'grouped-v2'), ('grouped-v2', 'grouped-v3')), 'supported baseline/candidate pair required')
+    if b['options']['profile'] == 'grouped-v3':
+        require(a['report']['width'] == 2, 'grouped-v3 comparisons require the optimized paired baseline')
+        require(a['options'].get('identity') == b['options'].get('identity') == 'cpu'
+                and a['options'].get('parallel') is True and b['options'].get('parallel') is True,
+                'grouped-v3 compares CPU lookahead pipelines')
     for key in ('input_sha3', 'source_sha3', 'scope', 'request', 'first_leaf', 'leaves'):
         require(a['report'].get(key) == b['report'].get(key), 'screen scope/source/input mismatch')
     for key in ('transactions', 'workload', 'family'):
@@ -46,14 +52,21 @@ def main():
     parser.add_argument('--pair', nargs=2, action='append', type=Path, required=True, metavar=('BASELINE', 'CANDIDATE'))
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
-    costs, notes, identities = [], [], set()
+    costs, notes, identities, profiles = [], [], set(), set()
     for baseline, candidate in args.pair:
-        source, uuid, cost, note = matched_cost(json.loads(baseline.read_text()), json.loads(candidate.read_text()))
+        baseline_record, candidate_record = json.loads(baseline.read_text()), json.loads(candidate.read_text())
+        source, uuid, cost, note = matched_cost(baseline_record, candidate_record)
+        profile = candidate_record['gpu_aggregation_acceptance']['options']['profile']
+        profiles.add(profile)
+        note['baseline_options'] = baseline_record['gpu_aggregation_acceptance']['options']
+        note['candidate_options'] = candidate_record['gpu_aggregation_acceptance']['options']
         identities.add((source, uuid)); costs.append(cost); notes.append(note)
-    require(len(identities) == 1 and len({(c['family'], c['width']) for c in costs}) == len(costs), 'ambiguous layout selection')
+    require(len(identities) == 1 and len(profiles) == 1 and len({(c['family'], c['width']) for c in costs}) == len(costs), 'ambiguous layout selection')
     source, uuid = identities.pop()
     value = dict(schema='ringct-gpu-aggregation-selection-v1', source_sha3=source, device_uuid=uuid,
                  costs=costs, observations=notes, performance_qualified=False)
+    if profiles == {'grouped-v3'}:
+        value.update(schema='ringct-gpu-aggregation-selection-v2', profile='grouped-v3', baseline_width=2)
     with args.output.open('x') as output:
         json.dump(value, output, indent=2); output.write('\n')
 

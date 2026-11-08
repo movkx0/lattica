@@ -8,6 +8,14 @@ pub(super) struct Facts {
     pub program_bytes: usize,
 }
 pub(super) fn partition(facts: &[Facts], costs: &[(usize, f64)]) -> Result<Vec<(usize, usize)>> {
+    partition_bounded(facts, costs, MAX_RECURSIVE_ROWS, 1)
+}
+pub(super) fn partition_bounded(
+    facts: &[Facts],
+    costs: &[(usize, f64)],
+    max_rows: usize,
+    baseline_width: usize,
+) -> Result<Vec<(usize, usize)>> {
     ensure(
         !facts.is_empty() && facts.len() <= 4096 && costs.len() <= 4,
         "graph layout capacity",
@@ -38,11 +46,16 @@ pub(super) fn partition(facts: &[Facts], costs: &[(usize, f64)]) -> Result<Vec<(
                     .checked_add(fact.program_bytes)
                     .ok_or("graph program sum overflow")?;
             }
-            if rows > MAX_RECURSIVE_ROWS || bytes > 2 << 30 {
+            if rows > max_rows || bytes > 2 << 30 {
                 continue;
             }
             let cost = rest + unit_cost * width as f64;
-            if best[first].is_none_or(|(old, w)| cost < old || (cost == old && width < w)) {
+            if best[first].is_none_or(|(old, w)| {
+                cost < old
+                    || (cost == old
+                        && ((width == baseline_width && w != baseline_width)
+                            || (w != baseline_width && width < w)))
+            }) {
                 best[first] = Some((cost, width));
             }
         }
@@ -59,6 +72,40 @@ pub(super) fn partition(facts: &[Facts], costs: &[(usize, f64)]) -> Result<Vec<(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn consuming_layout_keeps_pairs_unless_wider_groups_are_profitable_and_fit() {
+        let facts = vec![
+            Facts {
+                rows: MAX_CONSUMING_ROWS / 4,
+                program_bytes: 1 << 24
+            };
+            9
+        ];
+        assert_eq!(
+            partition_bounded(&facts, &[(1, 1.0), (2, 1.0)], MAX_CONSUMING_ROWS, 2).unwrap(),
+            vec![(0, 2), (2, 2), (4, 2), (6, 2), (8, 1)]
+        );
+        assert_eq!(
+            partition_bounded(
+                &facts,
+                &[(1, 1.0), (2, 1.0), (4, 0.8)],
+                MAX_CONSUMING_ROWS,
+                2
+            )
+            .unwrap(),
+            vec![(0, 1), (1, 4), (5, 4)]
+        );
+        assert_eq!(
+            partition_bounded(
+                &facts,
+                &[(1, 1.0), (2, 1.0), (4, 0.8)],
+                MAX_RECURSIVE_ROWS,
+                2
+            )
+            .unwrap(),
+            vec![(0, 2), (2, 2), (4, 2), (6, 2), (8, 1)]
+        );
+    }
     #[test]
     fn costs_and_heights_choose_contiguous_groups_without_skipping_large_leaves() {
         let mut facts = vec![

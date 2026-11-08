@@ -68,6 +68,8 @@ impl PreissuedOuterBackend {
             .as_ref()
             .ok_or("preissued outer missing original row plan")?;
         Ok(OuterBackendAdmission {
+            #[cfg(all(feature = "gpu", feature = "gpu-tuning"))]
+            context: None,
             plan: OuterBackendPlan {
                 program,
                 public,
@@ -93,6 +95,8 @@ impl PreissuedOuterBackend {
             .as_ref()
             .ok_or("preissued outer missing original row plan")?;
         Ok(OuterBackendAdmission {
+            #[cfg(all(feature = "gpu", feature = "gpu-tuning"))]
+            context: None,
             plan: OuterBackendPlan {
                 program, public, witness,
                 limits: self.envelope.limits,

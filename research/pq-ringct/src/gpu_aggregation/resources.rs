@@ -7,6 +7,7 @@ use lattica_prover_p3::ringct_research_quota::{
 };
 
 pub(super) struct Envelope {
+    max_rows: usize,
     ledger: Ledger,
     owners: Vec<Reservation>,
 }
@@ -38,13 +39,37 @@ impl Envelope {
         // Input graph, bounded native artifacts, compact verifier keys/proofs.
         reserve(Category::CompilerInputs, 2 << 30, 0)?;
         // Each of two compilers: 2 GiB source + 512 MiB auxiliary workspace.
-        reserve(Category::SymbolicCompiler, 5 << 30, 0)?;
+        reserve(
+            Category::SymbolicCompiler,
+            if options.profile == "grouped-v3" {
+                1 << 30
+            } else {
+                5 << 30
+            },
+            0,
+        )?;
         // Four admitted jobs, including the currently consumed program.
         reserve(Category::RegisteredMetadata, 8 << 30, 0)?;
         // Registration/identity/proving are serialized on the sole GPU owner.
-        reserve(Category::PhaseScratch, 16 << 30, 8 << 30)?;
+        // V3's four permits include building, queued and consuming programs:
+        // 4 * 2 GiB source storage + 2 * 512 MiB compiler/identity auxiliaries.
+        // Building programs are not four additional retained programs. The
+        // resulting 20 GiB backend phase includes the full 8 GiB tree quota.
+        reserve(
+            Category::PhaseScratch,
+            if options.profile == "grouped-v3" {
+                CONSUMING_GPU_HOST_BYTES
+            } else {
+                16 << 30
+            },
+            8 << 30,
+        )?;
         reserve(Category::Report, 1 << 30, 0)?;
-        Ok(Self { ledger, owners })
+        Ok(Self {
+            ledger,
+            owners,
+            max_rows: options.max_rows(),
+        })
     }
     pub fn finish(mut self) -> Result<serde_json::Value> {
         let peak = self.ledger.snapshot();
@@ -58,7 +83,7 @@ impl Envelope {
             "reserved_host_peak_bytes":peak.peak.host,"reserved_device_peak_bytes":peak.peak.device,
             "current_host_bytes":released.current.host,"current_device_bytes":released.current.device,
             "cpu_compilers":2,"maximum_live_jobs":4,"single_gpu_consumer":true,
-            "maximum_recursive_rows":MAX_RECURSIVE_ROWS,
+            "maximum_recursive_rows":self.max_rows,
             "reservation_counters_are_not_rss":true}))
     }
 }

@@ -197,7 +197,9 @@ pub(crate) fn plan(options: &Options, deadline: &Deadline) -> Result<serde_json:
     for (transaction, case) in cases.iter().enumerate() {
         deadline.check()?;
         for (index, request) in case.plan.requests().iter().enumerate() {
-            let spans = graph_crypto::imported_group_spans(request, shake_width).map_err(error)?;
+            let spans =
+                graph_crypto::imported_group_spans(request, shake_width, options.max_rows())
+                    .map_err(error)?;
             let leaves = if spans.is_empty() {
                 request.segments().len()
             } else {
@@ -243,7 +245,7 @@ fn branches(
         deadline.check()?;
         execution.release_prepared()?;
         ensure(
-            compiled.geometry().map_err(error)?.padded_rows <= MAX_RECURSIVE_ROWS,
+            compiled.geometry().map_err(error)?.padded_rows <= execution.aggregation_row_limit(),
             "branch exceeds recursive row ceiling",
         )?;
         let proof = compiled
@@ -361,7 +363,16 @@ fn prove_graph(
                 Ok(())
             },
         )?;
-        layout::partition(&facts, &selection::graph_costs(options, width)?)?
+        layout::partition_bounded(
+            &facts,
+            &selection::graph_costs(options, width)?,
+            options.max_rows(),
+            if options.profile == "grouped-v3" {
+                2
+            } else {
+                1
+            },
+        )?
     };
     let count = groups.len();
     let prover = graph_tree::GraphProver::new_with_context(
@@ -372,6 +383,49 @@ fn prove_graph(
         execution,
     )
     .map_err(error)?;
+    let prepare = |index| {
+        deadline.check()?;
+        let start = Instant::now();
+        let (first, count) = groups[index];
+        let end = first + count;
+        let leaves = (first..end)
+            .map(|i| load_leaf(case, i, caches, &sources, &auxiliary, &algebra))
+            .collect::<Result<Vec<_>>>()?;
+        let artifacts = leaves
+            .iter()
+            .map(|leaf| leaf.artifact(roots, branches))
+            .collect::<Result<Vec<_>>>()?;
+        let compiled = graph_tree::compile_group_bounded(
+            &case.tree,
+            &case.graph,
+            first,
+            &case.context,
+            artifacts,
+            construction(),
+        )
+        .map_err(error)?;
+        let geometry = compiled.geometry().map_err(error)?;
+        ensure(
+            geometry.padded_rows <= options.max_rows()
+                && compiled.program().construction_host_bytes() <= 2 << 30,
+            "graph grouping exceeds admitted height/compiler ceiling",
+        )?;
+        Ok((first, end - first, compiled, start.elapsed().as_nanos()))
+    };
+    if execution.consuming_aggregation() {
+        let rows = std::sync::Mutex::new(Vec::new());
+        let root = prover.prove_imported_tree(count, |i| {
+            let (first, count, compiled, compile_ns) = prepare(i)?;
+            let geometry = compiled.geometry().map_err(error)?;
+            rows.lock().map_err(|_| "graph compiler telemetry poisoned")?.push(
+                serde_json::json!({"first":first,"count":count,"compile_ns":compile_ns,"padded_rows":geometry.padded_rows}));
+            Ok(compiled)
+        }, deadline).map_err(error)?;
+        root.verify_complete(&case.context).map_err(error)?;
+        let mut rows = rows.into_inner().map_err(|_| "graph telemetry poisoned")?;
+        rows.sort_by_key(|row| row["first"].as_u64());
+        return Ok((root, rows));
+    }
     let mut nodes = Vec::new();
     let mut rows = Vec::new();
     pipeline::programs(
@@ -379,35 +433,7 @@ fn prove_graph(
         options.parallel,
         options.identity == "gpu-batched",
         execution,
-        |index| {
-            deadline.check()?;
-            let start = Instant::now();
-            let (first, count) = groups[index];
-            let end = first + count;
-            let leaves = (first..end)
-                .map(|i| load_leaf(case, i, caches, &sources, &auxiliary, &algebra))
-                .collect::<Result<Vec<_>>>()?;
-            let artifacts = leaves
-                .iter()
-                .map(|leaf| leaf.artifact(roots, branches))
-                .collect::<Result<Vec<_>>>()?;
-            let compiled = graph_tree::compile_group_bounded(
-                &case.tree,
-                &case.graph,
-                first,
-                &case.context,
-                artifacts,
-                construction(),
-            )
-            .map_err(error)?;
-            let geometry = compiled.geometry().map_err(error)?;
-            ensure(
-                geometry.padded_rows <= MAX_RECURSIVE_ROWS
-                    && compiled.program().construction_host_bytes() <= 2 << 30,
-                "graph grouping exceeds admitted height/compiler ceiling",
-            )?;
-            Ok((first, end - first, compiled, start.elapsed().as_nanos()))
-        },
+        prepare,
         |(_, _, node, _)| node.shared_program(),
         |cohort| {
             for (_, (first, count, compiled, compile_ns)) in cohort {
@@ -455,7 +481,8 @@ pub(crate) fn run(options: &Options, deadline: &Deadline) -> Result<serde_json::
                 .requests()
                 .iter()
                 .map(|request| {
-                    graph_crypto::imported_group_spans(request, shake_width).map_err(error)
+                    graph_crypto::imported_group_spans(request, shake_width, options.max_rows())
+                        .map_err(error)
                 })
                 .collect::<Result<Vec<_>>>()
         })
@@ -664,7 +691,9 @@ pub(crate) fn screen(options: &Options, deadline: &Deadline) -> Result<serde_jso
         ),
         "screen requires SHAKE request",
     )?;
-    let spans = graph_crypto::imported_group_spans(request, options.group_width).map_err(error)?;
+    let spans =
+        graph_crypto::imported_group_spans(request, options.group_width, options.max_rows())
+            .map_err(error)?;
     let caches = bundle::Caches::new(&options.bundle, false)?;
     for i in 0..request.segments().len() {
         deadline.check()?;

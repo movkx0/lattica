@@ -4,7 +4,79 @@ use lattica_prover_p3::block_v2::machine::backend::identity_batch::{
     CompletedIdentityPrefix, IdentityBatchContext, IdentityBatchLimits,
 };
 use lattica_prover_p3::block_v2::machine::backend::identity_cpu;
+
+pub(crate) struct ConsumedProof {
+    pub height: usize,
+    pub cap: Vec<[Val; 4]>,
+    pub verifier: Arc<RegisteredVerifier>,
+    pub proof: BatchProof<Config>,
+}
+
+pub(crate) struct PreparationPool {
+    pool: Option<rayon::ThreadPool>,
+    workers: Vec<std::thread::JoinHandle<()>>,
+}
+impl std::ops::Deref for PreparationPool {
+    type Target = rayon::ThreadPool;
+    fn deref(&self) -> &Self::Target {
+        self.pool.as_ref().expect("live preparation pool")
+    }
+}
+impl PreparationPool {
+    fn new() -> Result<Self, String> {
+        let workers = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let failures = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let (handles, errors) = (Arc::clone(&workers), Arc::clone(&failures));
+        let built = rayon::ThreadPoolBuilder::new().num_threads(2).spawn_handler(move |thread| {
+            let errors = Arc::clone(&errors);
+            let handle = std::thread::Builder::new().name(format!("aggregation-prepare-{}", thread.index()))
+                .spawn(move || {
+                    let source = crate::graph_proofs::compiled_source_fingerprint();
+                    let geometry = lattica_prover_p3::block_v2::machine::verifier::batch::shape::HeightEnvelopeCacheScope::begin_with_precomputed(source);
+                    let native = crate::component_tree::native_shape::cache::Scope::begin_with_precomputed(source);
+                    if geometry.is_err() || native.is_err() { errors.lock().unwrap().push("worker cache initialization failed"); }
+                    thread.run();
+                    drop((native, geometry));
+                })?;
+            handles.lock().unwrap().push(handle);
+            Ok(())
+        }).build();
+        let handles = std::mem::take(&mut *workers.lock().unwrap());
+        let mut owner = Self {
+            pool: None,
+            workers: handles,
+        };
+        owner.pool = Some(built.map_err(error)?);
+        owner.broadcast(|_| ());
+        if !failures.lock().unwrap().is_empty() {
+            return Err("persistent worker cache initialization failed".into());
+        }
+        Ok(owner)
+    }
+    fn retire(&mut self) -> Result<usize, String> {
+        drop(self.pool.take());
+        let count = self.workers.len();
+        let mut failed = false;
+        for worker in self.workers.drain(..) {
+            failed |= worker.join().is_err();
+        }
+        if failed {
+            return Err("persistent preparation worker failed during shutdown".into());
+        }
+        Ok(count)
+    }
+    fn close(mut self) -> Result<usize, String> {
+        self.retire()
+    }
+}
+impl Drop for PreparationPool {
+    fn drop(&mut self) {
+        let _ = self.retire();
+    }
+}
 pub(super) struct IdentityQueue {
+    consuming: bool,
+    pool: Option<Arc<PreparationPool>>,
     pub context: IdentityBatchContext,
     pending: Vec<(Arc<Program>, CompletedIdentityPrefix)>,
     next: u64,
@@ -16,6 +88,8 @@ pub(super) struct IdentityQueue {
 impl IdentityQueue {
     pub fn new() -> Self {
         Self {
+            consuming: false,
+            pool: None,
             context: IdentityBatchContext::new(),
             pending: Vec::new(),
             next: 0,
@@ -34,6 +108,115 @@ impl IdentityQueue {
     }
 }
 impl ProvingContext {
+    pub(crate) fn prove_aggregation_once(
+        &self,
+        program: Arc<Program>,
+        public: &Vec<Val>,
+        witness: &Vec<Val>,
+    ) -> Result<ConsumedProof, String> {
+        use lattica_prover_p3::block_v2::{
+            gpu_hash::device::DeviceSession,
+            machine::{OuterBackendPlan, RegisteredGpuLimits},
+        };
+        self.check_legacy_gpu_dispatch()?;
+        self.check_aggregation_gpu_route(&program)?;
+        if !self.consuming_aggregation() {
+            return Err("consuming aggregation profile required".into());
+        }
+        self.release_prepared()?;
+        self.diagnostics.mark_stark_work_attempted();
+        let session = DeviceSession::new()?;
+        let limits = RegisteredGpuLimits::new(
+            self.host_profile.worker_bytes(),
+            8 << 30,
+            4 << 30,
+            self.aggregation_row_limit(),
+        )?;
+        let native = crate::gpu_aggregation::CONSUMING_GPU_HOST_BYTES
+            .checked_sub(limits.retained_tree_host_bytes())
+            .ok_or("host tree quota exhausts aggregation backend phase")?;
+        let admission = OuterBackendPlan::new(&program, public, witness, limits, native)?
+            .admit_in_session(&session)?;
+        let footprint = admission.footprint();
+        eprintln!(
+            "gpu_aggregation_consuming_admission rows={} device_peak_bytes={} backend_scope_host_bytes={}",
+            program.height(),
+            footprint.device_phase_peak_bytes,
+            footprint.backend_scope_host_bytes
+        );
+        let started = Instant::now();
+        let registered =
+            self.register_aggregation_program(Arc::clone(&program), admission.host_budget_bytes())?;
+        let registration_seconds = started.elapsed().as_secs_f64();
+        let cap = registered.preprocessing_cap().roots().to_vec();
+        let verifier = Arc::new(registered.verifier());
+        {
+            let mut state = self.registry.borrow_mut();
+            state.registrations += 1;
+            state.registered_active_rows += program.active_rows() as u64;
+            state.registered_padded_rows += program.height() as u64;
+            state.registration_seconds += registration_seconds;
+            state.registration_setup_seconds += started.elapsed().as_secs_f64();
+        }
+        let started = Instant::now();
+        let result = registered
+            .into_prove_outer_with_request_and_report(&admission, self.request)
+            .map_err(error);
+        self.diagnostics.prove_finished(
+            started.elapsed().as_secs_f64(),
+            result.is_ok(),
+            program.active_rows(),
+            program.height(),
+        );
+        let (proof, _report) = result?;
+        let started = Instant::now();
+        let verified = verifier.verify(&proof, public);
+        self.diagnostics
+            .verify_finished(started.elapsed().as_secs_f64(), verified.is_ok());
+        verified?;
+        Ok(ConsumedProof {
+            height: program.height(),
+            cap,
+            verifier,
+            proof,
+        })
+    }
+    pub(crate) fn configure_consuming_aggregation(&self) -> Result<(), String> {
+        let mut queue = self.aggregation_identity.borrow_mut();
+        if queue.consuming || !queue.pending.is_empty() || !queue.cpu_pending.is_empty() {
+            return Err("consuming aggregation must be configured before preparation".into());
+        }
+        self.release_prepared()?;
+        let pool = PreparationPool::new()?;
+        queue.consuming = true;
+        queue.pool = Some(Arc::new(pool));
+        Ok(())
+    }
+    pub(crate) fn consuming_aggregation(&self) -> bool {
+        self.aggregation_identity.borrow().consuming
+    }
+    pub(crate) fn aggregation_pool(&self) -> Option<Arc<PreparationPool>> {
+        self.aggregation_identity.borrow().pool.clone()
+    }
+    pub(super) fn finish_aggregation_preparation(&self) -> Result<usize, String> {
+        let Some(pool) = self.aggregation_identity.borrow_mut().pool.take() else {
+            return Ok(0);
+        };
+        let pool =
+            Arc::try_unwrap(pool).map_err(|_| "preparation pool still borrowed at shutdown")?;
+        let count = pool.close()?;
+        eprintln!(
+            "gpu_aggregation_preparation_shutdown joined_workers={count} all_scopes_complete=true"
+        );
+        Ok(count)
+    }
+    pub(crate) fn aggregation_row_limit(&self) -> usize {
+        if self.consuming_aggregation() {
+            crate::gpu_aggregation::MAX_CONSUMING_ROWS
+        } else {
+            crate::gpu_aggregation::MAX_RECURSIVE_ROWS
+        }
+    }
     /// The imported path uses the owned GPU witness/PCS phase admission in
     /// RegisteredProgram. A full host-LDE estimate is not its storage layout.
     /// This route check never replaces registration's partitioned host budget,
@@ -42,7 +225,7 @@ impl ProvingContext {
         if self.policy() != Policy::GpuRequired
             || self.session.is_none()
             || std::env::var("LATTICA_V2_GPU_WITNESS").as_deref() != Ok("1")
-            || program.height() > crate::gpu_aggregation::MAX_RECURSIVE_ROWS
+            || program.height() > self.aggregation_row_limit()
             || program.construction_host_bytes() > 2 << 30
         {
             return Err("imported aggregation requires bounded owned GPU proving".into());
@@ -179,5 +362,18 @@ impl ProvingContext {
             )
             .map_err(|e| format!("{e:?}"))
         }
+    }
+}
+
+#[cfg(test)]
+mod preparation_pool_tests {
+    use super::*;
+    #[test]
+    fn persistent_workers_keep_their_ids_and_join_before_returning() {
+        let pool = PreparationPool::new().unwrap();
+        let first = pool.broadcast(|_| std::thread::current().id());
+        let second = pool.broadcast(|_| std::thread::current().id());
+        assert_eq!(first, second);
+        assert_eq!(pool.close().unwrap(), 2);
     }
 }

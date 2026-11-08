@@ -29,7 +29,7 @@ use lattica_prover_p3::block_v2::machine::{
 #[cfg(not(feature = "gpu-aggregation-experiment"))]
 pub(crate) const MAX_ROWS: usize = 1 << 20;
 #[cfg(feature = "gpu-aggregation-experiment")]
-pub(crate) const MAX_ROWS: usize = crate::gpu_aggregation::MAX_RECURSIVE_ROWS;
+pub(crate) const MAX_ROWS: usize = crate::gpu_aggregation::MAX_CONSUMING_ROWS;
 pub(crate) const PROGRAM_BYTES: usize = 2 << 30;
 pub(crate) const INPUT_VALUES: usize = 1 << 20;
 pub(crate) const AUXILIARY_BYTES: usize = 512 << 20;

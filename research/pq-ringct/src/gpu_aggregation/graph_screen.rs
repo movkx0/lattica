@@ -165,55 +165,62 @@ pub(super) fn screen(options: &Options, deadline: &Deadline) -> Result<serde_jso
         let count = selected.len().div_ceil(width);
         for repetition in 0..options.repetitions {
             let started = Instant::now();
-            let mut nodes = Vec::new();
-            pipeline::programs(
-                count,
-                options.parallel,
-                options.identity == "gpu-batched",
-                &execution,
-                |i| {
-                    deadline.check()?;
-                    let first = selected.start + i * width;
-                    let end = selected.end.min(first + width);
-                    let loaded = (first..end)
-                        .map(|i| graph::load_leaf(case, i, &caches, &sources, &aux, &algebra))
-                        .collect::<Result<Vec<_>>>()?;
-                    let artifacts = loaded
-                        .iter()
-                        .map(|l| l.artifact(&roots, &branches))
-                        .collect::<Result<Vec<_>>>()?;
-                    let compiled = graph_tree::compile_group_bounded(
-                        &case.tree,
-                        &case.graph,
-                        first,
-                        &case.context,
-                        artifacts,
-                        construction(),
-                    )
-                    .map_err(error)?;
-                    ensure(
-                        compiled.geometry().map_err(error)?.padded_rows <= MAX_RECURSIVE_ROWS,
-                        "graph screen exceeds height ceiling",
-                    )?;
-                    Ok(compiled)
-                },
-                |node| node.shared_program(),
-                |cohort| {
-                    for (_, compiled) in cohort {
-                        deadline.check()?;
-                        nodes.push(prover.prove_imported_node(compiled).map_err(error)?);
-                    }
-                    Ok(())
-                },
-            )?;
-            let root = prover
-                .aggregate_imported(
-                    nodes,
-                    options.parallel,
-                    options.identity == "gpu-batched",
-                    deadline,
+            let prepare = |i| {
+                deadline.check()?;
+                let first = selected.start + i * width;
+                let end = selected.end.min(first + width);
+                let loaded = (first..end)
+                    .map(|i| graph::load_leaf(case, i, &caches, &sources, &aux, &algebra))
+                    .collect::<Result<Vec<_>>>()?;
+                let artifacts = loaded
+                    .iter()
+                    .map(|l| l.artifact(&roots, &branches))
+                    .collect::<Result<Vec<_>>>()?;
+                let compiled = graph_tree::compile_group_bounded(
+                    &case.tree,
+                    &case.graph,
+                    first,
+                    &case.context,
+                    artifacts,
+                    construction(),
                 )
                 .map_err(error)?;
+                ensure(
+                    compiled.geometry().map_err(error)?.padded_rows <= options.max_rows(),
+                    "graph screen exceeds height ceiling",
+                )?;
+                Ok(compiled)
+            };
+            let root = if execution.consuming_aggregation() {
+                prover
+                    .prove_imported_tree(count, prepare, deadline)
+                    .map_err(error)?
+            } else {
+                let mut nodes = Vec::new();
+                pipeline::programs(
+                    count,
+                    options.parallel,
+                    options.identity == "gpu-batched",
+                    &execution,
+                    prepare,
+                    |node| node.shared_program(),
+                    |cohort| {
+                        for (_, compiled) in cohort {
+                            deadline.check()?;
+                            nodes.push(prover.prove_imported_node(compiled).map_err(error)?);
+                        }
+                        Ok(())
+                    },
+                )?;
+                prover
+                    .aggregate_imported(
+                        nodes,
+                        options.parallel,
+                        options.identity == "gpu-batched",
+                        deadline,
+                    )
+                    .map_err(error)?
+            };
             ensure(
                 root.key().span() == (selected.start, selected.len()),
                 "graph screen coverage changed",

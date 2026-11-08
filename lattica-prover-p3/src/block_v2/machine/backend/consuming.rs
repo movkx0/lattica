@@ -202,6 +202,11 @@ impl PreparedProgram {
             .pcs()
             .quotient_session()
             .map_err(|_| ExecutionError::GpuFailure)?;
+        #[cfg(feature = "gpu")]
+        let retired_bytes = match &prepared {
+            WitnessOwner::Consumed(value) => value.instruction_bytes(),
+            WitnessOwner::Retained(_) => 0,
+        };
         let trace = prepared.trace_and_retire(|prepared| {
             run.measure(Stage::WitnessTrace, Backend::OpenCl, || {
                 let _witness_observation = session
@@ -220,6 +225,13 @@ impl PreparedProgram {
             })
             .map_err(|_| ExecutionError::ProvingPolicy)?
         })?;
+        #[cfg(feature = "gpu")]
+        if retired_bytes != 0 {
+            let live = session
+                .current_managed_bytes()
+                .map_err(|_| ExecutionError::GpuFailure)?;
+            eprintln!("bounded_aggregation_trace_retirement instruction_bytes={retired_bytes} managed_live_bytes={live} completed_trace_fence=true");
+        }
         // The owned variant has retired its instruction allocation and host
         // schedule here. The retained variant leaves its registration intact.
         // Both continue through identical proof machinery and native receipts.

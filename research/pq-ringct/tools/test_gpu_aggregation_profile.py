@@ -10,6 +10,51 @@ from test_opencl_private_spend_validate import arguments, runner
 
 
 class AggregationAcceptance(unittest.TestCase):
+    def test_consuming_costs_require_paired_cpu_lookahead_baseline(self):
+        from gpu_aggregation_select import matched_cost
+        def record(candidate):
+            return dict(status='passed', environment=dict(LATTICA_GPU_DEVICE_UUID='gpu'),
+                gpu_aggregation_acceptance=dict(options=dict(command='screen',
+                    profile='grouped-v3' if candidate else 'grouped-v2', identity='cpu', parallel=True,
+                    transactions=4, workload=0, family='graph'),
+                report=dict(verified=True, complete_aggregation=False, scope='native-graph-subtree-screen',
+                    input_sha3='input', source_sha3='source', first_leaf=4, leaves=8,
+                    width=4 if candidate else 2, admitted_maximum_group=4 if candidate else 2,
+                    samples=[dict(repetition=i, verified=True, seconds=8 if candidate else 10,
+                        process_state='first-request' if i == 0 else 'warm-request') for i in range(4)])))
+        baseline, candidate = record(False), record(True)
+        self.assertEqual(matched_cost(baseline, candidate)[2]['candidate'], [8, 8, 8])
+        for section, key, value in [('options', 'identity', 'gpu-batched'),
+                ('options', 'parallel', False), ('report', 'width', 1),
+                ('report', 'source_sha3', 'other'), ('report', 'input_sha3', 'other')]:
+            bad = copy.deepcopy(baseline)
+            bad['gpu_aggregation_acceptance'][section][key] = value
+            with self.subTest(key=key), self.assertRaises(RuntimeError):
+                matched_cost(bad, candidate)
+
+    def test_budget_extension_preserves_attempts_and_is_idempotent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            budget = AggregationBudget(Path(directory) / 'budget.json')
+            value = budget.read()
+            value['attempts'] = [dict(label='previous', status='failed', wall_seconds=3216.0)]
+            budget.save(value)
+            extended = budget.extend('approved-round-two', 1800)
+            self.assertEqual(extended['attempts'], value['attempts'])
+            self.assertEqual(budget.remaining(), 2184.0)
+            self.assertEqual(budget.extend('approved-round-two', 1800), extended)
+            with self.assertRaises(RuntimeError): budget.extend('approved-round-two', 3600)
+            altered = copy.deepcopy(extended); altered['limit_seconds'] += 1
+            budget.save(altered)
+            with self.assertRaises(RuntimeError): budget.read()
+
+    def test_budget_extension_never_reconciles_a_running_attempt(self):
+        with tempfile.TemporaryDirectory() as directory:
+            budget = AggregationBudget(Path(directory) / 'budget.json')
+            value = budget.read(); value['attempts'] = [dict(status='running', reserved_seconds=600)]
+            budget.save(value)
+            with self.assertRaises(RuntimeError): budget.extend('approved-round-two', 1800)
+            with self.assertRaises(RuntimeError): budget.remaining()
+
     def args(self, **changes):
         return arguments(**dict(dict(gpu_aggregation=True, profile='full', build_label='aggregation-build', seconds=600,
             device_uuid='GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615', retained_tree_storage='host', host_profile='standard'), **changes))

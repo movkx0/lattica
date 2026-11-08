@@ -516,7 +516,11 @@ fn validate_source_children<'a>(
                     && actual.key.height <= expected.rows().1,
                     "aggregate source parent identity or height mismatch")?;
             }
-            _ => return Err(Error("aggregate source child kind or order mismatch".into())),
+            _ => {
+                return Err(Error(
+                    "aggregate source child kind or order mismatch".into(),
+                ))
+            }
         }
     }
     let actual = Spec::merge(children[0].spec(), children[1].spec())?;
@@ -820,6 +824,25 @@ memory_budget,
             spec.count,
             spec.level()
         );
+        #[cfg(feature = "gpu-aggregation-experiment")]
+        if owned_gpu && execution.consuming_aggregation() {
+            let output = execution
+                .prove_aggregation_once(Arc::clone(program), &public.to_vec(), witness)
+                .map_err(err)?;
+            let key = BatchKey {
+                spec: spec.clone(),
+                height: output.height,
+                cap: output.cap,
+                verifier: output.verifier,
+            };
+            return Ok(BatchNode {
+                key,
+                proof: BatchProof {
+                    public: *public,
+                    proof: output.proof,
+                },
+            });
+        }
         let prove = |registered: &crate::execution::RegisteredTemplate| {
             let key = BatchKey {
                 spec: spec.clone(),
@@ -840,7 +863,9 @@ memory_budget,
             work().map_err(|error| format!("{detail}: {error}"))
         };
         match host_bytes {
-            Some(host) => execution.with_registered_shared_with_host_budget(Arc::clone(program), host, prove),
+            Some(host) => {
+                execution.with_registered_shared_with_host_budget(Arc::clone(program), host, prove)
+            }
             None => execution.with_registered_shared(Arc::clone(program), prove),
         }.map_err(|error| Error(format!("{scope}: {error}")))
     }

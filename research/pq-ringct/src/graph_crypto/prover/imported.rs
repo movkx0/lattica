@@ -4,7 +4,11 @@ use crate::component_tree::paired_runtime::source;
 use crate::component_tree::paired_runtime::PairedFailure;
 use crate::gpu_aggregation::{self, Deadline};
 
-pub(crate) fn group_spans(request: &Request, maximum: usize) -> Result<Vec<ShakeWrapperSpan>> {
+pub(crate) fn group_spans(
+    request: &Request,
+    maximum: usize,
+    max_rows: usize,
+) -> Result<Vec<ShakeWrapperSpan>> {
     require(
         matches!(maximum, 1 | 2 | 4 | 8),
         "invalid imported wrapper group size",
@@ -28,7 +32,14 @@ pub(crate) fn group_spans(request: &Request, maximum: usize) -> Result<Vec<Shake
                 units: last.first_unit + last.units - start.first_unit,
             };
             let facts = source::GroupBlueprint::new(request, span)
-                .and_then(|blueprint| blueprint.inspect());
+                .and_then(|blueprint| blueprint.inspect())
+                .and_then(|facts| {
+                    if facts.maximum_padded_rows <= max_rows {
+                        Ok(facts)
+                    } else {
+                        Err(PairedFailure::Rows)
+                    }
+                });
             match facts {
                 Ok(_) => {
                     spans.push(span);
@@ -69,7 +80,7 @@ mod imported_group_layout_tests {
         )
         .unwrap();
         for maximum in [1, 2, 4, 8] {
-            let spans = group_spans(&request, maximum).unwrap();
+            let spans = group_spans(&request, maximum, source::MAX_ROWS).unwrap();
             let (mut segment, mut unit) = (0, 0);
             for span in spans {
                 assert_eq!(span.first_segment, segment);
@@ -82,7 +93,7 @@ mod imported_group_layout_tests {
             assert_eq!(unit, request.units());
         }
         request.segments[1].first_unit += 1;
-        assert!(group_spans(&request, 8).is_err());
+        assert!(group_spans(&request, 8, source::MAX_ROWS).is_err());
     }
 }
 impl RequestProver<'_> {
@@ -173,51 +184,13 @@ impl RequestProver<'_> {
         };
         let mut report = RequestProvingReport::default();
         let mut nodes = Vec::new();
-        gpu_aggregation::pipeline::programs(
-            count,
-            parallel,
-            gpu_identity,
-            execution,
-            prepare,
-            |(_, _, _, node)| node.shared_program(),
-            |cohort| {
-                for (_, (first, units, children, compiled)) in cohort {
-                    deadline.check()?;
-                    let geometry = compiled.geometry().map_err(gpu_aggregation::error)?;
-                    if geometry.padded_rows > source::MAX_ROWS
-                        || compiled.program().construction_host_bytes() > source::PROGRAM_BYTES
-                    {
-                        return Err("imported component exceeds source compiler/row ceiling".into());
-                    }
-                    report.native_children += children;
-                    report.native_cache_hits += children;
-                    let node = self
-                        .prove_node_with_admission(
-                            "imported leaf",
-                            first,
-                            units,
-                            compiled,
-                            &mut report,
-                            true,
-                        )
-                        .map_err(gpu_aggregation::error)?;
-                    nodes.push(node);
-                }
-                Ok(())
-            },
-        )
-        .map_err(err)?;
-        while nodes.len() > 1 {
-            let mut next = Vec::new();
-            gpu_aggregation::pipeline::programs(
-                nodes.len() / 2,
-                parallel,
-                gpu_identity,
+        if execution.consuming_aggregation() {
+            let node = gpu_aggregation::pipeline::tree_programs(
+                count,
                 execution,
-                |index| {
+                prepare,
+                |left: &ActualNode, right: &ActualNode| {
                     deadline.check()?;
-                    let left = &nodes[2 * index];
-                    let right = &nodes[2 * index + 1];
                     if left.first.checked_add(left.units) != Some(right.first) {
                         return Err("nonadjacent imported request children".into());
                     }
@@ -232,33 +205,128 @@ impl RequestProver<'_> {
                         left.units
                             .checked_add(right.units)
                             .ok_or("request size overflow")?,
+                        0,
                         compiled,
                     ))
                 },
-                |(_, _, node)| node.shared_program(),
+                |(_, _, _, node)| node.shared_program(),
+                |(first, units, children, compiled)| {
+                    deadline.check()?;
+                    let geometry = compiled.geometry().map_err(gpu_aggregation::error)?;
+                    if geometry.padded_rows > execution.aggregation_row_limit()
+                        || compiled.program().construction_host_bytes() > source::PROGRAM_BYTES
+                    {
+                        return Err("imported component exceeds source compiler/row ceiling".into());
+                    }
+                    report.native_children += children;
+                    report.native_cache_hits += children;
+                    self.prove_node_with_admission(
+                        if children == 0 {
+                            "parent"
+                        } else {
+                            "imported leaf"
+                        },
+                        first,
+                        units,
+                        compiled,
+                        &mut report,
+                        true,
+                    )
+                    .map_err(gpu_aggregation::error)
+                },
+            )
+            .map_err(err)?;
+            nodes.push(node);
+        } else {
+            gpu_aggregation::pipeline::programs(
+                count,
+                parallel,
+                gpu_identity,
+                execution,
+                prepare,
+                |(_, _, _, node)| node.shared_program(),
                 |cohort| {
-                    for (_, (first, units, compiled)) in cohort {
+                    for (_, (first, units, children, compiled)) in cohort {
                         deadline.check()?;
-                        next.push(
-                            self.prove_node_with_admission(
-                                "parent",
+                        let geometry = compiled.geometry().map_err(gpu_aggregation::error)?;
+                        if geometry.padded_rows > execution.aggregation_row_limit()
+                            || compiled.program().construction_host_bytes() > source::PROGRAM_BYTES
+                        {
+                            return Err(
+                                "imported component exceeds source compiler/row ceiling".into()
+                            );
+                        }
+                        report.native_children += children;
+                        report.native_cache_hits += children;
+                        let node = self
+                            .prove_node_with_admission(
+                                "imported leaf",
                                 first,
                                 units,
                                 compiled,
                                 &mut report,
                                 true,
                             )
-                            .map_err(gpu_aggregation::error)?,
-                        );
+                            .map_err(gpu_aggregation::error)?;
+                        nodes.push(node);
                     }
                     Ok(())
                 },
             )
             .map_err(err)?;
-            if nodes.len() % 2 == 1 {
-                next.push(nodes.pop().unwrap());
+            while nodes.len() > 1 {
+                let mut next = Vec::new();
+                gpu_aggregation::pipeline::programs(
+                    nodes.len() / 2,
+                    parallel,
+                    gpu_identity,
+                    execution,
+                    |index| {
+                        deadline.check()?;
+                        let left = &nodes[2 * index];
+                        let right = &nodes[2 * index + 1];
+                        if left.first.checked_add(left.units) != Some(right.first) {
+                            return Err("nonadjacent imported request children".into());
+                        }
+                        let compiled = component_tree::compile_imported_merge(
+                            &left.key,
+                            &right.key,
+                            [&left.proof, &right.proof],
+                        )
+                        .map_err(gpu_aggregation::error)?;
+                        Ok((
+                            left.first,
+                            left.units
+                                .checked_add(right.units)
+                                .ok_or("request size overflow")?,
+                            compiled,
+                        ))
+                    },
+                    |(_, _, node)| node.shared_program(),
+                    |cohort| {
+                        for (_, (first, units, compiled)) in cohort {
+                            deadline.check()?;
+                            next.push(
+                                self.prove_node_with_admission(
+                                    "parent",
+                                    first,
+                                    units,
+                                    compiled,
+                                    &mut report,
+                                    true,
+                                )
+                                .map_err(gpu_aggregation::error)?,
+                            );
+                        }
+                        Ok(())
+                    },
+                )
+                .map_err(err)?;
+                if nodes.len() % 2 == 1 {
+                    next.push(nodes.pop().unwrap());
+                }
+                nodes = next;
             }
-            nodes = next;
         }
         let node = nodes.pop().ok_or_else(|| err("empty imported request"))?;
         require(

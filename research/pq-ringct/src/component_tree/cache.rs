@@ -147,6 +147,30 @@ impl CompiledNode {
             "component request={} span=[{},{}] level={}",
             spec.contract.request, spec.first, spec.count, spec.level
         );
+        #[cfg(feature = "gpu-aggregation-experiment")]
+        if owned_gpu && execution.consuming_aggregation() {
+            cache.proof_attempt();
+            let output = execution
+                .prove_aggregation_once(program, &public, &witness)
+                .map_err(err)?;
+            let key = NodeKey {
+                spec,
+                height: output.height,
+                cap: output.cap,
+                verifier: output.verifier,
+            };
+            let identity = cache_identity(&key, &public)?;
+            cache.fresh_proof();
+            return Ok(CacheOutcome {
+                key,
+                proof: NodeProof {
+                    public,
+                    proof: output.proof,
+                },
+                cache_hit: false,
+                identity,
+            });
+        }
         let prove = |registered: &crate::execution::RegisteredTemplate| {
             let key = NodeKey { spec: spec.clone(), height: registered.air().program().height(),
                 cap: registered.preprocessing_cap().roots().to_vec(), verifier: registered.verifier() };
@@ -157,8 +181,11 @@ impl CompiledNode {
                 let cached = if remaining_host_bytes.is_some() {
                     None
                 } else {
-                    cache.load_verified(&identity, &public,
-                        |public, proof| key.verifier.verify(proof, public)).map_err(|e| e.to_string())?
+                    cache
+                        .load_verified(&identity, &public, |public, proof| {
+                            key.verifier.verify(proof, public)
+                        })
+                        .map_err(|e| e.to_string())?
                 };
                 let (public, proof, cache_hit) = match cached {
                     Some((public, proof)) => (public, proof, true),
@@ -168,8 +195,11 @@ impl CompiledNode {
                         registered.verify(&proof, &public)?;
                         cache.fresh_proof();
                         if remaining_host_bytes.is_none() {
-                            cache.store_verified(&identity, &public, &proof,
-                                |public, proof| key.verifier.verify(proof, public)).map_err(|e| e.to_string())?;
+                            cache
+                                .store_verified(&identity, &public, &proof, |public, proof| {
+                                    key.verifier.verify(proof, public)
+                                })
+                                .map_err(|e| e.to_string())?;
                         }
                         (public, proof, false)
                     }

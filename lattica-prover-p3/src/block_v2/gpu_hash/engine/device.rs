@@ -405,6 +405,34 @@ impl DeviceCommitment {
 }
 
 impl DeviceSession {
+    #[cfg(all(feature = "gpu", feature = "gpu-tuning"))]
+    pub(crate) fn aggregation_boundary(
+        &self,
+        common: usize,
+        peak: usize,
+        limit: usize,
+    ) -> Result<usize, String> {
+        self.with_engine(|engine| {
+            engine.fence().finish()?;
+            engine.workspace = None;
+            engine.lde_workspace = None;
+            let live = engine.accounting.lock().unwrap().live;
+            let required = peak.checked_add(live.saturating_sub(common)).ok_or("aggregation phase peak overflow")?;
+            if engine.limits.managed_bytes != limit || required > limit {
+                return Err("aggregation phase bound plus live context exceeds device allowance".into());
+            }
+            eprintln!("bounded_aggregation_session_admission live_bytes={live} phase_peak_bytes={peak} required_bytes={required} managed_limit_bytes={limit}");
+            Ok(live)
+        })
+    }
+    #[cfg(all(feature = "gpu", feature = "gpu-tuning"))]
+    pub(crate) fn check_current_epoch(&self) -> Result<(), String> {
+        self.with_engine(|_| Ok(()))
+    }
+    #[cfg(feature = "gpu")]
+    pub(crate) fn current_managed_bytes(&self) -> Result<usize, String> {
+        self.with_engine(|engine| Ok(engine.accounting.lock().unwrap().live))
+    }
     pub fn new() -> Result<Self, String> {
         let slot = ENGINE
             .get()

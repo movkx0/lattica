@@ -100,6 +100,8 @@ pub struct OuterBackendPlan<'inputs> {
 /// cloned, or used by the borrowed/reusable registration path.
 pub struct OuterBackendAdmission<'inputs> {
     plan: OuterBackendPlan<'inputs>,
+    #[cfg(all(feature = "gpu", feature = "gpu-tuning"))]
+    context: Option<crate::block_v2::gpu_hash::device::DeviceSession>,
 }
 
 impl RegisteredGpuLimits {
@@ -281,11 +283,39 @@ impl<'inputs> OuterBackendPlan<'inputs> {
     /// Requires the pre-session idle boundary. The enclosing owner must keep
     /// all preclaims live while subsequently initializing and draining a session.
     pub fn admit(self) -> Result<OuterBackendAdmission<'inputs>, String> {
-        let admission = OuterBackendAdmission { plan: self };
+        let admission = OuterBackendAdmission {
+            plan: self,
+            #[cfg(all(feature = "gpu", feature = "gpu-tuning"))]
+            context: None,
+        };
         admission.check_execution_selection()?;
         if !crate::block_v2::gpu_hash::engine::registration_preflight_idle()? {
             return Err("outer backend admission requires idle shared GPU engine".into());
         }
+        Ok(admission)
+    }
+
+    /// Research backend admission inside one already owned, serial GPU epoch.
+    /// The caller holds enclosing compiler, queued-program, input, output and
+    /// report reservations throughout registration, consuming proof and verification.
+    /// This does not grant workflow dispatch authority or replace the idle API.
+    #[cfg(all(feature = "gpu", feature = "gpu-tuning"))]
+    pub fn admit_in_session(
+        self,
+        session: &crate::block_v2::gpu_hash::device::DeviceSession,
+    ) -> Result<OuterBackendAdmission<'inputs>, String> {
+        let admission = OuterBackendAdmission {
+            plan: self,
+            context: Some(session.clone()),
+        };
+        admission.check_execution_selection()?;
+        let footprint = admission.footprint();
+        session.aggregation_boundary(
+            footprint.precommit_phases.common_device_bytes,
+            usize::try_from(footprint.device_phase_peak_bytes)
+                .map_err(|_| "phase peak overflow")?,
+            usize::try_from(footprint.managed_limit_bytes).map_err(|_| "managed limit overflow")?,
+        )?;
         Ok(admission)
     }
 }
@@ -307,6 +337,10 @@ impl OuterBackendAdmission<'_> {
         self.plan.footprint
     }
     pub fn check_execution_selection(&self) -> Result<(), String> {
+        #[cfg(all(feature = "gpu", feature = "gpu-tuning"))]
+        if let Some(context) = &self.context {
+            context.check_current_epoch()?;
+        }
         if Selection::from_env()? != self.plan.limits.trees {
             return Err("outer backend tree storage selection changed after admission".into());
         }

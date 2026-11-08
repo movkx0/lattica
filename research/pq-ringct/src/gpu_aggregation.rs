@@ -18,10 +18,12 @@ mod selection;
 #[cfg(test)]
 mod tests;
 type Result<T> = std::result::Result<T, String>;
-// The 8 GiB managed envelope completed 2^18-row recursive proofs, while
-// 2^19-row SHAKE and graph groups refused quotient allocations. Freeze this
-// conservative ceiling before proving; all backend phase checks still apply.
+// Reusable registrations retain the conservative 2^18-row ceiling. Consuming
+// registrations retire instructions after the trace fence and permit 2^19;
+// every proof still requires the same backend phase and allocation checks.
 pub(crate) const MAX_RECURSIVE_ROWS: usize = 1 << 18;
+pub(crate) const MAX_CONSUMING_ROWS: usize = 1 << 19;
+pub(crate) const CONSUMING_GPU_HOST_BYTES: u64 = 20 << 30;
 pub(crate) fn error(e: impl std::fmt::Display) -> String {
     e.to_string()
 }
@@ -58,6 +60,13 @@ pub struct Options {
     pub leaves: usize,
 }
 impl Options {
+    pub(crate) fn max_rows(&self) -> usize {
+        if self.profile == "grouped-v3" {
+            MAX_CONSUMING_ROWS
+        } else {
+            MAX_RECURSIVE_ROWS
+        }
+    }
     fn parse(mut args: impl Iterator<Item = String>) -> Result<Self> {
         let command = args
             .next()
@@ -137,7 +146,7 @@ impl Options {
             "invalid aggregation limits",
         )?;
         ensure(
-            matches!(out.profile.as_str(), "legacy" | "grouped-v2"),
+            matches!(out.profile.as_str(), "legacy" | "grouped-v2" | "grouped-v3"),
             "invalid aggregation profile",
         )?;
         ensure(
@@ -164,6 +173,10 @@ impl Options {
         if out.input.as_os_str().is_empty() {
             out.input = out.bundle.join("inputs.json");
         }
+        ensure(
+            out.profile != "grouped-v3" || (out.parallel && out.identity == "cpu"),
+            "grouped-v3 requires CPU identity and the lookahead pipeline",
+        )?;
         Ok(out)
     }
 }
@@ -192,7 +205,7 @@ pub(crate) fn construction() -> lattica_prover_p3::block_v2::machine::program::C
     crate::component_tree::paired_runtime::source::construction()
 }
 pub(crate) fn context(options: &Options) -> Result<crate::execution::ProvingContext> {
-    let expected = if options.profile == "grouped-v2" {
+    let expected = if options.profile != "legacy" {
         "events,witness,programs"
     } else {
         ""
@@ -201,13 +214,24 @@ pub(crate) fn context(options: &Options) -> Result<crate::execution::ProvingCont
         std::env::var("LATTICA_V2_GPU_TUNING").unwrap_or_default() == expected,
         "runner/profile GPU tuning mismatch",
     )?;
-    crate::execution::ProvingContext::opencl(crate::opencl::Limits {
+    // Native input preparation retains its existing 16 GiB proving partition.
+    // Only recursive aggregation uses the consuming backend and worker pool.
+    let consuming = options.profile == "grouped-v3" && options.command != "prepare-inputs";
+    let context = crate::execution::ProvingContext::opencl(crate::opencl::Limits {
         // Separate CPU compiler/queue reservations fit beside this registered
         // proving allowance in the unchanged 32/36 GiB worker envelope.
-        host_bytes: 16 << 30,
+        host_bytes: if consuming {
+            CONSUMING_GPU_HOST_BYTES
+        } else {
+            16 << 30
+        },
         device_bytes: 8 << 30,
-        max_rows: MAX_RECURSIVE_ROWS,
-    })
+        max_rows: options.max_rows(),
+    })?;
+    if consuming {
+        context.configure_consuming_aggregation()?;
+    }
+    Ok(context)
 }
 pub fn run_cli(args: impl Iterator<Item = String>) -> Result<()> {
     let options = Options::parse(args)?;

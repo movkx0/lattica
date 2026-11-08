@@ -5,7 +5,10 @@ exclusive hardware use and terminal cleanup. This module adds the exact CLI
 contract and distinguishes planning, input preparation, screens and full runs.
 """
 import json
+import fcntl
 import math
+import re
+import time
 from pathlib import Path
 from cpu_proof_budget import Budget
 
@@ -13,6 +16,44 @@ from cpu_proof_budget import Budget
 class AggregationBudget(Budget):
     schema = 'gpu-aggregation-test-budget-v1'
     job_seconds = 600
+
+    def read(self):
+        value = json.loads(self.path.read_text()) if self.path.exists() else dict(
+            schema=self.schema, limit_seconds=3600, attempts=[])
+        extensions = value.get('extensions', [])
+        require(value.get('schema') == self.schema and isinstance(extensions, list), 'invalid aggregation budget')
+        ids = set()
+        for row in extensions:
+            require(isinstance(row, dict) and re.fullmatch(r'[a-z0-9-]{1,64}', row.get('id', ''))
+                    and row['id'] not in ids and type(row.get('seconds')) is int
+                    and 1 <= row['seconds'] <= 3600, 'invalid aggregation budget extension')
+            ids.add(row['id'])
+        require(value.get('limit_seconds') == 3600 + sum(row['seconds'] for row in extensions),
+                'aggregation budget must match recorded extensions')
+        return value
+
+    def remaining(self):
+        value = self.read()
+        require(not any(a['status'] == 'running' for a in value['attempts']),
+                'unfinished attempt requires receipt reconciliation')
+        return value['limit_seconds'] - sum(a['wall_seconds'] for a in value['attempts'])
+
+    def extend(self, extension_id, seconds):
+        require(isinstance(extension_id, str) and re.fullmatch(r'[a-z0-9-]{1,64}', extension_id)
+                and type(seconds) is int and 1 <= seconds <= 3600, 'invalid explicit budget extension')
+        with self.path.with_suffix('.lock').open('a') as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            value = self.read()
+            require(not any(a['status'] == 'running' for a in value['attempts']), 'cannot extend a running campaign')
+            extensions = value.setdefault('extensions', [])
+            for row in extensions:
+                if row['id'] == extension_id:
+                    require(row['seconds'] == seconds, 'extension id already has a different allowance')
+                    return value
+            extensions.append(dict(id=extension_id, seconds=seconds, recorded_unix_ns=time.time_ns()))
+            value['limit_seconds'] += seconds
+            self.save(value)
+            return value
 
 
 def require(ok, message):
@@ -45,13 +86,13 @@ def selection(args, argv):
     require(int(values.get('--timeout-seconds', '600')) <= args.seconds,
             'driver timeout exceeds process guard')
     profile = values.get('--profile', 'legacy')
-    require(profile in ('legacy', 'grouped-v2'), 'invalid aggregation profile')
+    require(profile in ('legacy', 'grouped-v2', 'grouped-v3'), 'invalid aggregation profile')
     require(command != 'run' or '--output' in values, 'full aggregate requires fresh output')
     if command == 'run':
         output = Path(values['--output'])
         require(output.is_absolute() and not output.exists() and not output.is_symlink(),
                 'aggregate output must be a new absolute path')
-        require(profile != 'grouped-v2' or '--selection' in values,
+        require(profile == 'legacy' or '--selection' in values,
                 'candidate aggregate requires measured layout selection')
     return dict(command=command, values=values, profile=profile,
                 transactions=int(values['--case'][1:]), complete_fresh_workflow=False)
@@ -59,7 +100,7 @@ def selection(args, argv):
 
 def environment(selected):
     return {'LATTICA_V2_GPU_TUNING': 'events,witness,programs'
-            if selected['profile'] == 'grouped-v2' else ''}
+            if selected['profile'] != 'legacy' else ''}
 
 
 def require_build(plan, executable):

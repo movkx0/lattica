@@ -7,10 +7,10 @@
 use lattica_prover_p3::{
     block_v2::{
         machine::{
-            MachineAir, Program,
             analysis::MachineAnalysis,
             backend::{RegisteredProgram, RegisteredVerifier},
             program::Val,
+            MachineAir, Program,
         },
         profile::{self, Config},
     },
@@ -18,7 +18,7 @@ use lattica_prover_p3::{
 };
 use p3_batch_stark::BatchProof;
 use p3_field::PrimeField64;
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use sha3::{Digest, Sha3_256};
 use std::{
     cell::RefCell,
@@ -26,21 +26,21 @@ use std::{
     path::PathBuf,
     rc::Rc,
     sync::{
-        Arc,
         atomic::{AtomicU64, Ordering},
+        Arc,
     },
     time::Instant,
 };
 
 mod diagnostics;
-#[cfg(feature = "gpu-aggregation-experiment")]
-mod gpu_aggregation;
 #[cfg(all(
     feature = "full-workflow-experiment",
     target_os = "linux",
     target_arch = "x86_64"
 ))]
 pub(crate) mod generation_terminal;
+#[cfg(feature = "gpu-aggregation-experiment")]
+mod gpu_aggregation;
 #[cfg(all(
     feature = "owned-native-shake",
     target_os = "linux",
@@ -1172,6 +1172,8 @@ impl ProvingContext {
     }
 
     pub fn finish(self) -> Result<Value, String> {
+        #[cfg(feature = "gpu-aggregation-experiment")]
+        let preparation = self.finish_aggregation_preparation();
         self.release_prepared_with_reason(ReleaseReason::SessionRetired)?;
         let mut report = self.report();
         // Capture while the engine is alive, but propagate any evidence error
@@ -1188,6 +1190,10 @@ impl ProvingContext {
             };
         }
         report["session_closed"] = json!(true);
+        #[cfg(feature = "gpu-aggregation-experiment")]
+        {
+            report["preparation_workers_joined"] = json!(preparation?);
+        }
         #[cfg(feature = "opencl")]
         {
             report["public_hash"] = json!(public_hash?);
@@ -1199,6 +1205,8 @@ impl ProvingContext {
     /// This returns cleanup telemetry without claiming successful proof or
     /// native-spend completion. Use `finish` for a completed operation receipt.
     pub fn close_without_completion(self) -> Result<Value, String> {
+        #[cfg(feature = "gpu-aggregation-experiment")]
+        let preparation = self.finish_aggregation_preparation();
         self.release_prepared_with_reason(ReleaseReason::Cleanup)?;
         let mut report = self.report();
         #[cfg(feature = "opencl")]
@@ -1207,6 +1215,10 @@ impl ProvingContext {
         }
         report["session_closed"] = json!(true);
         report["completion_claimed"] = json!(false);
+        #[cfg(feature = "gpu-aggregation-experiment")]
+        {
+            report["preparation_workers_joined"] = json!(preparation?);
+        }
         Ok(report)
     }
 }
