@@ -1,0 +1,56 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GPU recursive aggregation — 7 November 2026</title>
+<style>body{font:16px/1.5 system-ui;max-width:1100px;margin:40px auto;padding:0 24px;color:#182536}table{border-collapse:collapse;width:100%;margin:20px 0}td,th{padding:9px;text-align:left;border-bottom:1px solid #ccd5dd}th,code,pre,.result{background:#edf2f7}code{padding:2px 5px}pre{padding:16px;overflow:auto}.result{padding:16px}</style>
+<h1>GPU recursive aggregation</h1>
+<p>7 November 2026 · base <code>dc5a782</code> · isolated <code>gpu-recursive-aggregation</code> branch · Linux OpenCL / RTX 5080</p>
+<p class="result"><strong>Research implementation; complete N3/N4 latency is not qualified.</strong>
+The new path aggregates verified native component proofs. Transaction generation and native component preparation are separate operations. All preparation and validation attempts count against the campaign's cumulative 3,600-second testing allowance; builds are excluded. No individual hardware attempt may exceed 600 seconds.</p>
+<h2>Implementation</h2>
+<ul>
+<li>One GPU consumer overlaps preparation with two CPU workers. Four permits cover compilation, queued programs, identity prefixes, and GPU consumption together. Ordered consumption, odd tails, cancellation, and panic cleanup preserve coverage.</li>
+<li>CPU identity hashing runs in the preparation worker without acquiring a GPU session. Optional GPU identity batches contain at most four programs and remain bound to the same live device epoch. Prefixes are consumed once by the exact registered program.</li>
+<li>The opt-in fused witness kernel runs up to 32 consecutive narrow waves in one workgroup. Wide waves retain their existing dispatch. Every lane reaches each global-memory barrier, including inactive and failing lanes.</li>
+<li>An engine-local eight-entry LRU reuses specialized OpenCL programs, including negative specialization results. Its key covers exact source and compiler options; the owning engine fixes device/context. Eviction drains queued work. It retains no witnesses, challenges, or mutable proof buffers.</li>
+<li>SHAKE groups of up to eight native verifiers preserve every original boundary. Geometry preflight freezes groups before proving. Graph grouping uses measured costs and a contiguous dynamic-programming partition; it retains singleton leaves when larger groups exceed bounds or lack a measured gain.</li>
+<li>Coordinator and worker metadata caches avoid repeated descriptor compilation. Cache keys remain source-bound. An incompatible precomputed table falls back to dynamic planning.</li>
+</ul>
+<h2>Resource and verification contract</h2>
+<p>The driver is isolated behind <code>gpu-aggregation-experiment</code>. Legacy APIs keep their prior admission behavior. The imported path uses the existing owned GPU registration and PCS phase checks instead of treating the full CPU LDE representation as GPU host storage. Source construction is bounded, rows are capped at 2<sup>18</sup> (262,144), and registration/proving retain separate host and managed-device limits. The external guard pins the physical GPU, enforces exclusive hardware use, disables swap, and retains the existing N3/N4 process caps.</p>
+<p>The driver's resource ledger represents conservative reservations, not measured RSS or a complete allocation-derived proof of memory bounds. Opaque OpenCL driver storage is covered by the existing driver reserve and context checks. macOS and CUDA execution have not been qualified by this campaign.</p>
+<p>Input bundles bind public inputs, source identity, file lengths, and digests. Native artifacts are independently verified against the current trusted graph; missing inputs never trigger native proving during aggregation. Recursive proofs are always fresh. Complete acceptance additionally requires final CPU verification, artifact serialization/reverification, altered public/proof rejection, and missing/reordered statement rejection. Screens cannot qualify a complete aggregate.</p>
+<h2>Measurements</h2>
+<table><thead><tr><th>N4 graph leaves 4–11, final build (r11)</th><th>First request</th><th>Warm median (3)</th><th>Recursive proofs/request</th></tr></thead><tbody>
+<tr><td>Legacy singletons, serial CPU identity</td><td>131.786 s</td><td>131.629 s</td><td>15</td></tr>
+<tr><td>Pairs, CPU lookahead, fused witness, program cache</td><td>63.821 s</td><td>64.811 s</td><td>7</td></tr>
+</tbody></table>
+<p><strong>The graph subtree improved by 50.8% (2.03×).</strong> Each arm generated and verified four fresh requests. This combines fewer recursive proofs with execution tuning; individual contributions were not isolated. Guard wall times for the four requests were 534.091 seconds and 263.179 seconds, respectively.</p>
+<p>The SHAKE comparison below is preserved at checkpoint <code>b5a8685</code> (r10). Final revision r11 adds a conservative row ceiling; GPU kernels and the program cache are unchanged. A final-build SHAKE spot check generated and verified nine recursive proofs in <strong>88.624 seconds</strong>. This is one first-request observation, not a new warm comparison.</p>
+<!-- RESULTS -->
+<table><thead><tr><th>Complete N4 SHAKE request 6</th><th>First request</th><th>Warm median (3)</th><th>Recursive proofs/request</th></tr></thead>
+<tbody><tr><td>Legacy pairs, serial CPU identity</td><td>105.724 s</td><td>105.349 s</td><td>9</td></tr>
+<tr><td>Pairs, CPU lookahead, fused witness, program cache</td><td>86.408 s</td><td>86.394 s</td><td>9</td></tr></tbody></table>
+<p><strong>The admitted paired request improved by 18.0%.</strong> All four requests in each arm generated fresh recursive proofs and verified. This is one complete ten-component SHAKE request from the N4 fixture, not all four transactions or complete aggregation. Four-child SHAKE groups failed the existing 8 GiB managed-device allocation check during quotient evaluation; that layout is not promoted. No memory cap was raised.</p>
+<p>The focused witness test measured a warm median of 3.851 ms without fusion and 1.249 ms with fusion, about 3.08× faster. This is a witness-stage result, not an aggregation speedup. N4 metadata planning completed in 12.115 seconds with 3,038 dynamic-cache hits and 126 misses; no proof was generated.</p>
+<p>First-request and warm-request screen samples include compilation, identity preparation, fresh recursive proving, and request/subtree verification. Input import and context startup precede those samples; complete controller time is reported separately. Complete aggregation timing includes import, planning, proof execution, final verification, serialization, cleanup, and publication.</p>
+<p>GPU identity batching completed one SHAKE request in <strong>318.438 seconds</strong>, versus 86.408 seconds for the CPU-lookahead first request. CPU identity remains the default. An earlier multi-repetition GPU identity attempt was stopped after the slow batches became clear; its elapsed time remains charged.</p>
+<p>Four-child graph groups also failed the existing 8 GiB managed-device check at 524,288 rows. The final 262,144-row ceiling rejects that graph grouping before GPU registration; a guarded refusal check confirmed this. Width eight was not measured on the GPU. Neither wider setting is promoted for these geometries. Smaller geometries may still admit these widths.</p>
+<p>The selected costs use only the matched r11 graph records. A final metadata-only plan selected SHAKE width two and graph width two; it estimated 939 outer proofs excluding auxiliary branches and still reported incomplete graph-height admission. No complete native bundle or complete N3/N4 artifact was produced. The under-ten-minute full-aggregation target remains open.</p>
+<h2>Validation</h2>
+<p>Focused checks passed: 21 research tests, six core unit tests, three GPU correctness tests, and 46 Python guard/controller tests. GPU checks cover fused-witness parity including wide-wave boundaries, specialized-program/context cache reuse, and CPU/GPU identity-prefix parity and epoch rejection. Those core GPU implementation files were unchanged after testing. The existing OpenCL full-workflow and CPU-proof feature configurations also compile.</p>
+<p>The full-artifact acceptance checks described above are implemented but have not been exercised on a complete N3/N4 artifact in this campaign. Scheduling currently proceeds level by level. Resource reservations are not a complete allocation-derived memory bound. The evidence ledger includes all failed and manually stopped attempts.</p>
+<h2>Reproduction</h2>
+<p>The controller <code>research/pq-ringct/tools/gpu_aggregation_campaign.py</code> provides separate build, tests, GPU tests, Python tests, driver, and summary commands. Use a unique revision and job label for each attempt. The persistent budget ledger must not be reset to extend a campaign.</p>
+<pre>python3 research/pq-ringct/tools/gpu_aggregation_campaign.py build --kind runner --revision NEW
+python3 research/pq-ringct/tools/gpu_aggregation_campaign.py driver \
+  --revision NEW --label shake-baseline --command screen --case n4 \
+  --bundle /absolute/native-bundle --device-uuid GPU-... -- \
+  --profile legacy --group-width 2 --pipeline serial --request 6 --repetitions 4
+python3 research/pq-ringct/tools/gpu_aggregation_campaign.py driver \
+  --revision NEW --label shake-candidate --command screen --case n4 \
+  --bundle /absolute/native-bundle --device-uuid GPU-... -- \
+  --profile grouped-v2 --group-width 2 --pipeline lookahead \
+  --identity cpu --request 6 --repetitions 4</pre>
+<p>Run <code>prepare-inputs</code> separately to populate a bundle from its public <code>inputs.json</code>. A request-filtered or graph-screen bundle is explicitly incomplete. Graph screens use <code>--screen-family graph --first-leaf 4 --leaves 8</code>. GPU identity comparison uses <code>--identity gpu-batched</code>; batches of eight or sixteen are not admitted by the four-job queue.</p>
+<p><code>gpu_aggregation_select.py --pair BASELINE_RECORD CANDIDATE_RECORD --output SELECTION</code> requires matching source, device, input, and subtree scope, plus one first request and three warm requests. Only widths with at least a 10% median gain are eligible. A <code>run</code> needs a complete native bundle, a new output artifact path, and, for grouped-v2, a measured selection file. Qualification requires three distinct successful full artifacts for both N3 and N4 with consistent source, executable, device, settings, selection, and per-case inputs.</p>
+<p>Measurements, provenance hashes, selected costs, failures, and the cumulative budget ledger are preserved in <a href="evidence/gpu-recursive-aggregation-2026-11-07.json">the evidence JSON</a>. Raw records and logs remain in <code>.tools/pq-opencl-opt/runs/gpu-agg-*</code> in this worktree.</p>
+</html>

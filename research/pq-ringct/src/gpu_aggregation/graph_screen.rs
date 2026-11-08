@@ -192,7 +192,7 @@ pub(super) fn screen(options: &Options, deadline: &Deadline) -> Result<serde_jso
                     )
                     .map_err(error)?;
                     ensure(
-                        compiled.geometry().map_err(error)?.padded_rows <= 1 << 20,
+                        compiled.geometry().map_err(error)?.padded_rows <= MAX_RECURSIVE_ROWS,
                         "graph screen exceeds height ceiling",
                     )?;
                     Ok(compiled)

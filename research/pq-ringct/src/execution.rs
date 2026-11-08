@@ -972,9 +972,9 @@ impl ProvingContext {
             let started = Instant::now();
             let result = (|| -> Result<(RegisteredTemplate, bool, bool), String> {
                 #[cfg(feature = "gpu-aggregation-experiment")]
-            let registration = self.register_aggregation_program(program, host_bytes);
-            #[cfg(not(feature = "gpu-aggregation-experiment"))]
-            let registration = RegisteredProgram::new_with_cpu_identity(
+                let registration = self.register_aggregation_program(program, host_bytes);
+                #[cfg(not(feature = "gpu-aggregation-experiment"))]
+                let registration = RegisteredProgram::new_with_cpu_identity(
                     {
                         let air = MachineAir::from_shared_program(program);
                         #[cfg(feature = "cpu-proof-experiment")]
@@ -986,9 +986,8 @@ impl ProvingContext {
                     },
                     host_bytes,
                     self.request,
-                )
-                ;
-            let registered = registration.map_err(|e| {
+                );
+                let registered = registration.map_err(|e| {
                     let message = error(e);
                     self.diagnostics.failure(
                         "registration",

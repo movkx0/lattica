@@ -58,6 +58,7 @@ impl Envelope {
             "reserved_host_peak_bytes":peak.peak.host,"reserved_device_peak_bytes":peak.peak.device,
             "current_host_bytes":released.current.host,"current_device_bytes":released.current.device,
             "cpu_compilers":2,"maximum_live_jobs":4,"single_gpu_consumer":true,
+            "maximum_recursive_rows":MAX_RECURSIVE_ROWS,
             "reservation_counters_are_not_rss":true}))
     }
 }

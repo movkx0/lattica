@@ -42,7 +42,7 @@ impl ProvingContext {
         if self.policy() != Policy::GpuRequired
             || self.session.is_none()
             || std::env::var("LATTICA_V2_GPU_WITNESS").as_deref() != Ok("1")
-            || program.height() > 1 << 20
+            || program.height() > crate::gpu_aggregation::MAX_RECURSIVE_ROWS
             || program.construction_host_bytes() > 2 << 30
         {
             return Err("imported aggregation requires bounded owned GPU proving".into());

@@ -38,7 +38,7 @@ pub(super) fn partition(facts: &[Facts], costs: &[(usize, f64)]) -> Result<Vec<(
                     .checked_add(fact.program_bytes)
                     .ok_or("graph program sum overflow")?;
             }
-            if rows > 1 << 20 || bytes > 2 << 30 {
+            if rows > MAX_RECURSIVE_ROWS || bytes > 2 << 30 {
                 continue;
             }
             let cost = rest + unit_cost * width as f64;
@@ -63,12 +63,12 @@ mod tests {
     fn costs_and_heights_choose_contiguous_groups_without_skipping_large_leaves() {
         let mut facts = vec![
             Facts {
-                rows: 1 << 17,
+                rows: MAX_RECURSIVE_ROWS / 8,
                 program_bytes: 1 << 24
             };
             9
         ];
-        facts[0].rows = 1 << 20;
+        facts[0].rows = MAX_RECURSIVE_ROWS;
         assert_eq!(
             partition(&facts, &[(1, 1.0), (4, 0.8), (8, 0.7)]).unwrap(),
             vec![(0, 1), (1, 8)]

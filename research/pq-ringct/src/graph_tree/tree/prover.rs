@@ -53,7 +53,7 @@ impl<'a> GraphProver<'a> {
             crate::gpu_aggregation::pipeline::programs(nodes.len()/2,parallel,gpu_identity,execution,|index| {
                 deadline.check()?;let left=&nodes[2*index];let right=&nodes[2*index+1];
                 let compiled=merge_impl_limits(&left.key,&right.key,[&left.proof,&right.proof],Some(crate::gpu_aggregation::construction())).map_err(crate::gpu_aggregation::error)?;
-                if compiled.geometry().map_err(crate::gpu_aggregation::error)?.padded_rows>1<<20 {return Err("imported graph parent exceeds row ceiling".into());}
+                if compiled.geometry().map_err(crate::gpu_aggregation::error)?.padded_rows>crate::gpu_aggregation::MAX_RECURSIVE_ROWS {return Err("imported graph parent exceeds row ceiling".into());}
                 Ok(compiled)
             },|node|node.shared_program(),|cohort| {
                 for (_,compiled) in cohort {deadline.check()?;next.push(self.prove_imported_node(compiled).map_err(crate::gpu_aggregation::error)?);}

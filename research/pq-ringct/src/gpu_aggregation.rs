@@ -18,6 +18,10 @@ mod selection;
 #[cfg(test)]
 mod tests;
 type Result<T> = std::result::Result<T, String>;
+// The 8 GiB managed envelope completed 2^18-row recursive proofs, while
+// 2^19-row SHAKE and graph groups refused quotient allocations. Freeze this
+// conservative ceiling before proving; all backend phase checks still apply.
+pub(crate) const MAX_RECURSIVE_ROWS: usize = 1 << 18;
 pub(crate) fn error(e: impl std::fmt::Display) -> String {
     e.to_string()
 }
@@ -202,7 +206,7 @@ pub(crate) fn context(options: &Options) -> Result<crate::execution::ProvingCont
         // proving allowance in the unchanged 32/36 GiB worker envelope.
         host_bytes: 16 << 30,
         device_bytes: 8 << 30,
-        max_rows: 1 << 20,
+        max_rows: MAX_RECURSIVE_ROWS,
     })
 }
 pub fn run_cli(args: impl Iterator<Item = String>) -> Result<()> {

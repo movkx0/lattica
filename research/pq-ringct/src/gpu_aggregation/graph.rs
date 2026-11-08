@@ -243,7 +243,7 @@ fn branches(
         deadline.check()?;
         execution.release_prepared()?;
         ensure(
-            compiled.geometry().map_err(error)?.padded_rows <= 1 << 20,
+            compiled.geometry().map_err(error)?.padded_rows <= MAX_RECURSIVE_ROWS,
             "branch exceeds recursive row ceiling",
         )?;
         let proof = compiled
@@ -402,7 +402,7 @@ fn prove_graph(
             .map_err(error)?;
             let geometry = compiled.geometry().map_err(error)?;
             ensure(
-                geometry.padded_rows <= 1 << 20
+                geometry.padded_rows <= MAX_RECURSIVE_ROWS
                     && compiled.program().construction_host_bytes() <= 2 << 30,
                 "graph grouping exceeds admitted height/compiler ceiling",
             )?;
