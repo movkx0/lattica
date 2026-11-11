@@ -6,6 +6,14 @@ const MAX_WIDTH: usize = 4096;
 const MAX_POINTS: usize = 32;
 const MAX_LOG_ROWS: u32 = 25;
 pub(super) const TILE_LIMIT: usize = 64 << 20;
+pub(crate) const GROUP_KERNEL_SRC: &str = concat!(
+    "\n#define OPENING_DEGREE 3\n#define OPENING_GROUP opening_compress_group\n#define OPENING_MUL opening_cubic_mul\n",
+    include_str!("opening_group.cl"),
+    "\n#undef OPENING_DEGREE\n#undef OPENING_GROUP\n#undef OPENING_MUL\n",
+    "#define OPENING_DEGREE 2\n#define OPENING_GROUP opening_compress_group_quadratic\n#define OPENING_MUL opening_quadratic_mul\n",
+    include_str!("opening_group.cl"),
+    "\n#undef OPENING_DEGREE\n#undef OPENING_GROUP\n#undef OPENING_MUL\n",
+);
 
 // Select separate kernels so the existing cubic implementation is unchanged.
 macro_rules! opening_kernel {
@@ -34,6 +42,19 @@ pub(crate) struct DeviceOpening {
     values: Allocation,
     count: usize,
     extension: Extension,
+    // Exact public point uploaded to `points`; single-point batches compare it
+    // without reading device data or trusting a separate caller descriptor.
+    first_point: [u64; 3],
+}
+impl DeviceOpening {
+    pub(crate) fn can_combine(&self, other: &Self) -> bool {
+        self.count == 1
+            && other.count == 1
+            && self.extension == other.extension
+            && self.first_point == other.first_point
+            && self.prefix.spec.log_rows == other.prefix.spec.log_rows
+            && self.prefix.spec.shift == other.prefix.spec.shift
+    }
 }
 
 /// The output cannot be read or aliased until all append operations succeed.
@@ -309,7 +330,8 @@ impl DeviceSession {
                 engine.limits, engine.max_alloc)?;
             let data = DeviceOpening { prefix: self.alias_private(prefix)?,
                 points: owned_allocation(engine, count * degree)?,
-                values: owned_allocation(engine, count * spec.columns * degree)?, count, extension };
+                values: owned_allocation(engine, count * spec.columns * degree)?, count, extension,
+                first_point: { let mut point = [0; 3]; point[..degree].copy_from_slice(&point_words[..degree]); point } };
             let parameters = owned_allocation(engine, count * degree * 2)?;
             let inverse = owned_allocation(engine, plan.inverse_words)?;
             let partial = owned_allocation(engine, plan.partial_words)?;
@@ -493,22 +515,37 @@ impl DeviceSession {
 }
 
 impl OpeningAccumulator {
-    pub(crate) fn append(mut self, opening: &DeviceOpening) -> Result<Self, String> {
-        self.session.check_owner(&opening.prefix)?;
+    pub(crate) fn append(self, opening: &DeviceOpening) -> Result<Self, String> {
+        self.append_group(&[opening])
+    }
+
+    /// Compression and interpolation are linear. Adjacent matrices at the
+    /// same single point share one expansion and rational reduction, while
+    /// every column retains its original Fiat-Shamir alpha exponent.
+    pub(crate) fn append_group(mut self, openings: &[&DeviceOpening]) -> Result<Self, String> {
+        let opening = *openings.first().ok_or("empty opening group")?;
         let prefix = opening.prefix.spec;
         let output = self.output.spec;
         let extension = output.extension;
         let degree = extension.degree();
         if prefix.log_rows + crate::block_v2::profile::LOG_BLOWUP as u32 != output.log_rows
             || opening.extension != extension
-            || self.matrices >= 256
+            || openings.len() > 256usize.saturating_sub(self.matrices)
         {
             return Err("opening accumulator height, extension or matrix count mismatch".into());
         }
-        let next_power = self
-            .next_power
-            .checked_add((prefix.columns * opening.count) as u64)
-            .ok_or("opening alpha power overflow")?;
+        let mut next_power = self.next_power;
+        let mut max_columns = prefix.columns;
+        for member in openings {
+            self.session.check_owner(&member.prefix)?;
+            if openings.len() > 1 && !opening.can_combine(member) {
+                return Err("opening group point or domain mismatch".into());
+            }
+            max_columns = max_columns.max(member.prefix.spec.columns);
+            next_power = next_power
+                .checked_add((member.prefix.spec.columns * member.count) as u64)
+                .ok_or("opening alpha power overflow")?;
+        }
         #[cfg(not(feature = "gpu"))]
         {
             let _ = next_power;
@@ -521,12 +558,25 @@ impl OpeningAccumulator {
                 self.session.with_engine(|engine| {
                     engine.fence().finish()?;
                     engine.lde_workspace = None;
+                    let grouped = openings.len() > 1;
                     let plan = ReductionPlan::new(
-                        prefix,
+                        MatrixSpec::new(
+                            prefix.log_rows,
+                            max_columns,
+                            prefix.extension,
+                            prefix.order,
+                            prefix.shift,
+                        )?,
                         output.log_rows,
                         opening.count,
                         degree,
-                        engine.accounting.lock().unwrap().live,
+                        engine
+                            .accounting
+                            .lock()
+                            .unwrap()
+                            .live
+                            .checked_add(if grouped { degree * 16 } else { 0 })
+                            .ok_or("opening group storage overflow")?,
                         engine.limits,
                         engine.max_alloc,
                     )?;
@@ -540,88 +590,127 @@ impl OpeningAccumulator {
                             prefix.shift,
                         )?,
                     )?;
-                    let weights = owned_allocation(engine, prefix.columns * degree)?;
+                    let weights = owned_allocation(engine, max_columns * degree)?;
                     let terms = owned_allocation(engine, opening.count * degree * 2)?;
+                    let member_terms = if grouped {
+                        Some(owned_allocation(engine, degree * 2)?)
+                    } else {
+                        None
+                    };
                     let inverse = owned_allocation(engine, plan.rows * opening.count * degree)?;
                     let status = owned_allocation(engine, 1)?;
                     let fence = engine.fence();
-                    let mut event = compute::Event::empty();
-                    // SAFETY: one cubic alpha power per bounded column.
-                    unsafe {
-                        engine
-                            .pq
-                            .kernel_builder(opening_kernel!(extension, device_opening_weights))
-                            .arg(&self.alpha.buffer)
-                            .arg(&weights.buffer)
-                            .arg(prefix.columns as u32)
-                            .global_work_size(prefix.columns)
-                            .build()
-                            .map_err(|e| e.to_string())?
-                            .cmd()
-                            .enew(&mut event)
-                            .enq()
-                            .map_err(|e| e.to_string())?;
+                    let mut ns = 0u128;
+                    let mut first_power = self.next_power;
+                    for (member_index, member) in openings.iter().enumerate() {
+                        let member_prefix = member.prefix.spec;
+                        let mut event = compute::Event::empty();
+                        // SAFETY: one cubic alpha power per bounded column.
+                        unsafe {
+                            engine
+                                .pq
+                                .kernel_builder(opening_kernel!(extension, device_opening_weights))
+                                .arg(&self.alpha.buffer)
+                                .arg(&weights.buffer)
+                                .arg(member_prefix.columns as u32)
+                                .global_work_size(member_prefix.columns)
+                                .build()
+                                .map_err(|e| e.to_string())?
+                                .cmd()
+                                .enew(&mut event)
+                                .enq()
+                                .map_err(|e| e.to_string())?;
+                        }
+                        ns += self.session.record_event(
+                            engine,
+                            crate::proving::Stage::Opening,
+                            "device_opening_weights",
+                            &event,
+                        )?;
+                        let mut event = compute::Event::empty();
+                        // SAFETY: opened values and weights share the prefix's checked column geometry.
+                        unsafe {
+                            engine
+                                .pq
+                                .kernel_builder(opening_kernel!(extension, device_opening_terms))
+                                .arg(&self.alpha.buffer)
+                                .arg(&weights.buffer)
+                                .arg(&member.values.buffer)
+                                .arg(&member_terms.as_ref().unwrap_or(&terms).buffer)
+                                .arg(member_prefix.columns as u32)
+                                .arg(member.count as u32)
+                                .arg(first_power)
+                                .global_work_size(member.count)
+                                .build()
+                                .map_err(|e| e.to_string())?
+                                .cmd()
+                                .enew(&mut event)
+                                .enq()
+                                .map_err(|e| e.to_string())?;
+                        }
+                        ns += self.session.record_event(
+                            engine,
+                            crate::proving::Stage::Opening,
+                            "device_opening_terms",
+                            &event,
+                        )?;
+                        let mut event = compute::Event::empty();
+                        // SAFETY: compress bit-reversed prefix rows into natural-order extension evaluations.
+                        unsafe {
+                            if let Some(member_terms) = &member_terms {
+                                engine
+                                    .pq
+                                    .kernel_builder(opening_kernel!(
+                                        extension,
+                                        opening_compress_group
+                                    ))
+                                    .arg(&member.prefix.storage.buffer)
+                                    .arg(&weights.buffer)
+                                    .arg(&member_terms.buffer)
+                                    .arg(&low.storage.buffer)
+                                    .arg(&terms.buffer)
+                                    .arg(member_prefix.rows() as u32)
+                                    .arg(member_prefix.columns as u32)
+                                    .arg(member_prefix.log_rows)
+                                    .arg(u32::from(member_index == 0))
+                                    .global_work_size(member_prefix.rows())
+                                    .build()
+                                    .map_err(|e| e.to_string())?
+                                    .cmd()
+                                    .enew(&mut event)
+                                    .enq()
+                                    .map_err(|e| e.to_string())?;
+                            } else {
+                                engine
+                                    .pq
+                                    .kernel_builder(opening_kernel!(
+                                        extension,
+                                        opening_compress_low
+                                    ))
+                                    .arg(&member.prefix.storage.buffer)
+                                    .arg(&weights.buffer)
+                                    .arg(&low.storage.buffer)
+                                    .arg(0u32)
+                                    .arg(prefix.rows() as u32)
+                                    .arg(prefix.columns as u32)
+                                    .arg(prefix.log_rows)
+                                    .global_work_size(prefix.rows())
+                                    .build()
+                                    .map_err(|e| e.to_string())?
+                                    .cmd()
+                                    .enew(&mut event)
+                                    .enq()
+                                    .map_err(|e| e.to_string())?;
+                            }
+                        }
+                        ns += self.session.record_event(
+                            engine,
+                            crate::proving::Stage::Opening,
+                            "device_opening_compress_low",
+                            &event,
+                        )?;
+                        first_power += (member_prefix.columns * member.count) as u64;
                     }
-                    let mut ns = self.session.record_event(
-                        engine,
-                        crate::proving::Stage::Opening,
-                        "device_opening_weights",
-                        &event,
-                    )?;
-                    let mut event = compute::Event::empty();
-                    // SAFETY: opened values and weights share the prefix's checked column geometry.
-                    unsafe {
-                        engine
-                            .pq
-                            .kernel_builder(opening_kernel!(extension, device_opening_terms))
-                            .arg(&self.alpha.buffer)
-                            .arg(&weights.buffer)
-                            .arg(&opening.values.buffer)
-                            .arg(&terms.buffer)
-                            .arg(prefix.columns as u32)
-                            .arg(opening.count as u32)
-                            .arg(self.next_power)
-                            .global_work_size(opening.count)
-                            .build()
-                            .map_err(|e| e.to_string())?
-                            .cmd()
-                            .enew(&mut event)
-                            .enq()
-                            .map_err(|e| e.to_string())?;
-                    }
-                    ns += self.session.record_event(
-                        engine,
-                        crate::proving::Stage::Opening,
-                        "device_opening_terms",
-                        &event,
-                    )?;
-                    let mut event = compute::Event::empty();
-                    // SAFETY: compress bit-reversed prefix rows into natural-order extension evaluations.
-                    unsafe {
-                        engine
-                            .pq
-                            .kernel_builder(opening_kernel!(extension, opening_compress_low))
-                            .arg(&opening.prefix.storage.buffer)
-                            .arg(&weights.buffer)
-                            .arg(&low.storage.buffer)
-                            .arg(0u32)
-                            .arg(prefix.rows() as u32)
-                            .arg(prefix.columns as u32)
-                            .arg(prefix.log_rows)
-                            .global_work_size(prefix.rows())
-                            .build()
-                            .map_err(|e| e.to_string())?
-                            .cmd()
-                            .enew(&mut event)
-                            .enq()
-                            .map_err(|e| e.to_string())?;
-                    }
-                    ns += self.session.record_event(
-                        engine,
-                        crate::proving::Stage::Opening,
-                        "device_opening_compress_low",
-                        &event,
-                    )?;
                     fence.finish()?;
                     Ok((low, weights, terms, inverse, status, plan, ns))
                 })?;
@@ -694,14 +783,14 @@ impl OpeningAccumulator {
                 if failed[0] != 0 {
                     return Err("opening point lies on the expanded coset".into());
                 }
-                stats.opening_reductions += 1;
+                stats.opening_reductions += openings.len() as u64;
                 stats.opening_device_ns += ns;
                 Ok(())
             })?;
             self.next_power = next_power;
-            self.matrices += 1;
-            eprintln!("bounded_device_opening_reduce rows={} prefix_rows={} width={} points={} tile_rows={} managed_peak_plan_bytes={} control_download_bytes=8 matrix_readback_bytes=0 kernel_ns={ns} wall_ns={}",
-                output.rows(), prefix.rows(), prefix.columns, opening.count, plan.rows, plan.peak, started.elapsed().as_nanos());
+            self.matrices += openings.len();
+            eprintln!("bounded_device_opening_reduce rows={} prefix_rows={} width={} points={} matrices={} tile_rows={} managed_peak_plan_bytes={} control_download_bytes=8 matrix_readback_bytes=0 kernel_ns={ns} wall_ns={}",
+                output.rows(), prefix.rows(), max_columns, opening.count, openings.len(), plan.rows, plan.peak, started.elapsed().as_nanos());
             Ok(self)
         }
     }

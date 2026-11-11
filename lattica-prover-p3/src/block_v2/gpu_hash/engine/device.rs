@@ -129,6 +129,7 @@ mod query;
 pub(super) use fri::GENERAL_KERNEL_SRC as GENERAL_FRI_KERNEL_SRC;
 pub(super) use fri::KERNEL_SRC as FRI_KERNEL_SRC;
 pub(crate) use opening::{DeviceOpening, OpeningAccumulator};
+pub(super) use opening::GROUP_KERNEL_SRC as OPENING_GROUP_KERNEL_SRC;
 pub(super) use opening_kernels::KERNEL_SRC as OPENING_KERNEL_SRC;
 pub(super) use opening_quadratic_kernels::KERNEL_SRC as QUADRATIC_OPENING_KERNEL_SRC;
 pub(super) use query::KERNEL_SRC as QUERY_KERNEL_SRC;

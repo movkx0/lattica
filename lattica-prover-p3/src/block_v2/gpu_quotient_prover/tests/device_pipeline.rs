@@ -229,11 +229,16 @@ fn device_pipeline(partitioned: bool) {
                 after.downloaded_bytes - before.downloaded_bytes,
                 8 * calls + scalar_output
             );
-            assert_eq!(
-                after.uploaded_bytes - before.uploaded_bytes,
-                (parameters.len() * 8) as u64 * calls
-                    + (calls - 1) * 3 * 2 * u64::from(log_trace.max(1)) * 8
-                    + scalar_input
+            // Coefficient reuse uploads inverse roots once per input, followed
+            // by only forward roots for each new coset. The bounded fallback
+            // uploads both sets per coset; neither transfers matrix values.
+            let uploaded = after.uploaded_bytes - before.uploaded_bytes;
+            assert!(uploaded >= (parameters.len() * 8) as u64 * calls + scalar_input);
+            assert!(
+                uploaded
+                    <= (parameters.len() * 8) as u64 * calls
+                        + (calls - 1) * 3 * 2 * u64::from(log_trace.max(1)) * 8
+                        + scalar_input
             );
             assert_eq!(
                 after.quotient_evaluations,

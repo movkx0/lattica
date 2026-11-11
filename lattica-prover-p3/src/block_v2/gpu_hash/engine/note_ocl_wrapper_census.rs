@@ -34,6 +34,7 @@ const SOURCES: &[&str] = &[
     device::LOOKUP_KERNEL_SRC,
     device::OPENING_KERNEL_SRC,
     device::QUADRATIC_OPENING_KERNEL_SRC,
+    device::OPENING_GROUP_KERNEL_SRC,
     quotient::KERNEL_SRC,
     device::FRI_KERNEL_SRC,
     device::GENERAL_FRI_KERNEL_SRC,
@@ -82,27 +83,7 @@ pub(crate) struct Census {
 }
 
 fn tuning_length(nvidia: bool) -> Option<usize> {
-    #[cfg(feature = "gpu-tuning")]
-    {
-        let shuffle = if nvidia {
-            include_str!("commitment_shuffle.cl").len()
-        } else {
-            0
-        };
-        shuffle
-            .checked_add(include_str!("scale_shared.cl").len())?
-            .checked_add(
-                "\n#define LATTICA_TUNED_NTT 1\n#define ntt_tile_cached ntt_tile_cached_tuned\n"
-                    .len(),
-            )?
-            .checked_add(include_str!("../../../gpu/ntt_cached.cl").len())?
-            .checked_add("\n#undef ntt_tile_cached\n#undef LATTICA_TUNED_NTT\n".len())
-    }
-    #[cfg(not(feature = "gpu-tuning"))]
-    {
-        let _ = nvidia;
-        Some(0)
-    }
+    tuning::kernel_source_len(nvidia)
 }
 
 fn source_requests(joined: usize, tuning: usize) -> Option<usize> {

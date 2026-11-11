@@ -42,6 +42,8 @@ pub(crate) struct PartitionStorage {
     pub expansion_peak_bytes: usize,
     pub evaluation_peak_bytes: usize,
     pub tile_rows: usize,
+    pub coefficient_bytes: usize,
+    pub reuse_coefficients: bool,
 }
 
 impl PartitionStorage {
@@ -55,6 +57,49 @@ impl PartitionStorage {
         cache: usize,
         limits: super::super::super::Limits,
         max_allocation: usize,
+    ) -> Result<Self, String> {
+        // Prefer one interpolation per input. A rejected reuse plan has no
+        // device side effects; the original schedule remains admissible when
+        // the additional retained coefficients would exceed the live budget.
+        Self::with_reuse(
+            inputs,
+            log_trace,
+            log_quotient,
+            shift,
+            program,
+            live,
+            cache,
+            limits,
+            max_allocation,
+            true,
+        )
+        .or_else(|_| {
+            Self::with_reuse(
+                inputs,
+                log_trace,
+                log_quotient,
+                shift,
+                program,
+                live,
+                cache,
+                limits,
+                max_allocation,
+                false,
+            )
+        })
+    }
+
+    fn with_reuse(
+        inputs: &[MatrixSpec],
+        log_trace: u32,
+        log_quotient: u32,
+        shift: u64,
+        program: ProgramShape,
+        live: usize,
+        cache: usize,
+        limits: super::super::super::Limits,
+        max_allocation: usize,
+        reuse_coefficients: bool,
     ) -> Result<Self, String> {
         let (output, part_log, cosets) =
             partition_geometry(inputs, log_trace, log_quotient, shift, program.extension)?;
@@ -81,6 +126,33 @@ impl PartitionStorage {
         let base = without_cache
             .checked_add(output.bytes())
             .ok_or("partition output storage overflow")?;
+        let reuse_coefficients = reuse_coefficients && cosets > 1;
+        let mut coefficient_bytes = 0usize;
+        if reuse_coefficients {
+            for index in expansion_order(inputs)?.into_iter().take(inputs.len()) {
+                let input = inputs[index];
+                let retained = base
+                    .checked_add(coefficient_bytes)
+                    .ok_or("partition coefficient storage overflow")?;
+                let interpolation = super::super::transform::storage_plan(
+                    input,
+                    input.log_rows,
+                    retained,
+                    limits,
+                    max_allocation,
+                )?;
+                peak_bytes = peak_bytes.max(interpolation.peak_bytes);
+                largest = largest
+                    .max(input.bytes())
+                    .max(input.log_rows.max(2) as usize * 8);
+                coefficient_bytes = coefficient_bytes
+                    .checked_add(input.bytes())
+                    .ok_or("partition coefficient storage overflow")?;
+            }
+        }
+        let base = base
+            .checked_add(coefficient_bytes)
+            .ok_or("partition coefficient storage overflow")?;
         let mut expanded = 0usize;
         let mut expansion_peak_bytes = base;
         for index in expansion_order(inputs)?.into_iter().take(inputs.len()) {
@@ -150,6 +222,8 @@ impl PartitionStorage {
             expansion_peak_bytes,
             evaluation_peak_bytes: evaluation.peak,
             tile_rows: evaluation.rows,
+            coefficient_bytes,
+            reuse_coefficients,
         })
     }
 }
@@ -157,6 +231,58 @@ impl PartitionStorage {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn coefficient_reuse_is_charged_and_falls_back_before_device_work() {
+        let inputs = [MatrixSpec::new(10, 32, Extension::Base, RowOrder::BitReversed, 7).unwrap()];
+        let program = ProgramShape {
+            extension: Extension::Cubic,
+            instruction_words: 10,
+            registers: 1,
+            constraints: 1,
+            row_words: 64,
+            parameter_words: 0,
+        };
+        let limits = super::super::super::super::Limits {
+            managed_bytes: 8 << 20,
+            tile_bytes: 64 << 10,
+            staging_bytes: 0,
+        };
+        let live = inputs[0].bytes() + 80;
+        let reused =
+            PartitionStorage::new(&inputs, 9, 13, 7, program, live, 0, limits, 4 << 20).unwrap();
+        let original = PartitionStorage::with_reuse(
+            &inputs,
+            9,
+            13,
+            7,
+            program,
+            live,
+            0,
+            limits,
+            4 << 20,
+            false,
+        )
+        .unwrap();
+        assert!(reused.reuse_coefficients);
+        assert_eq!(reused.coefficient_bytes, inputs[0].bytes());
+        assert_eq!(
+            reused.expansion_peak_bytes,
+            original.expansion_peak_bytes + reused.coefficient_bytes
+        );
+        assert_eq!(
+            reused.evaluation_peak_bytes,
+            original.evaluation_peak_bytes + reused.coefficient_bytes
+        );
+        let tight = super::super::super::super::Limits {
+            managed_bytes: original.peak_bytes,
+            ..limits
+        };
+        let fallback =
+            PartitionStorage::new(&inputs, 9, 13, 7, program, live, 0, tight, 4 << 20).unwrap();
+        assert!(!fallback.reuse_coefficients);
+        assert_eq!(fallback.coefficient_bytes, 0);
+        assert_eq!(fallback.peak_bytes, original.peak_bytes);
+    }
 
     #[test]
     fn expansion_schedule_uses_flattened_width_and_preserves_equal_width_order() {
@@ -253,6 +379,8 @@ mod tests {
         };
         let plan =
             PartitionStorage::new(&[input], 9, 10, 7, program, live, 0, limits, 4 << 20).unwrap();
+        assert!(!plan.reuse_coefficients);
+        assert_eq!(plan.coefficient_bytes, 0);
         assert_eq!(plan.cosets, 1);
         assert_eq!(plan.expansion_peak_bytes, live + output_bytes);
         assert!(plan.peak_bytes <= limits.managed_bytes);

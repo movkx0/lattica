@@ -37,6 +37,7 @@ const SOURCES: &[&str] = &[
     device::LOOKUP_KERNEL_SRC,
     device::OPENING_KERNEL_SRC,
     device::QUADRATIC_OPENING_KERNEL_SRC,
+    device::OPENING_GROUP_KERNEL_SRC,
     quotient::KERNEL_SRC,
     device::FRI_KERNEL_SRC,
     device::GENERAL_FRI_KERNEL_SRC,

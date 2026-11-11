@@ -17,21 +17,6 @@ use crate::block_v2::{
     },
     gpu_quotient_prover::program,
 };
-mod commitments;
-mod fri;
-mod inputs;
-mod operations;
-mod randomness;
-pub(crate) mod runtime_geometry;
-pub(crate) mod planner_storage;
-#[cfg(all(
-    not(debug_assertions),
-    target_os = "linux",
-    target_arch = "x86_64",
-    feature = "gpu-bounded-info",
-    feature = "stream"
-))]
-pub(crate) mod shake_source;
 #[cfg(all(
     not(debug_assertions),
     target_os = "linux",
@@ -40,8 +25,30 @@ pub(crate) mod shake_source;
     feature = "stream"
 ))]
 pub(crate) mod aes_source;
-#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+mod commitments;
+mod fri;
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream",
+    feature = "ringct-research-quota"
+))]
 pub(crate) mod graph_source;
+mod inputs;
+mod operations;
+pub(crate) mod planner_storage;
+mod randomness;
+pub(crate) mod runtime_geometry;
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream"
+))]
+pub(crate) mod shake_source;
 
 use runtime_geometry::RuntimeGeometry;
 
@@ -490,6 +497,7 @@ impl Plan {
                 hidden * e * 8,
                 code,
                 quotient_workspace,
+                partition.coefficient_bytes,
             ])?
             .max(partition.peak_bytes);
             self.phase(
@@ -928,27 +936,90 @@ impl Plan {
 #[cfg(test)]
 mod tests;
 
-#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
-pub(crate) mod uniform;
-#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream",
+    feature = "ringct-research-quota"
+))]
 pub(crate) mod transcript;
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream",
+    feature = "ringct-research-quota"
+))]
+pub(crate) mod uniform;
 
-#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream",
+    feature = "ringct-research-quota"
+))]
 pub(crate) mod affine;
-#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream",
+    feature = "ringct-research-quota"
+))]
 pub(crate) mod sparse;
 
-#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream",
+    feature = "ringct-research-quota"
+))]
 pub(crate) mod ntt;
 
-#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream",
+    feature = "ringct-research-quota"
+))]
 pub(crate) mod mul;
 
-#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream",
+    feature = "ringct-research-quota"
+))]
 pub(crate) mod g_bound;
 
-#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream",
+    feature = "ringct-research-quota"
+))]
 pub(crate) mod permutation;
 
-#[cfg(all(not(debug_assertions), target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info", feature = "stream", feature = "ringct-research-quota"))]
+#[cfg(all(
+    not(debug_assertions),
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info",
+    feature = "stream",
+    feature = "ringct-research-quota"
+))]
 pub(crate) mod linear_map;

@@ -1,6 +1,8 @@
 //! Owned coset transforms using the engine's existing tiled NTT. Neither
 //! coefficients nor evaluations leave the device between the two transforms.
 use super::*;
+mod coefficients;
+pub(super) use coefficients::DeviceCoefficients;
 
 pub(crate) const KERNEL_SRC: &str = r#"
 __kernel void device_transform_parameters(__global ulong *parameters,
@@ -49,16 +51,23 @@ fn geometry(
 /// Only storage is planned here: output ordering and canonical coset shifts do
 /// not change sizes. Runtime validates its actual domain before calling this.
 pub(super) fn storage_plan(
-    input: MatrixSpec, log_rows: u32, live: usize,
-    limits: super::super::Limits, max_alloc: usize,
+    input: MatrixSpec,
+    log_rows: u32,
+    live: usize,
+    limits: super::super::Limits,
+    max_alloc: usize,
 ) -> Result<MemoryPlan, String> {
     let (spec, _, auxiliary_words) = geometry(input, log_rows, 1, RowOrder::BitReversed)?;
     if input.log_rows.max(log_rows).max(2) as usize * 8 > max_alloc {
         return Err("device transform constants exceed the allocation limit".into());
     }
-    MemoryPlan::new(&[spec, spec],
-        live.checked_add(auxiliary_words * 8).ok_or("device transform budget overflow")?,
-        limits.managed_bytes, max_alloc)
+    MemoryPlan::new(
+        &[spec, spec],
+        live.checked_add(auxiliary_words * 8)
+            .ok_or("device transform budget overflow")?,
+        limits.managed_bytes,
+        max_alloc,
+    )
 }
 
 impl DeviceSession {
@@ -73,11 +82,34 @@ impl DeviceSession {
         shift: u64,
         order: RowOrder,
     ) -> Result<DeviceMatrix, String> {
+        self.lde_impl(input, log_rows, shift, order, false)
+    }
+
+    /// Reuse an immutable, unnormalized inverse transform. The coefficient
+    /// wrapper keeps these values distinct from coset evaluations.
+    pub(super) fn evaluate_coefficients(
+        &self,
+        input: &DeviceCoefficients,
+        log_rows: u32,
+        shift: u64,
+        order: RowOrder,
+    ) -> Result<DeviceMatrix, String> {
+        self.lde_impl(&input.matrix, log_rows, shift, order, true)
+    }
+
+    fn lde_impl(
+        &self,
+        input: &DeviceMatrix,
+        log_rows: u32,
+        shift: u64,
+        order: RowOrder,
+        interpolated: bool,
+    ) -> Result<DeviceMatrix, String> {
         self.check_owner(input)?;
         let (spec, width, _) = geometry(input.spec, log_rows, shift, order)?;
         #[cfg(not(feature = "gpu"))]
         {
-            let _ = (spec, width);
+            let _ = (spec, width, interpolated);
             Err("owned device transforms are not implemented on Metal".into())
         }
         #[cfg(feature = "gpu")]
@@ -86,7 +118,8 @@ impl DeviceSession {
                 engine.fence().finish()?;
                 engine.lde_workspace = None;
                 let live = engine.accounting.lock().unwrap().live;
-                let _plan = storage_plan(input.spec, log_rows, live, engine.limits, engine.max_alloc)?;
+                let _plan =
+                    storage_plan(input.spec, log_rows, live, engine.limits, engine.max_alloc)?;
                 let output = self.allocate(engine, spec)?;
                 let scratch = self.allocate(engine, spec)?;
                 let alloc = |words| {
@@ -99,22 +132,32 @@ impl DeviceSession {
                         compute::flags::MEM_READ_WRITE,
                     )
                 };
-                let inverse = alloc(input.spec.log_rows.max(1) as usize)?;
+                let inverse = if interpolated {
+                    None
+                } else {
+                    Some(alloc(input.spec.log_rows.max(1) as usize)?)
+                };
                 let forward = alloc(log_rows.max(1) as usize)?;
                 let parameters = alloc(2)?;
                 // Pinned, immutable constants, not per-proof field calculations.
-                let inverse_words: Vec<_> = (1..=input.spec.log_rows.max(1))
+                let inverse_words: Vec<_> = (1..=if interpolated {
+                    0
+                } else {
+                    input.spec.log_rows.max(1)
+                })
                     .map(super::super::fri_fold::inverse_root)
                     .collect();
                 let forward_words: Vec<_> = (1..=log_rows.max(1))
                     .map(super::super::fri_fold::root)
                     .collect();
                 let fence = engine.fence();
-                inverse
-                    .buffer
-                    .write(&inverse_words)
-                    .enq()
-                    .map_err(|e| e.to_string())?;
+                if let Some(inverse) = &inverse {
+                    inverse
+                        .buffer
+                        .write(&inverse_words)
+                        .enq()
+                        .map_err(|e| e.to_string())?;
+                }
                 forward
                     .buffer
                     .write(&forward_words)
@@ -144,7 +187,10 @@ impl DeviceSession {
                     "device_transform_parameters",
                     &event,
                 )?;
-                let source = if input.spec.order == RowOrder::BitReversed && input.spec.rows() > 1 {
+                let source = if !interpolated
+                    && input.spec.order == RowOrder::BitReversed
+                    && input.spec.rows() > 1
+                {
                     let mut event = compute::Event::empty();
                     // SAFETY: the checked matrix dimensions cover this bijective permutation.
                     unsafe {
@@ -175,12 +221,12 @@ impl DeviceSession {
                     &input.storage.buffer
                 };
                 let before_ntt = engine.stats.lde_transform_ns;
-                let coefficients = if input.spec.rows() > 1 {
+                let coefficients = if !interpolated && input.spec.rows() > 1 {
                     // With natural output order the NTT only mutates its destination.
                     engine.lde_ntt(
                         source,
                         &scratch.storage.buffer,
-                        &inverse.buffer,
+                        &inverse.as_ref().unwrap().buffer,
                         true,
                         input.spec.rows(),
                         width,
@@ -196,17 +242,30 @@ impl DeviceSession {
                     source
                 };
                 let shared = engine.nvidia_shuffle
-                    && engine.tuning.shared_scale(input.spec.rows(), spec.rows(), width);
+                    && engine
+                        .tuning
+                        .shared_scale(input.spec.rows(), spec.rows(), width);
                 let mut scale = engine.pq.kernel_builder(if shared {
                     "device_transform_scale_shared"
-                } else { "device_transform_scale" });
-                scale.arg(coefficients).arg(&output.storage.buffer).arg(&parameters.buffer)
-                    .arg(width as u32).arg(input.spec.rows() as u32).arg(spec.rows() as u32);
+                } else {
+                    "device_transform_scale"
+                });
+                scale
+                    .arg(coefficients)
+                    .arg(&output.storage.buffer)
+                    .arg(&parameters.buffer)
+                    .arg(width as u32)
+                    .arg(input.spec.rows() as u32)
+                    .arg(spec.rows() as u32);
                 if shared {
                     // At most 256 covered rows; 2 KiB of bounded workgroup SRAM.
-                    scale.arg_local::<u64>(256).local_work_size(256)
+                    scale
+                        .arg_local::<u64>(256)
+                        .local_work_size(256)
                         .global_work_size(spec.words.div_ceil(256) * 256);
-                } else { scale.global_work_size(spec.words); }
+                } else {
+                    scale.global_work_size(spec.words);
+                }
                 let mut event = compute::Event::empty();
                 // SAFETY: input extent is bounded by output; each lane owns one word.
                 unsafe {
@@ -357,6 +416,50 @@ mod tests {
                         }
                     }
                     assert_eq!(session.read(&input, input.spec.bytes()).unwrap(), words);
+                    let coefficients = session.interpolate_coefficients(&input).unwrap();
+                    let coefficient_words = session
+                        .read(&coefficients.matrix, coefficients.matrix.spec.bytes())
+                        .unwrap();
+                    for shift in [7, 13] {
+                        let expected = Dft::default()
+                            .coset_lde_batch(
+                                RowMajorMatrix::new(values.clone(), width),
+                                (log_output - log_input) as usize,
+                                Val::from_u64(shift) * Val::from_u64(11).inverse(),
+                            )
+                            .to_row_major_matrix();
+                        let before = session.stats();
+                        let reused = session
+                            .evaluate_coefficients(&coefficients, log_output, shift, output_order)
+                            .unwrap();
+                        let after = session.stats();
+                        assert_eq!(after.downloaded_bytes, before.downloaded_bytes);
+                        assert_eq!(
+                            after.uploaded_bytes - before.uploaded_bytes,
+                            u64::from(log_output.max(1)) * 8
+                        );
+                        let actual = session.read(&reused, reused.spec.bytes()).unwrap();
+                        for r in 0..reused.spec.rows() {
+                            let row = physical(r, log_output, output_order);
+                            for column in 0..width {
+                                assert_eq!(actual[r * width + column],
+                                    expected.values[row * width + column].as_canonical_u64(),
+                                    "reused coefficients logs={log_input}/{log_output} shift={shift} order={input_order:?}/{output_order:?}");
+                            }
+                        }
+                    }
+                    assert_eq!(
+                        session
+                            .read(&coefficients.matrix, coefficients.matrix.spec.bytes())
+                            .unwrap(),
+                        coefficient_words,
+                        "evaluation mutated reusable coefficients"
+                    );
+                    assert_eq!(session.read(&input, input.spec.bytes()).unwrap(), words);
+                    assert!(DeviceSession::new()
+                        .unwrap()
+                        .evaluate_coefficients(&coefficients, log_output, 7, output_order)
+                        .is_err());
                     let live = session.plan_outputs(&[input.spec]).unwrap().live_bytes;
                     assert!(session.lde(&input, 30, 7, output_order).is_err());
                     assert_eq!(
@@ -377,12 +480,26 @@ mod tests {
 #[test]
 fn shared_transform_plan_charges_input_outputs_and_constants() {
     use crate::block_v2::gpu_hash::Limits;
-    let limits = Limits { managed_bytes: 1 << 20, tile_bytes: 1 << 20, staging_bytes: 4096 };
+    let limits = Limits {
+        managed_bytes: 1 << 20,
+        tile_bytes: 1 << 20,
+        staging_bytes: 4096,
+    };
     let input = MatrixSpec::new(8, 1, Extension::Base, RowOrder::Natural, 1).unwrap();
     let live = 71 + input.bytes();
     let expected = live + 2 * input.bytes() + (8 + 8 + 2) * 8;
     let plan = storage_plan(input, 8, live, limits, 4096).unwrap();
     assert_eq!(plan.peak_bytes, expected);
-    assert!(storage_plan(input, 8, live, Limits { managed_bytes: expected - 1, ..limits }, 4096).is_err());
+    assert!(storage_plan(
+        input,
+        8,
+        live,
+        Limits {
+            managed_bytes: expected - 1,
+            ..limits
+        },
+        4096
+    )
+    .is_err());
     assert!(storage_plan(input, 8, live, limits, input.bytes() - 1).is_err());
 }

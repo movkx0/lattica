@@ -147,8 +147,19 @@ pub(super) fn evaluate_and_reduce<F: FriExtension>(
     {
         let mut accumulator =
             session.opening_accumulator_extension(height, F::DEVICE_EXTENSION, alpha_words)?;
-        for (_, opening) in prepared.iter().filter(|(h, _)| *h == height) {
-            accumulator = accumulator.append(opening)?;
+        let mut pending = prepared.iter().filter(|(h, _)| *h == height).peekable();
+        while let Some((_, opening)) = pending.next() {
+            // Fixed stack backing; no additional retained host allocation.
+            let mut group = [opening; 256];
+            let mut count = 1;
+            while pending
+                .peek()
+                .is_some_and(|(_, next)| opening.can_combine(next))
+            {
+                group[count] = &pending.next().unwrap().1;
+                count += 1;
+            }
+            accumulator = accumulator.append_group(&group[..count])?;
         }
         let output = accumulator.finish()?;
         if resident_fri {

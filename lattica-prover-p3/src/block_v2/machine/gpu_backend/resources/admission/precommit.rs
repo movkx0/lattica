@@ -401,6 +401,7 @@ pub(super) fn plan(
     let evaluation_upper = sum(&[
         quotient_live,
         quotient.output.bytes(),
+        quotient.coefficient_bytes,
         bytes(prefix_rows, 94 + 200 + 51)?,
         bytes(prefix_rows, 3)?,
         64 << 20,

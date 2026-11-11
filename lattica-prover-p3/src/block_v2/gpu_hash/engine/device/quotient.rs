@@ -295,21 +295,34 @@ impl DeviceSession {
             let domain = DomainSpec::new(shift, log_quotient as usize)?;
             let parts = self.split_domains(domain, cosets)?;
             let result = self.with_engine(|engine| self.allocate(engine, spec))?;
+            let order = partition::expansion_order(&specs)?;
+            let mut coefficients: [Option<super::transform::DeviceCoefficients>; 3] =
+                [None, None, None];
+            if storage.reuse_coefficients {
+                for index in order.into_iter().take(inputs.len()) {
+                    coefficients[index] = Some(self.interpolate_coefficients(inputs[index])?);
+                }
+            }
             for (coset, part) in parts.into_iter().enumerate() {
                 let part_shift = part.shift().as_canonical_u64();
-                let expand = |input: &DeviceMatrix| {
+                let expand = |index: usize| {
+                    let input = inputs[index];
                     if input.spec.log_rows == part_log && input.spec.shift == part_shift {
                         self.alias_private(input)
+                    } else if let Some(coefficients) = &coefficients[index] {
+                        self.evaluate_coefficients(
+                            coefficients,
+                            part_log,
+                            part_shift,
+                            RowOrder::BitReversed,
+                        )
                     } else {
                         self.lde(input, part_log, part_shift, RowOrder::BitReversed)
                     }
                 };
                 let mut expanded: [Option<DeviceMatrix>; 3] = [None, None, None];
-                for index in partition::expansion_order(&specs)?
-                    .into_iter()
-                    .take(inputs.len())
-                {
-                    expanded[index] = Some(expand(inputs[index])?);
+                for index in order.into_iter().take(inputs.len()) {
+                    expanded[index] = Some(expand(index)?);
                 }
                 let part_main = expanded[0].take().ok_or("missing expanded main input")?;
                 let part_pre = if preprocessed.is_some() {
@@ -365,7 +378,7 @@ impl DeviceSession {
                     Ok(())
                 })?;
             }
-            eprintln!("bounded_device_quotient_partition rows={} coset_rows={} cosets={} input_matrix_upload_bytes=0", spec.rows(), 1usize << part_log, cosets);
+            eprintln!("bounded_device_quotient_partition rows={} coset_rows={} cosets={} coefficient_reuse={} coefficient_bytes={} managed_peak_plan_bytes={} input_matrix_upload_bytes=0", spec.rows(), 1usize << part_log, cosets, storage.reuse_coefficients, storage.coefficient_bytes, storage.peak_bytes);
             Ok(result)
         }
     }

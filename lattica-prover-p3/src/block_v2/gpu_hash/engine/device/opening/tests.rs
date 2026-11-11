@@ -263,6 +263,8 @@ fn opening_pipeline<Challenge: crate::block_v2::gpu_hash::FriExtension>(large: b
         vec![(15u32, vec![7usize], 7u64, 1usize), (16, vec![3], 11, 2)]
     } else {
         vec![
+            (0u32, vec![1usize, 3, 7], 7u64, 1usize),
+            (7, vec![9, 3, 1, 17], 11, 1),
             (0u32, vec![1usize, 3], 7u64, 3usize),
             (3, vec![3, 17], 11, 32),
             (7, vec![9, 3], 7, 3),
@@ -479,6 +481,82 @@ fn opening_pipeline<Challenge: crate::block_v2::gpu_hash::FriExtension>(large: b
                 flatten(&expected),
                 "FRI input: log={log_rows}, shift={shift}, alpha={alpha_words:?}"
             );
+            if point_count == 1 && prepared.len() > 1 {
+                let mut grouped = session
+                    .opening_accumulator_extension(full_log, extension, &encode(alpha_words))
+                    .unwrap();
+                // A preceding append checks that grouping preserves a nonzero
+                // starting exponent as well as width changes within the group.
+                grouped = grouped.append(&prepared[0]).unwrap();
+                let sequential = {
+                    let mut accumulator = session
+                        .opening_accumulator_extension(full_log, extension, &encode(alpha_words))
+                        .unwrap();
+                    accumulator = accumulator.append(&prepared[0]).unwrap();
+                    for opening in &prepared {
+                        accumulator = accumulator.append(opening).unwrap();
+                    }
+                    accumulator.finish().unwrap()
+                };
+                let before = session.stats();
+                let grouped = grouped
+                    .append_group(&prepared.iter().collect::<Vec<_>>())
+                    .unwrap()
+                    .finish()
+                    .unwrap();
+                assert_eq!(
+                    session.stats().downloaded_bytes - before.downloaded_bytes,
+                    8
+                );
+                assert_eq!(
+                    session.stats().opening_reductions - before.opening_reductions,
+                    prepared.len() as u64
+                );
+                assert_eq!(
+                    session.read(&grouped, grouped.spec().bytes()).unwrap(),
+                    session
+                        .read(&sequential, sequential.spec().bytes())
+                        .unwrap(),
+                    "group changed alpha ordering"
+                );
+                let grouped = session
+                    .opening_accumulator_extension(full_log, extension, &encode(alpha_words))
+                    .unwrap()
+                    .append_group(&prepared.iter().collect::<Vec<_>>())
+                    .unwrap()
+                    .finish()
+                    .unwrap();
+                assert_eq!(
+                    session.read(&grouped, grouped.spec().bytes()).unwrap(),
+                    flatten(&expected),
+                    "group differs from CPU polynomial oracle"
+                );
+                let mut changed_point = session
+                    .evaluate_opening_extension(
+                        &prepared[0].prefix,
+                        extension,
+                        &encode([19, 23, 29]),
+                    )
+                    .unwrap();
+                assert!(!prepared[0].can_combine(&changed_point));
+                let accumulator = session
+                    .opening_accumulator_extension(full_log, extension, &encode(alpha_words))
+                    .unwrap();
+                let before = session.stats();
+                assert!(accumulator
+                    .append_group(&[&prepared[0], &changed_point])
+                    .is_err());
+                assert_eq!(session.stats(), before);
+                // Host matching is insufficient to grant another session access.
+                changed_point.first_point = prepared[0].first_point;
+                let other = DeviceSession::new().unwrap();
+                let accumulator = other
+                    .opening_accumulator_extension(full_log, extension, &encode(alpha_words))
+                    .unwrap();
+                assert!(accumulator
+                    .append_group(&[&prepared[0], &changed_point])
+                    .is_err());
+            }
             // The next arithmetic consumer accepts the result without upload.
             let before = session.stats();
             let folded = session.fold_fri(&result, 1, &encode([19, 23, 29])).unwrap();

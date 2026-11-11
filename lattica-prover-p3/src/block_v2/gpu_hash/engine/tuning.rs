@@ -82,35 +82,44 @@ impl Tuning {
     }
 }
 
-pub(super) fn kernel_source(nvidia: bool) -> String {
-    let mut source = String::new();
+fn kernel_sources(nvidia: bool, mut emit: impl FnMut(&str)) {
     #[cfg(not(feature = "gpu-tuning"))]
     let _ = nvidia;
     #[cfg(feature = "gpu-tuning")]
     {
         #[cfg(feature = "gpu")]
-        source.push_str(screen::SOURCE);
+        emit(screen::SOURCE);
         if nvidia {
-            source.push_str(include_str!("commitment_shuffle.cl"));
+            emit(include_str!("commitment_shuffle.cl"));
         }
-        source.push_str(include_str!("scale_shared.cl"));
-        source.push_str(include_str!("device/witness_fused.cl"));
+        emit(include_str!("scale_shared.cl"));
+        emit(include_str!("device/witness_fused.cl"));
     }
     // Required by ordinary OpenCL proving, including builds without gpu-tuning.
-    source
-        .push_str("\n#define LATTICA_TUNED_NTT 1\n#define ntt_tile_cached ntt_tile_cached_tuned\n");
-    source.push_str(include_str!("../../../gpu/ntt_cached.cl"));
-    source.push_str("\n#undef ntt_tile_cached\n");
+    emit("\n#define LATTICA_TUNED_NTT 1\n#define ntt_tile_cached ntt_tile_cached_tuned\n");
+    emit(include_str!("../../../gpu/ntt_cached.cl"));
+    emit("\n#undef ntt_tile_cached\n");
     #[cfg(feature = "gpu-tuning")]
     {
-        source.push_str(
-            "\n#define LATTICA_NTT_PADDED 1\n#define ntt_tile_cached ntt_tile_cached_padded\n",
-        );
-        source.push_str(include_str!("../../../gpu/ntt_cached.cl"));
-        source.push_str("\n#undef ntt_tile_cached\n#undef LATTICA_NTT_PADDED\n");
+        emit("\n#define LATTICA_NTT_PADDED 1\n#define ntt_tile_cached ntt_tile_cached_padded\n");
+        emit(include_str!("../../../gpu/ntt_cached.cl"));
+        emit("\n#undef ntt_tile_cached\n#undef LATTICA_NTT_PADDED\n");
     }
-    source.push_str("\n#undef LATTICA_TUNED_NTT\n");
+    emit("\n#undef LATTICA_TUNED_NTT\n");
+}
+pub(super) fn kernel_source(nvidia: bool) -> String {
+    let mut source = String::new();
+    kernel_sources(nvidia, |part| source.push_str(part));
     source
+}
+
+/// The source census visits the exact same fragments without allocating.
+pub(super) fn kernel_source_len(nvidia: bool) -> Option<usize> {
+    let mut length = Some(0usize);
+    kernel_sources(nvidia, |part| {
+        length = length.and_then(|n| n.checked_add(part.len()))
+    });
+    length
 }
 
 #[cfg(test)]
