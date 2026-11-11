@@ -1,6 +1,6 @@
 //! Immutable host backing for completed GPU digest trees. Construction keeps
 //! the original device allocation; only completed trees may move to the host.
-//! A query batch uploads one tree; aggregation may gather all paths in one kernel.
+//! Batched GPU queries reload only the candidate sibling pairs they need.
 use super::*;
 #[cfg(all(feature = "gpu", feature = "gpu-tuning"))]
 pub(crate) mod batch;
@@ -301,8 +301,15 @@ impl Engine {
         // Plan reload and the lazily-created query buffer together, before
         // either allocation. The engine mutex prevents another allocation
         // from consuming the admitted room between this check and upload.
+        #[cfg(all(feature = "gpu", feature = "gpu-tuning"))]
+        let sparse = self.tuning.queries
+            && matches!(&tree.storage, Storage::Host(_))
+            && indices.len() * tree.layout.path_len * 8 < tree.layout.elements;
+        #[cfg(not(all(feature = "gpu", feature = "gpu-tuning")))]
+        let sparse = false;
         let upload = match &tree.storage {
             Storage::Device(_) => 0,
+            Storage::Host(_) if sparse => indices.len() * tree.layout.path_len * 8 * 8,
             Storage::Host(host) => host
                 .words
                 .len()
@@ -310,7 +317,11 @@ impl Engine {
                 .ok_or("retained tree query upload overflow")?,
         };
         #[cfg(all(feature = "gpu", feature = "gpu-tuning"))]
-        let batch_bytes = if self.tuning.queries { batch::DEVICE_BYTES } else { 0 };
+        let batch_bytes = if self.tuning.queries {
+            batch::DEVICE_BYTES
+        } else {
+            0
+        };
         #[cfg(not(all(feature = "gpu", feature = "gpu-tuning")))]
         let batch_bytes = 0;
         let query = if self.query.is_none() && tree.layout.path_len != 0 {
@@ -338,6 +349,10 @@ impl Engine {
         }
         let uploaded = match &tree.storage {
             Storage::Device(_) => None,
+            #[cfg(all(feature = "gpu", feature = "gpu-tuning"))]
+            Storage::Host(host) if sparse => {
+                Some(self.upload_host_query_pairs(tree, host, indices)?)
+            }
             Storage::Host(host) => Some(self.upload_host_tree(host)?),
         };
         let source = match (&tree.storage, uploaded.as_ref()) {
@@ -352,15 +367,19 @@ impl Engine {
         // until the entire batch succeeds or a failing gather drains on drop.
         #[cfg(all(feature = "gpu", feature = "gpu-tuning"))]
         if self.tuning.queries {
-            output = self.open_retained_batch_buffer(tree, source, indices)?;
+            output = self.open_retained_batch_buffer(tree, source, indices, sparse)?;
         } else {
-            for &index in indices { output.push(self.open_retained_buffer(tree, source, index)?); }
+            for &index in indices {
+                output.push(self.open_retained_buffer(tree, source, index)?);
+            }
         }
         #[cfg(not(all(feature = "gpu", feature = "gpu-tuning")))]
-        for &index in indices { output.push(self.open_retained_buffer(tree, source, index)?); }
+        for &index in indices {
+            output.push(self.open_retained_buffer(tree, source, index)?);
+        }
         if let Some(device) = uploaded {
-            eprintln!("bounded_retained_tree_query_upload queries={} uploaded_bytes={} actual_gpu_gather=true uploads_per_tree_batch=1",
-                indices.len(), device.buffer.len() * 8);
+            eprintln!("bounded_retained_tree_query_upload queries={} uploaded_bytes={} actual_gpu_gather=true uploads_per_tree_batch=1 sparse_pairs={} full_tree_bytes={}",
+                indices.len(), device.buffer.len() * 8, sparse, tree.layout.elements * 8);
             drop(device);
         }
         Ok(output)

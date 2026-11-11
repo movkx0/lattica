@@ -56,6 +56,21 @@ const DRIVER_RESERVE_BYTES: usize = 4 * GIB;
 const MAX_DEVICE_EVENTS: usize = 65_536;
 const QUERY_ELEMENTS: usize = 32 * 4;
 const RETAINED_PATH_KERNEL: &str = r#"
+// Host-backed trees transfer both children of each queried parent. The GPU
+// selects the sibling using the original query; no digest is recomputed.
+__kernel void retained_merkle_paths_pairs(
+    __global const ulong *pairs, __global const ulong *indices, __global ulong *output,
+    uint height, uint path_len, uint count
+) {
+    ulong item = get_global_id(0);
+    if (path_len == 0 || item >= (ulong)count * path_len) return;
+    uint level = item % path_len;
+    ulong index = indices[item / path_len];
+    if (index >= height) return;
+    ulong sibling = ((index >> level) ^ 1ul) & 1ul;
+    ulong offset = item * 8ul + sibling * 4ul;
+    for (uint word = 0; word < 4; ++word) output[item * 4ul + word] = pairs[offset + word];
+}
 __kernel void retained_merkle_paths(
     __global const ulong *tree, __global const ulong *indices, __global ulong *output,
     uint height, uint path_len, uint count

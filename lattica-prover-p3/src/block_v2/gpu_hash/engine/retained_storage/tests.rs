@@ -296,13 +296,88 @@ fn device_tree_batch_preserves_scalar_paths_without_uploading() {
 #[cfg(all(feature = "gpu", feature = "gpu-tuning"))]
 #[test]
 #[ignore = "requires isolated OpenCL process with host tree storage"]
+fn gpu_sparse_host_paths_preserve_deep_queries_with_tight_memory() {
+    let _shutdown = TestShutdownGuard;
+    initialize_mode(
+        Limits {
+            managed_bytes: 32 * MIB,
+            tile_bytes: 64 * 1024,
+            staging_bytes: 32 * 1024,
+        },
+        TransferMode::Serial,
+    )
+    .unwrap();
+    let mut slot = ENGINE.get().unwrap().lock().unwrap();
+    let engine = slot.as_mut().unwrap();
+    let height = 1usize << 15;
+    let fill = |row: usize, values: &mut [u64]| {
+        for (column, value) in values.iter_mut().enumerate() {
+            *value = ((row + 1) * 17 + column * 13) as u64;
+        }
+    };
+    let tree = engine.hash_rows_retained(height, 17, 0, fill).unwrap();
+    assert!(matches!(&tree.storage, Storage::Host(_)));
+    let reference = engine.hash_rows(height, 17, fill).unwrap();
+    engine.tuning.queries = true;
+    let indices = (0..256)
+        .map(|i| match i % 5 {
+            0 => 0,
+            1 => height - 1,
+            2 => 1 << (i % 15),
+            _ => (i * 7907) % height,
+        })
+        .collect::<Vec<_>>();
+    let before = engine.snapshot();
+    let pairs_bytes = indices.len() * tree.layout.path_len * 64;
+    assert!(pairs_bytes > engine.staging[0].map.len() * 8);
+    let original_limit = engine.limits.managed_bytes;
+    // The compact source plus original batch reservation fits; a full reload
+    // does not. Admission failure must occur before any upload or allocation.
+    engine.limits.managed_bytes =
+        before.managed_live_bytes + pairs_bytes + batch::DEVICE_BYTES + QUERY_ELEMENTS * 8;
+    assert!(before.managed_live_bytes + tree.layout.elements * 8 > engine.limits.managed_bytes);
+    let paths = engine.open_retained_batch(&tree, &indices).unwrap();
+    for (&index, path) in indices.iter().zip(&paths) {
+        let expected = reference[..tree.layout.path_len]
+            .iter()
+            .enumerate()
+            .map(|(level, layer)| layer[(index >> level) ^ 1])
+            .collect::<Vec<_>>();
+        assert_eq!(path, &expected);
+    }
+    let after = engine.snapshot();
+    assert_eq!(
+        after.uploaded_bytes - before.uploaded_bytes,
+        (pairs_bytes + indices.len() * 8) as u64
+    );
+    assert_eq!(after.managed_live_bytes, before.managed_live_bytes);
+    engine.limits.managed_bytes = before.managed_live_bytes + pairs_bytes - 1;
+    assert!(engine.open_retained_batch(&tree, &indices).is_err());
+    assert_eq!(engine.snapshot().uploaded_bytes, after.uploaded_bytes);
+    assert_eq!(
+        engine.snapshot().managed_live_bytes,
+        after.managed_live_bytes
+    );
+    engine.limits.managed_bytes = original_limit;
+    drop(tree);
+    assert_eq!(engine.tree_storage.live(), 0);
+    eprintln!("sparse_host_path_qualification depth=15 queries=256 repeated_unsorted=true staging_chunks=true tight_budget=true cpu_path_parity=true");
+}
+
+#[cfg(all(feature = "gpu", feature = "gpu-tuning"))]
+#[test]
+#[ignore = "requires isolated OpenCL process with host tree storage"]
 fn gpu_batched_gather_matches_scalar_and_cleans_up() {
     let _shutdown = TestShutdownGuard;
-    initialize_mode(Limits {
-        managed_bytes: 32 * MIB,
-        tile_bytes: 64 * 1024,
-        staging_bytes: 32 * 1024,
-    }, TransferMode::Serial).unwrap();
+    initialize_mode(
+        Limits {
+            managed_bytes: 32 * MIB,
+            tile_bytes: 64 * 1024,
+            staging_bytes: 32 * 1024,
+        },
+        TransferMode::Serial,
+    )
+    .unwrap();
     {
         let mut slot = ENGINE.get().unwrap().lock().unwrap();
         let engine = slot.as_mut().unwrap();
@@ -315,7 +390,9 @@ fn gpu_batched_gather_matches_scalar_and_cleans_up() {
         assert!(matches!(&tree.storage, Storage::Host(_)));
         let reference = engine.hash_rows(512, 17, fill).unwrap();
         for count in [1, 2, 128, 256] {
-            let indices: Vec<_> = (0..count).map(|i| [511, 0, 17, 17, 255, 64, 511][i % 7]).collect();
+            let indices: Vec<_> = (0..count)
+                .map(|i| [511, 0, 17, 17, 255, 64, 511][i % 7])
+                .collect();
             engine.tuning.queries = false;
             let scalar = engine.open_retained_batch(&tree, &indices).unwrap();
             engine.tuning.queries = true;
@@ -324,13 +401,19 @@ fn gpu_batched_gather_matches_scalar_and_cleans_up() {
             let paths = engine.open_retained_batch(&tree, &indices).unwrap();
             assert_eq!(paths, scalar);
             for (&index, path) in indices.iter().zip(&paths) {
-                let expected: Vec<_> = reference[..tree.layout.path_len].iter().enumerate()
-                    .map(|(level, layer)| layer[(index >> level) ^ 1]).collect();
+                let expected: Vec<_> = reference[..tree.layout.path_len]
+                    .iter()
+                    .enumerate()
+                    .map(|(level, layer)| layer[(index >> level) ^ 1])
+                    .collect();
                 assert_eq!(*path, expected);
             }
             let after = engine.snapshot();
-            assert_eq!(after.uploaded_bytes - before.uploaded_bytes,
-                ((tree.layout.elements + count) * 8) as u64);
+            assert_eq!(
+                after.uploaded_bytes - before.uploaded_bytes,
+                ((count * tree.layout.path_len * 8).min(tree.layout.elements) * 8 + count * 8)
+                    as u64
+            );
             assert_eq!(engine.retained_query_count - query_count, count as u64);
             assert_eq!(after.managed_live_bytes, before.managed_live_bytes);
             assert!(after.managed_peak_bytes <= 32 * MIB);
@@ -344,7 +427,9 @@ fn gpu_batched_gather_matches_scalar_and_cleans_up() {
         }
         let epoch = tree._job_lease.clone();
         tree._job_lease = Arc::new(JobLease {
-            _global: std::fs::File::open("/dev/null").unwrap(), _device: None, _slot: None,
+            _global: std::fs::File::open("/dev/null").unwrap(),
+            _device: None,
+            _slot: None,
         });
         assert!(engine.open_retained_batch(&tree, &[0]).is_err());
         tree._job_lease = epoch;
@@ -357,7 +442,10 @@ fn gpu_batched_gather_matches_scalar_and_cleans_up() {
         assert_eq!(engine.tree_storage.live(), 0);
         let cap = engine.hash_rows_retained(8, 17, 6, fill).unwrap();
         let before = engine.snapshot();
-        assert_eq!(engine.open_retained_batch(&cap, &[7, 0, 7]).unwrap(), vec![Vec::<[Val; 4]>::new(); 3]);
+        assert_eq!(
+            engine.open_retained_batch(&cap, &[7, 0, 7]).unwrap(),
+            vec![Vec::<[Val; 4]>::new(); 3]
+        );
         assert_eq!(engine.snapshot().uploaded_bytes, before.uploaded_bytes);
         drop(cap);
         assert_eq!(engine.tree_storage.live(), 0);

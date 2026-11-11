@@ -12,6 +12,7 @@ fn prover_bundle_preserves_proof_kernels_and_exact_source_census() {
                 "device_quotient_gather",
                 "device_compiler_fold",
                 "retained_merkle_paths",
+                "retained_merkle_paths_pairs",
                 "ntt_tile_cached_tuned",
             ] {
                 assert!(prover.contains(kernel), "missing {kernel}");
