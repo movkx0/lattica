@@ -157,6 +157,8 @@ def environment(selected):
     tuning = 'events,witness,programs' if selected['profile'] != 'legacy' else ''
     if selected['profile'] in ('grouped-v4', 'grouped-v5') and selected['command'] != 'prepare-inputs' and selected['values'].get('--query-gather', 'batch') == 'batch':
         tuning += ',queries'
+    if selected['values'].get('--recursion-backend') == 'typed' and selected['command'] != 'plan':
+        tuning += ',prover'
     return {'LATTICA_V2_GPU_TUNING': tuning,
         'LATTICA_V2_GPU_NTT_PROFILE': ntt_profile(selected),
         'LATTICA_V2_GPU_POSEIDON_PROFILE': selected['values'].get('--poseidon-profile', 'baseline'),

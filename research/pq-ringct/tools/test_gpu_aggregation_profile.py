@@ -220,7 +220,7 @@ class AggregationAcceptance(unittest.TestCase):
             self.assertEqual(selected['profile'], 'grouped-v5')
             env = environment(selected)
             self.assertEqual(env['LATTICA_V2_GPU_NTT_PROFILE'], 'smalltile')
-            self.assertEqual(env['LATTICA_V2_GPU_TUNING'], 'events,witness,programs,queries')
+            self.assertEqual(env['LATTICA_V2_GPU_TUNING'], 'events,witness,programs,queries,prover')
             self.assertEqual(env['LATTICA_V2_GPU_COMPILER_POLICY'], 'standard')
 
     def test_archive_inputs_only_admit_readonly_bounded_preflight(self):

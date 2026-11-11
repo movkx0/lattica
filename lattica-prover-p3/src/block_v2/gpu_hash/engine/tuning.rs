@@ -10,6 +10,7 @@ mod witness_tests;
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(super) struct Tuning {
     pub events: bool,
+    pub prover: bool,
     pub commitment: bool,
     pub scale: bool,
     pub ntt: bool,
@@ -57,6 +58,7 @@ impl Tuning {
         for item in value.split(',') {
             let selected = match item {
                 "events" => &mut result.events,
+                "prover" => &mut result.prover,
                 "commitment" => &mut result.commitment,
                 "scale" => &mut result.scale,
                 "ntt" => &mut result.ntt,
@@ -82,7 +84,7 @@ impl Tuning {
     }
 }
 
-fn kernel_sources(nvidia: bool, mut emit: impl FnMut(&str)) {
+pub(super) fn kernel_sources(nvidia: bool, mut emit: impl FnMut(&str)) {
     #[cfg(not(feature = "gpu-tuning"))]
     let _ = nvidia;
     #[cfg(feature = "gpu-tuning")]
@@ -138,6 +140,7 @@ mod tests {
         assert_eq!(Tuning::parse("", false).unwrap(), Tuning::default());
         for value in [
             "events",
+            "prover",
             "commitment",
             "scale",
             "ntt",

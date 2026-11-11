@@ -14,6 +14,8 @@ pub(crate) mod note_ocl_wrapper_census;
 pub use device::public_hash::report::PublicHashExecution;
 mod direct_tree;
 pub(crate) mod fri_fold;
+#[cfg(feature = "gpu")]
+mod kernel_bundle;
 pub mod lde_execute;
 pub mod lde_plan;
 pub(crate) mod lde_readback;
@@ -1127,70 +1129,24 @@ fn initialize_mode_selected(
             "bounded_gpu_identity {}",
             serde_json::to_string(&identity).map_err(|e| e.to_string())?
         );
+        let program_started = Instant::now();
         let pq = ProQue::builder()
             .platform(platform)
             .device(device)
-            .src(
-                [
-                    device::public_hash::nvidia::source_prefix(device),
-                    tuning.poseidon_schedule.defines(),
-                    crate::gpu::KERNEL_SRC,
-                    RETAINED_PATH_KERNEL,
-                    lde_execute::KERNEL_SRC,
-                    opening_reduce::KERNEL_SRC,
-                    fri_fold::KERNEL_SRC,
-                    query_reconstruct::KERNEL_SRC,
-                    device::TRANSFORM_KERNEL_SRC,
-                    device::QUOTIENT_KERNEL_SRC,
-                    device::QUOTIENT_COMMIT_KERNEL_SRC,
-                    device::LOOKUP_KERNEL_SRC,
-                    device::OPENING_KERNEL_SRC,
-                    device::QUADRATIC_OPENING_KERNEL_SRC,
-                    device::OPENING_GROUP_KERNEL_SRC,
-                    quotient::KERNEL_SRC,
-                    device::FRI_KERNEL_SRC,
-                    device::GENERAL_FRI_KERNEL_SRC,
-                    device::QUERY_KERNEL_SRC,
-                    device::TRACE_COMMIT_KERNEL_SRC,
-                    device::STORAGE_KERNEL_SRC,
-                    device::WITNESS_KERNEL_SRC,
-                    device::WALLET_KERNEL_SRC,
-                    device::PQ_POSEIDON_KERNEL_SRC,
-                    #[cfg(feature = "gpu")]
-                    device::PQ_OPERATIONS_KERNEL_SRC,
-                    // Shared eight-lane Poseidon helpers precede raw field commitments.
-                    device::PUBLIC_HASH_KERNEL_SRC,
-                    device::OPERATIONS_HASH_KERNEL_SRC,
-                    #[cfg(feature = "gpu")]
-                    device::PQ_CRYPTO_KERNEL_SRC,
-                    device::PQ_RAW_CRYPTO_KERNEL_SRC,
-                    #[cfg(feature = "gpu")]
-                    device::RESEARCH_ARITHMETIC_KERNEL_SRC,
-                    device::OPERATIONS_ARITHMETIC_KERNEL_SRC,
-                    device::PQ_SOURCES_KERNEL_SRC,
-                    #[cfg(feature = "gpu")]
-                    device::PQ_SAMPLING_KERNEL_SRC,
-                    device::WALLET_BATCH_KERNEL_SRC,
-                    device::PERIODIC_KERNEL_SRC,
-                    device::HTLC_KERNEL_SRC,
-                    device::RANDOM_KERNEL_SRC,
-                    #[cfg(test)]
-                    device::RANDOM_REFERENCE_KERNEL_SRC,
-                    device::TRANSCRIPT_KERNEL_SRC,
-                    device::SCALARS_KERNEL_SRC,
-                    device::COMPILER_CONSTANTS_KERNEL_SRC,
-                    device::COMPILER_FOLDING_KERNEL_SRC,
-                    device::EVALUATIONS_KERNEL_SRC,
-                    &tuning::kernel_source(
-                        !device::public_hash::nvidia::source_prefix(device).is_empty(),
-                    ),
-                ]
-                .join("\n"),
-            )
+            .src(kernel_bundle::source(
+                tuning.prover,
+                device::public_hash::nvidia::source_prefix(device),
+                tuning.poseidon_schedule,
+            )?)
             .queue_properties(compute::flags::QUEUE_PROFILING_ENABLE)
             .dims(1)
             .build()
             .map_err(|e| e.to_string())?;
+        eprintln!(
+            "bounded_gpu_program prover_only={} build_seconds={:.9}",
+            tuning.prover,
+            program_started.elapsed().as_secs_f64()
+        );
         let device_name = device.name().map_err(|e| e.to_string())?;
         (index, pq, max_alloc, global, device_name, device)
     };

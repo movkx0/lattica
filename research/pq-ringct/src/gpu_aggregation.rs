@@ -482,6 +482,11 @@ pub(crate) fn context(options: &Options) -> Result<crate::execution::ProvingCont
     } else {
         ""
     };
+    let expected = if options.typed_recursion() && options.command != "plan" {
+        format!("{expected},prover")
+    } else {
+        expected.to_owned()
+    };
     ensure(
         std::env::var("LATTICA_V2_GPU_TUNING").unwrap_or_default() == expected,
         "runner/profile GPU tuning mismatch",

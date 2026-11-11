@@ -24,51 +24,6 @@ const DRIVER_TEXT_OVERLAP: usize = 8 * REPLY + 4096;
 // separately planned, and cannot infer its argument/cache bounds from this.
 const RAW_KERNEL_WRAPPERS: usize = 2 * (16 << 10);
 
-const SOURCES: &[&str] = &[
-    crate::gpu::KERNEL_SRC,
-    RETAINED_PATH_KERNEL,
-    lde_execute::KERNEL_SRC,
-    opening_reduce::KERNEL_SRC,
-    fri_fold::KERNEL_SRC,
-    query_reconstruct::KERNEL_SRC,
-    device::TRANSFORM_KERNEL_SRC,
-    device::QUOTIENT_KERNEL_SRC,
-    device::QUOTIENT_COMMIT_KERNEL_SRC,
-    device::LOOKUP_KERNEL_SRC,
-    device::OPENING_KERNEL_SRC,
-    device::QUADRATIC_OPENING_KERNEL_SRC,
-    device::OPENING_GROUP_KERNEL_SRC,
-    quotient::KERNEL_SRC,
-    device::FRI_KERNEL_SRC,
-    device::GENERAL_FRI_KERNEL_SRC,
-    device::QUERY_KERNEL_SRC,
-    device::TRACE_COMMIT_KERNEL_SRC,
-    device::STORAGE_KERNEL_SRC,
-    device::WITNESS_KERNEL_SRC,
-    device::WALLET_KERNEL_SRC,
-    device::PQ_POSEIDON_KERNEL_SRC,
-    device::PQ_OPERATIONS_KERNEL_SRC,
-    device::OPERATIONS_HASH_KERNEL_SRC,
-    device::PQ_CRYPTO_KERNEL_SRC,
-    device::PQ_RAW_CRYPTO_KERNEL_SRC,
-    device::RESEARCH_ARITHMETIC_KERNEL_SRC,
-    device::OPERATIONS_ARITHMETIC_KERNEL_SRC,
-    device::PQ_SOURCES_KERNEL_SRC,
-    device::PQ_SAMPLING_KERNEL_SRC,
-    device::WALLET_BATCH_KERNEL_SRC,
-    device::PERIODIC_KERNEL_SRC,
-    device::HTLC_KERNEL_SRC,
-    device::RANDOM_KERNEL_SRC,
-    #[cfg(test)]
-    device::RANDOM_REFERENCE_KERNEL_SRC,
-    device::TRANSCRIPT_KERNEL_SRC,
-    device::SCALARS_KERNEL_SRC,
-    device::COMPILER_CONSTANTS_KERNEL_SRC,
-    device::COMPILER_FOLDING_KERNEL_SRC,
-    device::PUBLIC_HASH_KERNEL_SRC,
-    device::EVALUATIONS_KERNEL_SRC,
-];
-
 const KEYS: [&CStr; 61] = [
     c"LATTICA_V2_GPU_HASH",
     c"LATTICA_V2_GPU_RETAIN_TREES",
@@ -205,23 +160,6 @@ fn mul(a: usize, b: usize) -> Result<usize, Error> {
     a.checked_mul(b).ok_or(Error::Resource)
 }
 
-fn tuning_fragments() -> &'static [&'static str] {
-    #[cfg(feature = "gpu-tuning")]
-    {
-        &[
-            include_str!("../commitment_shuffle.cl"),
-            include_str!("../scale_shared.cl"),
-            "\n#define LATTICA_TUNED_NTT 1\n#define ntt_tile_cached ntt_tile_cached_tuned\n",
-            include_str!("../../../../gpu/ntt_cached.cl"),
-            "\n#undef ntt_tile_cached\n#undef LATTICA_TUNED_NTT\n",
-        ]
-    }
-    #[cfg(not(feature = "gpu-tuning"))]
-    {
-        &[]
-    }
-}
-
 impl StartupPlan {
     /// Pure and allocation-free. Includes mapped staging in host and managed
     /// device charges; context reserve stays separate under the unchanged guard.
@@ -247,21 +185,13 @@ impl StartupPlan {
         }
         let prefix = "#define LATTICA_PUBLIC_HASH_NVIDIA_SHUFFLE 1\n";
         let mut digest = Sha3_256::new();
-        digest.update(prefix.as_bytes());
-        let mut source_bytes = prefix.len();
-        for source in SOURCES {
-            digest.update(b"\n");
-            digest.update(source.as_bytes());
-            source_bytes = add(source_bytes, add(1, source.len())?)?;
-        }
-        digest.update(b"\n");
-        source_bytes = add(source_bytes, 1)?;
-        let mut tuning_bytes = 0;
-        for part in tuning_fragments() {
-            digest.update(part.as_bytes());
-            source_bytes = add(source_bytes, part.len())?;
-            tuning_bytes = add(tuning_bytes, part.len())?;
-        }
+        let source = kernel_bundle::census(false, prefix, tuning::Poseidon::Baseline)
+            .ok_or(Error::Resource)?;
+        kernel_bundle::visit(false, prefix, tuning::Poseidon::Baseline, |part| {
+            digest.update(part.as_bytes())
+        });
+        let source_bytes = source.bytes;
+        let tuning_bytes = source.tuning_bytes;
         let mut host = mul(add(source_bytes, 1)?, 4)?;
         if tuning_bytes != 0 {
             host = add(host, mul(add(tuning_bytes, 8)?, 4)?)?;
@@ -334,7 +264,12 @@ impl StartupPlan {
         let slot = engine::ENGINE.get().ok_or(Error::Lifecycle)?;
         let guard = slot.lock().map_err(|_| Error::Lifecycle)?;
         let live = guard.as_ref().ok_or(Error::Lifecycle)?;
-        check_engine_selection(self.tree_profile, true, live.limits, live.tree_storage.selection())?;
+        check_engine_selection(
+            self.tree_profile,
+            true,
+            live.limits,
+            live.tree_storage.selection(),
+        )?;
         // The ordinary Session does not retain Selection's bounded environment.
         // Check its actual selector and staging backing instead of assuming the
         // source-bounded constructor created this Engine. All other retained
@@ -345,11 +280,14 @@ impl StartupPlan {
         }
         for fixed in [
             size_of::<OnceLock<Mutex<Option<Engine>>>>()
-                .checked_sub(size_of::<Engine>()).ok_or(Error::Resource)?,
+                .checked_sub(size_of::<Engine>())
+                .ok_or(Error::Resource)?,
             size_of::<Mutex<()>>(),
             crate::block_v2::gpu_hash::cache_metadata::arc_bytes::<Mutex<Accounting>>(),
             crate::block_v2::gpu_hash::cache_metadata::arc_bytes::<JobLease>(),
-            crate::block_v2::gpu_hash::cache_metadata::arc_bytes::<engine::retained_storage::HostQuota>(),
+            crate::block_v2::gpu_hash::cache_metadata::arc_bytes::<
+                engine::retained_storage::HostQuota,
+            >(),
         ] {
             variable_wrappers = add(variable_wrappers, fixed)?;
         }
@@ -362,8 +300,8 @@ impl StartupPlan {
             return Err(Error::Lifecycle);
         }
         let accounting = live.accounting.lock().map_err(|_| Error::Lifecycle)?;
-        let startup_allocations = u64::try_from(4 + live.mode.slots())
-            .map_err(|_| Error::Resource)?;
+        let startup_allocations =
+            u64::try_from(4 + live.mode.slots()).map_err(|_| Error::Resource)?;
         if accounting.live != self.footprint.managed_device_bytes
             || accounting.peak != accounting.live
             || accounting.allocations != startup_allocations

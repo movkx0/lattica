@@ -18,54 +18,6 @@ pub(crate) const SAMPLER_READ_BUFFER: usize = 8193;
 const REPLY_BYTES: usize = 64 * 1024;
 const METADATA_AND_ERROR_BACKING: usize = 8 * REPLY_BYTES + 4096;
 
-// Matches the fixed Engine source list, excluding its first NVIDIA prefix and
-// final tuning String. The source/preimage pins in the handoff bind this list;
-// a changed Engine list requires a corresponding census review.
-const SOURCES: &[&str] = &[
-    crate::gpu::KERNEL_SRC,
-    RETAINED_PATH_KERNEL,
-    lde_execute::KERNEL_SRC,
-    opening_reduce::KERNEL_SRC,
-    fri_fold::KERNEL_SRC,
-    query_reconstruct::KERNEL_SRC,
-    device::TRANSFORM_KERNEL_SRC,
-    device::QUOTIENT_KERNEL_SRC,
-    device::QUOTIENT_COMMIT_KERNEL_SRC,
-    device::LOOKUP_KERNEL_SRC,
-    device::OPENING_KERNEL_SRC,
-    device::QUADRATIC_OPENING_KERNEL_SRC,
-    device::OPENING_GROUP_KERNEL_SRC,
-    quotient::KERNEL_SRC,
-    device::FRI_KERNEL_SRC,
-    device::GENERAL_FRI_KERNEL_SRC,
-    device::QUERY_KERNEL_SRC,
-    device::TRACE_COMMIT_KERNEL_SRC,
-    device::STORAGE_KERNEL_SRC,
-    device::WITNESS_KERNEL_SRC,
-    device::WALLET_KERNEL_SRC,
-    device::PQ_POSEIDON_KERNEL_SRC,
-    device::PQ_OPERATIONS_KERNEL_SRC,
-    device::PUBLIC_HASH_KERNEL_SRC,
-    device::OPERATIONS_HASH_KERNEL_SRC,
-    device::PQ_CRYPTO_KERNEL_SRC,
-    device::PQ_RAW_CRYPTO_KERNEL_SRC,
-    device::RESEARCH_ARITHMETIC_KERNEL_SRC,
-    device::OPERATIONS_ARITHMETIC_KERNEL_SRC,
-    device::PQ_SOURCES_KERNEL_SRC,
-    device::PQ_SAMPLING_KERNEL_SRC,
-    device::WALLET_BATCH_KERNEL_SRC,
-    device::PERIODIC_KERNEL_SRC,
-    device::HTLC_KERNEL_SRC,
-    device::RANDOM_KERNEL_SRC,
-    #[cfg(test)]
-    device::RANDOM_REFERENCE_KERNEL_SRC,
-    device::TRANSCRIPT_KERNEL_SRC,
-    device::SCALARS_KERNEL_SRC,
-    device::COMPILER_CONSTANTS_KERNEL_SRC,
-    device::COMPILER_FOLDING_KERNEL_SRC,
-    device::EVALUATIONS_KERNEL_SRC,
-];
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
 pub(crate) struct Census {
     pub(crate) joined_source_bytes: usize,
@@ -80,10 +32,6 @@ pub(crate) struct Census {
     // Conservatively add constructor and proving storage despite their separate
     // phases. Holding this token for the complete guarded runtime is permitted.
     pub(crate) total_requested_backing: usize,
-}
-
-fn tuning_length(nvidia: bool) -> Option<usize> {
-    tuning::kernel_source_len(nvidia)
 }
 
 fn source_requests(joined: usize, tuning: usize) -> Option<usize> {
@@ -121,19 +69,18 @@ pub(super) fn inventory(
     {
         return None;
     }
-    let tuning_source_bytes = tuning_length(nvidia)?;
-    let prefix_bytes = if nvidia {
-        "#define LATTICA_PUBLIC_HASH_NVIDIA_SHUFFLE 1\n".len()
-    } else {
-        0
-    };
-    let joined_source_parts = SOURCES.len().checked_add(2)?;
-    let mut joined_source_bytes = prefix_bytes
-        .checked_add(tuning_source_bytes)?
-        .checked_add(joined_source_parts.checked_sub(1)?)?;
-    for source in SOURCES {
-        joined_source_bytes = joined_source_bytes.checked_add(source.len())?;
-    }
+    let source = kernel_bundle::census(
+        false,
+        if nvidia {
+            "#define LATTICA_PUBLIC_HASH_NVIDIA_SHUFFLE 1\n"
+        } else {
+            ""
+        },
+        tuning.poseidon_schedule,
+    )?;
+    let tuning_source_bytes = source.tuning_bytes;
+    let joined_source_parts = source.parts;
+    let joined_source_bytes = source.bytes;
     let source_construction_requests = source_requests(joined_source_bytes, tuning_source_bytes)?;
     let kernel_wrapper_backing = LIVE_BUILDER_KERNEL_PAIRS.checked_mul(PER_BUILDER_KERNEL_PAIR)?;
     let mut total_requested_backing = source_construction_requests;
