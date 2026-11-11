@@ -9,6 +9,184 @@ use p3_lookup::{
 };
 use p3_symmetric::Permutation;
 
+fn swap_fixture(
+    hashes: usize,
+    leak: bool,
+    split_selector: bool,
+) -> (RecursionTemplate, Vec<Val>, Vec<Val>) {
+    let mut b = ProgramBuilder::new(if leak { 9 } else { 8 }).unwrap();
+    let mut state: [_; 8] = core::array::from_fn(|_| b.input());
+    let bit = b.input();
+    let other_bit = if split_selector { b.input() } else { bit };
+    for round in 0..hashes {
+        let selected: [_; 8] = core::array::from_fn(|i| {
+            b.select(if i < 4 { bit } else { other_bit }, state[i], state[i ^ 4])
+        });
+        if leak && round == 0 {
+            let public = b.public(8).unwrap();
+            b.assert_equal(selected[0], public);
+        }
+        state = b.poseidon(selected);
+    }
+    for (i, value) in state.into_iter().enumerate() {
+        let public = b.public(i).unwrap();
+        b.assert_equal(value, public);
+    }
+    let mut witness = (1..=8).map(Val::from_u64).collect::<Vec<_>>();
+    witness.push(Val::ZERO);
+    if split_selector {
+        witness.push(Val::ZERO);
+    }
+    let mut public: [_; 8] = core::array::from_fn(|i| witness[i]);
+    for _ in 0..hashes {
+        public = default_goldilocks_poseidon2_8().permute(public);
+    }
+    let mut public = public.to_vec();
+    if leak {
+        public.push(witness[0]);
+    }
+    (
+        RecursionTemplate::new(Arc::new(b.finish(None).unwrap()), [91; 32]).unwrap(),
+        public,
+        witness,
+    )
+}
+
+#[test]
+fn merkle_swap_lowering_matches_reference_both_directions_and_packed_tail() {
+    let (template, _, mut witness) = swap_fixture(3, false, false);
+    assert_eq!(template.typed_plan().stats().merkle_swap_hashes, 3);
+    assert_eq!(template.typed_plan().stats().removed_merkle_selections, 24);
+    let index = template
+        .airs()
+        .iter()
+        .position(|air| air.kind == 2)
+        .unwrap();
+    assert_eq!(template.airs()[index].active_rows, 2);
+    for direction in [0, 1] {
+        witness[8] = Val::from_u32(direction);
+        let mut public: [_; 8] = core::array::from_fn(|i| witness[i]);
+        for _ in 0..3 {
+            if direction == 1 {
+                public.rotate_left(4);
+            }
+            public = default_goldilocks_poseidon2_8().permute(public);
+        }
+        let reference_air = MachineAir::from_shared_program(Arc::clone(&template.program));
+        let reference = reference_air.trace(&public, &witness).unwrap();
+        check_constraints(&reference_air, &reference, &public);
+        let traces = template.traces(&public, &witness).unwrap();
+        check(&template, &public, &traces);
+        let width = traces[index].width;
+        // Raw words, bit, all ordered inputs, a round checkpoint, the second
+        // active lane and the inactive odd tail must each remain constrained.
+        for column in (0..18).chain([width / 2, width + width / 2, width - 1]) {
+            let mut wrong = traces.clone();
+            wrong[index].values[column] += Val::ONE;
+            assert!(std::panic::catch_unwind(|| check(&template, &public, &wrong)).is_err());
+        }
+    }
+    let geometry = template.geometry().unwrap();
+    assert!(geometry.degree_gate && geometry.quotient_gate);
+}
+
+#[test]
+fn merkle_swap_lowering_preserves_external_uses_and_mismatched_selectors() {
+    for (leak, split) in [(true, false), (false, true)] {
+        let (template, public, witness) = swap_fixture(1, leak, split);
+        assert_eq!(template.typed_plan().stats().merkle_swap_hashes, 0);
+        assert_eq!(template.typed_plan().stats().removed_merkle_selections, 0);
+        check(
+            &template,
+            &public,
+            &template.traces(&public, &witness).unwrap(),
+        );
+    }
+}
+
+#[test]
+fn hash_input_providers_preserve_cross_hash_and_earlier_arithmetic_uses() {
+    let mut b = ProgramBuilder::new(8).unwrap();
+    let input: [_; 8] = core::array::from_fn(|_| b.input());
+    // The shared input is consumed before its eventual hash-row provider.
+    let sum = b.add(input[0], input[1]);
+    let _unused_digest = b.poseidon(input);
+    let mut second_input = input;
+    second_input[2] = sum;
+    let output = b.poseidon(second_input);
+    for (i, wire) in output.into_iter().enumerate() {
+        let public = b.public(i).unwrap();
+        b.assert_equal(wire, public);
+    }
+    let template = RecursionTemplate::new(Arc::new(b.finish(None).unwrap()), [93; 32]).unwrap();
+    assert_eq!(template.typed_plan().stats().relocated_hash_inputs, 8);
+    assert_eq!(template.typed_plan().stats().hash_input_count_bound, 2);
+    let witness = (1..=8).map(Val::from_u64).collect::<Vec<_>>();
+    let expected = |values: &[Val]| {
+        let mut state = core::array::from_fn(|i| values[i]);
+        state[2] = values[0] + values[1];
+        default_goldilocks_poseidon2_8().permute(state)
+    };
+    let public = expected(&witness);
+    let traces = template.traces(&public, &witness).unwrap();
+    check(&template, &public, &traces);
+    let airs = template.airs();
+    let index = airs.iter().position(|air| air.kind == 2).unwrap();
+    let lane = traces[index].width / air::HASH_LANES;
+    let mut changed = witness.clone();
+    changed[0] += Val::ONE;
+    let other = template.traces(&expected(&changed), &changed).unwrap();
+    let mut wrong = traces.clone();
+    // Replace only the provider hash, retaining the original consumers. Each
+    // local AIR is still valid; the global wire lookup must reject the split.
+    wrong[index].values[..lane].copy_from_slice(&other[index].values[..lane]);
+    for (i, air) in airs.iter().enumerate() {
+        check_constraints(air, &wrong[i], if air.kind == 3 { &public } else { &[] });
+    }
+    assert!(std::panic::catch_unwind(|| check(&template, &public, &wrong)).is_err());
+    let owner = template.prepare_cpu_reference().unwrap();
+    let proof = owner.prove_cpu_reference(&public, &witness).unwrap();
+    owner.verify_cpu_reference(&proof, &public).unwrap();
+    let geometry = template.geometry().unwrap();
+    assert!(geometry.degree_gate && geometry.quotient_gate);
+}
+
+#[test]
+fn merkle_swap_proof_and_recursive_verifier_bind_inputs_and_public_values() {
+    use crate::block_v2::machine::program::ConstructionLimits;
+    use crate::block_v2::profile::Challenge;
+    let (template, public, witness) = swap_fixture(3, false, false);
+    let index = template
+        .airs()
+        .iter()
+        .position(|air| air.kind == 2)
+        .unwrap();
+    let owner = template.prepare_cpu_reference().unwrap();
+    let mut proof = owner.prove_cpu_reference(&public, &witness).unwrap();
+    let key = owner.verifier();
+    key.verify(&proof, &public).unwrap();
+    let limits = ConstructionLimits {
+        max_requested_program_bytes: 1 << 30,
+        max_wires: 8_000_000,
+        max_input_values: 1 << 20,
+    };
+    let parent = owner.compile_verifier(&proof, limits).unwrap();
+    parent.evaluate(&public).unwrap();
+    let mut wrong = public.clone();
+    wrong[0] += Val::ONE;
+    assert!(key.verify(&proof, &wrong).is_err());
+    assert!(parent.evaluate(&wrong).is_err());
+    proof.inner.opened_values.instances[index]
+        .base_opened_values
+        .trace_local[8] += Challenge::ONE;
+    assert!(key.verify(&proof, &public).is_err());
+    assert!(owner
+        .compile_verifier(&proof, limits)
+        .unwrap()
+        .evaluate(&public)
+        .is_err());
+}
+
 fn fixture() -> (RecursionTemplate, Vec<Val>, Vec<Val>) {
     let mut b = ProgramBuilder::new(8).unwrap();
     let input: [_; 8] = core::array::from_fn(|_| b.input());

@@ -20,7 +20,11 @@ pub(super) const HASH_TABLE_MAX_ROWS: usize = 1 << 18;
 // together. Bound its rows independently of the smaller transition table.
 pub(super) const SCALAR_TABLE_MAX_ROWS: usize = 1 << 18;
 const HASH_WIDTH: usize = 8 + 2 * (8 * 8 + 22);
-const BUS: LookupBus<'static> = LookupBus::new("lattica-recursion-v2-wire");
+// Eight raw input words and one authenticated direction bit precede the
+// permutation trace. Ordinary hashes fix the direction bit to zero. Keeping
+// both forms in one table avoids another commitment and quotient matrix set.
+const SWAP_HASH_WIDTH: usize = HASH_WIDTH + 9;
+const BUS: LookupBus<'static> = LookupBus::new("lattica-recursion-v3-wire");
 #[derive(Clone, Debug)]
 pub(super) struct TableAir {
     pub template: Arc<RecursionTemplate>,
@@ -37,6 +41,7 @@ pub(super) struct VerifierAir {
     pub height: usize,
     pub publics: usize,
     pub id: [u8; 32],
+    pub hash_input_count_bound: u32,
 }
 impl TableAir {
     pub fn verifier_air(&self) -> VerifierAir {
@@ -45,6 +50,7 @@ impl TableAir {
             height: self.height,
             publics: self.template.program.publics,
             id: self.template.id,
+            hash_input_count_bound: self.template.typed.stats().hash_input_count_bound.max(1),
         }
     }
 }
@@ -53,7 +59,7 @@ impl BaseAir<Val> for VerifierAir {
         match self.kind {
             0 => 4 * SCALAR_LANES,
             1 => 9 * CUBIC_LANES,
-            2 => HASH_WIDTH * HASH_LANES,
+            2 => SWAP_HASH_WIDTH * HASH_LANES,
             4 => 19,
             _ => 1,
         }
@@ -69,7 +75,7 @@ impl BaseAir<Val> for VerifierAir {
         match self.kind {
             0 => 8 + 6 * SCALAR_LANES,
             1 => 14 * CUBIC_LANES,
-            2 => 25 * HASH_LANES,
+            2 => 35 * HASH_LANES,
             4 => 31,
             _ => self.publics.max(1) + 8,
         }
@@ -222,12 +228,30 @@ impl BaseAir<Val> for TableAir {
                         let Op::Poseidon { input, output } = op else {
                             unreachable!()
                         };
+                        let swap = swaps::find(&self.template.typed.swaps, index as usize);
+                        let input = swap.map_or(input, |swap| &swap.input);
+                        let owners = self.template.typed.hash_input_owners(index);
                         p[0] = Val::ONE;
                         for j in 0..8 {
                             p[1 + j] = Val::from_u32(input[j] + 1);
                             p[9 + j] = Val::from_u32(output[j] + 1);
                             p[17 + j] =
                                 Val::from_u32(self.template.typed.references[output[j] as usize]);
+                            // The owner supplies all other uses; a sole-use
+                            // private value contributes zero. Counts and wire
+                            // addresses are fixed by trusted preprocessing.
+                            p[27 + j] = if owners & (1 << j) != 0 {
+                                Val::ONE
+                                    - Val::from_u32(
+                                        self.template.typed.references[input[j] as usize],
+                                    )
+                            } else {
+                                Val::ONE
+                            };
+                        }
+                        if let Some(swap) = swap {
+                            p[25] = Val::from_u32(swap.bit + 1);
+                            p[26] = Val::ONE;
                         }
                     }
                     _ => unreachable!(),
@@ -328,13 +352,7 @@ fn permutation<E: PrimeCharacteristicRing>(
 pub(super) fn trace(air: &TableAir, values: &[Val]) -> RowMajorMatrix<Val> {
     let template = &air.template;
     let kind = air.kind;
-    let width = match kind {
-        0 => 4 * SCALAR_LANES,
-        1 => 9 * CUBIC_LANES,
-        2 => HASH_WIDTH * HASH_LANES,
-        4 => 19,
-        _ => 1,
-    };
+    let width = air.width();
     let lanes = match kind {
         0 => SCALAR_LANES,
         1 => CUBIC_LANES,
@@ -400,10 +418,20 @@ pub(super) fn trace(air: &TableAir, values: &[Val]) -> RowMajorMatrix<Val> {
                     let Op::Poseidon { input, .. } = op else {
                         unreachable!()
                     };
+                    if let Some(swap) = swaps::find(&template.typed.swaps, index as usize) {
+                        for j in 0..8 {
+                            m[j] = values[swap.input[j] as usize];
+                        }
+                        m[8] = values[swap.bit as usize];
+                    } else {
+                        for j in 0..8 {
+                            m[j] = values[input[j] as usize];
+                        }
+                    }
                     let input = input.map(|w| values[w as usize]);
-                    m[..8].copy_from_slice(&input);
+                    m[9..17].copy_from_slice(&input);
                     let _ = permutation(input, |column, value| {
-                        m[column] = value;
+                        m[9 + column] = value;
                         value
                     });
                 }
@@ -514,16 +542,31 @@ impl<AB: AirBuilder<F = Val> + InteractionBuilder> Air<AB> for VerifierAir {
                 }
             }
             2 => {
+                let width = SWAP_HASH_WIDTH;
+                let pre_width = 35;
                 for lane in 0..HASH_LANES {
-                    let m = &m[lane * HASH_WIDTH..(lane + 1) * HASH_WIDTH];
-                    let p = &p[lane * 25..(lane + 1) * 25];
+                    let m = &m[lane * width..(lane + 1) * width];
+                    let p = &p[lane * pre_width..(lane + 1) * pre_width];
                     let h: AB::Expr = p[0].into();
-                    let output =
-                        permutation(core::array::from_fn(|i| m[i].into()), |column, expected| {
-                            let actual: AB::Expr = m[column].into();
+                    let bit: AB::Expr = m[8].into();
+                    let swap: AB::Expr = p[26].into();
+                    b.assert_zero(h.clone() * bit.clone() * (bit.clone() - AB::Expr::ONE));
+                    b.assert_zero((AB::Expr::ONE - swap.clone()) * bit.clone());
+                    for i in 0..8 {
+                        b.assert_zero(
+                            h.clone() * (m[9 + i] - m[i] - bit.clone() * (m[i ^ 4] - m[i])),
+                        );
+                    }
+                    BUS.lookup_key(b, [p[25].into(), bit], Count::bounded(swap, 1));
+                    let hash = &m[9..];
+                    let output = permutation(
+                        core::array::from_fn(|i| hash[i].into()),
+                        |column, expected| {
+                            let actual: AB::Expr = hash[column].into();
                             b.assert_zero(h.clone() * (actual.clone() - expected));
                             actual
-                        });
+                        },
+                    );
                     for &value in m {
                         b.assert_zero((AB::Expr::ONE - h.clone()) * value);
                     }
@@ -531,7 +574,11 @@ impl<AB: AirBuilder<F = Val> + InteractionBuilder> Air<AB> for VerifierAir {
                         BUS.lookup_key(
                             b,
                             [p[1 + i].into(), m[i].into()],
-                            Count::bounded(h.clone(), 1),
+                            // Signed count: +1 for an ordinary read, or minus
+                            // the remaining uses for a relocated private input.
+                            // Its exact magnitude is bounded by the immutable
+                            // source's reference counts, not by a proof value.
+                            Count::bounded(p[27 + i].into(), self.hash_input_count_bound),
                         );
                         BUS.table_entry(b, [p[9 + i].into(), output[i].clone()], p[17 + i]);
                     }

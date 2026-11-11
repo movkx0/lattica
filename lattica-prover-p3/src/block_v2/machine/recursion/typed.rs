@@ -20,6 +20,10 @@ pub struct TypedVerifierStats {
     pub reduction_chains: usize,
     pub reduction_terms: usize,
     pub removed_scalar_operations: usize,
+    pub merkle_swap_hashes: usize,
+    pub removed_merkle_selections: usize,
+    pub relocated_hash_inputs: usize,
+    pub hash_input_count_bound: u32,
 }
 #[derive(Clone, Debug)]
 pub struct TypedVerifierPlan {
@@ -27,6 +31,8 @@ pub struct TypedVerifierPlan {
     pub(super) groups: Arc<[[u32; 4]]>,
     pub(super) references: Arc<[u32]>,
     pub(super) removed: Arc<[bool]>,
+    pub(super) swaps: Arc<[swaps::HashSwap]>,
+    hash_input_owners: Arc<[(u32, u8)]>,
     stats: TypedVerifierStats,
 }
 #[derive(Clone)]
@@ -43,11 +49,19 @@ impl TypedVerifierPlan {
     pub fn stats(&self) -> &TypedVerifierStats {
         &self.stats
     }
+    pub(super) fn hash_input_owners(&self, instruction: u32) -> u8 {
+        self.hash_input_owners
+            .binary_search_by_key(&instruction, |entry| entry.0)
+            .ok()
+            .map_or(0, |index| self.hash_input_owners[index].1)
+    }
     pub(super) fn backing_bytes(&self) -> usize {
         self.groups.len() * 16
             + self.rows.len() * core::mem::size_of::<DotRow>()
             + self.references.len() * 4
             + self.removed.len()
+            + self.swaps.len() * core::mem::size_of::<swaps::HashSwap>()
+            + self.hash_input_owners.len() * core::mem::size_of::<(u32, u8)>()
     }
     pub(super) fn compile(program: &Program) -> Result<Self, String> {
         let n = program.operations.len();
@@ -90,7 +104,6 @@ impl TypedVerifierPlan {
                 i += 1;
             }
         }
-        drop(writers);
         drop(by_output);
         let mut rows = Vec::new();
         let mut removed = vec![false; n];
@@ -138,7 +151,9 @@ impl TypedVerifierPlan {
             }
         }
         drop(steps);
-        stats.removed_scalar_operations = removed.iter().filter(|v| **v).count();
+        let swaps = swaps::lower(program, &writers, &mut removed)?;
+        stats.merkle_swap_hashes = swaps.len();
+        stats.removed_merkle_selections = swaps.len() * 8;
         let mut references = vec![0u32; wires];
         let mut read = |w: usize| -> Result<(), String> {
             references[w] = references[w]
@@ -148,8 +163,20 @@ impl TypedVerifierPlan {
         };
         for (i, op) in program.operations.iter().enumerate() {
             if !removed[i] {
-                for w in op.reads() {
-                    read(w.0)?;
+                let swap = if matches!(op, Op::Poseidon { .. }) {
+                    swaps::find(&swaps, i)
+                } else {
+                    None
+                };
+                if let Some(swap) = swap {
+                    for wire in swap.input {
+                        read(wire as usize)?;
+                    }
+                    read(swap.bit as usize)?;
+                } else {
+                    for w in op.reads() {
+                        read(w.0)?;
+                    }
                 }
             }
         }
@@ -166,6 +193,12 @@ impl TypedVerifierPlan {
                 read(row.value as usize)?;
             }
         }
+        let (hash_input_owners, relocated, bound) =
+            swaps::input_providers(program, &writers, &swaps, &references, &mut removed)?;
+        drop(writers);
+        stats.relocated_hash_inputs = relocated;
+        stats.hash_input_count_bound = bound;
+        stats.removed_scalar_operations = removed.iter().filter(|v| **v).count();
         let mut groups = Vec::new();
         let mut index = 0;
         while index < rows.len() {
@@ -189,6 +222,8 @@ impl TypedVerifierPlan {
             rows: Arc::from(rows),
             references: Arc::from(references),
             removed: Arc::from(removed),
+            swaps: Arc::from(swaps),
+            hash_input_owners: Arc::from(hash_input_owners),
             stats,
         })
     }

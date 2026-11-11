@@ -11,6 +11,7 @@ mod geometry;
 mod gpu;
 mod parent;
 mod prepared;
+mod swaps;
 mod typed;
 pub use typed::{TypedVerifierPlan, TypedVerifierStats};
 #[cfg(test)]
@@ -34,7 +35,7 @@ pub use gpu::{
 pub use parent::{CompiledRecursionVerifier, RecursionVerifier};
 pub use prepared::{PreparedRecursionTemplate, RecursionExecutionProof};
 
-pub const VERSION: u64 = 2;
+pub const VERSION: u64 = 3;
 const PADDING: u32 = u32::MAX;
 
 /// One immutable circuit. Preparation is independent of all proof witnesses.
@@ -52,8 +53,10 @@ impl RecursionTemplate {
     pub fn new(program: Arc<Program>, trusted_registry: [u8; 32]) -> Result<Self, String> {
         let typed = TypedVerifierPlan::compile(&program)?;
         let mut hasher = Sha3_256::new();
-        hasher.update(b"lattica-recursion-multi-table-prototype-v2");
+        hasher.update(b"lattica-recursion-multi-table-prototype-v3");
         hasher.update(b"typed-pcs-reduction-transition-v1");
+        hasher.update(b"authenticated-merkle-swap-poseidon-v1");
+        hasher.update(b"hash-resident-private-input-providers-v1");
         hasher.update(VERSION.to_le_bytes());
         hasher.update(trusted_registry);
         hasher.update(crate::block_v2::profile::CANDIDATE_PROFILE_ID);

@@ -26,6 +26,7 @@ pub struct GpuTemplateLimits {
 
 #[derive(serde::Serialize)]
 pub struct GpuProofMeasurement {
+    pub geometry: ArchitectureGeometry,
     pub public_prefix_host_bytes: usize,
     pub public_salt_host_bytes: usize,
     pub host_witness_seconds: f64,
@@ -47,6 +48,7 @@ pub struct PreparedGpuRecursionTemplate {
 // The proving state owns no SSA program or instruction-index tables. Consuming
 // callers can retire those allocations before the GPU starts its private work.
 struct GpuRecursionState {
+    geometry: ArchitectureGeometry,
     airs: Vec<air::VerifierAir>,
     data: ProverData<profile::Config>,
     limits: GpuTemplateLimits,
@@ -199,7 +201,11 @@ impl GpuTemplateLimits {
             || geometry.tables.len() > 8
             || geometry.tables.iter().any(|t| t.height > self.max_rows)
         {
-            return Err("recursion GPU geometry exceeds admitted prototype".into());
+            return Err(format!(
+                "recursion GPU geometry exceeds admitted prototype: tables={} (limit 8), degree_gate={}, quotient_gate={}, max_height={} (limit {})",
+                geometry.tables.len(), geometry.degree_gate, geometry.quotient_gate,
+                geometry.tables.iter().map(|t| t.height).max().unwrap_or(0), self.max_rows,
+            ));
         }
         let mut trace_bytes = 0usize;
         let mut staging = 0usize;
@@ -311,7 +317,8 @@ impl RecursionTemplate {
             matrices.push((DomainSpec::new(1, degree)?, matrix));
         }
         let (commitment, mut data) = config.pcs().commit_preprocessing_device(matrices)?;
-        let allowance = public_prefix_allowance(&self.geometry()?)?;
+        let geometry = self.geometry()?;
+        let allowance = public_prefix_allowance(&geometry)?;
         let public_prefix_host_bytes = if allowance > 0 {
             data.park_public_prefixes(&session, allowance)?
         } else {
@@ -339,6 +346,7 @@ impl RecursionTemplate {
         Ok(PreparedGpuRecursionTemplate {
             template: self.clone(),
             state: GpuRecursionState {
+                geometry,
                 airs: airs.iter().map(air::TableAir::verifier_air).collect(),
                 data,
                 limits,
@@ -528,6 +536,7 @@ impl GpuRecursionState {
         Ok((
             proof,
             GpuProofMeasurement {
+                geometry: self.geometry.clone(),
                 public_prefix_host_bytes: self.public_prefix_host_bytes,
                 public_salt_host_bytes: self.public_salt_host_bytes,
                 host_witness_seconds,
