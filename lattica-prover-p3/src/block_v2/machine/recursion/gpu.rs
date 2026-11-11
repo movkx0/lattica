@@ -238,6 +238,14 @@ impl GpuTemplateLimits {
             .checked_add(
                 indices
                     .checked_add(template.typed.backing_bytes())
+                    .and_then(|bytes| {
+                        bytes.checked_add(
+                            template
+                                .tables
+                                .len()
+                                .checked_mul(core::mem::size_of::<super::layout::TableSpan>())?,
+                        )
+                    })
                     .ok_or("typed backing overflow")?,
             )
             .ok_or("recursion source storage overflow")?;

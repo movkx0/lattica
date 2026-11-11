@@ -76,6 +76,7 @@ pub struct Options {
     pub native_source: String,
     pub recursion_backend: String,
     pub preparation_workers: usize,
+    pub template_preparation: String,
 }
 impl Options {
     pub(crate) fn typed_recursion(&self) -> bool {
@@ -142,6 +143,7 @@ impl Options {
             native_source: "current".into(),
             recursion_backend: "typed".into(),
             preparation_workers: 16,
+            template_preparation: "worker".into(),
         };
         let mut seen = std::collections::BTreeSet::new();
         while let Some(key) = args.next() {
@@ -184,6 +186,7 @@ impl Options {
                 "--ntt-profile" => out.ntt_profile = value,
                 "--poseidon-profile" => out.poseidon_profile = value,
                 "--native-source" => out.native_source = value,
+                "--template-preparation" => out.template_preparation = value,
                 "--recursion-backend" => out.recursion_backend = value,
                 "--preparation-workers" => {
                     out.preparation_workers = value.parse().map_err(error)?
@@ -204,6 +207,13 @@ impl Options {
         ensure(
             matches!(out.recursion_backend.as_str(), "typed" | "machine"),
             "invalid recursion backend",
+        )?;
+        ensure(
+            out.template_preparation == "worker"
+                || (out.template_preparation == "owner"
+                    && out.command == "architecture-graph"
+                    && out.typed_recursion()),
+            "owner template preparation is a typed graph profiling control",
         )?;
         ensure(
             (1..=16).contains(&out.preparation_workers),
@@ -269,7 +279,18 @@ impl Options {
         ensure(
             matches!(out.family.as_str(), "shake" | "aes" | "graph")
                 && (out.family != "aes" || out.command.starts_with("architecture-"))
-                && (1..=8).contains(&out.leaves)
+                && (1..=if out.transactions == 4
+                    && out.family == "graph"
+                    && (out.command == "prepare-inputs"
+                        || (out.command == "architecture-graph"
+                            && out.typed_recursion()
+                            && out.compiler_policy == "typed-batch"))
+                {
+                    16
+                } else {
+                    8
+                })
+                    .contains(&out.leaves)
                 && (out.family != "graph"
                     || (out.request.is_none()
                         && matches!(
@@ -535,9 +556,10 @@ mod default_tests {
         assert_eq!(options.query_gather, "batch");
         assert_eq!(options.gpu_managed_mib, "auto");
         assert_eq!(options.compiler_policy, "typed-batch");
+        assert_eq!(options.template_preparation, "worker");
         assert!(options.typed_recursion());
         assert!(options.selection.is_none());
-        assert_eq!(selection::widths(&options).unwrap(), (16, 8));
+        assert_eq!(selection::widths(&options).unwrap(), (16, 16));
     }
 
     #[test]
@@ -587,6 +609,7 @@ mod default_tests {
         assert_eq!(small.group_width, 4);
         assert_eq!(small.compiler_policy, "standard");
         assert!(small.typed_recursion());
+        assert_eq!(selection::widths(&small).unwrap(), (4, 4));
     }
 }
 

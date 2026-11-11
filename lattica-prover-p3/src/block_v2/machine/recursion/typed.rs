@@ -5,7 +5,7 @@ use super::*;
 
 const NONE: u32 = u32::MAX;
 const MIN_TERMS: usize = 4;
-const PLANNING_BYTES: usize = 2 << 30;
+pub(super) const PLANNING_BYTES: usize = 2 << 30;
 
 #[derive(Clone, Debug)]
 pub(super) struct DotRow {
@@ -14,6 +14,13 @@ pub(super) struct DotRow {
     pub acc: [u32; 3],
     pub start: bool,
     pub end: bool,
+}
+#[derive(Clone, Debug)]
+pub(super) struct DotGroup {
+    pub terms: [u32; 4],
+    // The source's final accumulator is carried by the last active group,
+    // rather than a separate physical row. NONE denotes a continuing chain.
+    pub end: u32,
 }
 #[derive(Clone, Debug, Default, serde::Serialize)]
 pub struct TypedVerifierStats {
@@ -28,7 +35,7 @@ pub struct TypedVerifierStats {
 #[derive(Clone, Debug)]
 pub struct TypedVerifierPlan {
     pub(super) rows: Arc<[DotRow]>,
-    pub(super) groups: Arc<[[u32; 4]]>,
+    pub(super) groups: Arc<[DotGroup]>,
     pub(super) references: Arc<[u32]>,
     pub(super) removed: Arc<[bool]>,
     pub(super) swaps: Arc<[swaps::HashSwap]>,
@@ -56,12 +63,40 @@ impl TypedVerifierPlan {
             .map_or(0, |index| self.hash_input_owners[index].1)
     }
     pub(super) fn backing_bytes(&self) -> usize {
-        self.groups.len() * 16
+        self.groups.len() * core::mem::size_of::<DotGroup>()
             + self.rows.len() * core::mem::size_of::<DotRow>()
             + self.references.len() * 4
             + self.removed.len()
             + self.swaps.len() * core::mem::size_of::<swaps::HashSwap>()
             + self.hash_input_owners.len() * core::mem::size_of::<(u32, u8)>()
+    }
+    /// Partition only between complete chains, with at most two tables and
+    /// only when doing so reduces total padded rows. No transition crosses a
+    /// table boundary, including the cyclic last-to-first trace opening.
+    pub(super) fn reduction_parts(&self, max_parts: usize) -> Vec<(usize, usize, usize)> {
+        let count = self.groups.len();
+        let height = count.max(8).next_power_of_two();
+        let mut best = None;
+        let mut best_cost = (height, height);
+        if max_parts >= 2 {
+            for (index, group) in self.groups.iter().enumerate().take(count.saturating_sub(1)) {
+                if group.end == NONE {
+                    continue;
+                }
+                let cut = index + 1;
+                let prefix = cut.max(8).next_power_of_two();
+                let tail = (count - cut).max(8).next_power_of_two();
+                let cost = (prefix + tail, prefix.max(tail));
+                if cost.0 < height && cost < best_cost {
+                    best = Some((cut, prefix, tail));
+                    best_cost = cost;
+                }
+            }
+        }
+        match best {
+            Some((cut, prefix, tail)) => vec![(0, cut, prefix), (cut, count - cut, tail)],
+            None => vec![(0, count, height)],
+        }
     }
     pub(super) fn compile(program: &Program) -> Result<Self, String> {
         let n = program.operations.len();
@@ -202,18 +237,20 @@ impl TypedVerifierPlan {
         let mut groups = Vec::new();
         let mut index = 0;
         while index < rows.len() {
-            let mut group = [NONE; 4];
-            if rows[index].end {
-                group[0] = index as u32;
-                index += 1;
-            } else {
-                for at in &mut group {
-                    if index == rows.len() || rows[index].end {
-                        break;
-                    }
-                    *at = index as u32;
-                    index += 1;
+            let mut group = DotGroup {
+                terms: [NONE; 4],
+                end: NONE,
+            };
+            for at in &mut group.terms {
+                if index == rows.len() || rows[index].end {
+                    break;
                 }
+                *at = index as u32;
+                index += 1;
+            }
+            if index < rows.len() && rows[index].end {
+                group.end = index as u32;
+                index += 1;
             }
             groups.push(group);
         }

@@ -248,7 +248,8 @@ pub(crate) fn plan(options: &Options, deadline: &Deadline) -> Result<serde_json:
     Ok(
         serde_json::json!({"scope":"descriptor-planning","input_sha3":digest,"source_sha3":hex(&crate::graph_proofs::compiled_source_fingerprint()),
         "crypto_native_instances":native,"planned_outer_without_auxiliary_branches":outer+options.transactions-1,
-        "shake_width":shake_width,"graph_width":graph_width,"requests":rows,
+            "shake_width":shake_width,"graph_width":graph_width,"requests":rows,
+            "typed_parent_fan_in":options.typed_recursion().then(super::typed::reduction_fan_in),
             "leaf_catalog":cases[0].tree.leaves().iter().enumerate().map(|(i,l)|serde_json::json!({"first":i,"kind":format!("{:?}",l.kind()),"operations":l.operation_indices()})).collect::<Vec<_>>(),"graph_height_admission_complete":false,"proofs_generated":0}),
     )
 }

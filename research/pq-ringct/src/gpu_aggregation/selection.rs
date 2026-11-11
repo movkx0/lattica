@@ -72,9 +72,11 @@ pub(crate) fn widths(options: &Options) -> Result<(usize, usize)> {
         )?;
         return Ok((
             options.group_width,
-            options
-                .group_width
-                .min(if options.transactions == 4 { 8 } else { 4 }),
+            options.group_width.min(if options.transactions == 4 {
+                super::typed_graph::native_group_limit(options)
+            } else {
+                4
+            }),
         ));
     }
     if options.profile == "legacy" {

@@ -115,6 +115,27 @@ impl ProvenNode {
             crate::graph_proofs::compiled_source_fingerprint(),
         )
         .map_err(err)?;
+        let template_seconds = started.elapsed().as_secs_f64();
+        let (node, setup_seconds, measurement) =
+            Self::prove_prepared_gpu(node, template, cache, limits, source_released)?;
+        Ok((node, template_seconds + setup_seconds, measurement))
+    }
+    pub(crate) fn prove_prepared_gpu(
+        node: CompiledNode,
+        template: lattica_prover_p3::block_v2::machine::recursion::RecursionTemplate,
+        cache: &mut lattica_prover_p3::block_v2::machine::recursion::GpuRecursionCache,
+        limits: lattica_prover_p3::block_v2::machine::recursion::GpuTemplateLimits,
+        source_released: impl FnOnce(),
+    ) -> Result<(
+        Self,
+        f64,
+        lattica_prover_p3::block_v2::machine::recursion::GpuProofMeasurement,
+    )> {
+        require(
+            template.matches_program(&node.program),
+            "prepared crypto source ownership",
+        )?;
+        let started = std::time::Instant::now();
         let owner = cache.prepare(template, limits).map_err(err)?;
         let setup_seconds = started.elapsed().as_secs_f64();
         let (node, measurement) = Self::from_cached_gpu(node, owner, source_released)?;
@@ -512,8 +533,8 @@ mod tests {
             [1; 32],
             3,
             shake_air::Descriptor {
-                input_len: 137,
-                output_len: 137,
+                input_len: 7 * 136 + 1,
+                output_len: 32,
             },
         )
         .unwrap();
@@ -527,7 +548,8 @@ mod tests {
         let mut owners = Vec::new();
         let mut keys = Vec::new();
         let mut proofs = Vec::new();
-        for i in 0..3 {
+        assert_eq!(contract.total, 8);
+        for i in 0..8 {
             let spec = contract.span(i, 1).unwrap();
             let mut public = header(&spec, &context).unwrap();
             public[HEADER..HEADER + 4].fill(Val::from_u32(i));
@@ -549,9 +571,10 @@ mod tests {
             });
         }
         let limits = ConstructionLimits {
-            max_requested_program_bytes: 2 << 30,
+            // Match the expanded N4 compiler used for eight-child parents.
+            max_requested_program_bytes: 6 << 30,
             max_wires: 1 << 26,
-            max_input_values: 1 << 20,
+            max_input_values: 8 << 20,
         };
         let children: Vec<_> = nodes
             .iter()
@@ -584,6 +607,11 @@ mod tests {
         let compact_root = compile_proven(&compact_children, limits).unwrap();
         require_complete(&compact_root, &contract).unwrap();
         compact_root.evaluate().unwrap();
+        let too_many = compact
+            .iter()
+            .chain(compact[..1].iter())
+            .collect::<Vec<_>>();
+        assert!(compile_proven(&too_many, limits).is_err());
         compact_children.swap(0, 1);
         assert!(compile_proven(&compact_children, limits).is_err());
         root.public[COUNT] += Val::ONE;
@@ -598,9 +626,9 @@ mod tests {
         drop(root);
         drop(children);
         for column in [HEADER, STATEMENT] {
-            nodes[1].public[column] += Val::ONE;
-            proofs[1] = owners[1]
-                .prove_cpu_reference(&nodes[1].public, &[])
+            nodes[7].public[column] += Val::ONE;
+            proofs[7] = owners[7]
+                .prove_cpu_reference(&nodes[7].public, &[])
                 .unwrap();
             let children: Vec<_> = nodes
                 .iter()
@@ -610,7 +638,7 @@ mod tests {
                 .collect();
             let invalid = compile_merge(&children, limits).unwrap();
             assert!(invalid.evaluate().is_err());
-            nodes[1].public[column] -= Val::ONE;
+            nodes[7].public[column] -= Val::ONE;
         }
     }
 }

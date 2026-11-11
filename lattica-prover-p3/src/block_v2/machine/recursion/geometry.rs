@@ -31,6 +31,36 @@ pub struct ArchitectureGeometry {
     pub typed: TypedVerifierStats,
 }
 
+fn committed_columns(main: usize, preprocessed: usize, permutation: usize, chunks: usize) -> usize {
+    let r = profile::NUM_RANDOM_CODEWORDS;
+    main + r + preprocessed + permutation + r + chunks * (3 + r) + 3 + r
+}
+
+/// Exact per-row commitment cost for the trusted AIR, independent of witnesses
+/// and table height. Used once when selecting the immutable table layout.
+pub(super) fn row_cost(air: &air::VerifierAir) -> Result<(u64, usize), String> {
+    let gadget = LogUpGadget::new();
+    let layout = AirLayout::from_air::<Val>(air);
+    let unpacked = Lookups::<Val>::from_air::<profile::Challenge, _>(air);
+    let log = get_log_num_quotient_chunks::<Val, profile::Challenge, _, _>(
+        air, layout, &unpacked, 1, &gadget,
+    );
+    if log > profile::LOG_BLOWUP {
+        return Err("recursion quotient exceeds pinned profile".into());
+    }
+    let packed = unpacked.pack_same_bus(&gadget, 1 << log);
+    let permutation = if packed.is_empty() {
+        0
+    } else {
+        (packed.len() + 1) * 3
+    };
+    let chunks = 1 << (log + 1);
+    Ok((
+        committed_columns(air.width(), air.preprocessed_width(), permutation, chunks) as u64,
+        chunks,
+    ))
+}
+
 pub(super) fn analyze(template: &RecursionTemplate) -> Result<ArchitectureGeometry, String> {
     let gadget = LogUpGadget::new();
     let mut tables = Vec::new();
@@ -63,15 +93,12 @@ pub(super) fn analyze(template: &RecursionTemplate) -> Result<ArchitectureGeomet
         } else {
             (packed.len() + 1) * 3
         };
-        let r = profile::NUM_RANDOM_CODEWORDS;
-        let columns = air.width()
-            + r
-            + air.preprocessed_width()
-            + permutation_width
-            + r
-            + quotient_chunks * (3 + r)
-            + 3
-            + r;
+        let columns = committed_columns(
+            air.width(),
+            air.preprocessed_width(),
+            permutation_width,
+            quotient_chunks,
+        );
         let fields = (height as u64)
             .checked_mul(2 << profile::LOG_BLOWUP)
             .and_then(|n| n.checked_mul(columns as u64))
@@ -109,8 +136,14 @@ pub(super) fn analyze(template: &RecursionTemplate) -> Result<ArchitectureGeomet
     Ok(ArchitectureGeometry {
         template_identity: template.id,
         typed: template.typed.stats().clone(),
-        degree_gate: tables.iter().all(|t| t.constraint_degree <= 4),
-        quotient_gate: tables.iter().all(|t| t.quotient_chunks <= 8),
+        degree_gate: tables
+            .iter()
+            .all(|t| t.constraint_degree <= if t.table == "poseidon2" { 8 } else { 4 }),
+        quotient_gate: tables
+            .iter()
+            .all(|t| t.quotient_chunks <= if t.table == "poseidon2" { 16 } else { 8 })
+            && tables.iter().map(|t| t.quotient_chunks).sum::<usize>()
+                <= layout::MAX_QUOTIENT_MATRICES,
         lde_payload_bytes: fields.checked_mul(8).ok_or("recursion byte overflow")?,
         committed_lde_fields: fields,
         tables,

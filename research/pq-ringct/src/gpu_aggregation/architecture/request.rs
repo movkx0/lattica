@@ -34,19 +34,27 @@ pub(super) fn profile(
                 deadline.check()?;
                 let preparation = Instant::now();
                 let (node, order_rejected) = prepare(index)?;
-                Ok((node, order_rejected, preparation.elapsed().as_secs_f64()))
+                let preparation_seconds = preparation.elapsed().as_secs_f64();
+                let started = Instant::now();
+                let template = RecursionTemplate::new(
+                    node.shared_program(),
+                    crate::graph_proofs::compiled_source_fingerprint(),
+                )?;
+                Ok((
+                    node,
+                    template,
+                    order_rejected,
+                    preparation_seconds,
+                    started.elapsed().as_secs_f64(),
+                ))
             },
-            |_, (node, order_rejected, seconds), permit| {
+            |_, (node, template, order_rejected, seconds, template_seconds), permit| {
                 native_order_rejected |= order_rejected;
                 native_preparation_seconds += seconds;
                 if direct {
                     component_tree::recursion::require_complete(&node, contract).map_err(error)?;
                 }
                 let setup = Instant::now();
-                let template = RecursionTemplate::new(
-                    node.shared_program(),
-                    crate::graph_proofs::compiled_source_fingerprint(),
-                )?;
                 if direct {
                     if let Some(id) = root_identity {
                         ensure(
@@ -69,7 +77,8 @@ pub(super) fn profile(
                 }
                 proven.push(node);
                 leaves.push(
-                    serde_json::json!({"setup_seconds":setup_seconds,"measurement":measurement}),
+                    serde_json::json!({"template_preparation_seconds":template_seconds,
+                        "setup_seconds":setup_seconds,"measurement":measurement}),
                 );
                 // Compact keys retain neither SSA programs nor public GPU trees.
                 Ok(())

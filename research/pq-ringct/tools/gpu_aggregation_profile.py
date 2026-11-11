@@ -76,6 +76,7 @@ def selection(args, argv):
     allowed = {'--case', '--workload', '--input-bundle', '--input', '--output', '--profile',
                '--group-width', '--pipeline', '--timeout-seconds', '--max-components',
         '--identity', '--selection', '--request', '--repetitions', '--screen-family', '--first-leaf', '--leaves', '--gpu-managed-mib', '--query-gather', '--memory-qualification', '--compiler-policy', '--ntt-profile', '--poseidon-profile', '--native-source', '--recursion-backend', '--preparation-workers'}
+    allowed.add('--template-preparation')
     require(len(argv[2:]) % 2 == 0, 'aggregation options require values')
     for key, value in zip(argv[2::2], argv[3::2]):
         require(key in allowed and key not in values, 'unknown/duplicate aggregation option')
@@ -107,6 +108,9 @@ def selection(args, argv):
     require(backend in ('typed', 'machine'), 'invalid recursion backend')
     require(1 <= int(values.get('--preparation-workers', '16')) <= 16, 'preparation worker range')
     typed = backend == 'typed'
+    preparation = values.get('--template-preparation', 'worker')
+    require(preparation == 'worker' or (preparation == 'owner' and command == 'architecture-graph' and typed),
+            'owner template preparation is a typed graph profiling control')
     require(not typed or (profile == 'grouped-v5' and typed_command), 'typed backend command/profile')
     machine_reference = command == 'architecture-request' and values.get('--screen-family') == 'aes' and values.get('--group-width') == '1'
     require(not command.startswith('architecture-') or typed or machine_reference or command == 'architecture-graph', 'architecture screen requires typed backend')
@@ -134,8 +138,12 @@ def selection(args, argv):
     require(command not in ('architecture-proof', 'architecture-parent', 'architecture-request', 'architecture-graph') or (native_source == 'revalidate-archive'
         and 1 <= int(values.get('--repetitions', '3')) <= 3),
         'architecture proof requires a revalidated AES/SHAKE archive and at most three fresh proofs')
+    graph_leaf_limit = 16 if values['--case'] == 'n4' and (command == 'prepare-inputs'
+        or (typed and values.get('--compiler-policy') == 'typed-batch')) else 8
+    require(values.get('--screen-family') != 'graph'
+            or 1 <= int(values.get('--leaves', '8')) <= graph_leaf_limit, 'invalid graph leaf window')
     require(command != 'architecture-graph' or (native_source == 'revalidate-archive' and values.get('--screen-family') == 'graph'
-        and '--request' not in values and (typed or width <= 4) and 1 <= int(values.get('--leaves', '8')) <= 8), 'invalid graph architecture selection')
+            and '--request' not in values and (typed or width <= 4)), 'invalid graph architecture selection')
     return dict(command=command, values=values, profile=profile,
                 transactions=int(values['--case'][1:]), complete_fresh_workflow=False)
 
@@ -220,16 +228,17 @@ def validate(content, selected):
         count = groups
         remaining = groups
         if typed:
+            fan_in = 8 if selected['values'].get('--compiler-policy') == 'typed-batch' else 4
             while remaining > 1:
-                count += remaining // 4 + (remaining % 4 > 1)
-                remaining = (remaining + 3) // 4
+                count += remaining // fan_in + (remaining % fan_in > 1)
+                remaining = (remaining + fan_in - 1) // fan_in
         else:
             count = 2 * groups - 1
         require(report['scope'] == 'recursion-graph-subtree-screen' and report['verified'] is True
             and report['complete_aggregation'] is False and report['complete_graph'] is False
             and report['backend'] == selected['values']['--recursion-backend']
             and report['native_proofs_generated'] == 0 and report['archive_files_rewritten'] == 0
-            and report['current_cache_entries_created'] == 0 and 1 <= groups <= 8
+                and report['current_cache_entries_created'] == 0 and 1 <= groups <= int(selected['values'].get('--leaves', '8'))
             and report['session']['session_closed'] is True and report['session']['completion_claimed'] is False
             and 1 <= len(report['samples']) <= 3, 'invalid graph architecture screen')
         for sample in report['samples']:
@@ -238,7 +247,8 @@ def validate(content, selected):
                 and sample['gpu_backend_only'] is True and math.isfinite(sample['seconds']) and sample['seconds'] > 0,
                 'incomplete graph architecture sample')
             if typed:
-                require(len(sample['measurements']) == count and (groups == 1 or sample['order_mutation_rejected'] is True),
+                require(sample.get('reduction_fan_in') == fan_in
+                        and len(sample['measurements']) == count and (groups == 1 or sample['order_mutation_rejected'] is True),
                     'incomplete typed graph reduction')
                 for item in sample['measurements']:
                     m = item['measurement']
@@ -246,6 +256,18 @@ def validate(content, selected):
                         'graph proof failed GPU coverage or CPU verification')
             else:
                 require(sample['production_cpu_lookahead'] is True, 'graph reference omitted production lookahead')
+        if 'pipeline' in report:
+            pipeline = report['pipeline']
+            require(type(pipeline['repetitions_pipelined']) is bool
+                    and pipeline.get('template_preparation', 'worker') == selected['values'].get('--template-preparation', 'worker')
+                    and pipeline['repetitions'] == len(report['samples'])
+                    and math.isfinite(pipeline['seconds']) and 0 < pipeline['seconds'] <= seconds,
+                    'invalid graph pipeline completion time')
+            if pipeline['repetitions_pipelined']:
+                require(typed and groups == 1 and len(report['samples']) > 1
+                        and all(s['seconds'] <= pipeline['seconds'] and s.get('timing_scope') ==
+                            'prepare-to-verified latency; independent samples overlap' for s in report['samples']),
+                        'invalid independent graph pipeline scope')
     elif selected['command'] == 'architecture-request':
         profile = report['proof_profile']
         machine = selected['values'].get('--recursion-backend') == 'machine'

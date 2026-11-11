@@ -9,6 +9,7 @@ mod air;
 mod geometry;
 #[cfg(feature = "gpu")]
 mod gpu;
+mod layout;
 mod parent;
 mod prepared;
 mod swaps;
@@ -35,7 +36,7 @@ pub use gpu::{
 pub use parent::{CompiledRecursionVerifier, RecursionVerifier};
 pub use prepared::{PreparedRecursionTemplate, RecursionExecutionProof};
 
-pub const VERSION: u64 = 3;
+pub const VERSION: u64 = 5;
 const PADDING: u32 = u32::MAX;
 
 /// One immutable circuit. Preparation is independent of all proof witnesses.
@@ -47,16 +48,24 @@ pub struct RecursionTemplate {
     rows: [Arc<[u32]>; 3],
     id: [u8; 32],
     typed: TypedVerifierPlan,
+    tables: Arc<[layout::TableSpan]>,
 }
 
 impl RecursionTemplate {
+    /// Lowering has a 2 GiB admission bound. Its operation bound also limits
+    /// row indices to 128 MiB; reserve 256 MiB for those and layout scratch.
+    /// The source program and returned proof inputs are charged separately.
+    pub const CONSTRUCTION_WORKSPACE_BYTES: usize = typed::PLANNING_BYTES + (256 << 20);
+
     pub fn new(program: Arc<Program>, trusted_registry: [u8; 32]) -> Result<Self, String> {
         let typed = TypedVerifierPlan::compile(&program)?;
         let mut hasher = Sha3_256::new();
-        hasher.update(b"lattica-recursion-multi-table-prototype-v3");
-        hasher.update(b"typed-pcs-reduction-transition-v1");
+        hasher.update(b"lattica-recursion-multi-table-prototype-v5");
+        hasher.update(b"typed-pcs-reduction-transition-v2");
         hasher.update(b"authenticated-merkle-swap-poseidon-v1");
         hasher.update(b"hash-resident-private-input-providers-v1");
+        hasher.update(b"direct-sbox-two-lane-hash-v1");
+        hasher.update(b"global-quotient-budget-layout-v1");
         hasher.update(VERSION.to_le_bytes());
         hasher.update(trusted_registry);
         hasher.update(crate::block_v2::profile::CANDIDATE_PROFILE_ID);
@@ -121,12 +130,15 @@ impl RecursionTemplate {
                 rows[table(op)].push(index);
             }
         }
-        Ok(Self {
+        let mut template = Self {
             program,
             rows: rows.map(Arc::from),
             id: hasher.finalize().into(),
             typed,
-        })
+            tables: Arc::from([]),
+        };
+        template.tables = Arc::from(layout::plan(&template)?);
+        Ok(template)
     }
 
     pub fn typed_plan(&self) -> &TypedVerifierPlan {
@@ -135,6 +147,11 @@ impl RecursionTemplate {
 
     pub fn identity(&self) -> [u8; 32] {
         self.id
+    }
+
+    /// A prepared CPU job must carry the very source used to build its template.
+    pub fn matches_program(&self, program: &Arc<Program>) -> bool {
+        Arc::ptr_eq(&self.program, program)
     }
 
     pub fn geometry(&self) -> Result<ArchitectureGeometry, String> {
@@ -180,52 +197,16 @@ impl RecursionTemplate {
 
     fn airs(&self) -> Vec<air::TableAir> {
         let shared = Arc::new(self.clone());
-        let mut airs = Vec::new();
-        for kind in 0..5 {
-            let count = self.active_rows(kind);
-            if kind == 4 && count == 0 {
-                continue;
-            }
-            // Transition chains never cross a table boundary. Keep the small
-            // cubic table unsplit when the typed table consumes the eighth slot.
-            let parts = if kind == 4 || (kind == 1 && !self.typed.rows.is_empty()) {
-                vec![(0, count, count.max(8).next_power_of_two())]
-            } else {
-                partition_rows(count)
-            };
-            let table_limit = if kind == 0 {
-                air::SCALAR_TABLE_MAX_ROWS
-            } else {
-                air::HASH_TABLE_MAX_ROWS
-            };
-            let parts = if kind == 0 || kind == 2 {
-                parts
-                    .into_iter()
-                    .flat_map(|(first, active, height)| {
-                        (0..height).step_by(table_limit).map(move |offset| {
-                            let height = (height - offset).min(table_limit);
-                            (
-                                first + offset,
-                                active.saturating_sub(offset).min(height),
-                                height,
-                            )
-                        })
-                    })
-                    .collect()
-            } else {
-                parts
-            };
-            for (first_row, active_rows, height) in parts {
-                airs.push(air::TableAir {
-                    template: Arc::clone(&shared),
-                    kind,
-                    first_row,
-                    active_rows,
-                    height,
-                });
-            }
-        }
-        airs
+        self.tables
+            .iter()
+            .map(|span| air::TableAir {
+                template: Arc::clone(&shared),
+                kind: span.kind,
+                first_row: span.first_row,
+                active_rows: span.active_rows,
+                height: span.height,
+            })
+            .collect()
     }
 }
 

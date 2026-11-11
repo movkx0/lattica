@@ -28,6 +28,23 @@ impl ProvenNode {
             crate::graph_proofs::compiled_source_fingerprint(),
         )
         .map_err(err)?;
+        let template_seconds = started.elapsed().as_secs_f64();
+        let (node, setup_seconds, measurement) =
+            Self::prove_prepared_gpu(node, template, cache, limits, source_released)?;
+        Ok((node, template_seconds + setup_seconds, measurement))
+    }
+    pub(crate) fn prove_prepared_gpu(
+        node: CompiledNode,
+        template: RecursionTemplate,
+        cache: &mut GpuRecursionCache,
+        limits: GpuTemplateLimits,
+        source_released: impl FnOnce(),
+    ) -> Result<(Self, f64, GpuProofMeasurement)> {
+        require(
+            template.matches_program(&node.program),
+            "prepared graph source ownership",
+        )?;
+        let started = std::time::Instant::now();
         let owner = cache.prepare(template, limits).map_err(err)?;
         let setup_seconds = started.elapsed().as_secs_f64();
         let key = owner.verifier();

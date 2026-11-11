@@ -13,7 +13,7 @@ use p3_field::{Field, PrimeCharacteristicRing};
 // These are the shapes emitted by the supported uni/batch verifier compilers.
 // Fixed descriptors and random suffixes never grow with untrusted proof data.
 const MAX_ROUNDS: usize = 5;
-pub(super) const MAX_MATRICES: usize = 64;
+pub(in crate::block_v2::machine) const MAX_MATRICES: usize = 64;
 const MAX_POINTS: usize = 2;
 const MAX_LOG: usize = 32;
 type RandomSuffix = [Extension; profile::NUM_RANDOM_CODEWORDS];

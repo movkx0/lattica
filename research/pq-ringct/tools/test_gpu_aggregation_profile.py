@@ -26,7 +26,7 @@ class AggregationAcceptance(unittest.TestCase):
         row['report'] = dict(scope='recursion-graph-subtree-screen', verified=True, complete_aggregation=False,
             complete_graph=False, backend='typed', native_proofs_generated=0, archive_files_rewritten=0,
             current_cache_entries_created=0, groups=[[4,8]], session=dict(session_closed=True,completion_claimed=False),
-            samples=[dict(verified=True,public_mutation_rejected=True,recursive_proofs=1,
+            samples=[dict(verified=True,public_mutation_rejected=True,recursive_proofs=1,reduction_fan_in=4,
                 independent_cpu_verification=True,gpu_backend_only=True,seconds=10,measurements=[dict(measurement=m)])])
         validate('GPU_AGGREGATION_PROFILE '+json.dumps(row),selected)
         for change in ('count','gpu','complete'):
@@ -35,6 +35,80 @@ class AggregationAcceptance(unittest.TestCase):
             if change=='gpu': bad['report']['samples'][0]['measurements'][0]['measurement']['backend_report']['stage_coverage_complete']=False
             if change=='complete': bad['report']['complete_graph']=True
             with self.assertRaises(RuntimeError): validate('GPU_AGGREGATION_PROFILE '+json.dumps(bad),selected)
+
+    def test_graph_pipeline_distinguishes_latency_from_completion_time(self):
+        argv = self.argv()
+        argv[1] = 'architecture-graph'
+        selected = selection(self.args(), argv + ['--native-source', 'revalidate-archive', '--group-width', '8'])
+        row = self.report()
+        row['options']['command'] = 'architecture-graph'
+        measurement = dict(verified=True, proof_json_bytes=100, backend_report=dict(stage_coverage_complete=True))
+        sample = dict(verified=True, public_mutation_rejected=True, recursive_proofs=1, reduction_fan_in=4,
+            independent_cpu_verification=True, gpu_backend_only=True, seconds=8,
+            timing_scope='prepare-to-verified latency; independent samples overlap', measurements=[dict(measurement=measurement)])
+        row['report'] = dict(scope='recursion-graph-subtree-screen', verified=True, complete_aggregation=False,
+            complete_graph=False, backend='typed', native_proofs_generated=0, archive_files_rewritten=0,
+            current_cache_entries_created=0, groups=[[4,8]], session=dict(session_closed=True,completion_claimed=False),
+            samples=[sample, copy.deepcopy(sample)], pipeline=dict(seconds=11, repetitions=2, repetitions_pipelined=True))
+        validate('GPU_AGGREGATION_PROFILE ' + json.dumps(row), selected)
+        for change in ['deadline', 'count', 'latency_scope', 'latency_bound']:
+            bad = copy.deepcopy(row)
+            if change == 'deadline': bad['report']['pipeline']['seconds'] = 13
+            if change == 'count': bad['report']['pipeline']['repetitions'] = 1
+            if change == 'latency_scope': bad['report']['samples'][0].pop('timing_scope')
+            if change == 'latency_bound': bad['report']['samples'][0]['seconds'] = 12
+            with self.subTest(change=change), self.assertRaises(RuntimeError):
+                validate('GPU_AGGREGATION_PROFILE ' + json.dumps(bad), selected)
+
+    def test_owner_template_preparation_is_only_a_graph_profiling_control(self):
+        argv = self.argv()
+        argv[1] = 'architecture-graph'
+        chosen = selection(self.args(), argv + ['--native-source', 'revalidate-archive', '--template-preparation', 'owner'])
+        self.assertEqual(chosen['values']['--template-preparation'], 'owner')
+        for command in ['plan', 'screen', 'architecture-request']:
+            argv[1] = command
+            with self.subTest(command=command), self.assertRaises(RuntimeError):
+                selection(self.args(), argv + ['--template-preparation', 'owner'])
+
+    def test_graph_parent_schedule_is_bound_to_selected_compiler_policy(self):
+        for case, policy, fan_in, count in [('n3', 'standard', 4, 11), ('n4', 'typed-batch', 8, 9)]:
+            argv = self.argv()
+            argv[1] = 'architecture-graph'
+            argv[argv.index('--case') + 1] = case
+            argv += ['--native-source', 'revalidate-archive', '--group-width', '1',
+                     '--compiler-policy', policy]
+            selected = selection(self.args(host_profile='standard' if case == 'n3' else 'expanded-36'), argv)
+            row = self.report()
+            row['options'].update(command='architecture-graph', transactions=3 if case == 'n3' else 4)
+            m = dict(verified=True, proof_json_bytes=100, backend_report=dict(stage_coverage_complete=True))
+            sample = dict(verified=True, public_mutation_rejected=True, order_mutation_rejected=True,
+                          reduction_fan_in=fan_in, recursive_proofs=count, independent_cpu_verification=True,
+                          gpu_backend_only=True, seconds=10, measurements=[dict(measurement=m)] * count)
+            row['report'] = dict(scope='recursion-graph-subtree-screen', verified=True,
+                complete_aggregation=False, complete_graph=False, backend='typed', native_proofs_generated=0,
+                archive_files_rewritten=0, current_cache_entries_created=0, groups=[[i, 1] for i in range(4, 12)],
+                session=dict(session_closed=True, completion_claimed=False), samples=[sample])
+            with self.subTest(case=case):
+                validate('GPU_AGGREGATION_PROFILE ' + json.dumps(row), selected)
+            for key, value in [('reduction_fan_in', 12 - fan_in), ('recursive_proofs', 20 - count)]:
+                bad = copy.deepcopy(row)
+                bad['report']['samples'][0][key] = value
+                with self.subTest(case=case, field=key), self.assertRaises(RuntimeError):
+                    validate('GPU_AGGREGATION_PROFILE ' + json.dumps(bad), selected)
+
+    def test_wide_native_graph_window_requires_expanded_typed_policy(self):
+        argv = self.argv()
+        argv[1] = 'architecture-graph'
+        argv[argv.index('--case') + 1] = 'n4'
+        extra = ['--native-source', 'revalidate-archive', '--group-width', '16', '--leaves', '16']
+        chosen = selection(self.args(host_profile='expanded-36'), argv + extra)
+        self.assertEqual(chosen['values']['--compiler-policy'], 'typed-batch')
+        for changes in [['--compiler-policy', 'standard'], ['--recursion-backend', 'machine']]:
+            with self.subTest(changes=changes), self.assertRaises(RuntimeError):
+                selection(self.args(host_profile='expanded-36'), argv + extra + changes)
+        extra[-1] = '17'
+        with self.assertRaises(RuntimeError):
+            selection(self.args(host_profile='expanded-36'), argv + extra)
 
     def test_aes_reference_is_confined_to_singleton_archive_request(self):
         argv = self.argv()

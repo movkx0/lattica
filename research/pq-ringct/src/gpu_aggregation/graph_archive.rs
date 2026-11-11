@@ -38,7 +38,9 @@ pub(crate) fn run(options: &Options, deadline: &Deadline) -> Result<serde_json::
         indices.push((index, key, path));
     }
     let caches = bundle::Caches::new(&options.bundle, false)?;
-    let width = options.group_width.min(8);
+    let width = options
+        .group_width
+        .min(typed_graph::native_group_limit(options));
     let groups = typed_graph::groups(options.first_leaf, options.leaves, width)?;
     let imports = std::sync::Mutex::new(std::collections::BTreeMap::new());
     let execution = context(options)?;
@@ -89,60 +91,82 @@ pub(crate) fn run(options: &Options, deadline: &Deadline) -> Result<serde_json::
         .map_err(error)?;
         let mut cache =
             lattica_prover_p3::block_v2::machine::recursion::GpuRecursionCache::default();
-        let mut samples = Vec::new();
-        for repetition in 0..options.repetitions {
-            deadline.check()?;
-            let start = Instant::now();
-            let mut sample = if options.typed_recursion() {
-                let (root, report) = typed_graph::prove(
-                    &groups,
-                    &case.tree,
-                    &case.context,
-                    options,
-                    deadline,
-                    &mut cache,
-                    &prepare,
-                )?;
-                ensure(
-                    root.span() == (options.first_leaf, options.leaves),
-                    "typed graph screen coverage",
-                )?;
-                root.verify(&case.tree, &case.context).map_err(error)?;
-                report
-            } else {
-                let root = prover
-                    .prove_imported_tree(
-                        groups.len(),
-                        |i| prepare(groups[i].0, groups[i].1),
+        let (samples, pipeline) = if options.typed_recursion()
+            && options.parallel
+            && groups.len() == 1
+            && options.repetitions > 1
+        {
+            typed_graph::prove_repeated_direct(
+                groups[0],
+                &case.tree,
+                &case.context,
+                options,
+                deadline,
+                &mut cache,
+                &prepare,
+            )?
+        } else {
+            let pipeline_started = Instant::now();
+            let mut samples = Vec::new();
+            for repetition in 0..options.repetitions {
+                deadline.check()?;
+                let start = Instant::now();
+                let mut sample = if options.typed_recursion() {
+                    let (root, report) = typed_graph::prove(
+                        &groups,
+                        &case.tree,
+                        &case.context,
+                        options,
                         deadline,
-                    )
-                    .map_err(error)?;
-                ensure(
-                    root.key().span() == (options.first_leaf, options.leaves),
-                    "machine graph screen coverage",
-                )?;
-                root.key().verify(root.proof()).map_err(error)?;
-                let (key, mut proof) = root.into_parts();
-                use p3_field::PrimeCharacteristicRing;
-                proof.public[graph_tree::STATEMENT] += Val::ONE;
-                ensure(
-                    key.verify(&proof).is_err(),
-                    "machine graph accepted altered statement",
-                )?;
-                serde_json::json!({"recursive_proofs":2*groups.len()-1,"public_mutation_rejected":true,
+                        &mut cache,
+                        &prepare,
+                    )?;
+                    ensure(
+                        root.span() == (options.first_leaf, options.leaves),
+                        "typed graph screen coverage",
+                    )?;
+                    root.verify(&case.tree, &case.context).map_err(error)?;
+                    report
+                } else {
+                    let root = prover
+                        .prove_imported_tree(
+                            groups.len(),
+                            |i| prepare(groups[i].0, groups[i].1),
+                            deadline,
+                        )
+                        .map_err(error)?;
+                    ensure(
+                        root.key().span() == (options.first_leaf, options.leaves),
+                        "machine graph screen coverage",
+                    )?;
+                    root.key().verify(root.proof()).map_err(error)?;
+                    let (key, mut proof) = root.into_parts();
+                    use p3_field::PrimeCharacteristicRing;
+                    proof.public[graph_tree::STATEMENT] += Val::ONE;
+                    ensure(
+                        key.verify(&proof).is_err(),
+                        "machine graph accepted altered statement",
+                    )?;
+                    serde_json::json!({"recursive_proofs":2*groups.len()-1,"public_mutation_rejected":true,
                     "independent_cpu_verification":true,"gpu_backend_only":true,"production_cpu_lookahead":true})
-            };
-            sample["seconds"] = serde_json::json!(start.elapsed().as_secs_f64());
-            sample["repetition"] = serde_json::json!(repetition);
-            sample["verified"] = serde_json::json!(true);
-            eprintln!("GPU_AGGREGATION_GRAPH_ARCHITECTURE {sample}");
-            samples.push(sample);
-        }
+                };
+                sample["seconds"] = serde_json::json!(start.elapsed().as_secs_f64());
+                sample["repetition"] = serde_json::json!(repetition);
+                sample["verified"] = serde_json::json!(true);
+                eprintln!("GPU_AGGREGATION_GRAPH_ARCHITECTURE {sample}");
+                samples.push(sample);
+            }
+            let pipeline = serde_json::json!({"seconds":pipeline_started.elapsed().as_secs_f64(),
+            "repetitions_pipelined":false,"repetitions":samples.len(),
+            "template_preparation":options.template_preparation,
+            "timing_scope":"all repetitions complete, including CPU preparation and verification"});
+            (samples, pipeline)
+        };
         Ok(
             serde_json::json!({"scope":"recursion-graph-subtree-screen","complete_aggregation":false,
             "complete_graph":false,"verified":true,"backend":options.recursion_backend,
             "first_leaf":options.first_leaf,"leaves":options.leaves,"width":width,"groups":groups,
-            "samples":samples,"imports":imports,"native_proofs_generated":0,"archive_files_rewritten":0,
+            "samples":samples,"pipeline":pipeline,"imports":imports,"native_proofs_generated":0,"archive_files_rewritten":0,
             "current_cache_entries_created":0,"source_sha3":hex(&crate::graph_proofs::compiled_source_fingerprint()),
             "input_sha3":input_sha3,"archive_source_sha3":hex(&source)}),
         )

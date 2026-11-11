@@ -12,14 +12,16 @@ use p3_poseidon2::GenericPoseidon2LinearLayers;
 
 pub(super) const SCALAR_LANES: usize = super::super::program::LANES;
 pub(super) const CUBIC_LANES: usize = super::super::program::EXT_LANES;
+// Two compact hashes fit the bounded quotient specializer. Four lanes exceed
+// its compiler envelope and fall back to the substantially slower interpreter.
 pub(super) const HASH_LANES: usize = 2;
 // Keep each doubled-degree hash prefix below 2 GiB so a consumed input and
 // its replacement prefix fit together on the qualified device.
-pub(super) const HASH_TABLE_MAX_ROWS: usize = 1 << 18;
+pub(super) const HASH_TABLE_MAX_ROWS: usize = 1 << 19;
 // Arithmetic quotient evaluation materializes main, lookup and public columns
 // together. Bound its rows independently of the smaller transition table.
 pub(super) const SCALAR_TABLE_MAX_ROWS: usize = 1 << 18;
-const HASH_WIDTH: usize = 8 + 2 * (8 * 8 + 22);
+const HASH_WIDTH: usize = 8 + 8 * 8 + 22;
 // Eight raw input words and one authenticated direction bit precede the
 // permutation trace. Ordinary hashes fix the direction bit to zero. Keeping
 // both forms in one table avoids another commitment and quotient matrix set.
@@ -60,7 +62,7 @@ impl BaseAir<Val> for VerifierAir {
             0 => 4 * SCALAR_LANES,
             1 => 9 * CUBIC_LANES,
             2 => SWAP_HASH_WIDTH * HASH_LANES,
-            4 => 19,
+            4 => 22,
             _ => 1,
         }
     }
@@ -91,7 +93,7 @@ impl BaseAir<Val> for VerifierAir {
         vec![]
     }
     fn max_constraint_degree(&self) -> Option<usize> {
-        Some(4)
+        Some(if self.kind == 2 { 8 } else { 4 })
     }
 }
 impl BaseAir<Val> for TableAir {
@@ -111,20 +113,28 @@ impl BaseAir<Val> for TableAir {
         vec![]
     }
     fn max_constraint_degree(&self) -> Option<usize> {
-        Some(4)
+        self.verifier_air().max_constraint_degree()
     }
     fn preprocessed_trace(&self) -> Option<RowMajorMatrix<Val>> {
         let width = self.preprocessed_width();
         let mut data = Val::zero_vec(self.height * width);
         let program = &self.template.program;
         if self.kind == 4 {
-            for (i, group) in self.template.typed.groups.iter().enumerate() {
+            for (i, group) in self
+                .template
+                .typed
+                .groups
+                .iter()
+                .skip(self.first_row)
+                .take(self.active_rows)
+                .enumerate()
+            {
                 let p = &mut data[i * width..(i + 1) * width];
-                let first = &self.template.typed.rows[group[0] as usize];
+                let first = &self.template.typed.rows[group.terms[0] as usize];
                 p[4] = Val::from_bool(first.start);
-                p[5] = Val::from_bool(first.end);
-                for (slot, &index) in group.iter().enumerate() {
-                    if index == PADDING || first.end {
+                p[5] = Val::from_bool(group.end != PADDING);
+                for (slot, &index) in group.terms.iter().enumerate() {
+                    if index == PADDING {
                         continue;
                     }
                     let row = &self.template.typed.rows[index as usize];
@@ -138,10 +148,11 @@ impl BaseAir<Val> for TableAir {
                     if first.start {
                         p[22 + j] = Val::from_u32(first.acc[j] + 1);
                     }
-                    if first.end {
-                        p[25 + j] = Val::from_u32(first.acc[j] + 1);
+                    if group.end != PADDING {
+                        let last = &self.template.typed.rows[group.end as usize];
+                        p[25 + j] = Val::from_u32(last.acc[j] + 1);
                         p[28 + j] =
-                            Val::from_u32(self.template.typed.references[first.acc[j] as usize]);
+                            Val::from_u32(self.template.typed.references[last.acc[j] as usize]);
                     }
                 }
             }
@@ -302,8 +313,9 @@ impl crate::block_v2::machine::verifier::periodic::Source for TableAir {
     }
 }
 
-// Each s-box needs only an x^3 witness, followed by a round checkpoint.
-// x^7=(x^3)^2*x has degree three, or four with the authenticated row selector.
+// Evaluate x^7 directly and keep only round checkpoints. The authenticated
+// selector raises the constraint degree to eight, within the pinned blowup.
+// Two hashes share a row; the global planner budgets their 16 quotient chunks.
 fn permutation<E: PrimeCharacteristicRing>(
     input: [E; 8],
     mut checkpoint: impl FnMut(usize, E) -> E,
@@ -314,9 +326,7 @@ fn permutation<E: PrimeCharacteristicRing>(
     for constants in INITIAL {
         for i in 0..8 {
             let x = state[i].clone() + E::from_u64(constants[i].as_canonical_u64());
-            let x3 = checkpoint(column, x.square() * x.clone());
-            column += 1;
-            state[i] = x3.square() * x;
+            state[i] = x.exp_const_u64::<7>();
         }
         LL::external_linear_layer(&mut state);
         for value in &mut state {
@@ -326,18 +336,14 @@ fn permutation<E: PrimeCharacteristicRing>(
     }
     for constant in INTERNAL {
         let x = state[0].clone() + E::from_u64(constant.as_canonical_u64());
-        let x3 = checkpoint(column, x.square() * x.clone());
-        column += 1;
-        state[0] = checkpoint(column, x3.square() * x);
+        state[0] = checkpoint(column, x.exp_const_u64::<7>());
         column += 1;
         LL::internal_linear_layer(&mut state);
     }
     for constants in FINAL {
         for i in 0..8 {
             let x = state[i].clone() + E::from_u64(constants[i].as_canonical_u64());
-            let x3 = checkpoint(column, x.square() * x.clone());
-            column += 1;
-            state[i] = x3.square() * x;
+            state[i] = x.exp_const_u64::<7>();
         }
         LL::external_linear_layer(&mut state);
         for value in &mut state {
@@ -361,14 +367,25 @@ pub(super) fn trace(air: &TableAir, values: &[Val]) -> RowMajorMatrix<Val> {
     };
     let mut data = Val::zero_vec(air.height * width);
     if kind == 4 {
-        for (i, group) in template.typed.groups.iter().enumerate() {
+        for (i, group) in template
+            .typed
+            .groups
+            .iter()
+            .skip(air.first_row)
+            .take(air.active_rows)
+            .enumerate()
+        {
             let m = &mut data[i * width..(i + 1) * width];
-            let first = &template.typed.rows[group[0] as usize];
+            let first = &template.typed.rows[group.terms[0] as usize];
             for j in 0..3 {
                 m[j] = values[first.acc[j] as usize];
+                if group.end != PADDING {
+                    let last = &template.typed.rows[group.end as usize];
+                    m[19 + j] = values[last.acc[j] as usize];
+                }
             }
-            for (slot, &index) in group.iter().enumerate() {
-                if index == PADDING || first.end {
+            for (slot, &index) in group.terms.iter().enumerate() {
+                if index == PADDING {
                     continue;
                 }
                 let row = &template.typed.rows[index as usize];
@@ -606,14 +623,18 @@ impl<AB: AirBuilder<F = Val> + InteractionBuilder> Air<AB> for VerifierAir {
                     }
                 }
                 for j in 0..3 {
-                    b.assert_zero(step.clone() * (next[j] - m[j] - delta[j].clone()));
-                    b.assert_zero((AB::Expr::ONE - step.clone() - end.clone()) * m[j]);
+                    b.assert_zero(
+                        (step.clone() - end.clone()) * (next[j] - m[j] - delta[j].clone()),
+                    );
+                    b.assert_zero(end.clone() * (m[19 + j] - m[j] - delta[j].clone()));
+                    b.assert_zero((AB::Expr::ONE - step.clone()) * m[j]);
+                    b.assert_zero((AB::Expr::ONE - end.clone()) * m[19 + j]);
                     BUS.lookup_key(
                         b,
                         [p[22 + j].into(), m[j].into()],
                         Count::bounded(start.clone(), 1),
                     );
-                    BUS.table_entry(b, [p[25 + j].into(), m[j].into()], p[28 + j]);
+                    BUS.table_entry(b, [p[25 + j].into(), m[19 + j].into()], p[28 + j]);
                 }
             }
             3 => {

@@ -9,6 +9,33 @@ use p3_lookup::{
 };
 use p3_symmetric::Permutation;
 
+#[cfg(feature = "gpu")]
+#[test]
+fn compact_hash_quotient_fits_the_bounded_gpu_specializer() {
+    use crate::block_v2::quotient_program::{specialize, Program as QuotientProgram};
+    let air = air::VerifierAir {
+        kind: 2,
+        height: 8,
+        publics: 0,
+        id: [0; 32],
+        hash_input_count_bound: 128,
+    };
+    let gadget = p3_lookup::LogUpGadget::new();
+    let layout = p3_air::symbolic::AirLayout::from_air::<Val>(&air);
+    let lookups = Lookups::<Val>::from_air::<crate::block_v2::profile::Challenge, _>(&air)
+        .pack_same_bus(&gadget, 8);
+    let program = QuotientProgram::compile(&air, layout, &lookups, &gadget).unwrap();
+    let source = specialize::source(&program, specialize::Backend::OpenCl).unwrap();
+    assert!(
+        source.is_some(),
+        "compact hash must not silently use the interpreter: {:?}",
+        program.shape()
+    );
+    // Enlarging the table is safe because each permutation now has 103 main
+    // columns instead of 189. Keep a doubled-domain input prefix below 2 GiB.
+    assert!(2 * air::HASH_TABLE_MAX_ROWS * air.width() * core::mem::size_of::<Val>() < 2 << 30);
+}
+
 fn swap_fixture(
     hashes: usize,
     leak: bool,
@@ -62,7 +89,10 @@ fn merkle_swap_lowering_matches_reference_both_directions_and_packed_tail() {
         .iter()
         .position(|air| air.kind == 2)
         .unwrap();
-    assert_eq!(template.airs()[index].active_rows, 2);
+    assert_eq!(
+        template.airs()[index].active_rows,
+        3usize.div_ceil(air::HASH_LANES)
+    );
     for direction in [0, 1] {
         witness[8] = Val::from_u32(direction);
         let mut public: [_; 8] = core::array::from_fn(|i| witness[i]);
@@ -78,9 +108,12 @@ fn merkle_swap_lowering_matches_reference_both_directions_and_packed_tail() {
         let traces = template.traces(&public, &witness).unwrap();
         check(&template, &public, &traces);
         let width = traces[index].width;
-        // Raw words, bit, all ordered inputs, a round checkpoint, the second
-        // active lane and the inactive odd tail must each remain constrained.
-        for column in (0..18).chain([width / 2, width + width / 2, width - 1]) {
+        // Raw words, bit, ordered inputs, round checkpoints, every active
+        // lane and the inactive tail must each remain constrained.
+        for column in (0..18)
+            .chain((0..air::HASH_LANES).map(|lane| lane * width / air::HASH_LANES))
+            .chain([width + width / air::HASH_LANES, width - 1])
+        {
             let mut wrong = traces.clone();
             wrong[index].values[column] += Val::ONE;
             assert!(std::panic::catch_unwind(|| check(&template, &public, &wrong)).is_err());
@@ -428,7 +461,18 @@ fn recursion_tables_match_reference_and_enforce_global_wires() {
         geometry.degree_gate && geometry.quotient_gate,
         "{geometry:?}"
     );
-    assert!(geometry.tables.iter().all(|t| t.quotient_chunks <= 8));
+    assert!(geometry
+        .tables
+        .iter()
+        .all(|t| t.quotient_chunks <= if t.table == "poseidon2" { 16 } else { 8 }));
+    assert!(
+        geometry
+            .tables
+            .iter()
+            .map(|t| t.quotient_chunks)
+            .sum::<usize>()
+            <= layout::MAX_QUOTIENT_MATRICES
+    );
     // A cross-table wire substitution must be rejected by the global lookup,
     // even when it changes an unconstrained input opcode's output.
     let mut bad = traces.clone();
@@ -456,6 +500,8 @@ fn recursion_tables_match_reference_and_enforce_global_wires() {
 #[test]
 fn recursion_template_identity_binds_registry_and_program_not_witness() {
     let (template, public, mut witness) = fixture();
+    assert!(template.matches_program(&Arc::clone(&template.program)));
+    assert!(!template.matches_program(&Arc::new((*template.program).clone())));
     let id = template.identity();
     template.traces(&public, &witness).unwrap();
     witness[0] += Val::ONE;
@@ -636,33 +682,43 @@ fn recursion_parent_constraints_bind_mixed_child_and_trusted_cap() {
 }
 
 fn typed_reduction_fixture_with_terms(terms: usize) -> (RecursionTemplate, Vec<Val>, Vec<Val>) {
+    typed_reduction_fixture_with_chains(&[terms])
+}
+fn typed_reduction_fixture_with_chains(
+    lengths: &[usize],
+) -> (RecursionTemplate, Vec<Val>, Vec<Val>) {
     use crate::block_v2::profile::Challenge;
     use p3_field::BasedVectorSpace;
-    let mut b = ProgramBuilder::new(3).unwrap();
-    let alpha = core::array::from_fn(|_| b.input());
-    let mut acc = core::array::from_fn(|_| b.input());
-    let mut power = alpha;
-    for _ in 0..terms {
-        let value = b.input();
-        let term = b.ext_scale(power, value);
-        acc = b.ext_add(acc, term);
-        power = b.ext_mul(power, alpha);
+    let mut b = ProgramBuilder::new(3 * lengths.len()).unwrap();
+    let mut public = Vec::new();
+    let mut witness = Vec::new();
+    for (chain, &terms) in lengths.iter().enumerate() {
+        let alpha = core::array::from_fn(|_| b.input());
+        let mut acc = core::array::from_fn(|_| b.input());
+        let mut power = alpha;
+        for _ in 0..terms {
+            let value = b.input();
+            let term = b.ext_scale(power, value);
+            acc = b.ext_add(acc, term);
+            power = b.ext_mul(power, alpha);
+        }
+        for i in 0..3 {
+            let p = b.public(3 * chain + i).unwrap();
+            b.assert_equal(p, acc[i]);
+        }
+        let inputs = (1..=terms as u64 + 6)
+            .map(|v| Val::from_u64(v + 100 * chain as u64))
+            .collect::<Vec<_>>();
+        let a = Challenge::from_basis_coefficients_slice(&inputs[..3]).unwrap();
+        let mut sum = Challenge::from_basis_coefficients_slice(&inputs[3..6]).unwrap();
+        let mut power = a;
+        for &value in &inputs[6..] {
+            sum += power * value;
+            power *= a;
+        }
+        public.extend_from_slice(sum.as_basis_coefficients_slice());
+        witness.extend(inputs);
     }
-    for i in 0..3 {
-        let p = b.public(i).unwrap();
-        b.assert_equal(p, acc[i]);
-    }
-    let witness = (1..=terms as u64 + 6)
-        .map(Val::from_u64)
-        .collect::<Vec<_>>();
-    let a = Challenge::from_basis_coefficients_slice(&witness[..3]).unwrap();
-    let mut sum = Challenge::from_basis_coefficients_slice(&witness[3..6]).unwrap();
-    let mut power = a;
-    for &value in &witness[6..] {
-        sum += power * value;
-        power *= a;
-    }
-    let public = sum.as_basis_coefficients_slice().to_vec();
     (
         RecursionTemplate::new(Arc::new(b.finish(None).unwrap()), [81; 32]).unwrap(),
         public,
@@ -673,12 +729,12 @@ fn typed_reduction_fixture() -> (RecursionTemplate, Vec<Val>, Vec<Val>) {
     typed_reduction_fixture_with_terms(12)
 }
 #[test]
-fn packed_hashes_bind_both_lanes_and_the_inactive_odd_tail() {
+fn packed_hashes_bind_all_lanes_and_the_inactive_tail() {
     let mut b = ProgramBuilder::new(8).unwrap();
     let mut state = core::array::from_fn(|_| b.input());
     let witness = (1..=8).map(Val::from_u64).collect::<Vec<_>>();
     let mut expected = core::array::from_fn(|i| witness[i]);
-    for _ in 0..3 {
+    for _ in 0..(air::HASH_LANES + 1) {
         state = b.poseidon(state);
         expected = default_goldilocks_poseidon2_8().permute(expected);
     }
@@ -693,10 +749,12 @@ fn packed_hashes_bind_both_lanes_and_the_inactive_odd_tail() {
     let traces = template.traces(&expected, &witness).unwrap();
     check(&template, &expected, &traces);
     for row in [0, 1] {
-        let mut wrong = traces.clone();
-        let width = wrong[index].width;
-        wrong[index].values[row * width + width / 2] += Val::ONE;
-        assert!(std::panic::catch_unwind(|| check(&template, &expected, &wrong)).is_err());
+        for lane in 0..air::HASH_LANES {
+            let mut wrong = traces.clone();
+            let width = wrong[index].width;
+            wrong[index].values[row * width + lane * width / air::HASH_LANES] += Val::ONE;
+            assert!(std::panic::catch_unwind(|| check(&template, &expected, &wrong)).is_err());
+        }
     }
 }
 #[test]
@@ -804,21 +862,80 @@ fn typed_reduction_matches_source_and_authenticates_boundaries() {
     let traces = template.traces(&public, &witness).unwrap();
     check(&template, &public, &traces);
     let index = template.airs().iter().position(|a| a.kind == 4).unwrap();
-    let mut wrong = traces.clone();
-    wrong[index].values[19] += Val::ONE;
-    assert!(std::panic::catch_unwind(|| check(&template, &public, &wrong)).is_err());
+    let width = traces[index].width;
+    assert_eq!(template.typed.groups.len(), 3);
+    // Continuing accumulator, inactive terminal columns, and final output.
+    for column in [width, 19, 2 * width + 19] {
+        let mut wrong = traces.clone();
+        wrong[index].values[column] += Val::ONE;
+        assert!(std::panic::catch_unwind(|| check(&template, &public, &wrong)).is_err());
+    }
     // A uniform accumulator shift preserves transitions, but must fail the
     // authenticated start/end lookup bindings.
     let mut wrong = traces;
     for row in wrong[index]
         .values
-        .chunks_exact_mut(19)
+        .chunks_exact_mut(width)
         .take(template.typed.groups.len())
     {
         row[0] += Val::ONE;
     }
+    wrong[index].values[2 * width + 19] += Val::ONE;
     assert!(std::panic::catch_unwind(|| check(&template, &public, &wrong)).is_err());
     assert!(template.geometry().unwrap().degree_gate);
+}
+
+#[test]
+fn typed_reductions_split_only_complete_chains_and_authenticate_both_tables() {
+    use crate::block_v2::machine::program::ConstructionLimits;
+    let (template, public, witness) = typed_reduction_fixture_with_chains(&[64, 4]);
+    // Seventeen active groups need 32 rows unsplit, but two complete chains
+    // need only 16 + 8. A single 68-term chain cannot use this split.
+    assert_eq!(template.typed.reduction_parts(1), vec![(0, 17, 32)]);
+    assert_eq!(
+        template.typed.reduction_parts(2),
+        vec![(0, 16, 16), (16, 1, 8)]
+    );
+    let (single, _, _) = typed_reduction_fixture_with_terms(68);
+    assert_eq!(single.typed.reduction_parts(2), vec![(0, 17, 32)]);
+    let airs = template.airs();
+    assert!(airs.len() <= 8);
+    let indices = airs
+        .iter()
+        .enumerate()
+        .filter_map(|(i, a)| (a.kind == 4).then_some(i))
+        .collect::<Vec<_>>();
+    assert_eq!(indices.len(), 2);
+    let traces = template.traces(&public, &witness).unwrap();
+    check(&template, &public, &traces);
+    for &index in &indices {
+        let air = &airs[index];
+        let pre = air.preprocessed_trace().unwrap();
+        assert_eq!(pre.values[4], Val::ONE);
+        assert_eq!(pre.values[(air.active_rows - 1) * pre.width + 5], Val::ONE);
+        for offset in [0, (air.active_rows - 1) * traces[index].width + 19] {
+            let mut wrong = traces.clone();
+            wrong[index].values[offset] += Val::ONE;
+            assert!(std::panic::catch_unwind(|| check(&template, &public, &wrong)).is_err());
+        }
+    }
+    let geometry = template.geometry().unwrap();
+    assert!(geometry.degree_gate);
+    let owner = template.prepare_cpu_reference().unwrap();
+    let proof = owner.prove_cpu_reference(&public, &witness).unwrap();
+    owner.verify_cpu_reference(&proof, &public).unwrap();
+    owner
+        .compile_verifier(
+            &proof,
+            ConstructionLimits {
+                max_requested_program_bytes: 1 << 30,
+                max_wires: 8_000_000,
+                max_input_values: 1 << 20,
+            },
+        )
+        .unwrap()
+        .evaluate(&public)
+        .unwrap();
 }
 
 #[test]

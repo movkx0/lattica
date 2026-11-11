@@ -21,9 +21,10 @@ fn small_node(spec: Spec, context: &GraphContext) -> ProvenNode {
 }
 fn limits() -> ConstructionLimits {
     ConstructionLimits {
-        max_requested_program_bytes: 2 << 30,
+        // Match the expanded N4 compiler used for eight-child parents.
+        max_requested_program_bytes: 6 << 30,
         max_wires: 1 << 26,
-        max_input_values: 2 << 20,
+        max_input_values: 8 << 20,
     }
 }
 #[test]
@@ -32,7 +33,7 @@ fn typed_graph_parent_binds_plan_order_coverage_and_shared_roots() {
     let (graph, statement) = fixture();
     let plan = Plan::from_trusted_graph(&graph, singles(&graph)).unwrap();
     let context = context(&plan, &graph, &statement);
-    let mut nodes = (0..3)
+    let mut nodes = (0..8)
         .map(|i| small_node(plan.leaf_spec(i).unwrap(), &context))
         .collect::<Vec<_>>();
     let children = nodes.iter().collect::<Vec<_>>();
@@ -40,12 +41,15 @@ fn typed_graph_parent_binds_plan_order_coverage_and_shared_roots() {
     merged.evaluate().unwrap();
     assert_eq!(
         (merged.spec.first, merged.spec.count, merged.spec.level),
-        (0, 3, 1)
+        (0, 8, 1)
     );
     assert!(nodes[0].verify_complete(&context).is_err());
     assert!(compile_merge(&[children[1], children[0], children[2]], limits()).is_err());
     assert!(compile_merge(&[children[0], children[0]], limits()).is_err());
     assert!(compile_merge(&[children[0], children[2]], limits()).is_err());
+    let too_many = nodes.iter().chain(nodes[..1].iter()).collect::<Vec<_>>();
+    assert!(compile_merge(&too_many, limits()).is_err());
+    drop(too_many);
     let foreign = Plan::from_trusted_graph(&graph, singles(&graph)).unwrap();
     let alien = small_node(foreign.leaf_spec(1).unwrap(), &context);
     assert!(nodes[0].verify(&foreign, &context).is_err());
@@ -58,7 +62,8 @@ fn typed_graph_parent_binds_plan_order_coverage_and_shared_roots() {
             STATEMENT => different.statement[0] += Val::ONE,
             _ => different.node_manifest[0] += Val::ONE,
         }
-        nodes[1] = small_node(plan.leaf_spec(1).unwrap(), &different);
+        // The last child must be constrained even at maximum fan-in.
+        nodes[7] = small_node(plan.leaf_spec(7).unwrap(), &different);
         let compiled = compile_merge(&nodes.iter().collect::<Vec<_>>(), limits()).unwrap();
         assert!(compiled.evaluate().is_err());
     }
