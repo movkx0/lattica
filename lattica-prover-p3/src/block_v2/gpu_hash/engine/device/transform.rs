@@ -320,6 +320,92 @@ mod tests {
     use super::*;
 
     #[test]
+    #[cfg(feature = "gpu")]
+    #[ignore = "requires exclusive OpenCL GPU; checks large 32/64-column transforms"]
+    fn wide_cached_transforms_match_independent_high_degree_polynomials() {
+        use super::super::super::{initialize_mode, Limits, TestShutdownGuard, TransferMode};
+        use p3_field::{Field, PrimeCharacteristicRing, PrimeField64, TwoAdicField};
+        let _shutdown = TestShutdownGuard;
+        initialize_mode(
+            Limits {
+                managed_bytes: 1 << 30,
+                tile_bytes: 4 << 20,
+                staging_bytes: 64 << 10,
+            },
+            TransferMode::Serial,
+        )
+        .unwrap();
+        let input_log = 18;
+        let output_log = 19;
+        let degree_a = (1u64 << input_log) - 1;
+        let degree_b = (1u64 << (input_log - 1)) + 1;
+        for columns in [32, 64] {
+            let coefficients = (0..columns)
+                .map(|i| {
+                    (
+                        Val::from_u64(2 * i as u64 + 1),
+                        -Val::from_u64(9 * i as u64 + 13),
+                        Val::from_u64(17 + i as u64),
+                    )
+                })
+                .collect::<Vec<_>>();
+            let powers = |log, shift| {
+                let root = Val::two_adic_generator(log);
+                (
+                    Val::from_u64(shift).exp_u64(degree_a),
+                    Val::from_u64(shift).exp_u64(degree_b),
+                    root.exp_u64(degree_a),
+                    root.exp_u64(degree_b),
+                )
+            };
+            let (mut a, mut b, step_a, step_b) = powers(input_log, 11);
+            let mut words = Vec::with_capacity((1 << input_log) * columns);
+            for _ in 0..1 << input_log {
+                words.extend(
+                    coefficients
+                        .iter()
+                        .map(|&(x, y, z)| (a * x + b * y + z).as_canonical_u64()),
+                );
+                a *= step_a;
+                b *= step_b;
+            }
+            let session = DeviceSession::new().unwrap();
+            let input = session
+                .upload(
+                    MatrixSpec::new(
+                        input_log as u32,
+                        columns,
+                        Extension::Base,
+                        RowOrder::Natural,
+                        11,
+                    )
+                    .unwrap(),
+                    &words,
+                )
+                .unwrap();
+            let before = session.stats();
+            let output = session
+                .lde(&input, output_log as u32, 7, RowOrder::BitReversed)
+                .unwrap();
+            assert_eq!(session.stats().downloaded_bytes, before.downloaded_bytes);
+            let actual = session.read(&output, output.spec.bytes()).unwrap();
+            let (mut a, mut b, step_a, step_b) = powers(output_log, 7);
+            for row in 0usize..1 << output_log {
+                let physical = row.reverse_bits() >> (usize::BITS as usize - output_log);
+                for (column, &(x, y, z)) in coefficients.iter().enumerate() {
+                    assert_eq!(
+                        actual[physical * columns + column],
+                        (a * x + b * y + z).as_canonical_u64(),
+                        "columns={columns} row={row} column={column}"
+                    );
+                }
+                a *= step_a;
+                b *= step_b;
+            }
+        }
+    }
+
+    #[test]
     fn transform_geometry_preserves_extension_and_rejects_shrinking_or_invalid_domains() {
         let input = MatrixSpec::new(5, 7, Extension::Cubic, RowOrder::BitReversed, 11).unwrap();
         let (out, width, _) = geometry(input, 8, 7, RowOrder::Natural).unwrap();

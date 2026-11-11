@@ -5,6 +5,9 @@ use super::*;
 
 const NONE: u32 = u32::MAX;
 const MIN_TERMS: usize = 4;
+// Keep each chain's authenticated boundaries while amortizing row commitments
+// over eight terms. Short chains still use the same four-term fusion threshold.
+pub(super) const TERMS_PER_ROW: usize = 8;
 pub(super) const PLANNING_BYTES: usize = 2 << 30;
 
 #[derive(Clone, Debug)]
@@ -17,7 +20,7 @@ pub(super) struct DotRow {
 }
 #[derive(Clone, Debug)]
 pub(super) struct DotGroup {
-    pub terms: [u32; 4],
+    pub terms: [u32; TERMS_PER_ROW],
     // The source's final accumulator is carried by the last active group,
     // rather than a separate physical row. NONE denotes a continuing chain.
     pub end: u32,
@@ -238,7 +241,7 @@ impl TypedVerifierPlan {
         let mut index = 0;
         while index < rows.len() {
             let mut group = DotGroup {
-                terms: [NONE; 4],
+                terms: [NONE; TERMS_PER_ROW],
                 end: NONE,
             };
             for at in &mut group.terms {

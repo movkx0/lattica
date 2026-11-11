@@ -25,7 +25,8 @@ impl Ntt {
         self != Self::Baseline
             && height.is_power_of_two()
             && matches!(height.trailing_zeros(), 18 | 19 | 22 | 23 | 24)
-            && matches!(width, 1 | 3 | 4 | 7 | 8 | 16)
+            && (matches!(width, 1 | 3 | 4 | 7 | 8 | 16)
+                || (self == Self::SmallTile && matches!(width, 32 | 64)))
     }
     pub fn geometry(self, baseline_columns: usize) -> (usize, usize) {
         match self {
@@ -111,7 +112,10 @@ mod tests {
         ] {
             assert!(profile.admitted(1 << 24, 16));
             assert!(!profile.admitted(1 << 25, 16));
-            assert!(!profile.admitted(1 << 24, 32));
+            for width in [32, 64] {
+                assert_eq!(profile.admitted(1 << 24, width), profile == Ntt::SmallTile);
+            }
+            assert!(!profile.admitted(1 << 24, 128));
             assert!(profile.storage(usize::MAX, 4, true, usize::MAX).is_none());
         }
     }

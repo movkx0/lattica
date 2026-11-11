@@ -61,7 +61,7 @@ impl RecursionTemplate {
         let typed = TypedVerifierPlan::compile(&program)?;
         let mut hasher = Sha3_256::new();
         hasher.update(b"lattica-recursion-multi-table-prototype-v5");
-        hasher.update(b"typed-pcs-reduction-transition-v2");
+        hasher.update(b"typed-pcs-reduction-transition-v3");
         hasher.update(b"authenticated-merkle-swap-poseidon-v1");
         hasher.update(b"hash-resident-private-input-providers-v1");
         hasher.update(b"direct-sbox-two-lane-hash-v1");
@@ -73,6 +73,7 @@ impl RecursionTemplate {
             air::SCALAR_LANES,
             air::CUBIC_LANES,
             air::HASH_LANES,
+            typed::TERMS_PER_ROW,
             air::HASH_TABLE_MAX_ROWS,
             air::SCALAR_TABLE_MAX_ROWS,
             crate::block_v2::profile::LOG_BLOWUP,

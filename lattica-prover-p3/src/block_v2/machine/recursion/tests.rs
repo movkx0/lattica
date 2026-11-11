@@ -332,7 +332,8 @@ fn recursion_gpu_mixed_height_tables_verify_with_cpu_and_reject_tampering() {
     assert!(gpu_hash::initialize_resident_from_env().unwrap());
     let mut b = ProgramBuilder::new(8).unwrap();
     let mut state = core::array::from_fn(|_| b.input());
-    for _ in 0..17 {
+    let hashes = 8 * air::HASH_LANES + 1;
+    for _ in 0..hashes {
         state = b.poseidon(state);
     }
     for (i, &wire) in state.iter().enumerate() {
@@ -347,7 +348,7 @@ fn recursion_gpu_mixed_height_tables_verify_with_cpu_and_reject_tampering() {
         .any(|t| t.height != geometry.tables[0].height));
     let witness = (1..=8).map(Val::from_u64).collect::<Vec<_>>();
     let mut public = core::array::from_fn(|i| witness[i]);
-    for _ in 0..17 {
+    for _ in 0..hashes {
         public = default_goldilocks_poseidon2_8().permute(public);
     }
     let prepared = template
@@ -863,12 +864,26 @@ fn typed_reduction_matches_source_and_authenticates_boundaries() {
     check(&template, &public, &traces);
     let index = template.airs().iter().position(|a| a.kind == 4).unwrap();
     let width = traces[index].width;
-    assert_eq!(template.typed.groups.len(), 3);
+    assert_eq!(
+        template.typed.groups.len(),
+        12usize.div_ceil(typed::TERMS_PER_ROW)
+    );
+    let last = template.typed.groups.len() - 1;
+    let final_column = width - 3;
     // Continuing accumulator, inactive terminal columns, and final output.
-    for column in [width, 19, 2 * width + 19] {
+    for column in [width, final_column, last * width + final_column] {
         let mut wrong = traces.clone();
         wrong[index].values[column] += Val::ONE;
         assert!(std::panic::catch_unwind(|| check(&template, &public, &wrong)).is_err());
+    }
+    // Every term, including inactive slots in the partial final row, remains
+    // constrained after increasing the number of terms per row.
+    for row in [0, last] {
+        for slot in 0..typed::TERMS_PER_ROW {
+            let mut wrong = traces.clone();
+            wrong[index].values[row * width + 3 + slot * 4 + 3] += Val::ONE;
+            assert!(std::panic::catch_unwind(|| check(&template, &public, &wrong)).is_err());
+        }
     }
     // A uniform accumulator shift preserves transitions, but must fail the
     // authenticated start/end lookup bindings.
@@ -880,7 +895,7 @@ fn typed_reduction_matches_source_and_authenticates_boundaries() {
     {
         row[0] += Val::ONE;
     }
-    wrong[index].values[2 * width + 19] += Val::ONE;
+    wrong[index].values[last * width + final_column] += Val::ONE;
     assert!(std::panic::catch_unwind(|| check(&template, &public, &wrong)).is_err());
     assert!(template.geometry().unwrap().degree_gate);
 }
@@ -888,15 +903,16 @@ fn typed_reduction_matches_source_and_authenticates_boundaries() {
 #[test]
 fn typed_reductions_split_only_complete_chains_and_authenticate_both_tables() {
     use crate::block_v2::machine::program::ConstructionLimits;
-    let (template, public, witness) = typed_reduction_fixture_with_chains(&[64, 4]);
+    let (template, public, witness) =
+        typed_reduction_fixture_with_chains(&[16 * typed::TERMS_PER_ROW, typed::TERMS_PER_ROW]);
     // Seventeen active groups need 32 rows unsplit, but two complete chains
-    // need only 16 + 8. A single 68-term chain cannot use this split.
+    // need only 16 + 8. One chain of the same total length cannot split.
     assert_eq!(template.typed.reduction_parts(1), vec![(0, 17, 32)]);
     assert_eq!(
         template.typed.reduction_parts(2),
         vec![(0, 16, 16), (16, 1, 8)]
     );
-    let (single, _, _) = typed_reduction_fixture_with_terms(68);
+    let (single, _, _) = typed_reduction_fixture_with_terms(17 * typed::TERMS_PER_ROW);
     assert_eq!(single.typed.reduction_parts(2), vec![(0, 17, 32)]);
     let airs = template.airs();
     assert!(airs.len() <= 8);
@@ -911,9 +927,12 @@ fn typed_reductions_split_only_complete_chains_and_authenticate_both_tables() {
     for &index in &indices {
         let air = &airs[index];
         let pre = air.preprocessed_trace().unwrap();
-        assert_eq!(pre.values[4], Val::ONE);
-        assert_eq!(pre.values[(air.active_rows - 1) * pre.width + 5], Val::ONE);
-        for offset in [0, (air.active_rows - 1) * traces[index].width + 19] {
+        assert_eq!(pre.values[typed::TERMS_PER_ROW], Val::ONE);
+        assert_eq!(
+            pre.values[(air.active_rows - 1) * pre.width + typed::TERMS_PER_ROW + 1],
+            Val::ONE
+        );
+        for offset in [0, air.active_rows * traces[index].width - 3] {
             let mut wrong = traces.clone();
             wrong[index].values[offset] += Val::ONE;
             assert!(std::panic::catch_unwind(|| check(&template, &public, &wrong)).is_err());

@@ -21,6 +21,17 @@ pub(super) const HASH_TABLE_MAX_ROWS: usize = 1 << 19;
 // Arithmetic quotient evaluation materializes main, lookup and public columns
 // together. Bound its rows independently of the smaller transition table.
 pub(super) const SCALAR_TABLE_MAX_ROWS: usize = 1 << 18;
+// Reduction rows contain an initial cubic accumulator, eight (weight, value)
+// tuples, and a final accumulator. Public addresses authenticate every term and
+// both chain boundaries; no transition crosses a chain or table boundary.
+const REDUCTION_TERMS: usize = typed::TERMS_PER_ROW;
+const REDUCTION_FINAL: usize = 3 + 4 * REDUCTION_TERMS;
+const REDUCTION_START: usize = REDUCTION_TERMS;
+const REDUCTION_END: usize = REDUCTION_START + 1;
+const REDUCTION_INPUTS: usize = REDUCTION_END + 1;
+const REDUCTION_INITIAL_ADDRESS: usize = REDUCTION_INPUTS + 4 * REDUCTION_TERMS;
+const REDUCTION_FINAL_ADDRESS: usize = REDUCTION_INITIAL_ADDRESS + 3;
+const REDUCTION_REFERENCES: usize = REDUCTION_FINAL_ADDRESS + 3;
 const HASH_WIDTH: usize = 8 + 8 * 8 + 22;
 // Eight raw input words and one authenticated direction bit precede the
 // permutation trace. Ordinary hashes fix the direction bit to zero. Keeping
@@ -62,7 +73,7 @@ impl BaseAir<Val> for VerifierAir {
             0 => 4 * SCALAR_LANES,
             1 => 9 * CUBIC_LANES,
             2 => SWAP_HASH_WIDTH * HASH_LANES,
-            4 => 22,
+            4 => REDUCTION_FINAL + 3,
             _ => 1,
         }
     }
@@ -78,7 +89,7 @@ impl BaseAir<Val> for VerifierAir {
             0 => 8 + 6 * SCALAR_LANES,
             1 => 14 * CUBIC_LANES,
             2 => 35 * HASH_LANES,
-            4 => 31,
+            4 => REDUCTION_REFERENCES + 3,
             _ => self.publics.max(1) + 8,
         }
     }
@@ -131,8 +142,8 @@ impl BaseAir<Val> for TableAir {
             {
                 let p = &mut data[i * width..(i + 1) * width];
                 let first = &self.template.typed.rows[group.terms[0] as usize];
-                p[4] = Val::from_bool(first.start);
-                p[5] = Val::from_bool(group.end != PADDING);
+                p[REDUCTION_START] = Val::from_bool(first.start);
+                p[REDUCTION_END] = Val::from_bool(group.end != PADDING);
                 for (slot, &index) in group.terms.iter().enumerate() {
                     if index == PADDING {
                         continue;
@@ -140,18 +151,18 @@ impl BaseAir<Val> for TableAir {
                     let row = &self.template.typed.rows[index as usize];
                     p[slot] = Val::ONE;
                     for j in 0..3 {
-                        p[6 + 4 * slot + j] = Val::from_u32(row.weights[j] + 1);
+                        p[REDUCTION_INPUTS + 4 * slot + j] = Val::from_u32(row.weights[j] + 1);
                     }
-                    p[6 + 4 * slot + 3] = Val::from_u32(row.value + 1);
+                    p[REDUCTION_INPUTS + 4 * slot + 3] = Val::from_u32(row.value + 1);
                 }
                 for j in 0..3 {
                     if first.start {
-                        p[22 + j] = Val::from_u32(first.acc[j] + 1);
+                        p[REDUCTION_INITIAL_ADDRESS + j] = Val::from_u32(first.acc[j] + 1);
                     }
                     if group.end != PADDING {
                         let last = &self.template.typed.rows[group.end as usize];
-                        p[25 + j] = Val::from_u32(last.acc[j] + 1);
-                        p[28 + j] =
+                        p[REDUCTION_FINAL_ADDRESS + j] = Val::from_u32(last.acc[j] + 1);
+                        p[REDUCTION_REFERENCES + j] =
                             Val::from_u32(self.template.typed.references[last.acc[j] as usize]);
                     }
                 }
@@ -381,7 +392,7 @@ pub(super) fn trace(air: &TableAir, values: &[Val]) -> RowMajorMatrix<Val> {
                 m[j] = values[first.acc[j] as usize];
                 if group.end != PADDING {
                     let last = &template.typed.rows[group.end as usize];
-                    m[19 + j] = values[last.acc[j] as usize];
+                    m[REDUCTION_FINAL + j] = values[last.acc[j] as usize];
                 }
             }
             for (slot, &index) in group.terms.iter().enumerate() {
@@ -604,17 +615,17 @@ impl<AB: AirBuilder<F = Val> + InteractionBuilder> Air<AB> for VerifierAir {
             4 => {
                 let next = main.next_slice();
                 let step: AB::Expr = p[0].into();
-                let start: AB::Expr = p[4].into();
-                let end: AB::Expr = p[5].into();
+                let start: AB::Expr = p[REDUCTION_START].into();
+                let end: AB::Expr = p[REDUCTION_END].into();
                 let mut delta: [AB::Expr; 3] = core::array::from_fn(|_| AB::Expr::ZERO);
-                for slot in 0..4 {
+                for slot in 0..REDUCTION_TERMS {
                     let active: AB::Expr = p[slot].into();
                     for j in 0..4 {
                         let value: AB::Expr = m[3 + slot * 4 + j].into();
                         b.assert_zero((AB::Expr::ONE - active.clone()) * value.clone());
                         BUS.lookup_key(
                             b,
-                            [p[6 + slot * 4 + j].into(), value],
+                            [p[REDUCTION_INPUTS + slot * 4 + j].into(), value],
                             Count::bounded(active.clone(), 1),
                         );
                     }
@@ -626,15 +637,22 @@ impl<AB: AirBuilder<F = Val> + InteractionBuilder> Air<AB> for VerifierAir {
                     b.assert_zero(
                         (step.clone() - end.clone()) * (next[j] - m[j] - delta[j].clone()),
                     );
-                    b.assert_zero(end.clone() * (m[19 + j] - m[j] - delta[j].clone()));
+                    b.assert_zero(end.clone() * (m[REDUCTION_FINAL + j] - m[j] - delta[j].clone()));
                     b.assert_zero((AB::Expr::ONE - step.clone()) * m[j]);
-                    b.assert_zero((AB::Expr::ONE - end.clone()) * m[19 + j]);
+                    b.assert_zero((AB::Expr::ONE - end.clone()) * m[REDUCTION_FINAL + j]);
                     BUS.lookup_key(
                         b,
-                        [p[22 + j].into(), m[j].into()],
+                        [p[REDUCTION_INITIAL_ADDRESS + j].into(), m[j].into()],
                         Count::bounded(start.clone(), 1),
                     );
-                    BUS.table_entry(b, [p[25 + j].into(), m[19 + j].into()], p[28 + j]);
+                    BUS.table_entry(
+                        b,
+                        [
+                            p[REDUCTION_FINAL_ADDRESS + j].into(),
+                            m[REDUCTION_FINAL + j].into(),
+                        ],
+                        p[REDUCTION_REFERENCES + j],
+                    );
                 }
             }
             3 => {
