@@ -101,6 +101,7 @@ fn counters(failed: bool) -> ConstructionCounters {
         input_limit: 32,
         requested_bytes_peak: 0,
         resource_failed: failed,
+        first_failure: None,
     }
 }
 

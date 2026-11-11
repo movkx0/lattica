@@ -23,6 +23,14 @@ fn nested_scratch_admits_combined_live_storage_before_callbacks() {
         assert_eq!(result.is_ok(), limit == 5 * item);
         assert_eq!(called, result.is_ok());
         assert_eq!(b.memory.live, 0);
+        if result.is_err() {
+            let failure = b.memory.first_failure.unwrap();
+            assert_eq!(failure.resource, "program-bytes");
+            assert_eq!(failure.limit, limit);
+            assert!(failure.requested > limit);
+        } else {
+            assert!(b.memory.first_failure.is_none());
+        }
         assert!(b.memory.peak <= limit);
         assert_eq!(b.resource_failure().is_some(), result.is_err());
     }
@@ -242,7 +250,7 @@ fn compiler_storage_rejection(
         };
         assert!(matches!(
             result,
-            Err(CompileError::Shape("compiler scratch allowance"))
+            Err(CompileError::ResourceAdmission("program-bytes"))
         ));
         assert_eq!(b.memory.live, 0);
         assert!(b.memory.peak <= limit);

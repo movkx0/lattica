@@ -37,6 +37,8 @@ use std::sync::{
 };
 
 pub use super::resident_pcs::initialize_research_from_env as initialize_resident_from_env;
+#[cfg(all(feature = "gpu", feature = "gpu-tuning"))]
+pub use engine::aggregation_kernel_screen;
 pub use engine::{
     device, drain,
     lde_execute::{coset_lde_commit, LdeCommitOutput, LdeInput},
@@ -633,7 +635,8 @@ pub enum ProverData<M> {
         layers: Vec<Vec<[Val; 4]>>,
     },
     Compact(compact_data::CompactData),
-    /// No host LDE or prefix exists. Queries require an owning device session.
+    /// Private prefixes stay on device. Trusted public prefixes may use bounded
+    /// host backing; queries always require an owning device session.
     DeviceOnly {
         owned: OwnedInputs,
         salts: SaltStore,
@@ -648,7 +651,7 @@ pub enum ProverData<M> {
 }
 
 impl<M> ProverData<M> {
-    /// Retained device-only commitment metadata, including inline descriptors.
+    /// Retained commitment metadata and public prefix host backing.
     /// Repeated references and shared allocation/stream Arcs are conservatively
     /// counted per occurrence. Other PCS representations retain their existing
     /// explicit host/hybrid admission path and return None here.

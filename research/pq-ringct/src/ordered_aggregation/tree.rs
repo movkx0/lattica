@@ -29,9 +29,13 @@ use std::{sync::Arc, time::Instant};
 /// additionally emits the full graph verifier into the parent.
 pub struct GraphChild<'a> {
     spec: Spec,
-    key: &'a GraphKey,
-    proof: &'a GraphProof,
+    evidence: GraphEvidence<'a>,
     context: &'a GraphContext,
+}
+enum GraphEvidence<'a> {
+    Machine(&'a GraphKey, &'a GraphProof),
+    #[cfg(feature = "gpu-aggregation-experiment")]
+    Typed(&'a crate::graph_tree::recursion::ProvenNode),
 }
 /// Aggregate children own only their compact trusted key and actual proof.
 pub enum Child<'a> {
@@ -58,10 +62,19 @@ impl Plan {
     ) -> Result<GraphChild<'a>> {
         let child = GraphChild {
             spec: Spec::new(self, index, 1)?,
-            key,
-            proof,
+            evidence: GraphEvidence::Machine(key, proof),
             context,
         };
+        child.verify()?;
+        Ok(child)
+    }
+    /// Admit a complete typed graph directly, without an intermediate proof.
+    #[cfg(feature = "gpu-aggregation-experiment")]
+    pub(crate) fn typed_graph_child<'a>(&self, index: u32,
+        node: &'a crate::graph_tree::recursion::ProvenNode,
+        context: &'a GraphContext) -> Result<GraphChild<'a>> {
+        let child = GraphChild { spec: Spec::new(self, index, 1)?,
+            evidence: GraphEvidence::Typed(node), context };
         child.verify()?;
         Ok(child)
     }
@@ -92,18 +105,34 @@ impl Plan {
     }
 }
 impl GraphChild<'_> {
+    fn profile_label(&self) -> [u8;32] {
+        match self.evidence {
+            GraphEvidence::Machine(key, _) => key.profile_label(),
+            #[cfg(feature = "gpu-aggregation-experiment")]
+            GraphEvidence::Typed(node) => node.profile_label(),
+        }
+    }
+    fn machine_source_height(&self) -> Option<usize> {
+        match self.evidence {
+            GraphEvidence::Machine(key, _) => Some(key.source_height()),
+            #[cfg(feature = "gpu-aggregation-experiment")]
+            GraphEvidence::Typed(_) => None,
+        }
+    }
     fn verify(&self) -> Result<()> {
         require(
-            self.key.profile_label() == self.spec.plan.graph_profile(),
+            self.profile_label() == self.spec.plan.graph_profile(),
             "graph key profile mismatch",
         )?;
         require(
             self.context.context == self.spec.plan.context(),
             "graph context mismatch",
         )?;
-        self.key
-            .verify_complete(self.proof, self.context)
-            .map_err(err)
+        match self.evidence {
+            GraphEvidence::Machine(key, proof) => key.verify_complete(proof, self.context),
+            #[cfg(feature = "gpu-aggregation-experiment")]
+            GraphEvidence::Typed(node) => node.verify_complete(self.context),
+        }.map_err(err)
     }
 }
 /// Immutable child view used while the original workflow owner keeps its
@@ -327,10 +356,12 @@ fn emit_child(
             };
             // GraphKey's private trusted construction pins its graph profile;
             // graph_child and compile_merge checked that profile against Plan.
-            if bounded {
-                c.key.compile_complete_bounded(b, inputs, c.proof, &expected)
-            } else {
-                c.key.compile_complete(b, inputs, c.proof, &expected)
+            match c.evidence {
+                GraphEvidence::Machine(key, proof) => if bounded {
+                    key.compile_complete_bounded(b, inputs, proof, &expected)
+                } else { key.compile_complete(b, inputs, proof, &expected) },
+                #[cfg(feature = "gpu-aggregation-experiment")]
+                GraphEvidence::Typed(node) => node.compile_complete(b, inputs, &expected),
             }.map_err(err)?;
             let first = b.constant(Val::from_u32(c.spec.first));
             let count = b.constant(Val::ONE);
@@ -503,8 +534,8 @@ fn validate_source_children<'a>(
                 let expected = source.graphs().get(index)
                     .ok_or_else(|| Error("aggregate source graph index".into()))?;
                 require(actual.spec.first as usize == index && actual.spec.count == 1
-                    && actual.key.source_height() <= ROW_LIMIT
-                    && actual.key.profile_label() == expected.plan.label()
+                    && actual.machine_source_height().is_some_and(|height| height <= ROW_LIMIT)
+                    && actual.profile_label() == expected.plan.label()
                     && core::ptr::eq(actual.context, expected.context),
                     "aggregate source graph identity or height mismatch")?;
             }

@@ -1,4 +1,10 @@
-#ifdef LATTICA_TUNED_NTT
+#ifdef LATTICA_NTT_PADDED
+#define NTT_TILE_INDEX(i) ((i) + ((i) >> 5))
+#else
+#define NTT_TILE_INDEX(i) (i)
+#endif
+#if defined(LATTICA_TUNED_NTT) && !defined(LATTICA_ROOT_POWER_HELPER)
+#define LATTICA_ROOT_POWER_HELPER 1
 // Square powers are already present in the public root table.
 inline ulong cached_root_power(__global const ulong *roots, uint order, uint exponent) {
     ulong result = 1UL;
@@ -53,7 +59,7 @@ __kernel void ntt_tile_cached(__global const ulong* in, __global ulong* out,
     for(uint e=lid;e<n_el;e+=wg) {
         const uint t=e>>log_c, col=col0+(e&(C-1u));
         const uint r=row0+(t<<s0), sr=fuse_bitrev?brev(r,log_h):r;
-        tile[e]=(col<w)?in[(size_t)sr*w+col]:0UL;
+        tile[NTT_TILE_INDEX(e)]=(col<w)?in[(size_t)sr*w+col]:0UL;
     }
     barrier(CLK_LOCAL_MEM_FENCE);
     for(uint k=1;k<=lt;k++) {
@@ -63,9 +69,9 @@ __kernel void ntt_tile_cached(__global const ulong* in, __global ulong* out,
             const uint t2=b>>log_c, lc=b&(C-1u), j=t2&(hl-1u);
             const uint tl=((((t2>>(k-1u))<<k)|j)<<log_c)|lc, th=tl+(hl<<log_c);
             const ulong tw=gl_mul(outer,powers[j<<(lt-k)]);
-            const ulong u=tile[tl], v=gl_mul(tile[th],tw);
-            tile[tl]=gl_add(u,v);
-            tile[th]=gl_sub(u,v);
+            const ulong u=tile[NTT_TILE_INDEX(tl)], v=gl_mul(tile[NTT_TILE_INDEX(th)],tw);
+            tile[NTT_TILE_INDEX(tl)]=gl_add(u,v);
+            tile[NTT_TILE_INDEX(th)]=gl_sub(u,v);
         }
         barrier(CLK_LOCAL_MEM_FENCE);
     }
@@ -73,9 +79,11 @@ __kernel void ntt_tile_cached(__global const ulong* in, __global ulong* out,
         const uint t=e>>log_c, col=col0+(e&(C-1u));
         if(col<w) {
             const uint r=row0+(t<<s0), orow=store_brev?brev(r,log_h):r;
-            ulong x=tile[e];
+            ulong x=tile[NTT_TILE_INDEX(e)];
             if(post_c!=1UL || post_b!=1UL) x=gl_mul(x,powers[inner+lt+t]);
             out[(size_t)orow*w+col]=do_canon?gl_canon(x):x;
         }
     }
 }
+
+#undef NTT_TILE_INDEX

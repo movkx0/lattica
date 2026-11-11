@@ -35,6 +35,8 @@ pub(crate) mod preparation;
 #[cfg(feature = "opencl")]
 pub(crate) mod commitment_batches;
 mod tree;
+#[cfg(feature = "gpu-aggregation-experiment")]
+pub(crate) use tree::recursion;
 #[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
 pub(crate) use tree::owned_parent;
 pub use crate::component_tree::Geometry;

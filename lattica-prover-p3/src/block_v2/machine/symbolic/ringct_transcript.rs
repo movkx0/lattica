@@ -3,13 +3,14 @@
 //! evaluates its concrete AIR; the recorder constructs the fixed public columns.
 use super::{recorded, recording, Builder, RecordedUni};
 use crate::{
-    block_v2::{gpu_quotient_prover::uni, native_gpu::transcript_preparation::TranscriptPreparationPlan},
+    block_v2::{
+        gpu_quotient_prover::uni, native_gpu::transcript_preparation::TranscriptPreparationPlan,
+    },
     config::Val,
     ringct_research_quota::{Bytes, Category, Ledger, Reservation},
 };
 use core::mem::size_of;
 use p3_air::symbolic::AirLayout;
-
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Error {
@@ -31,13 +32,16 @@ pub struct TranscriptSymbolicReplay {
 }
 
 impl TranscriptSymbolicReplay {
-    fn from_recording(census: TranscriptPreparationPlan, recorded: &RecordedUni)
-        -> Result<Self, Error>
-    {
+    fn from_recording(
+        census: TranscriptPreparationPlan,
+        recorded: &RecordedUni,
+    ) -> Result<Self, Error> {
         use p3_air::symbolic::{SymbolicAirBuilder, SymbolicExpression, SymbolicVariable};
         let source = recording::transcript::capture().map_err(|_| Error::Recording)?;
         let constraints = recorded.constraints();
-        if constraints == 0 || constraints > source.constraint_limit { return Err(Error::Shape); }
+        if constraints == 0 || constraints > source.constraint_limit {
+            return Err(Error::Shape);
+        }
         let geometry = census.geometry();
         // The recorder emits each arithmetic Arc without constant folding and
         // charges its full allocation, including discarded nodes and growth.
@@ -45,27 +49,47 @@ impl TranscriptSymbolicReplay {
         // away. Add upstream layout/main clones and returned root/type arrays
         // without subtracting the recorder's corresponding original buffers.
         // A source AIR callback's own Vec allocations are outside recording.
-        let variables = geometry.width().checked_mul(2)
+        let variables = geometry
+            .width()
+            .checked_mul(2)
             .and_then(|n| n.checked_add(geometry.public_values()))
-            .and_then(|n| n.checked_add(geometry.periodic_columns())).ok_or(Error::Shape)?;
-        let arrays = variables.checked_mul(16)
-            .and_then(|n| n.checked_mul(size_of::<SymbolicVariable<Val>>())).ok_or(Error::Shape)?;
-        let roots = constraints.checked_mul(4)
+            .and_then(|n| n.checked_add(geometry.periodic_columns()))
+            .ok_or(Error::Shape)?;
+        let arrays = variables
+            .checked_mul(16)
+            .and_then(|n| n.checked_mul(size_of::<SymbolicVariable<Val>>()))
+            .ok_or(Error::Shape)?;
+        let roots = constraints
+            .checked_mul(4)
             .and_then(|n| n.checked_mul(size_of::<SymbolicExpression<Val>>() + size_of::<usize>()))
             .ok_or(Error::Shape)?;
-        let frames = 8 * (size_of::<SymbolicAirBuilder<Val>>() + size_of::<AirLayout>()
-            + size_of::<Self>() + size_of::<Result<Self, Error>>() + size_of::<[usize; 8]>());
-        let required_host_bytes = source.requested_host_bytes.checked_add(arrays)
+        let frames = 8
+            * (size_of::<SymbolicAirBuilder<Val>>()
+                + size_of::<AirLayout>()
+                + size_of::<Self>()
+                + size_of::<Result<Self, Error>>()
+                + size_of::<[usize; 8]>());
+        let required_host_bytes = source
+            .requested_host_bytes
+            .checked_add(arrays)
             .and_then(|n| n.checked_add(roots))
             .and_then(|n| n.checked_add(census.host().air_callback_heap_bytes))
-            .and_then(|n| n.checked_add(frames)).ok_or(Error::Shape)?;
-        Ok(Self { geometry, required_host_bytes })
+            .and_then(|n| n.checked_add(frames))
+            .ok_or(Error::Shape)?;
+        Ok(Self {
+            geometry,
+            required_host_bytes,
+        })
     }
 
-    pub fn geometry(self) -> crate::block_v2::native_gpu::transcript_preparation::TranscriptGeometry {
+    pub fn geometry(
+        self,
+    ) -> crate::block_v2::native_gpu::transcript_preparation::TranscriptGeometry {
         self.geometry
     }
-    pub fn required_host_bytes(self) -> usize { self.required_host_bytes }
+    pub fn required_host_bytes(self) -> usize {
+        self.required_host_bytes
+    }
 }
 
 fn layout(census: TranscriptPreparationPlan) -> AirLayout {
@@ -109,7 +133,10 @@ fn authority(
         .and_then(|n| n.checked_add(additional_host_bytes()))
         .ok_or(Error::Shape)?;
     if !reservation.belongs_to(ledger)
-        || !super::ringct_recording_host::allowed(allowance.host, request.total().map_err(|_| Error::Authority)?.host)
+        || !super::ringct_recording_host::allowed(
+            allowance.host,
+            request.total().map_err(|_| Error::Authority)?.host,
+        )
         || allowance.device > 8u64 << 30
         || request.get(Category::SymbolicCompiler)
             != (Bytes {
@@ -128,7 +155,9 @@ fn authority(
     {
         return Err(Error::Authority);
     }
-    if census.geometry().periodic_values() != 386 { return Err(Error::Shape); }
+    if census.geometry().periodic_values() != 386 {
+        return Err(Error::Shape);
+    }
     Ok(())
 }
 
@@ -163,7 +192,10 @@ impl<'claim> TranscriptRecorder<'claim> {
             return Err(Error::Allocation);
         }
         for index in 0..count {
-            let period = census.geometry().periodic_length(index).map_err(|_| Error::Shape)?;
+            let period = census
+                .geometry()
+                .periodic_length(index)
+                .map_err(|_| Error::Shape)?;
             let mut column = Vec::new();
             column
                 .try_reserve_exact(period)
@@ -172,7 +204,12 @@ impl<'claim> TranscriptRecorder<'claim> {
                 return Err(Error::Allocation);
             }
             for row in 0..period {
-                column.push(census.geometry().periodic_value(index, row).map_err(|_| Error::Shape)?);
+                column.push(
+                    census
+                        .geometry()
+                        .periodic_value(index, row)
+                        .map_err(|_| Error::Shape)?,
+                );
             }
             columns.push(column);
         }
@@ -226,7 +263,9 @@ pub struct PreparedTranscript<'claim> {
 }
 
 impl<'claim> PreparedTranscript<'claim> {
-    pub fn symbolic_replay_census(&self) -> TranscriptSymbolicReplay { self.replay }
+    pub fn symbolic_replay_census(&self) -> TranscriptSymbolicReplay {
+        self.replay
+    }
     pub fn census(&self) -> TranscriptPreparationPlan {
         self.census
     }

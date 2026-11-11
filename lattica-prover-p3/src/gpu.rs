@@ -78,6 +78,18 @@ pub(crate) const KERNEL_SRC: &str = concat!(
 inline ulong gl_reduce128(ulong lo,ulong hi){ uint hh=(uint)(hi>>32),hl=(uint)(hi&0xFFFFFFFFUL);
  ulong t0=lo-(ulong)hh; if(lo<(ulong)hh)t0-=NEG_ORDER; ulong t1=(ulong)hl*NEG_ORDER; ulong t2=t0+t1; if(t2<t0)t2+=NEG_ORDER; return t2; }
 inline ulong gl_mul(ulong a,ulong b){ return gl_reduce128(a*b, mul_hi(a,b)); }
+#ifdef LATTICA_POSEIDON_SQUARE
+inline ulong gl_square(ulong a){
+    const ulong low=(ulong)((uint)a), high=a>>32;
+    const ulong ll=low*low, cross=low*high, hh=high*high;
+    const ulong lo=ll+(cross<<33);
+    const ulong hi=hh+(cross>>31)+(ulong)(lo<ll);
+    return gl_reduce128(lo,hi);
+}
+#else
+inline ulong gl_square(ulong a){ return gl_mul(a,a); }
+#endif
+
 inline ulong gl_add(ulong a,ulong b){ ulong s=a+b; ulong o1=(s<a)?NEG_ORDER:0UL; ulong s2=s+o1; ulong o2=(s2<s)?NEG_ORDER:0UL; return s2+o2; }
 inline ulong gl_neg(ulong b){ ulong c=(b>=GP)?(b-GP):b; return c==0UL?0UL:(GP-c); }
 inline ulong gl_sub(ulong a,ulong b){ return gl_add(a, gl_neg(b)); }
@@ -146,7 +158,7 @@ __kernel void ntt_tile(__global const ulong* in,__global ulong* out,const uint w
   }
 }
 // ---- Poseidon2-Goldilocks width-8 (matches p3 `default_goldilocks_poseidon2_8`) ----
-inline ulong gl_pow7(ulong x){ ulong x2=gl_mul(x,x); ulong x3=gl_mul(x2,x); ulong x4=gl_mul(x2,x2); return gl_mul(x4,x3); }
+inline ulong gl_pow7(ulong x){ ulong x2=gl_square(x); ulong x3=gl_mul(x2,x); ulong x4=gl_square(x2); return gl_mul(x4,x3); }
 // apply_mat4 on x[0..4] (p3 external.rs; order matters — overwrite 0/2 after 1/3).
 inline void mat4(ulong* x){
   ulong t01=gl_add(x[0],x[1]); ulong t23=gl_add(x[2],x[3]);
@@ -172,7 +184,10 @@ inline void intl(ulong* s,__global const ulong* diag){
 inline void perm8(ulong* s,__global const ulong* rci,__global const ulong* rcp,__global const ulong* rcf,__global const ulong* diag){
   extl(s);
   for(int r=0;r<4;r++){ for(int i=0;i<8;i++) s[i]=gl_pow7(gl_add(s[i],rci[r*8+i])); extl(s); }
-  for(int r=0;r<22;r++){ s[0]=gl_pow7(gl_add(s[0],rcp[r])); intl(s,diag); }
+ #ifdef LATTICA_POSEIDON_UNROLL
+#pragma unroll 2
+#endif
+ for(int r=0;r<22;r++){ s[0]=gl_pow7(gl_add(s[0],rcp[r])); intl(s,diag); }
   for(int r=0;r<4;r++){ for(int i=0;i<8;i++) s[i]=gl_pow7(gl_add(s[i],rcf[r*8+i])); extl(s); }
 }
 // leaf hash (PaddingFreeSponge<8,4,4>): one thread per row, sponge over `w` elems, out[row*4..].

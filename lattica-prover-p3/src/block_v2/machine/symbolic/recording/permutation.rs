@@ -7,14 +7,23 @@ pub(in crate::block_v2::machine::symbolic) struct SourceRecordingCensus {
     pub constraint_limit: usize,
 }
 
-pub(in crate::block_v2::machine::symbolic) fn capture() -> Result<SourceRecordingCensus, CompileError> {
+pub(in crate::block_v2::machine::symbolic) fn capture(
+) -> Result<SourceRecordingCensus, CompileError> {
     check()?;
     STATE.with(|state| {
         let state = state.borrow();
         let state = state.as_ref().ok_or_else(error)?;
-        if state.failed || state.limit != HOST_BYTES || state.bytes == 0
-            || state.bytes > HOST_BYTES || state.depth > MAX_DEPTH
-        { return Err(error()); }
-        Ok(SourceRecordingCensus { requested_host_bytes: state.bytes, constraint_limit: MAX_NODES })
+        if state.failed
+            || state.limit != HOST_BYTES
+            || state.bytes == 0
+            || state.bytes > HOST_BYTES
+            || state.depth > MAX_DEPTH
+        {
+            return Err(error());
+        }
+        Ok(SourceRecordingCensus {
+            requested_host_bytes: state.bytes,
+            constraint_limit: MAX_NODES,
+        })
     })
 }

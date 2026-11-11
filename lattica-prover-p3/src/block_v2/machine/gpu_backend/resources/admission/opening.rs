@@ -560,8 +560,11 @@ fn plan_shape<const MATRIX_COUNT: usize, const ROUND_COUNT: usize>(
         mul(ROUND_COUNT, initial_tree_charge)?,
         device::opening_runtime_host_bound()?,
     ])?;
-    if add(host_workspace_peak_bytes, retained_host_metadata_bytes)? > pcs_host_budget_bytes {
-        return Err("opening host owners exceed the remaining native PCS allowance".into());
+    let host_required_bytes = add(host_workspace_peak_bytes, retained_host_metadata_bytes)?;
+    if host_required_bytes > pcs_host_budget_bytes {
+        return Err(format!(
+            "opening host owners exceed the remaining native PCS allowance: required={host_required_bytes} limit={pcs_host_budget_bytes} workspace={host_workspace_peak_bytes} metadata={retained_host_metadata_bytes}"
+        ));
     }
     Ok(OpeningBounds {
         opening_device_peak_bytes: opening_peak,

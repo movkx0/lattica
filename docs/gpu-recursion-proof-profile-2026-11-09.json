@@ -1,0 +1,2420 @@
+{
+  "schema": "ringct-gpu-recursion-proof-profile-v1",
+  "date": "2026-11-09",
+  "branch": "gpu-recursive-aggregation",
+  "base_commit": "cce8d43",
+  "scope": "Individual native-verifier wrappers on archived deterministic N4 inputs, first group only; no recursive parents or transaction seals.",
+  "performance_qualified": false,
+  "default_promoted": false,
+  "case_results": [
+    {
+      "label": "gpu-agg-architecture-proof-request6-width1-r49",
+      "request": 6,
+      "native_components_per_wrapper": 1,
+      "first_segment": 0,
+      "proofs_generated": 3,
+      "source_sha3": "c5ae7bf9f71db3f6a71d22a27639cbe9e4f8c245a08d907a2c08d229a61ffb0c",
+      "input_sha3": "55ac26cf63b7660ed1e62367466bccb71355affbd4befd9831e2cdf83e8eeda6",
+      "setup_seconds": 0.544145193,
+      "warm": {
+        "host_witness_seconds": 0.1328861935,
+        "upload_seconds": 0.0458393315,
+        "gpu_prove_seconds": 2.0436704705,
+        "cpu_verify_seconds": 0.06810634099999999,
+        "sum_seconds": 2.2905023365
+      },
+      "samples": [
+        {
+          "backend_report": {
+            "capabilities": {
+              "max_log_fri_arity": 1,
+              "profile": "block_v2_cubic",
+              "scope": "operation",
+              "stages": [
+                {
+                  "backend": "open_cl",
+                  "stage": "preprocessing"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "lookup"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "transform"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "quotient"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "randomness"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "hiding"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "commitment"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "opening"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "fri_fold"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "fri_query"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "final_polynomial"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "scalar"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "transcript"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "grinding"
+                }
+              ]
+            },
+            "completion_rejected": false,
+            "components": [],
+            "elapsed_ns": 2100382430,
+            "entry_point": "recursion_gpu_backend",
+            "observation_errors": 0,
+            "observations": [
+              {
+                "backend": "open_cl",
+                "calls": 46,
+                "completed_calls": 46,
+                "device_calls": 46,
+                "device_ns": 283968,
+                "inclusive_ns": 0,
+                "stage": "preprocessing"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 700,
+                "completed_calls": 700,
+                "device_calls": 694,
+                "device_ns": 35235584,
+                "inclusive_ns": 68992183,
+                "stage": "lookup"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 494,
+                "completed_calls": 494,
+                "device_calls": 488,
+                "device_ns": 71105408,
+                "inclusive_ns": 572312847,
+                "stage": "quotient"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 178,
+                "completed_calls": 178,
+                "device_calls": 178,
+                "device_ns": 46091392,
+                "inclusive_ns": 0,
+                "stage": "transcript"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 159392,
+                "inclusive_ns": 0,
+                "stage": "grinding"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 14,
+                "completed_calls": 14,
+                "device_calls": 14,
+                "device_ns": 117152,
+                "inclusive_ns": 0,
+                "stage": "scalar"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 262,
+                "completed_calls": 262,
+                "device_calls": 262,
+                "device_ns": 41610752,
+                "inclusive_ns": 0,
+                "stage": "randomness"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 574,
+                "completed_calls": 574,
+                "device_calls": 574,
+                "device_ns": 474489536,
+                "inclusive_ns": 0,
+                "stage": "transform"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 244,
+                "completed_calls": 244,
+                "device_calls": 244,
+                "device_ns": 6139712,
+                "inclusive_ns": 0,
+                "stage": "hiding"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 21,
+                "completed_calls": 21,
+                "device_calls": 21,
+                "device_ns": 415969600,
+                "inclusive_ns": 0,
+                "stage": "commitment"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1032,
+                "completed_calls": 1032,
+                "device_calls": 1032,
+                "device_ns": 41497216,
+                "inclusive_ns": 0,
+                "stage": "opening"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 20,
+                "completed_calls": 20,
+                "device_calls": 20,
+                "device_ns": 336928,
+                "inclusive_ns": 0,
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 412,
+                "completed_calls": 412,
+                "device_calls": 412,
+                "device_ns": 20171904,
+                "inclusive_ns": 0,
+                "stage": "fri_query"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 5376,
+                "inclusive_ns": 0,
+                "stage": "final_polynomial"
+              }
+            ],
+            "policy": "gpu_required",
+            "schema": "lattica-proving-stages-v1",
+            "stage_coverage_complete": true,
+            "succeeded": true
+          },
+          "cpu_verify_seconds": 0.068943755,
+          "gpu_backend_only": true,
+          "gpu_prove_seconds": 2.10037942,
+          "host_witness_seconds": 0.133047717,
+          "preprocessing_reused": true,
+          "proof_json_bytes": 7994942,
+          "query_opened_fields": 221056,
+          "upload_seconds": 0.046983095,
+          "verified": true
+        },
+        {
+          "backend_report": {
+            "capabilities": {
+              "max_log_fri_arity": 1,
+              "profile": "block_v2_cubic",
+              "scope": "operation",
+              "stages": [
+                {
+                  "backend": "open_cl",
+                  "stage": "preprocessing"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "lookup"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "transform"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "quotient"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "randomness"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "hiding"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "commitment"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "opening"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "fri_fold"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "fri_query"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "final_polynomial"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "scalar"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "transcript"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "grinding"
+                }
+              ]
+            },
+            "completion_rejected": false,
+            "components": [],
+            "elapsed_ns": 2044981919,
+            "entry_point": "recursion_gpu_backend",
+            "observation_errors": 0,
+            "observations": [
+              {
+                "backend": "open_cl",
+                "calls": 46,
+                "completed_calls": 46,
+                "device_calls": 46,
+                "device_ns": 261984,
+                "inclusive_ns": 0,
+                "stage": "preprocessing"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 700,
+                "completed_calls": 700,
+                "device_calls": 694,
+                "device_ns": 35157024,
+                "inclusive_ns": 68725134,
+                "stage": "lookup"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 494,
+                "completed_calls": 494,
+                "device_calls": 488,
+                "device_ns": 70317600,
+                "inclusive_ns": 822470623,
+                "stage": "quotient"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 178,
+                "completed_calls": 178,
+                "device_calls": 178,
+                "device_ns": 46134144,
+                "inclusive_ns": 0,
+                "stage": "transcript"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 161088,
+                "inclusive_ns": 0,
+                "stage": "grinding"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 14,
+                "completed_calls": 14,
+                "device_calls": 14,
+                "device_ns": 106336,
+                "inclusive_ns": 0,
+                "stage": "scalar"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 262,
+                "completed_calls": 262,
+                "device_calls": 262,
+                "device_ns": 38886720,
+                "inclusive_ns": 0,
+                "stage": "randomness"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 574,
+                "completed_calls": 574,
+                "device_calls": 574,
+                "device_ns": 475426880,
+                "inclusive_ns": 0,
+                "stage": "transform"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 244,
+                "completed_calls": 244,
+                "device_calls": 244,
+                "device_ns": 6146816,
+                "inclusive_ns": 0,
+                "stage": "hiding"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 21,
+                "completed_calls": 21,
+                "device_calls": 21,
+                "device_ns": 416075328,
+                "inclusive_ns": 0,
+                "stage": "commitment"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1032,
+                "completed_calls": 1032,
+                "device_calls": 1032,
+                "device_ns": 41480448,
+                "inclusive_ns": 0,
+                "stage": "opening"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 20,
+                "completed_calls": 20,
+                "device_calls": 20,
+                "device_ns": 340320,
+                "inclusive_ns": 0,
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 412,
+                "completed_calls": 412,
+                "device_calls": 412,
+                "device_ns": 20219008,
+                "inclusive_ns": 0,
+                "stage": "fri_query"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 5792,
+                "inclusive_ns": 0,
+                "stage": "final_polynomial"
+              }
+            ],
+            "policy": "gpu_required",
+            "schema": "lattica-proving-stages-v1",
+            "stage_coverage_complete": true,
+            "succeeded": true
+          },
+          "cpu_verify_seconds": 0.068057499,
+          "gpu_backend_only": true,
+          "gpu_prove_seconds": 2.044979209,
+          "host_witness_seconds": 0.133322395,
+          "preprocessing_reused": true,
+          "proof_json_bytes": 7995151,
+          "query_opened_fields": 221056,
+          "upload_seconds": 0.045755725,
+          "verified": true
+        },
+        {
+          "backend_report": {
+            "capabilities": {
+              "max_log_fri_arity": 1,
+              "profile": "block_v2_cubic",
+              "scope": "operation",
+              "stages": [
+                {
+                  "backend": "open_cl",
+                  "stage": "preprocessing"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "lookup"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "transform"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "quotient"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "randomness"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "hiding"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "commitment"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "opening"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "fri_fold"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "fri_query"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "final_polynomial"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "scalar"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "transcript"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "grinding"
+                }
+              ]
+            },
+            "completion_rejected": false,
+            "components": [],
+            "elapsed_ns": 2042363862,
+            "entry_point": "recursion_gpu_backend",
+            "observation_errors": 0,
+            "observations": [
+              {
+                "backend": "open_cl",
+                "calls": 46,
+                "completed_calls": 46,
+                "device_calls": 46,
+                "device_ns": 268224,
+                "inclusive_ns": 0,
+                "stage": "preprocessing"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 700,
+                "completed_calls": 700,
+                "device_calls": 694,
+                "device_ns": 35149856,
+                "inclusive_ns": 68935418,
+                "stage": "lookup"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 494,
+                "completed_calls": 494,
+                "device_calls": 488,
+                "device_ns": 68714528,
+                "inclusive_ns": 771003157,
+                "stage": "quotient"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 178,
+                "completed_calls": 178,
+                "device_calls": 178,
+                "device_ns": 46156832,
+                "inclusive_ns": 0,
+                "stage": "transcript"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 444704,
+                "inclusive_ns": 0,
+                "stage": "grinding"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 14,
+                "completed_calls": 14,
+                "device_calls": 14,
+                "device_ns": 112896,
+                "inclusive_ns": 0,
+                "stage": "scalar"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 262,
+                "completed_calls": 262,
+                "device_calls": 262,
+                "device_ns": 38894720,
+                "inclusive_ns": 0,
+                "stage": "randomness"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 574,
+                "completed_calls": 574,
+                "device_calls": 574,
+                "device_ns": 475440512,
+                "inclusive_ns": 0,
+                "stage": "transform"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 244,
+                "completed_calls": 244,
+                "device_calls": 244,
+                "device_ns": 6139904,
+                "inclusive_ns": 0,
+                "stage": "hiding"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 21,
+                "completed_calls": 21,
+                "device_calls": 21,
+                "device_ns": 416348576,
+                "inclusive_ns": 0,
+                "stage": "commitment"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1032,
+                "completed_calls": 1032,
+                "device_calls": 1032,
+                "device_ns": 41517984,
+                "inclusive_ns": 0,
+                "stage": "opening"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 20,
+                "completed_calls": 20,
+                "device_calls": 20,
+                "device_ns": 338208,
+                "inclusive_ns": 0,
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 412,
+                "completed_calls": 412,
+                "device_calls": 412,
+                "device_ns": 20264800,
+                "inclusive_ns": 0,
+                "stage": "fri_query"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 6624,
+                "inclusive_ns": 0,
+                "stage": "final_polynomial"
+              }
+            ],
+            "policy": "gpu_required",
+            "schema": "lattica-proving-stages-v1",
+            "stage_coverage_complete": true,
+            "succeeded": true
+          },
+          "cpu_verify_seconds": 0.068155183,
+          "gpu_backend_only": true,
+          "gpu_prove_seconds": 2.042361732,
+          "host_witness_seconds": 0.132449992,
+          "preprocessing_reused": true,
+          "proof_json_bytes": 7996011,
+          "query_opened_fields": 221056,
+          "upload_seconds": 0.045922938,
+          "verified": true
+        }
+      ],
+      "geometry": {
+        "committed_lde_fields": 1512449024,
+        "degree_gate": true,
+        "lde_payload_bytes": 12099592192,
+        "quotient_gate": true,
+        "tables": [
+          {
+            "active_rows": 53140,
+            "committed_lde_fields": 849346560,
+            "constraint_degree": 4,
+            "constraints": 310,
+            "first_row": 0,
+            "height": 65536,
+            "main_width": 92,
+            "permutation_width": 96,
+            "preprocessed_width": 146,
+            "quotient_chunks": 8,
+            "table": "arithmetic"
+          },
+          {
+            "active_rows": 2048,
+            "committed_lde_fields": 19529728,
+            "constraint_degree": 4,
+            "constraints": 108,
+            "first_row": 0,
+            "height": 2048,
+            "main_width": 63,
+            "permutation_width": 66,
+            "preprocessed_width": 98,
+            "quotient_chunks": 8,
+            "table": "cubic-extension"
+          },
+          {
+            "active_rows": 108,
+            "committed_lde_fields": 1220608,
+            "constraint_degree": 4,
+            "constraints": 108,
+            "first_row": 2048,
+            "height": 128,
+            "main_width": 63,
+            "permutation_width": 66,
+            "preprocessed_width": 98,
+            "quotient_chunks": 8,
+            "table": "cubic-extension"
+          },
+          {
+            "active_rows": 65536,
+            "committed_lde_fields": 622854144,
+            "constraint_degree": 4,
+            "constraints": 361,
+            "first_row": 0,
+            "height": 65536,
+            "main_width": 180,
+            "permutation_width": 21,
+            "preprocessed_width": 25,
+            "quotient_chunks": 8,
+            "table": "poseidon2"
+          },
+          {
+            "active_rows": 1482,
+            "committed_lde_fields": 19464192,
+            "constraint_degree": 4,
+            "constraints": 361,
+            "first_row": 65536,
+            "height": 2048,
+            "main_width": 180,
+            "permutation_width": 21,
+            "preprocessed_width": 25,
+            "quotient_chunks": 8,
+            "table": "poseidon2"
+          },
+          {
+            "active_rows": 1,
+            "committed_lde_fields": 33792,
+            "constraint_degree": 2,
+            "constraints": 13,
+            "first_row": 0,
+            "height": 8,
+            "main_width": 1,
+            "permutation_width": 6,
+            "preprocessed_width": 54,
+            "quotient_chunks": 8,
+            "table": "public-bindings"
+          }
+        ],
+        "template_identity": [
+          45,
+          46,
+          247,
+          66,
+          173,
+          16,
+          159,
+          27,
+          136,
+          5,
+          162,
+          158,
+          63,
+          211,
+          230,
+          197,
+          114,
+          79,
+          11,
+          138,
+          127,
+          9,
+          56,
+          59,
+          246,
+          243,
+          127,
+          142,
+          88,
+          234,
+          208,
+          177
+        ]
+      },
+      "query_opened_bytes": 1768448,
+      "proof_json_bytes": 7995151,
+      "controller_wall_seconds": 14.56736986595206,
+      "process_vram": {
+        "samples": 4,
+        "process_peak_bytes": 5158993920,
+        "minimum_free_bytes": 11028922368
+      },
+      "managed_peak_bytes": 5632191056,
+      "archive_files_rewritten": 0,
+      "current_cache_entries_created": 0,
+      "session_closed": true,
+      "completion_claimed": false
+    },
+    {
+      "label": "gpu-agg-architecture-proof-request6-width4-r49",
+      "request": 6,
+      "native_components_per_wrapper": 4,
+      "first_segment": 0,
+      "proofs_generated": 3,
+      "source_sha3": "c5ae7bf9f71db3f6a71d22a27639cbe9e4f8c245a08d907a2c08d229a61ffb0c",
+      "input_sha3": "55ac26cf63b7660ed1e62367466bccb71355affbd4befd9831e2cdf83e8eeda6",
+      "setup_seconds": 2.2610436,
+      "warm": {
+        "host_witness_seconds": 0.621027661,
+        "upload_seconds": 0.186024043,
+        "gpu_prove_seconds": 6.299326289,
+        "cpu_verify_seconds": 0.073166131,
+        "sum_seconds": 7.1795441239999995
+      },
+      "samples": [
+        {
+          "backend_report": {
+            "capabilities": {
+              "max_log_fri_arity": 1,
+              "profile": "block_v2_cubic",
+              "scope": "operation",
+              "stages": [
+                {
+                  "backend": "open_cl",
+                  "stage": "preprocessing"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "lookup"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "transform"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "quotient"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "randomness"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "hiding"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "commitment"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "opening"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "fri_fold"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "fri_query"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "final_polynomial"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "scalar"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "transcript"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "grinding"
+                }
+              ]
+            },
+            "completion_rejected": false,
+            "components": [],
+            "elapsed_ns": 6373301186,
+            "entry_point": "recursion_gpu_backend",
+            "observation_errors": 0,
+            "observations": [
+              {
+                "backend": "open_cl",
+                "calls": 46,
+                "completed_calls": 46,
+                "device_calls": 46,
+                "device_ns": 279776,
+                "inclusive_ns": 0,
+                "stage": "preprocessing"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 2682,
+                "completed_calls": 2682,
+                "device_calls": 2676,
+                "device_ns": 138548448,
+                "inclusive_ns": 248539608,
+                "stage": "lookup"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1662,
+                "completed_calls": 1662,
+                "device_calls": 1656,
+                "device_ns": 262913088,
+                "inclusive_ns": 2440698378,
+                "stage": "quotient"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 184,
+                "completed_calls": 184,
+                "device_calls": 184,
+                "device_ns": 48175104,
+                "inclusive_ns": 0,
+                "stage": "transcript"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 164864,
+                "inclusive_ns": 0,
+                "stage": "grinding"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 14,
+                "completed_calls": 14,
+                "device_calls": 14,
+                "device_ns": 134880,
+                "inclusive_ns": 0,
+                "stage": "scalar"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 266,
+                "completed_calls": 266,
+                "device_calls": 266,
+                "device_ns": 174535104,
+                "inclusive_ns": 0,
+                "stage": "randomness"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 574,
+                "completed_calls": 574,
+                "device_calls": 574,
+                "device_ns": 1798500064,
+                "inclusive_ns": 0,
+                "stage": "transform"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 280,
+                "completed_calls": 280,
+                "device_calls": 280,
+                "device_ns": 21310432,
+                "inclusive_ns": 0,
+                "stage": "hiding"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 23,
+                "completed_calls": 23,
+                "device_calls": 23,
+                "device_ns": 1622345024,
+                "inclusive_ns": 0,
+                "stage": "commitment"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 2040,
+                "completed_calls": 2040,
+                "device_calls": 2040,
+                "device_ns": 145195264,
+                "inclusive_ns": 0,
+                "stage": "opening"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 22,
+                "completed_calls": 22,
+                "device_calls": 22,
+                "device_ns": 935392,
+                "inclusive_ns": 0,
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 497,
+                "completed_calls": 497,
+                "device_calls": 497,
+                "device_ns": 77137440,
+                "inclusive_ns": 0,
+                "stage": "fri_query"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 7808,
+                "inclusive_ns": 0,
+                "stage": "final_polynomial"
+              }
+            ],
+            "policy": "gpu_required",
+            "schema": "lattica-proving-stages-v1",
+            "stage_coverage_complete": true,
+            "succeeded": true
+          },
+          "cpu_verify_seconds": 0.076512997,
+          "gpu_backend_only": true,
+          "gpu_prove_seconds": 6.373298566,
+          "host_witness_seconds": 0.565629071,
+          "preprocessing_reused": true,
+          "proof_json_bytes": 8508258,
+          "query_opened_fields": 221056,
+          "upload_seconds": 0.185657163,
+          "verified": true
+        },
+        {
+          "backend_report": {
+            "capabilities": {
+              "max_log_fri_arity": 1,
+              "profile": "block_v2_cubic",
+              "scope": "operation",
+              "stages": [
+                {
+                  "backend": "open_cl",
+                  "stage": "preprocessing"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "lookup"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "transform"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "quotient"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "randomness"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "hiding"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "commitment"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "opening"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "fri_fold"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "fri_query"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "final_polynomial"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "scalar"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "transcript"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "grinding"
+                }
+              ]
+            },
+            "completion_rejected": false,
+            "components": [],
+            "elapsed_ns": 6315635811,
+            "entry_point": "recursion_gpu_backend",
+            "observation_errors": 0,
+            "observations": [
+              {
+                "backend": "open_cl",
+                "calls": 46,
+                "completed_calls": 46,
+                "device_calls": 46,
+                "device_ns": 278720,
+                "inclusive_ns": 0,
+                "stage": "preprocessing"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 2682,
+                "completed_calls": 2682,
+                "device_calls": 2676,
+                "device_ns": 138667616,
+                "inclusive_ns": 249245547,
+                "stage": "lookup"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1662,
+                "completed_calls": 1662,
+                "device_calls": 1656,
+                "device_ns": 273616768,
+                "inclusive_ns": 2657353187,
+                "stage": "quotient"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 184,
+                "completed_calls": 184,
+                "device_calls": 184,
+                "device_ns": 48159808,
+                "inclusive_ns": 0,
+                "stage": "transcript"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 163936,
+                "inclusive_ns": 0,
+                "stage": "grinding"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 14,
+                "completed_calls": 14,
+                "device_calls": 14,
+                "device_ns": 125792,
+                "inclusive_ns": 0,
+                "stage": "scalar"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 266,
+                "completed_calls": 266,
+                "device_calls": 266,
+                "device_ns": 142686784,
+                "inclusive_ns": 0,
+                "stage": "randomness"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 574,
+                "completed_calls": 574,
+                "device_calls": 574,
+                "device_ns": 1800478112,
+                "inclusive_ns": 0,
+                "stage": "transform"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 280,
+                "completed_calls": 280,
+                "device_calls": 280,
+                "device_ns": 21428256,
+                "inclusive_ns": 0,
+                "stage": "hiding"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 23,
+                "completed_calls": 23,
+                "device_calls": 23,
+                "device_ns": 1622343040,
+                "inclusive_ns": 0,
+                "stage": "commitment"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 2040,
+                "completed_calls": 2040,
+                "device_calls": 2040,
+                "device_ns": 145359264,
+                "inclusive_ns": 0,
+                "stage": "opening"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 22,
+                "completed_calls": 22,
+                "device_calls": 22,
+                "device_ns": 940448,
+                "inclusive_ns": 0,
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 497,
+                "completed_calls": 497,
+                "device_calls": 497,
+                "device_ns": 77166400,
+                "inclusive_ns": 0,
+                "stage": "fri_query"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 5760,
+                "inclusive_ns": 0,
+                "stage": "final_polynomial"
+              }
+            ],
+            "policy": "gpu_required",
+            "schema": "lattica-proving-stages-v1",
+            "stage_coverage_complete": true,
+            "succeeded": true
+          },
+          "cpu_verify_seconds": 0.074073741,
+          "gpu_backend_only": true,
+          "gpu_prove_seconds": 6.315632681,
+          "host_witness_seconds": 0.604501389,
+          "preprocessing_reused": true,
+          "proof_json_bytes": 8507988,
+          "query_opened_fields": 221056,
+          "upload_seconds": 0.185363461,
+          "verified": true
+        },
+        {
+          "backend_report": {
+            "capabilities": {
+              "max_log_fri_arity": 1,
+              "profile": "block_v2_cubic",
+              "scope": "operation",
+              "stages": [
+                {
+                  "backend": "open_cl",
+                  "stage": "preprocessing"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "lookup"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "transform"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "quotient"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "randomness"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "hiding"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "commitment"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "opening"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "fri_fold"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "fri_query"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "final_polynomial"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "scalar"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "transcript"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "grinding"
+                }
+              ]
+            },
+            "completion_rejected": false,
+            "components": [],
+            "elapsed_ns": 6283022387,
+            "entry_point": "recursion_gpu_backend",
+            "observation_errors": 0,
+            "observations": [
+              {
+                "backend": "open_cl",
+                "calls": 46,
+                "completed_calls": 46,
+                "device_calls": 46,
+                "device_ns": 259680,
+                "inclusive_ns": 0,
+                "stage": "preprocessing"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 2682,
+                "completed_calls": 2682,
+                "device_calls": 2676,
+                "device_ns": 138771456,
+                "inclusive_ns": 249502227,
+                "stage": "lookup"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1662,
+                "completed_calls": 1662,
+                "device_calls": 1656,
+                "device_ns": 273708160,
+                "inclusive_ns": 2590713842,
+                "stage": "quotient"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 184,
+                "completed_calls": 184,
+                "device_calls": 184,
+                "device_ns": 48189024,
+                "inclusive_ns": 0,
+                "stage": "transcript"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 450400,
+                "inclusive_ns": 0,
+                "stage": "grinding"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 14,
+                "completed_calls": 14,
+                "device_calls": 14,
+                "device_ns": 115456,
+                "inclusive_ns": 0,
+                "stage": "scalar"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 266,
+                "completed_calls": 266,
+                "device_calls": 266,
+                "device_ns": 142323168,
+                "inclusive_ns": 0,
+                "stage": "randomness"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 574,
+                "completed_calls": 574,
+                "device_calls": 574,
+                "device_ns": 1799258176,
+                "inclusive_ns": 0,
+                "stage": "transform"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 280,
+                "completed_calls": 280,
+                "device_calls": 280,
+                "device_ns": 21293088,
+                "inclusive_ns": 0,
+                "stage": "hiding"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 23,
+                "completed_calls": 23,
+                "device_calls": 23,
+                "device_ns": 1622821536,
+                "inclusive_ns": 0,
+                "stage": "commitment"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 2040,
+                "completed_calls": 2040,
+                "device_calls": 2040,
+                "device_ns": 145286976,
+                "inclusive_ns": 0,
+                "stage": "opening"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 22,
+                "completed_calls": 22,
+                "device_calls": 22,
+                "device_ns": 932576,
+                "inclusive_ns": 0,
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 497,
+                "completed_calls": 497,
+                "device_calls": 497,
+                "device_ns": 77025536,
+                "inclusive_ns": 0,
+                "stage": "fri_query"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 6304,
+                "inclusive_ns": 0,
+                "stage": "final_polynomial"
+              }
+            ],
+            "policy": "gpu_required",
+            "schema": "lattica-proving-stages-v1",
+            "stage_coverage_complete": true,
+            "succeeded": true
+          },
+          "cpu_verify_seconds": 0.072258521,
+          "gpu_backend_only": true,
+          "gpu_prove_seconds": 6.283019897,
+          "host_witness_seconds": 0.637553933,
+          "preprocessing_reused": true,
+          "proof_json_bytes": 8508164,
+          "query_opened_fields": 221056,
+          "upload_seconds": 0.186684625,
+          "verified": true
+        }
+      ],
+      "geometry": {
+        "committed_lde_fields": 6049694720,
+        "degree_gate": true,
+        "lde_payload_bytes": 48397557760,
+        "quotient_gate": true,
+        "tables": [
+          {
+            "active_rows": 212146,
+            "committed_lde_fields": 3397386240,
+            "constraint_degree": 4,
+            "constraints": 310,
+            "first_row": 0,
+            "height": 262144,
+            "main_width": 92,
+            "permutation_width": 96,
+            "preprocessed_width": 146,
+            "quotient_chunks": 8,
+            "table": "arithmetic"
+          },
+          {
+            "active_rows": 8192,
+            "committed_lde_fields": 78118912,
+            "constraint_degree": 4,
+            "constraints": 108,
+            "first_row": 0,
+            "height": 8192,
+            "main_width": 63,
+            "permutation_width": 66,
+            "preprocessed_width": 98,
+            "quotient_chunks": 8,
+            "table": "cubic-extension"
+          },
+          {
+            "active_rows": 430,
+            "committed_lde_fields": 4882432,
+            "constraint_degree": 4,
+            "constraints": 108,
+            "first_row": 8192,
+            "height": 512,
+            "main_width": 63,
+            "permutation_width": 66,
+            "preprocessed_width": 98,
+            "quotient_chunks": 8,
+            "table": "cubic-extension"
+          },
+          {
+            "active_rows": 262144,
+            "committed_lde_fields": 2491416576,
+            "constraint_degree": 4,
+            "constraints": 361,
+            "first_row": 0,
+            "height": 262144,
+            "main_width": 180,
+            "permutation_width": 21,
+            "preprocessed_width": 25,
+            "quotient_chunks": 8,
+            "table": "poseidon2"
+          },
+          {
+            "active_rows": 5760,
+            "committed_lde_fields": 77856768,
+            "constraint_degree": 4,
+            "constraints": 361,
+            "first_row": 262144,
+            "height": 8192,
+            "main_width": 180,
+            "permutation_width": 21,
+            "preprocessed_width": 25,
+            "quotient_chunks": 8,
+            "table": "poseidon2"
+          },
+          {
+            "active_rows": 1,
+            "committed_lde_fields": 33792,
+            "constraint_degree": 2,
+            "constraints": 13,
+            "first_row": 0,
+            "height": 8,
+            "main_width": 1,
+            "permutation_width": 6,
+            "preprocessed_width": 54,
+            "quotient_chunks": 8,
+            "table": "public-bindings"
+          }
+        ],
+        "template_identity": [
+          38,
+          250,
+          19,
+          149,
+          233,
+          201,
+          106,
+          98,
+          128,
+          149,
+          222,
+          22,
+          89,
+          234,
+          101,
+          42,
+          99,
+          201,
+          9,
+          240,
+          165,
+          182,
+          9,
+          4,
+          119,
+          177,
+          221,
+          160,
+          74,
+          80,
+          211,
+          92
+        ]
+      },
+      "query_opened_bytes": 1768448,
+      "proof_json_bytes": 8508164,
+      "controller_wall_seconds": 30.885118991951458,
+      "process_vram": {
+        "samples": 12,
+        "process_peak_bytes": 8858370048,
+        "minimum_free_bytes": 7329546240
+      },
+      "managed_peak_bytes": 9416845936,
+      "archive_files_rewritten": 0,
+      "current_cache_entries_created": 0,
+      "session_closed": true,
+      "completion_claimed": false
+    },
+    {
+      "label": "gpu-agg-architecture-proof-request1-width4-r49",
+      "request": 1,
+      "native_components_per_wrapper": 4,
+      "first_segment": 0,
+      "proofs_generated": 3,
+      "source_sha3": "c5ae7bf9f71db3f6a71d22a27639cbe9e4f8c245a08d907a2c08d229a61ffb0c",
+      "input_sha3": "55ac26cf63b7660ed1e62367466bccb71355affbd4befd9831e2cdf83e8eeda6",
+      "setup_seconds": 2.218821929,
+      "warm": {
+        "host_witness_seconds": 0.5608959769999999,
+        "upload_seconds": 0.1875048215,
+        "gpu_prove_seconds": 6.241874394,
+        "cpu_verify_seconds": 0.072287812,
+        "sum_seconds": 7.062563004499999
+      },
+      "samples": [
+        {
+          "backend_report": {
+            "capabilities": {
+              "max_log_fri_arity": 1,
+              "profile": "block_v2_cubic",
+              "scope": "operation",
+              "stages": [
+                {
+                  "backend": "open_cl",
+                  "stage": "preprocessing"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "lookup"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "transform"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "quotient"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "randomness"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "hiding"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "commitment"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "opening"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "fri_fold"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "fri_query"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "final_polynomial"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "scalar"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "transcript"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "grinding"
+                }
+              ]
+            },
+            "completion_rejected": false,
+            "components": [],
+            "elapsed_ns": 6405014398,
+            "entry_point": "recursion_gpu_backend",
+            "observation_errors": 0,
+            "observations": [
+              {
+                "backend": "open_cl",
+                "calls": 46,
+                "completed_calls": 46,
+                "device_calls": 46,
+                "device_ns": 273568,
+                "inclusive_ns": 0,
+                "stage": "preprocessing"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 2682,
+                "completed_calls": 2682,
+                "device_calls": 2676,
+                "device_ns": 138829664,
+                "inclusive_ns": 249112212,
+                "stage": "lookup"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1662,
+                "completed_calls": 1662,
+                "device_calls": 1656,
+                "device_ns": 288364416,
+                "inclusive_ns": 2865659257,
+                "stage": "quotient"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 184,
+                "completed_calls": 184,
+                "device_calls": 184,
+                "device_ns": 48144928,
+                "inclusive_ns": 0,
+                "stage": "transcript"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 159392,
+                "inclusive_ns": 0,
+                "stage": "grinding"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 14,
+                "completed_calls": 14,
+                "device_calls": 14,
+                "device_ns": 120544,
+                "inclusive_ns": 0,
+                "stage": "scalar"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 266,
+                "completed_calls": 266,
+                "device_calls": 266,
+                "device_ns": 198258304,
+                "inclusive_ns": 0,
+                "stage": "randomness"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 574,
+                "completed_calls": 574,
+                "device_calls": 574,
+                "device_ns": 1799892192,
+                "inclusive_ns": 0,
+                "stage": "transform"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 280,
+                "completed_calls": 280,
+                "device_calls": 280,
+                "device_ns": 21288864,
+                "inclusive_ns": 0,
+                "stage": "hiding"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 23,
+                "completed_calls": 23,
+                "device_calls": 23,
+                "device_ns": 1622361152,
+                "inclusive_ns": 0,
+                "stage": "commitment"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 2040,
+                "completed_calls": 2040,
+                "device_calls": 2040,
+                "device_ns": 145166464,
+                "inclusive_ns": 0,
+                "stage": "opening"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 22,
+                "completed_calls": 22,
+                "device_calls": 22,
+                "device_ns": 930720,
+                "inclusive_ns": 0,
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 497,
+                "completed_calls": 497,
+                "device_calls": 497,
+                "device_ns": 77216768,
+                "inclusive_ns": 0,
+                "stage": "fri_query"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 5632,
+                "inclusive_ns": 0,
+                "stage": "final_polynomial"
+              }
+            ],
+            "policy": "gpu_required",
+            "schema": "lattica-proving-stages-v1",
+            "stage_coverage_complete": true,
+            "succeeded": true
+          },
+          "cpu_verify_seconds": 0.072040653,
+          "gpu_backend_only": true,
+          "gpu_prove_seconds": 6.405012158,
+          "host_witness_seconds": 0.558332088,
+          "preprocessing_reused": true,
+          "proof_json_bytes": 8508574,
+          "query_opened_fields": 221056,
+          "upload_seconds": 0.185388169,
+          "verified": true
+        },
+        {
+          "backend_report": {
+            "capabilities": {
+              "max_log_fri_arity": 1,
+              "profile": "block_v2_cubic",
+              "scope": "operation",
+              "stages": [
+                {
+                  "backend": "open_cl",
+                  "stage": "preprocessing"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "lookup"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "transform"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "quotient"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "randomness"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "hiding"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "commitment"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "opening"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "fri_fold"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "fri_query"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "final_polynomial"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "scalar"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "transcript"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "grinding"
+                }
+              ]
+            },
+            "completion_rejected": false,
+            "components": [],
+            "elapsed_ns": 6249018900,
+            "entry_point": "recursion_gpu_backend",
+            "observation_errors": 0,
+            "observations": [
+              {
+                "backend": "open_cl",
+                "calls": 46,
+                "completed_calls": 46,
+                "device_calls": 46,
+                "device_ns": 264032,
+                "inclusive_ns": 0,
+                "stage": "preprocessing"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 2682,
+                "completed_calls": 2682,
+                "device_calls": 2676,
+                "device_ns": 139095392,
+                "inclusive_ns": 250926160,
+                "stage": "lookup"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1662,
+                "completed_calls": 1662,
+                "device_calls": 1656,
+                "device_ns": 264281536,
+                "inclusive_ns": 2312074683,
+                "stage": "quotient"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 184,
+                "completed_calls": 184,
+                "device_calls": 184,
+                "device_ns": 48346848,
+                "inclusive_ns": 0,
+                "stage": "transcript"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 160864,
+                "inclusive_ns": 0,
+                "stage": "grinding"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 14,
+                "completed_calls": 14,
+                "device_calls": 14,
+                "device_ns": 111584,
+                "inclusive_ns": 0,
+                "stage": "scalar"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 266,
+                "completed_calls": 266,
+                "device_calls": 266,
+                "device_ns": 141728544,
+                "inclusive_ns": 0,
+                "stage": "randomness"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 574,
+                "completed_calls": 574,
+                "device_calls": 574,
+                "device_ns": 1799682112,
+                "inclusive_ns": 0,
+                "stage": "transform"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 280,
+                "completed_calls": 280,
+                "device_calls": 280,
+                "device_ns": 21344416,
+                "inclusive_ns": 0,
+                "stage": "hiding"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 23,
+                "completed_calls": 23,
+                "device_calls": 23,
+                "device_ns": 1622933056,
+                "inclusive_ns": 0,
+                "stage": "commitment"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 2040,
+                "completed_calls": 2040,
+                "device_calls": 2040,
+                "device_ns": 145285024,
+                "inclusive_ns": 0,
+                "stage": "opening"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 22,
+                "completed_calls": 22,
+                "device_calls": 22,
+                "device_ns": 938432,
+                "inclusive_ns": 0,
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 497,
+                "completed_calls": 497,
+                "device_calls": 497,
+                "device_ns": 77087808,
+                "inclusive_ns": 0,
+                "stage": "fri_query"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 5824,
+                "inclusive_ns": 0,
+                "stage": "final_polynomial"
+              }
+            ],
+            "policy": "gpu_required",
+            "schema": "lattica-proving-stages-v1",
+            "stage_coverage_complete": true,
+            "succeeded": true
+          },
+          "cpu_verify_seconds": 0.072283693,
+          "gpu_backend_only": true,
+          "gpu_prove_seconds": 6.24901652,
+          "host_witness_seconds": 0.562084301,
+          "preprocessing_reused": true,
+          "proof_json_bytes": 8508054,
+          "query_opened_fields": 221056,
+          "upload_seconds": 0.18644413,
+          "verified": true
+        },
+        {
+          "backend_report": {
+            "capabilities": {
+              "max_log_fri_arity": 1,
+              "profile": "block_v2_cubic",
+              "scope": "operation",
+              "stages": [
+                {
+                  "backend": "open_cl",
+                  "stage": "preprocessing"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "lookup"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "transform"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "quotient"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "randomness"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "hiding"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "commitment"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "opening"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "fri_fold"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "fri_query"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "final_polynomial"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "scalar"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "transcript"
+                },
+                {
+                  "backend": "open_cl",
+                  "stage": "grinding"
+                }
+              ]
+            },
+            "completion_rejected": false,
+            "components": [],
+            "elapsed_ns": 6234735098,
+            "entry_point": "recursion_gpu_backend",
+            "observation_errors": 0,
+            "observations": [
+              {
+                "backend": "open_cl",
+                "calls": 46,
+                "completed_calls": 46,
+                "device_calls": 46,
+                "device_ns": 275808,
+                "inclusive_ns": 0,
+                "stage": "preprocessing"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 2682,
+                "completed_calls": 2682,
+                "device_calls": 2676,
+                "device_ns": 139035104,
+                "inclusive_ns": 249240388,
+                "stage": "lookup"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1662,
+                "completed_calls": 1662,
+                "device_calls": 1656,
+                "device_ns": 262933312,
+                "inclusive_ns": 2738318585,
+                "stage": "quotient"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 184,
+                "completed_calls": 184,
+                "device_calls": 184,
+                "device_ns": 48405632,
+                "inclusive_ns": 0,
+                "stage": "transcript"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 163648,
+                "inclusive_ns": 0,
+                "stage": "grinding"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 14,
+                "completed_calls": 14,
+                "device_calls": 14,
+                "device_ns": 131936,
+                "inclusive_ns": 0,
+                "stage": "scalar"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 266,
+                "completed_calls": 266,
+                "device_calls": 266,
+                "device_ns": 141473664,
+                "inclusive_ns": 0,
+                "stage": "randomness"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 574,
+                "completed_calls": 574,
+                "device_calls": 574,
+                "device_ns": 1800151904,
+                "inclusive_ns": 0,
+                "stage": "transform"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 280,
+                "completed_calls": 280,
+                "device_calls": 280,
+                "device_ns": 21303968,
+                "inclusive_ns": 0,
+                "stage": "hiding"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 23,
+                "completed_calls": 23,
+                "device_calls": 23,
+                "device_ns": 1623737824,
+                "inclusive_ns": 0,
+                "stage": "commitment"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 2040,
+                "completed_calls": 2040,
+                "device_calls": 2040,
+                "device_ns": 145241728,
+                "inclusive_ns": 0,
+                "stage": "opening"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 22,
+                "completed_calls": 22,
+                "device_calls": 22,
+                "device_ns": 936704,
+                "inclusive_ns": 0,
+                "stage": "fri_fold"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 497,
+                "completed_calls": 497,
+                "device_calls": 497,
+                "device_ns": 77020256,
+                "inclusive_ns": 0,
+                "stage": "fri_query"
+              },
+              {
+                "backend": "open_cl",
+                "calls": 1,
+                "completed_calls": 1,
+                "device_calls": 1,
+                "device_ns": 6656,
+                "inclusive_ns": 0,
+                "stage": "final_polynomial"
+              }
+            ],
+            "policy": "gpu_required",
+            "schema": "lattica-proving-stages-v1",
+            "stage_coverage_complete": true,
+            "succeeded": true
+          },
+          "cpu_verify_seconds": 0.072291931,
+          "gpu_backend_only": true,
+          "gpu_prove_seconds": 6.234732268,
+          "host_witness_seconds": 0.559707653,
+          "preprocessing_reused": true,
+          "proof_json_bytes": 8507621,
+          "query_opened_fields": 221056,
+          "upload_seconds": 0.188565513,
+          "verified": true
+        }
+      ],
+      "geometry": {
+        "committed_lde_fields": 6049694720,
+        "degree_gate": true,
+        "lde_payload_bytes": 48397557760,
+        "quotient_gate": true,
+        "tables": [
+          {
+            "active_rows": 212146,
+            "committed_lde_fields": 3397386240,
+            "constraint_degree": 4,
+            "constraints": 310,
+            "first_row": 0,
+            "height": 262144,
+            "main_width": 92,
+            "permutation_width": 96,
+            "preprocessed_width": 146,
+            "quotient_chunks": 8,
+            "table": "arithmetic"
+          },
+          {
+            "active_rows": 8192,
+            "committed_lde_fields": 78118912,
+            "constraint_degree": 4,
+            "constraints": 108,
+            "first_row": 0,
+            "height": 8192,
+            "main_width": 63,
+            "permutation_width": 66,
+            "preprocessed_width": 98,
+            "quotient_chunks": 8,
+            "table": "cubic-extension"
+          },
+          {
+            "active_rows": 430,
+            "committed_lde_fields": 4882432,
+            "constraint_degree": 4,
+            "constraints": 108,
+            "first_row": 8192,
+            "height": 512,
+            "main_width": 63,
+            "permutation_width": 66,
+            "preprocessed_width": 98,
+            "quotient_chunks": 8,
+            "table": "cubic-extension"
+          },
+          {
+            "active_rows": 262144,
+            "committed_lde_fields": 2491416576,
+            "constraint_degree": 4,
+            "constraints": 361,
+            "first_row": 0,
+            "height": 262144,
+            "main_width": 180,
+            "permutation_width": 21,
+            "preprocessed_width": 25,
+            "quotient_chunks": 8,
+            "table": "poseidon2"
+          },
+          {
+            "active_rows": 5760,
+            "committed_lde_fields": 77856768,
+            "constraint_degree": 4,
+            "constraints": 361,
+            "first_row": 262144,
+            "height": 8192,
+            "main_width": 180,
+            "permutation_width": 21,
+            "preprocessed_width": 25,
+            "quotient_chunks": 8,
+            "table": "poseidon2"
+          },
+          {
+            "active_rows": 1,
+            "committed_lde_fields": 33792,
+            "constraint_degree": 2,
+            "constraints": 13,
+            "first_row": 0,
+            "height": 8,
+            "main_width": 1,
+            "permutation_width": 6,
+            "preprocessed_width": 54,
+            "quotient_chunks": 8,
+            "table": "public-bindings"
+          }
+        ],
+        "template_identity": [
+          112,
+          40,
+          8,
+          215,
+          236,
+          27,
+          71,
+          244,
+          46,
+          0,
+          46,
+          24,
+          161,
+          100,
+          35,
+          221,
+          144,
+          211,
+          5,
+          93,
+          86,
+          139,
+          215,
+          195,
+          212,
+          132,
+          17,
+          70,
+          68,
+          20,
+          38,
+          106
+        ]
+      },
+      "query_opened_bytes": 1768448,
+      "proof_json_bytes": 8508054,
+      "controller_wall_seconds": 39.03600718697999,
+      "process_vram": {
+        "samples": 12,
+        "process_peak_bytes": 9430892544,
+        "minimum_free_bytes": 6757023744
+      },
+      "managed_peak_bytes": 9416845936,
+      "archive_files_rewritten": 0,
+      "current_cache_entries_created": 0,
+      "session_closed": true,
+      "completion_claimed": false
+    }
+  ],
+  "real_wrapper_proofs_verified": 9,
+  "notes": [
+    "Warm median uses repetitions 1 and 2; repetition 0 is a fresh process with driver kernel cache possibly populated.",
+    "Setup includes template identity, geometry, and reusable public preprocessing. Native import, compiler, process startup, and proof JSON serialization are outside the stage totals.",
+    "The request-1 measurement covers four native components of its 109-component request, not the complete request.",
+    "All private proof attempts use fresh GPU randomness. CPU witness filling and explicit upload are outside the GPU-required operation receipt.",
+    "The original r48 real-input process verified three proofs, but its outer guard rejected an unhandled cleanup schema. Accepted timings use r49 after adding cleanup and VRAM validation."
+  ],
+  "opening_comparison": {
+    "saved_v1_record": "gpu-agg-matched-smalltile10-5-shake6-r35",
+    "v1_query_bytes": 483328,
+    "v2_query_bytes": 1768448,
+    "ratio": 3.6588983050847457,
+    "caveat": "Query-value payload comparison only; not total proof-size or full-workflow timing comparison."
+  },
+  "checks": {
+    "core_cpu_tests": "gpu-agg-recursion-core-tests-r48: 26 passed, 4 GPU tests ignored",
+    "recursion_gpu_tests": "gpu-agg-recursion-gpu-recheck-r48: 2 passed (4 fresh proofs)",
+    "legacy_commitment_test": "gpu-agg-legacy-lde-gpu-test-r48: passed against CPU columns/caps/paths",
+    "research_tests": "gpu-agg-recursion-research-tests-r48: 19 passed, 1 separate GPU test ignored",
+    "python_tests": "gpu-agg-python-tests-r49: passed",
+    "cpu_compatibility": "gpu-agg-recursion-cpu-check-r49: passed"
+  },
+  "budget": {
+    "limit_seconds": 16200,
+    "spent_seconds": 12721.444123091293,
+    "remaining_seconds": 3478.5558769087074,
+    "current_continuation_spent_seconds": 305.13081132015213,
+    "builds_excluded": true,
+    "maximum_test_seconds": 300
+  },
+  "remaining": [
+    "Constrained recursive verifier for the mixed-height proof format",
+    "Proof-indexed immutable templates and bounded eight-way/fused transaction reduction",
+    "AggregateArtifactV2, whole-DAG scheduling, and full N3/N4 qualification"
+  ]
+}

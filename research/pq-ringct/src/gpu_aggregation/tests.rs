@@ -1,5 +1,26 @@
 use super::*;
 #[test]
+fn archive_inputs_require_explicit_readonly_sha_preflight() {
+    let parse=|command:&str,family:&str,width:&str,mode:&str|Options::parse([
+        command,"--input-bundle","unused","--screen-family",family,"--request","1",
+        "--group-width",width,"--native-source",mode,
+    ].into_iter().map(str::to_owned));
+    assert!(parse("preflight-groups","shake","4","revalidate-archive").is_ok());
+    assert!(parse("architecture-proof","shake","4","revalidate-archive").is_ok());
+    assert!(parse("architecture-proof","shake","4","current").is_err());
+    assert!(parse("architecture-proof","graph","4","revalidate-archive").is_err());
+    for repetitions in ["1", "2", "3"] {
+        assert!(Options::parse(["architecture-proof", "--input-bundle", "unused", "--request", "6",
+            "--native-source", "revalidate-archive", "--repetitions", repetitions].into_iter().map(str::to_owned)).is_ok());
+    }
+    for command in ["screen","run","prepare-inputs","plan"] {
+        assert!(parse(command,"shake","4","revalidate-archive").is_err());
+    }
+    assert!(parse("preflight-groups","graph","4","revalidate-archive").is_err());
+    assert!(parse("preflight-groups","shake","8","revalidate-archive").is_err());
+    assert!(parse("preflight-groups","shake","4","skip-verification").is_err());
+}
+#[test]
 fn consuming_profile_keeps_existing_rows_and_requires_cpu_lookahead() {
     let options = |profile: &str, pipeline: &str, identity: &str| {
         Options::parse(
@@ -108,14 +129,14 @@ fn command_rejects_unbounded_ambiguous_and_inconsistent_options() {
     for tail in [
         vec!["--timeout-seconds", "601"],
         vec!["--group-width", "3"],
-        vec!["--pipeline", "lookahead"],
+        vec!["--pipeline", "serial"],
         vec!["--identity", "gpu-batched"],
         vec!["--case", "n5"],
         vec!["--max-components", "0"],
     ] {
         let mut args = vec!["plan", "--input-bundle", "x"];
         args.extend(tail);
-        assert!(parse(&args).is_err());
+        assert!(parse(&args).is_err(), "unexpectedly accepted {args:?}");
     }
     assert!(parse(&[
         "plan",

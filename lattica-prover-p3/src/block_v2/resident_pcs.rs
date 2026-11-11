@@ -493,7 +493,7 @@ impl<E: PcsField> ResidentState<E> {
             })?;
             let salts = self
                 .mmcs
-                .private_device_salts(plan.output_height(), inputs.len())?;
+            .private_device_salts_for_heights(&plan.output_heights())?;
             let result = self.mmcs.commit_evaluations_with_device_salts(
                 &inputs,
                 self.log_blowup,

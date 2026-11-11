@@ -13,10 +13,24 @@ fn limits() -> ConstructionLimits {
 #[test]
 fn invalid_limits_fail_before_any_program_construction() {
     for bad in [
-        ConstructionLimits { max_requested_program_bytes: 0, ..limits() },
-        ConstructionLimits { max_wires: MAX_WIRES + 1, ..limits() },
-        ConstructionLimits { max_wires: 0, max_input_values: 0, ..limits() },
-        ConstructionLimits { max_wires: 1, max_input_values: 1, ..limits() },
+        ConstructionLimits {
+            max_requested_program_bytes: 0,
+            ..limits()
+        },
+        ConstructionLimits {
+            max_wires: MAX_WIRES + 1,
+            ..limits()
+        },
+        ConstructionLimits {
+            max_wires: 0,
+            max_input_values: 0,
+            ..limits()
+        },
+        ConstructionLimits {
+            max_wires: 1,
+            max_input_values: 1,
+            ..limits()
+        },
     ] {
         assert!(matches!(
             ProgramBuilder::new_with_construction_limits(1, bad),
@@ -29,8 +43,12 @@ fn invalid_limits_fail_before_any_program_construction() {
 fn first_operation_respects_requested_byte_limit_and_failure_is_sticky() {
     let mut builder = ProgramBuilder::new_with_construction_limits(
         0,
-        ConstructionLimits { max_requested_program_bytes: 1, ..limits() },
-    ).unwrap();
+        ConstructionLimits {
+            max_requested_program_bytes: 1,
+            ..limits()
+        },
+    )
+    .unwrap();
     let _ = builder.input();
     let first = builder.construction_counters();
     assert!(first.resource_failed);
@@ -38,21 +56,36 @@ fn first_operation_respects_requested_byte_limit_and_failure_is_sticky() {
     assert!(first.requested_bytes_peak <= 1);
     let _ = builder.constant(Val::ONE);
     assert_eq!(builder.construction_counters(), first);
-    assert!(matches!(builder.finish(None), Err(ExecutionError::TooLarge)));
+    assert!(matches!(
+        builder.finish(None),
+        Err(ExecutionError::TooLarge)
+    ));
 }
 
 #[test]
 fn proof_input_collection_respects_the_separate_value_bound() {
     let mut builder = ProgramBuilder::new_with_construction_limits(
         1,
-        ConstructionLimits { max_input_values: 1, ..limits() },
-    ).unwrap();
+        ConstructionLimits {
+            max_input_values: 1,
+            ..limits()
+        },
+    )
+    .unwrap();
     let mut inputs = ProofInputs::default();
     assert!(inputs.bases(&mut builder, &[Val::ONE, Val::ONE]).is_err());
     assert!(inputs.values.is_empty());
     assert_eq!(inputs.values.capacity(), 0);
     assert_eq!(builder.construction_counters().witnesses, 0);
-    assert!(matches!(builder.finish(None), Err(ExecutionError::TooLarge)));
+    let failure = builder.construction_counters().first_failure.unwrap();
+    assert_eq!(
+        (failure.resource, failure.requested, failure.limit),
+        ("input-values", 2, 1)
+    );
+    assert!(matches!(
+        builder.finish(None),
+        Err(ExecutionError::TooLarge)
+    ));
 }
 
 fn example(mut builder: ProgramBuilder) -> Program {
@@ -68,10 +101,12 @@ fn example(mut builder: ProgramBuilder) -> Program {
 
 fn manifest(program: &Program) -> Vec<u64> {
     let mut result = Vec::new();
-    program.emit_manifest(&mut |word| {
-        result.push(word);
-        Ok(())
-    }).unwrap();
+    program
+        .emit_manifest(&mut |word| {
+            result.push(word);
+            Ok(())
+        })
+        .unwrap();
     result
 }
 
@@ -84,4 +119,25 @@ fn admitted_limits_preserve_exact_program_manifest_and_input_order() {
     assert_eq!(bounded.witness_values(), unbounded.witness_values());
     assert_eq!(bounded.wire_count(), unbounded.wire_count());
     assert_eq!(bounded.height(), unbounded.height());
+}
+
+#[test]
+fn first_refusal_distinguishes_inputs_wires_and_program_storage() {
+    let mut bytes = super::construction::Budget::new(super::Constants::Cpu(None), 0).unwrap();
+    bytes.limit = Some(100);
+    assert!(bytes.reserve(80));
+    assert!(!bytes.reserve(30));
+    bytes.reject_resource("input-values", 2, 1);
+    let failure = bytes.first_failure.unwrap();
+    assert_eq!(
+        (failure.resource, failure.requested, failure.limit),
+        ("program-bytes", 110, 100)
+    );
+    assert_eq!((failure.live_bytes, failure.peak_bytes), (80, 80));
+    for resource in ["input-values", "wires"] {
+        let mut budget = super::construction::Budget::new(super::Constants::Cpu(None), 0).unwrap();
+        budget.reject_resource(resource, 2, 1);
+        budget.reject();
+        assert_eq!(budget.first_failure.unwrap().resource, resource);
+    }
 }

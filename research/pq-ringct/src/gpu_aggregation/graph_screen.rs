@@ -162,41 +162,65 @@ pub(super) fn screen(options: &Options, deadline: &Deadline) -> Result<serde_jso
         } else {
             options.group_width
         };
-        let preflight = (options.profile == "grouped-v4").then(|| execution.aggregation_backend_limits()).transpose()?;
-        let mut groups: Vec<_> = selected.clone().step_by(width).map(|first| (first, width.min(selected.end - first))).collect();
+        let preflight = (matches!(options.profile.as_str(), "grouped-v4" | "grouped-v5"))
+            .then(|| execution.aggregation_backend_limits())
+            .transpose()?;
+        let mut groups: Vec<_> = selected
+            .clone()
+            .step_by(width)
+            .map(|first| (first, width.min(selected.end - first)))
+            .collect();
         let compile = |first: usize, count: usize| {
-                let end = first + count;
-                let loaded = (first..end)
-                    .map(|i| graph::load_leaf(case, i, &caches, &sources, &aux, &algebra))
-                    .collect::<Result<Vec<_>>>()?;
-                let artifacts = loaded
-                    .iter()
-                    .map(|l| l.artifact(&roots, &branches))
-                    .collect::<Result<Vec<_>>>()?;
-                let compiled = graph_tree::compile_group_bounded(
-                    &case.tree,
-                    &case.graph,
-                    first,
-                    &case.context,
-                    artifacts,
-                    construction(),
-                )
-                .map_err(error)?;
-                ensure(
-                    compiled.geometry().map_err(error)?.padded_rows <= options.max_rows(),
-                    "graph screen exceeds height ceiling",
-                )?;
-                if let Some(limits) = preflight { compiled.preflight_imported(limits)?; }
-                Ok(compiled)
-            };
-        if options.profile == "grouped-v4" && width > 4 {
-            groups = layout::admit_groups(&groups, |first, count| { compile(first, count).map(|_| ()) })?;
+            let end = first + count;
+            let loaded = (first..end)
+                .map(|i| graph::load_leaf(case, i, &caches, &sources, &aux, &algebra))
+                .collect::<Result<Vec<_>>>()?;
+            let artifacts = loaded
+                .iter()
+                .map(|l| l.artifact(&roots, &branches))
+                .collect::<Result<Vec<_>>>()?;
+            let compiled = graph_tree::compile_group_bounded(
+                &case.tree,
+                &case.graph,
+                first,
+                &case.context,
+                artifacts,
+                construction(),
+            )
+            .map_err(error)?;
+            ensure(
+                compiled.geometry().map_err(error)?.padded_rows <= options.max_rows(),
+                "graph screen exceeds height ceiling",
+            )?;
+            if let Some(limits) = preflight {
+                compiled.preflight_imported(limits)?;
+            }
+            Ok(compiled)
+        };
+        if matches!(options.profile.as_str(), "grouped-v4" | "grouped-v5") && width > 4 {
+            groups =
+                layout::admit_groups(&groups, |first, count| compile(first, count).map(|_| ()))?;
         }
         let count = groups.len();
         let admitted_width = groups.iter().map(|g| g.1).max().unwrap_or(1);
+        if options.command == "preflight-groups" {
+            let mut architecture = Vec::new();
+            for &(first, count) in &groups {
+                deadline.check()?;
+                let compiled = compile(first, count)?;
+                architecture.push(super::architecture::inspect(compiled.shared_program())?);
+            }
+            return Ok(
+                serde_json::json!({"scope":"graph-group-preflight","proofs_generated":0,
+                "groups":groups,"admitted_maximum_group":admitted_width,"source_and_backend_checked":true,"architecture":architecture}),
+            );
+        }
         for repetition in 0..options.repetitions {
             let started = Instant::now();
-            let prepare = |i: usize| { deadline.check()?; compile(groups[i].0, groups[i].1) };
+            let prepare = |i: usize| {
+                deadline.check()?;
+                compile(groups[i].0, groups[i].1)
+            };
 
             let root = if execution.consuming_aggregation() {
                 prover
@@ -245,7 +269,8 @@ pub(super) fn screen(options: &Options, deadline: &Deadline) -> Result<serde_jso
         )
     })();
     let cleanup = match &outcome {
-        Ok(_) => execution.finish(),
+        Ok(_) if options.command != "preflight-groups" => execution.finish(),
+        Ok(_) => execution.close_without_completion(),
         Err(_) => execution.close_without_completion(),
     }?;
     let mut report = outcome?;

@@ -86,6 +86,16 @@ fn relative(path: &str) -> bool {
         && parts[1][..64].bytes().all(|b| b.is_ascii_hexdigit())
 }
 pub(crate) fn validate(options: &Options, complete: bool) -> Result<()> {
+    validate_source(options, complete, true).map(|_| ())
+}
+
+/// Integrity is not provenance or proof validity. Archive consumers must use
+/// the returned inventory and independently reverify every selected proof.
+pub(crate) fn validate_archive(options: &Options) -> Result<([u8;32], std::collections::BTreeMap<String,String>)> {
+    validate_source(options, false, false)
+}
+
+fn validate_source(options: &Options, complete: bool, current: bool) -> Result<([u8;32], std::collections::BTreeMap<String,String>)> {
     let path = options.bundle.join("manifest.json");
     file_digest(&path, 4 << 20)?;
     let manifest: Manifest =
@@ -96,7 +106,7 @@ pub(crate) fn validate(options: &Options, complete: bool) -> Result<()> {
             && manifest.workload == options.workload
             && (!complete || manifest.complete)
             && manifest.files.len() <= 16384
-            && manifest.source_sha3 == hex(&crate::graph_proofs::compiled_source_fingerprint()),
+            && (!current || manifest.source_sha3 == hex(&crate::graph_proofs::compiled_source_fingerprint())),
         "component bundle identity/completeness mismatch",
     )?;
     ensure(
@@ -111,11 +121,14 @@ pub(crate) fn validate(options: &Options, complete: bool) -> Result<()> {
             "invalid component family directory",
         )?;
     }
-    let mut seen = std::collections::BTreeSet::new();
+    ensure(manifest.source_sha3.len()==64 && manifest.source_sha3.bytes().all(|b| b.is_ascii_hexdigit()), "invalid archive source metadata")?;
+    let mut source=[0;32];
+    for (i,v) in source.iter_mut().enumerate() { *v=u8::from_str_radix(&manifest.source_sha3[i*2..i*2+2],16).map_err(error)?; }
+    let mut seen = std::collections::BTreeMap::new();
     let mut bytes = 0u64;
     for entry in manifest.files {
         ensure(
-            relative(&entry.path) && seen.insert(entry.path.clone()),
+            relative(&entry.path) && seen.insert(entry.path.clone(), entry.sha3.clone()).is_none(),
             "invalid/duplicate component path",
         )?;
         let actual = file_digest(&options.bundle.join(&entry.path), ENTRY_LIMIT)?;
@@ -126,7 +139,7 @@ pub(crate) fn validate(options: &Options, complete: bool) -> Result<()> {
         bytes = bytes.checked_add(entry.bytes).ok_or("bundle overflow")?;
         ensure(bytes <= BUNDLE_LIMIT, "component bundle exceeds 2 GiB")?;
     }
-    Ok(())
+    Ok((source,seen))
 }
 fn publish(options: &Options, input_sha3: String, complete: bool, instances: usize) -> Result<()> {
     let mut files = Vec::new();

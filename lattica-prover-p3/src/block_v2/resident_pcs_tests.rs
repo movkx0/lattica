@@ -64,7 +64,8 @@ fn candidate_field<E: crate::block_v2::pcs_field::PcsField>(
         fri,
         profile::NUM_RANDOM_CODEWORDS,
         ChaCha20Rng::from_seed([43; 32]),
-        64 << 20,
+        // Complete proof tests also admit the bounded symbolic compiler.
+        (64 << 20) + crate::block_v2::machine::symbolic::HOST_BYTES as usize,
     )
     .unwrap();
     let pcs = if fusion {

@@ -2297,7 +2297,13 @@ def execute(args, plan):
                                 and int(cpu_max[0]) == 16 * int(cpu_max[1]), 'identity CPU quota changed')
                         plan['observed_identity_cpu_max'] = cpu_max
                 require(time.monotonic() - started <= args.seconds + 30, 'observation exceeded runtime limit')
-                time.sleep(max(0, 1 - (time.monotonic() - sample_started)) if telemetry is not None else 2)
+                # Public kernel screens can finish between the normal two-second
+                # samples. Observe them frequently enough to retain process VRAM
+                # evidence without adding idle time to the measured workload.
+                if (plan.get('gpu_aggregation') or {}).get('command') == 'kernel-screen':
+                    time.sleep(max(0, 0.1 - (time.monotonic() - sample_started)))
+                else:
+                    time.sleep(max(0, 1 - (time.monotonic() - sample_started)) if telemetry is not None else 2)
             require(state.get('Result') == 'success' and state.get('ExecMainCode') == '1'
                     and state.get('ExecMainStatus') == '0', 'command failed: ' + json.dumps(state))
             # Runner-owned monotonic observation brackets launch through terminal

@@ -499,8 +499,11 @@ fn aborted_private_proof(gpu_transcript: bool) {
         .find(|o| o.stage == crate::proving::Stage::Randomness)
         .unwrap();
     assert_eq!(observed.backend, crate::proving::Backend::OpenCl);
-    assert_eq!(observed.calls, 2);
-    assert_eq!(observed.completed_calls, 2);
+    // Salt replay may add sampler calls beyond the hiding draw and recipe
+    // seed. Coverage must include every actual draw before the abort.
+    assert!(observed.calls >= 2);
+    assert_eq!(observed.calls, session.stats().random_calls - before.random_calls);
+    assert_eq!(observed.completed_calls, observed.calls);
     assert!(observed.device_ns > 0);
     assert_eq!(observed.inclusive_ns, 0);
     let error = aborted

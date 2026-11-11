@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Direct graph recursion · 11 November 2026</title>
+<style>
+body{margin:0;background:#f4f6f8;color:#18232d;font:16px/1.55 system-ui,sans-serif}main{max-width:1000px;margin:auto;padding:36px 24px 70px}
+h1,h2{line-height:1.2}h1{font-size:34px}h2{margin-top:36px;font-size:23px}.muted{color:#536574}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin:28px 0}
+.card,section{background:white;padding:20px;border:1px solid #dce3e8;border-radius:12px}.card strong{display:block;color:#066d6a;font-size:32px}table{width:100%;border-collapse:collapse;margin:16px 0}td,th{padding:10px;text-align:left;border-bottom:1px solid #dce3e8}th{color:#385265}li{margin:10px 0}code{overflow-wrap:anywhere;font-size:13px}a{color:#086d95}.notice{border-left:4px solid #b47712;padding-left:16px}.bar{background:#c3d9e6;height:18px;border-radius:4px}.bar.new{background:#087f79}
+</style><main>
+<p class="muted">RingCT GPU aggregation · 11 November 2026 · revision r86 · uncommitted worktree</p>
+<h1>Fewer graph proofs, faster aggregation</h1>
+<p>Eight native graph leaves now produce one typed recursive proof instead of three MachineAir recursive proofs. The default path also removes the preliminary per-leaf dry compilation pass and feeds complete typed graph roots directly into the existing final aggregator.</p>
+<div class="cards">
+<div class="card"><strong>2.67× faster</strong>Measured warm graph subtree</div>
+<div class="card"><strong>18.99 seconds</strong>Eight native graph leaves, warm median</div>
+<div class="card"><strong>239 → 131</strong>Planned N4 recursive proofs, excluding auxiliary branches</div>
+</div>
+<section><h2 style="margin-top:0">Matched GPU comparison</h2>
+<p>Same eight archived GBound leaves, inputs, source revision and GPU. Both paths generate fresh proofs and independently verify them on CPU.</p>
+<table><thead><tr><th>Sample</th><th>Existing pipeline</th><th>Default typed path</th><th>Speedup</th></tr></thead><tbody><tr><td>First sample</td><td>51.193 s</td><td>20.979 s</td><td>2.44×</td></tr><tr><td>Warm median (samples 2–3)</td><td>50.648 s</td><td>18.994 s</td><td>2.67×</td></tr></tbody></table>
+<p class="muted">Warm elapsed time: existing pipeline</p><div class="bar"></div>
+<p class="muted">Warm elapsed time: typed path</p><div class="bar new" style="width:37.50%"></div>
+<table><thead><tr><th>Repetition</th><th>Existing pipeline</th><th>Typed path</th></tr></thead><tbody><tr><td>1</td><td>51.193 s</td><td>20.979 s</td></tr><tr><td>2</td><td>50.595 s</td><td>19.177 s</td></tr><tr><td>3</td><td>50.700 s</td><td>18.811 s</td></tr></tbody></table>
+</section>
+<h2>Architectural changes</h2><ul><li>Default typed graph aggregation combines up to eight native graph leaves in one proof for N4 (up to four for N3), eliminating the preliminary per-leaf dry compilation pass.</li><li>Direct typed graph parents enforce the registered plan, adjacent ordered coverage, context, statement and node-manifest bindings, with actual child-proof verification.</li><li>Complete typed graph roots feed directly into the existing ordered final aggregator without a bridge proof. The existing final aggregate proof/header encoding is preserved.</li><li>Graph groups use the bounded weighted CPU preparation queue and single GPU consumer, releasing source ownership before GPU proving and reusing exact-template public preprocessing.</li><li>Default typed graph and crypto reductions use at most four recursive children after the eight-child graph parent exceeded the measured device memory budget. Native graph groups remain up to eight; native crypto groups remain up to sixteen for N4.</li><li>An archive-only graph architecture benchmark revalidates exact native contracts and input digests, records fresh recursive proofs, and checks teardown and external GPU memory observations.</li></ul>
+<h2>Planned work reduction</h2>
+<table><thead><tr><th>N4 recursive proof category</th><th>Previous default</th><th>Current default</th></tr></thead><tbody>
+<tr><td>Graph trees</td><td>180</td><td>64</td></tr><tr><td>Crypto request trees</td><td>56</td><td>64</td></tr><tr><td>Final ordered aggregation</td><td>3</td><td>3</td></tr><tr><th>Total</th><th>239</th><th>131</th></tr></tbody></table>
+<p>Native proof counts remain unchanged. Crypto tree counts increase slightly because the default reduction now uses four children to fit the measured device budget.</p>
+<h2>Parent and memory qualification</h2>
+<p>The four-child parent screen passed in 72.93 seconds: eight native leaf proofs, two four-child parents and one two-child root. All 11 proofs verified, with ordering and altered-public rejection checks.</p>
+<p class="notice">An eight-child parent required 14.23 GiB of fixed device allocations, exceeding the 10.5 GiB managed allowance. That failed attempt was retained in the evidence. The default was reduced to four children and passed the GPU screen. Native graph groups still contain up to eight leaves.</p>
+<p>Measured process GPU peak: 9.76 GiB for the parent screen. All qualified jobs drained the GPU queue, closed the context and reaped their subprocesses.</p>
+<h2>Validation and limits</h2>
+<p>39 focused Rust tests passed (2 ignored); 73 Python tests passed; the CPU-only feature check passed. Typed final-consumer tests compile and evaluate the real adapter and reject changed bindings.</p>
+<ul><li>Measured workload: eight contiguous GBound graph leaves (offsets 4 through 11) from transaction 0 of deterministic N4. This is a graph subtree, not a complete transaction graph or aggregate.</li><li>Per-sample timing includes archive reimport and current-contract native-proof verification, group compilation, recursive proof generation, independent CPU verification, and public mutation rejection. Native proof generation, initial workflow metadata preparation, and process/GPU-context startup are excluded; guarded wall time is recorded separately.</li><li>Baseline and candidate use identical archived native proofs, inputs, source revision, GPU, 10.5 GiB managed GPU allowance, and 36 GiB worker envelope. Their bounded compiler policies differ: standard production MachineAir with CPU lookahead versus the typed-batch policy.</li><li>Warm time is the median of samples 2 and 3. The typed path reuses one exact-template public preprocessing entry; every recursive proof is freshly generated. A full workflow has multiple distinct templates, so warm subtree speedup must not be extrapolated to the full workflow.</li><li>The four-child GPU parent screen uses eight singleton native groups, two four-child parents and one two-child root. It covers two reduction levels, not every possible heterogeneous full-workflow child geometry.</li><li>N4 proof counts are descriptor-planning results excluding auxiliary branches. Full N3/N4 execution, heterogeneous graph grouping, and final aggregate GPU execution were not timed in this pass. The typed final-consumer adapter passed CPU compilation/evaluation and mutation tests.</li></ul>
+<h2>Evidence</h2>
+<p><a href="gpu-recursion-direct-graph-2026-11-11.json">Machine-readable results, commands and receipt hashes</a></p>
+<p class="muted">Compiled source SHA3: <code>d8dfac279498347ec632f7dec10403b0cef99b1a4f88b8bf4971dd42ff3a73e8</code></p>
+</main></html>

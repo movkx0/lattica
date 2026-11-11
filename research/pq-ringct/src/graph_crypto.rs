@@ -323,13 +323,18 @@ impl Request {
     /// Cache lookup identity only. Loading must still verify the actual proof,
     /// exact height and public endpoint values for this registered request.
     pub fn cache_key(&self, segment: usize) -> Result<[u8; 32]> {
+        self.cache_key_at_source(segment, crate::graph_proofs::compiled_source_fingerprint())
+    }
+    /// Archive lookup hint only. The caller must reverify the actual proof
+    /// against this current request; a stored source/key grants no authority.
+    pub(crate) fn cache_key_at_source(&self, segment: usize, source: [u8; 32]) -> Result<[u8; 32]> {
         let info = self
             .segments
             .get(segment)
             .ok_or_else(|| Error("crypto segment index".into()))?;
         let mut hash = Sha3_256::new();
         hash.update(b"lattica/matrict/crypto-child-cache/v1");
-        hash.update(crate::graph_proofs::compiled_source_fingerprint());
+        hash.update(source);
         hash.update(self.profile);
         hash.update(self.index.to_le_bytes());
         let descriptor = match self.descriptor {

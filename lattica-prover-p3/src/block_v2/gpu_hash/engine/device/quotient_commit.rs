@@ -58,6 +58,22 @@ pub(crate) struct QuotientCommitInput {
     pub(crate) shape: QuotientCommitShape,
 }
 
+impl QuotientCommitInput {
+    /// Original quotient outputs may still be borrowed by the caller. Credit
+    /// only the randomizers, masks and parameters owned by this input.
+    pub(crate) fn released_bytes(&self) -> Result<usize, String> {
+        self.shape
+            .allocation_words()
+            .into_iter()
+            .try_fold(0usize, |sum, words| {
+                words
+                    .checked_mul(8)
+                    .and_then(|bytes| sum.checked_add(bytes))
+                    .ok_or_else(|| "quotient release size overflow".into())
+            })
+    }
+}
+
 impl DeviceSession {
     pub(crate) fn prepare_quotient_commit(
         &self,

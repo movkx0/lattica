@@ -23,6 +23,8 @@ use lattica_prover_p3::block_v2::machine::verifier::ProofInputs;
 /// leaf dispatcher derives them from the registered graph and public header.
 pub enum AesProof<'a> {
     Direct(AesArtifacts<'a>),
+    #[cfg(feature = "gpu-aggregation-experiment")]
+    TypedTree(&'a crate::component_tree::recursion::ProvenNode),
     Tree {
         key: &'a crate::component_tree::NodeKey,
         proof: &'a crate::component_tree::NodeProof,
@@ -32,6 +34,8 @@ pub enum AesProof<'a> {
 }
 pub enum ShakeProof<'a> {
     Direct(ShakeArtifacts<'a>),
+    #[cfg(feature = "gpu-aggregation-experiment")]
+    TypedTree(&'a crate::component_tree::recursion::ProvenNode),
     Tree {
         key: &'a crate::component_tree::NodeKey,
         proof: &'a crate::component_tree::NodeProof,
@@ -106,12 +110,14 @@ impl<'a> From<ShakeArtifacts<'a>> for ShakeProof<'a> {
     }
 }
 impl<'a> AesProof<'a> {
-    fn request<'b>(self, context: &'b ContextWires, index: u32) -> AesRequest<'b>
+    pub(crate) fn request<'b>(self, context: &'b ContextWires, index: u32) -> AesRequest<'b>
     where
         'a: 'b,
     {
         match self {
             Self::Direct(value) => AesRequest::Direct(value),
+            #[cfg(feature = "gpu-aggregation-experiment")]
+            Self::TypedTree(node) => AesRequest::TypedTree { node, context, index },
             Self::Tree { key, proof } => AesRequest::Tree(TreeArtifacts {
                 key,
                 proof,
@@ -125,12 +131,24 @@ impl<'a> AesProof<'a> {
     }
 }
 impl<'a> ShakeProof<'a> {
-    fn request<'b>(self, context: &'b ContextWires, index: u32) -> ShakeRequest<'b>
+    pub(crate) fn tree_public(&self) -> Option<&[Val]> {
+        match self {
+            Self::Direct(_) => None,
+            Self::Tree { proof, .. } => Some(&proof.public),
+            #[cfg(feature = "gpu-aggregation-experiment")]
+            Self::TypedTree(node) => Some(node.public_values()),
+            #[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
+            Self::BoundedTree(tree) => Some(&tree.proof.public),
+        }
+    }
+    pub(crate) fn request<'b>(self, context: &'b ContextWires, index: u32) -> ShakeRequest<'b>
     where
         'a: 'b,
     {
         match self {
             Self::Direct(value) => ShakeRequest::Direct(value),
+            #[cfg(feature = "gpu-aggregation-experiment")]
+            Self::TypedTree(node) => ShakeRequest::TypedTree { node, context, index },
             Self::Tree { key, proof } => ShakeRequest::Tree(TreeArtifacts {
                 key,
                 proof,

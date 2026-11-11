@@ -27,7 +27,10 @@ struct Row {
 /// This never grants table lookup, construction, or proof authority.
 #[cfg(test)]
 pub(super) fn reference_maxima(public: usize) -> [usize; 6] {
-    let rows: Vec<_> = data::ROWS.iter().filter(|r| r.public_values == public).collect();
+    let rows: Vec<_> = data::ROWS
+        .iter()
+        .filter(|r| r.public_values == public)
+        .collect();
     assert_eq!(rows.len(), 18);
     core::array::from_fn(|i| rows.iter().map(|r| r.values[i]).max().unwrap())
 }

@@ -6,7 +6,12 @@ use crate::block_v2::machine::verifier::CompileError;
 fn reject(b: &mut ScopedProgramBuilder<'_>) -> CompileError {
     b.memory.reject();
     b.memory.report("rejected");
-    CompileError::Shape("compiler scratch allowance")
+    CompileError::from_builder_admission(
+        super::ExecutionError::TooLarge,
+        b.memory
+            .first_failure
+            .map_or("compiler scratch allowance", |f| f.resource),
+    )
 }
 
 struct Scratch<'a, 'backend, T> {

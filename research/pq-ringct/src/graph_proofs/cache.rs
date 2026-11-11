@@ -26,6 +26,7 @@ pub struct CacheOutcome {
 pub struct ArchivedReverification {
     pub artifact: ComponentArtifact,
     pub archived_key: String,
+    pub archive_sha3_256: [u8;32],
     pub current_key: [u8; 32],
 }
 impl ProofCache {
@@ -208,6 +209,7 @@ impl ProofCache {
         Ok(ArchivedReverification {
             artifact,
             archived_key: encoded_key,
+            archive_sha3_256: Sha3_256::digest(&bytes).into(),
             current_key: plan.cache_key(batch_index)?,
         })
     }

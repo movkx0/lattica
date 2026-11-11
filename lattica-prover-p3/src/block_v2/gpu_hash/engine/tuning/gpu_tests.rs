@@ -272,64 +272,156 @@ fn gpu_tuning_ntt_powers_match_independent_cpu_dft() {
                     // Both one-group transforms and multiple stages with
                     // nonzero row origins/outer exponents exercise tuned powers.
                     for tile_stages in [log_rows, log_rows.div_ceil(2)] {
-                        for bit_reversed in [false, true] {
-                            let mut initial = input.clone();
-                            initial.extend_from_slice(&[99; 5]);
-                            let mut source = buffer(engine, &initial);
-                            let mut output = buffer(engine, &vec![99; rows * width + 5]);
-                            for stage in (0..log_rows).step_by(tile_stages as usize) {
-                                let count = tile_stages.min(log_rows - stage);
-                                let tile_rows = 1usize << count;
-                                let group = (tile_rows / 2).clamp(32, 256);
-                                let last = stage + count == log_rows;
-                                unsafe {
-                                    engine
-                                        .pq
-                                        .kernel_builder("ntt_tile_cached_tuned")
-                                        .arg(&source)
-                                        .arg(&output)
-                                        .arg(width as u32)
-                                        .arg(rows as u32)
-                                        .arg(stage)
-                                        .arg(count)
-                                        .arg(0u32)
-                                        .arg(u32::from(stage == 0))
-                                        .arg(log_rows)
-                                        .arg(1u32)
-                                        .arg(u32::from(last && bit_reversed))
-                                        .arg(if last { scale.as_canonical_u64() } else { 1u64 })
-                                        .arg(if last { shift.as_canonical_u64() } else { 1u64 })
-                                        .arg(&roots)
-                                        .arg_local::<u64>(tile_rows)
-                                        .arg_local::<u64>(
-                                            tile_rows / 2 + count as usize + tile_rows,
-                                        )
-                                        .global_work_size((rows >> count) * width * group)
-                                        .local_work_size(group)
-                                        .build()
-                                        .unwrap()
-                                        .cmd()
-                                        .enq()
-                                        .unwrap();
+                        for (kernel_name, padded) in [
+                            ("ntt_tile_cached_tuned", false),
+                            ("ntt_tile_cached_padded", true),
+                        ] {
+                            for bit_reversed in [false, true] {
+                                let mut initial = input.clone();
+                                initial.extend_from_slice(&[99; 5]);
+                                let mut source = buffer(engine, &initial);
+                                let mut output = buffer(engine, &vec![99; rows * width + 5]);
+                                for stage in (0..log_rows).step_by(tile_stages as usize) {
+                                    let count = tile_stages.min(log_rows - stage);
+                                    let tile_rows = 1usize << count;
+                                    let group = (tile_rows / 2).clamp(32, 256);
+                                    let last = stage + count == log_rows;
+                                    unsafe {
+                                        engine
+                                            .pq
+                                            .kernel_builder(kernel_name)
+                                            .arg(&source)
+                                            .arg(&output)
+                                            .arg(width as u32)
+                                            .arg(rows as u32)
+                                            .arg(stage)
+                                            .arg(count)
+                                            .arg(0u32)
+                                            .arg(u32::from(stage == 0))
+                                            .arg(log_rows)
+                                            .arg(1u32)
+                                            .arg(u32::from(last && bit_reversed))
+                                            .arg(if last { scale.as_canonical_u64() } else { 1u64 })
+                                            .arg(if last { shift.as_canonical_u64() } else { 1u64 })
+                                            .arg(&roots)
+                                            .arg_local::<u64>(
+                                                tile_rows
+                                                    + if padded { (tile_rows - 1) / 32 } else { 0 },
+                                            )
+                                            .arg_local::<u64>(
+                                                tile_rows / 2 + count as usize + tile_rows,
+                                            )
+                                            .global_work_size((rows >> count) * width * group)
+                                            .local_work_size(group)
+                                            .build()
+                                            .unwrap()
+                                            .cmd()
+                                            .enq()
+                                            .unwrap();
+                                    }
+                                    std::mem::swap(&mut source, &mut output);
                                 }
-                                std::mem::swap(&mut source, &mut output);
+                                let actual = read(&source);
+                                for row in 0..rows {
+                                    let stored = if bit_reversed {
+                                        row.reverse_bits() >> (usize::BITS - log_rows)
+                                    } else {
+                                        row
+                                    };
+                                    assert_eq!(
+                                        &actual[stored * width..(stored + 1) * width],
+                                        &expected[row * width..(row + 1) * width]
+                                    );
+                                }
+                                assert_eq!(&actual[rows * width..], &[99; 5]);
                             }
-                            let actual = read(&source);
-                            for row in 0..rows {
-                                let stored = if bit_reversed {
-                                    row.reverse_bits() >> (usize::BITS - log_rows)
-                                } else {
-                                    row
-                                };
-                                assert_eq!(
-                                    &actual[stored * width..(stored + 1) * width],
-                                    &expected[row * width..(row + 1) * width]
-                                );
-                            }
-                            assert_eq!(&actual[rows * width..], &[99; 5]);
                         }
                     }
                 }
+            }
+        }
+    });
+}
+
+#[test]
+#[ignore = "requires NVIDIA GPU; independent u128 and CPU Poseidon oracles"]
+fn gpu_aggregation_square_and_poseidon_match_independent_oracles() {
+    on_gpu(|engine| {
+        let input = words(65536);
+        let source = buffer(engine, &input);
+        let output = buffer(engine, &vec![0; input.len()]);
+        for variant in [
+            super::Poseidon::Baseline,
+            super::Poseidon::Square,
+            super::Poseidon::SquareUnroll,
+        ] {
+            let program = ocl::Program::builder()
+                .devices(engine.pq.device())
+                .src(format!(
+                    "{}\n{}\n{}",
+                    variant.defines(),
+                    crate::gpu::KERNEL_SRC,
+                    super::screen::SOURCE
+                ))
+                .build(engine.pq.context())
+                .unwrap();
+            unsafe {
+                ocl::Kernel::builder()
+                    .program(&program)
+                    .queue(engine.pq.queue().clone())
+                    .name("aggregation_square_probe")
+                    .arg(&source)
+                    .arg(&output)
+                    .arg(input.len() as u64)
+                    .global_work_size(input.len())
+                    .build()
+                    .unwrap()
+                    .cmd()
+                    .enq()
+                    .unwrap();
+            }
+            let actual = read(&output);
+            for (&x, y) in input.iter().zip(actual) {
+                assert_eq!(
+                    y,
+                    ((x as u128 * x as u128) % 0xffff_ffff_0000_0001u128) as u64,
+                    "variant={variant:?} x={x}"
+                );
+            }
+            for width in [1usize, 3, 4, 7, 8, 16, 17] {
+                let rows = 33;
+                let mut builder = ocl::Kernel::builder();
+                builder
+                    .program(&program)
+                    .queue(engine.pq.queue().clone())
+                    .name("leaf_hash")
+                    .arg(&source)
+                    .arg(&output)
+                    .arg(0u32)
+                    .arg(rows as u32)
+                    .arg(width as u32);
+                for constant in &engine.constants {
+                    builder.arg(&constant.buffer);
+                }
+                unsafe {
+                    builder
+                        .global_work_size(rows)
+                        .build()
+                        .unwrap()
+                        .cmd()
+                        .enq()
+                        .unwrap();
+                }
+                let actual = read(&output);
+                let expected: Vec<_> = input[..rows * width]
+                    .chunks(width)
+                    .flat_map(cpu_leaf)
+                    .collect();
+                assert_eq!(
+                    &actual[..rows * 4],
+                    expected.as_slice(),
+                    "variant={variant:?} width={width}"
+                );
             }
         }
     });

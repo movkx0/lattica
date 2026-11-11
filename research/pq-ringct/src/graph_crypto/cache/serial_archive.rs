@@ -86,6 +86,15 @@ impl ProofCache {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn archive_key_is_only_a_source_scoped_lookup_hint() {
+        let request=Request::new([7;32],0,0,RequestDescriptor::Aes(aes_lane_air::Descriptor {
+            domain:1,start_counter:0,output_len:16,
+        }),Payload::Aes([9;32]),Policy::default()).unwrap();
+        assert_eq!(request.cache_key(0).unwrap(),request.cache_key_at_source(0,crate::graph_proofs::compiled_source_fingerprint()).unwrap());
+        assert_ne!(request.cache_key_at_source(0,[1;32]).unwrap(),request.cache_key_at_source(0,[2;32]).unwrap());
+        assert!(request.cache_key_at_source(1,[1;32]).is_err());
+    }
 
     #[test]
     fn missing_malformed_and_oversized_serial_archives_do_not_write_or_prove() {

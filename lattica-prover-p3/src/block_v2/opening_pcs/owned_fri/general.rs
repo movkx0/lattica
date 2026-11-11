@@ -163,7 +163,13 @@ fn prove_with_query_allowance<F: FriExtension>(
     for data in rounds {
         let dimensions = data.owned_dimensions()?;
         let shift = max_height
-            .checked_sub(log2_strict_usize(dimensions[0].height))
+            .checked_sub(log2_strict_usize(
+                dimensions
+                    .iter()
+                    .map(|d| d.height)
+                    .max()
+                    .ok_or("empty PCS input")?,
+            ))
             .ok_or("PCS input height exceeds resident FRI")?;
         let mut local = FriData::proof_vector(indices.len())?;
         local.extend(indices.iter().map(|i| i >> shift));
@@ -181,7 +187,8 @@ fn prove_with_query_allowance<F: FriExtension>(
     for (data, log_arity) in &layers {
         let mut local = FriData::proof_vector(indices.len())?;
         local.extend(indices.iter().map(|i| i >> (reduced_bits + log_arity)));
-        let queries = data.open_rows_extension_with_allowance::<F>(session, &local, query_allowance)?;
+        let queries =
+            data.open_rows_extension_with_allowance::<F>(session, &local, query_allowance)?;
         for (query, opening) in queries.into_iter().enumerate() {
             let (mut rows, proof) = opening.unpack();
             let mut row = rows.pop().ok_or("missing resident FRI query row")?;
@@ -216,7 +223,16 @@ fn prove_with_query_allowance<F: FriExtension>(
     } else {
         "gpu"
     };
-    eprintln!("bounded_owned_fri rounds={} folds={} mixes={} gathered_value_bytes={} final_coefficient_bytes={final_coefficient_bytes} layer_upload_bytes=0 layer_readback_bytes=0 transcript_backend={} initial_pcs_query_backend={initial_query_backend} pcs_query_matrices={} pcs_query_tiles={} pcs_query_value_bytes={} pcs_query_prefix_upload_bytes=0 pcs_query_prefix_readback_bytes=0 pcs_query_host_peak_bytes={query_host_peak}",
+    let query_prefix_upload_bytes = rounds.iter().try_fold(0usize, |sum, data| {
+        sum.checked_add(data.public_prefix_upload_bytes()?)
+            .ok_or_else(|| "query upload size overflow".to_owned())
+    })?;
+    let query_salt_upload_bytes = rounds.iter().try_fold(0usize, |sum, data| {
+        sum.checked_add(data.public_salt_upload_bytes()?)
+            .ok_or_else(|| "public salt query upload size overflow".to_owned())
+    })?;
+    eprintln!("bounded_public_salt_queries public_salt_upload_bytes={query_salt_upload_bytes} private_salt_upload_bytes=0");
+    eprintln!("bounded_owned_fri rounds={} folds={} mixes={} gathered_value_bytes={} final_coefficient_bytes={final_coefficient_bytes} layer_upload_bytes=0 layer_readback_bytes=0 transcript_backend={} initial_pcs_query_backend={initial_query_backend} pcs_query_matrices={} pcs_query_tiles={} pcs_query_value_bytes={} pcs_query_prefix_upload_bytes={query_prefix_upload_bytes} public_pcs_query_prefix_upload_bytes={query_prefix_upload_bytes} private_pcs_query_prefix_upload_bytes=0 pcs_query_prefix_readback_bytes=0 pcs_query_host_peak_bytes={query_host_peak}",
         commits.len(), after.cubic_folds + after.general_fri_folds - before.cubic_folds - before.general_fri_folds,
         after.fri_mixes - before.fri_mixes, after.gathered_value_bytes - before.gathered_value_bytes,
         challenger.backend_name(), after.query_reconstructions - before.query_reconstructions,

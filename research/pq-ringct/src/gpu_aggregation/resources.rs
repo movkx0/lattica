@@ -10,6 +10,8 @@ pub(super) struct Envelope {
     max_rows: usize,
     ledger: Ledger,
     owners: Vec<Reservation>,
+    weighted: bool,
+    workers: usize,
 }
 impl Envelope {
     pub fn new(options: &Options) -> Result<Self> {
@@ -23,7 +25,9 @@ impl Envelope {
                 },
             "worker/host profile mismatch",
         )?;
-        let device = memory::selected(options)?.and_then(|v| v["managed_bytes"].as_u64()).unwrap_or(8 << 30);
+        let device = memory::selected(options)?
+            .and_then(|v| v["managed_bytes"].as_u64())
+            .unwrap_or(8 << 30);
         let ledger = Ledger::new(WorkerAllowance {
             host: host << 30,
             device,
@@ -42,15 +46,22 @@ impl Envelope {
         // Each of two compilers: 2 GiB source + 512 MiB auxiliary workspace.
         reserve(
             Category::SymbolicCompiler,
-            if matches!(options.profile.as_str(), "grouped-v3" | "grouped-v4") {
-                1 << 30
+            if matches!(
+                options.profile.as_str(),
+                "grouped-v3" | "grouped-v4" | "grouped-v5"
+            ) {
+                policy::current().symbolic_bytes
             } else {
                 5 << 30
             },
             0,
         )?;
         // Four admitted jobs, including the currently consumed program.
-        reserve(Category::RegisteredMetadata, 8 << 30, 0)?;
+        reserve(
+            Category::RegisteredMetadata,
+            (policy::current().program_bytes * policy::current().live_jobs) as u64,
+            0,
+        )?;
         // Registration/identity/proving are serialized on the sole GPU owner.
         // V3's four permits include building, queued and consuming programs:
         // 4 * 2 GiB source storage + 2 * 512 MiB compiler/identity auxiliaries.
@@ -58,8 +69,11 @@ impl Envelope {
         // resulting 20 GiB backend phase includes the full 8 GiB tree quota.
         reserve(
             Category::PhaseScratch,
-            if matches!(options.profile.as_str(), "grouped-v3" | "grouped-v4") {
-                CONSUMING_GPU_HOST_BYTES
+            if matches!(
+                options.profile.as_str(),
+                "grouped-v3" | "grouped-v4" | "grouped-v5"
+            ) {
+                policy::current().backend_host_bytes
             } else {
                 16 << 30
             },
@@ -70,6 +84,9 @@ impl Envelope {
             ledger,
             owners,
             max_rows: options.max_rows(),
+            weighted: options.typed_recursion()
+                && matches!(options.command.as_str(), "run" | "architecture-request"),
+            workers: options.preparation_workers,
         })
     }
     pub fn finish(mut self) -> Result<serde_json::Value> {
@@ -83,7 +100,8 @@ impl Envelope {
         Ok(serde_json::json!({"worker_host_bytes":peak.allowance.host,
             "reserved_host_peak_bytes":peak.peak.host,"reserved_device_peak_bytes":peak.peak.device,
             "current_host_bytes":released.current.host,"current_device_bytes":released.current.device,
-            "cpu_compilers":2,"maximum_live_jobs":4,"single_gpu_consumer":true,
+            "cpu_compilers":if self.weighted {self.workers} else {2},"maximum_live_jobs":if self.weighted {16} else {policy::current().live_jobs},"single_gpu_consumer":true,
+            "preparation_admission":if self.weighted {"weighted-bytes"} else {"fixed-job-count"},
             "maximum_recursive_rows":self.max_rows,
             "reservation_counters_are_not_rss":true}))
     }

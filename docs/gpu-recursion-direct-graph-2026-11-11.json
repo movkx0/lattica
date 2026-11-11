@@ -1,0 +1,1427 @@
+{
+  "schema": "ringct-direct-graph-recursion-v1",
+  "date": "2026-11-11",
+  "branch": "gpu-recursive-aggregation",
+  "committed": false,
+  "default_enabled": true,
+  "default_scope": "Typed graph path in imported-component GPU aggregation runner; N4 native graph width 8, N3 width 4, typed recursive reduction fan-in 4.",
+  "source_sha3": "d8dfac279498347ec632f7dec10403b0cef99b1a4f88b8bf4971dd42ff3a73e8",
+  "input_sha3": "55ac26cf63b7660ed1e62367466bccb71355affbd4befd9831e2cdf83e8eeda6",
+  "complete_fresh_workflow_measured": false,
+  "production_performance_qualified": false,
+  "implemented": [
+    "Default typed graph aggregation combines up to eight native graph leaves in one proof for N4 (up to four for N3), eliminating the preliminary per-leaf dry compilation pass.",
+    "Direct typed graph parents enforce the registered plan, adjacent ordered coverage, context, statement and node-manifest bindings, with actual child-proof verification.",
+    "Complete typed graph roots feed directly into the existing ordered final aggregator without a bridge proof. The existing final aggregate proof/header encoding is preserved.",
+    "Graph groups use the bounded weighted CPU preparation queue and single GPU consumer, releasing source ownership before GPU proving and reusing exact-template public preprocessing.",
+    "Default typed graph and crypto reductions use at most four recursive children after the eight-child graph parent exceeded the measured device memory budget. Native graph groups remain up to eight; native crypto groups remain up to sixteen for N4.",
+    "An archive-only graph architecture benchmark revalidates exact native contracts and input digests, records fresh recursive proofs, and checks teardown and external GPU memory observations."
+  ],
+  "graph_subtree": {
+    "baseline": {
+      "receipt": {
+        "label": "gpu-agg-machine-graph8-r86",
+        "status": "passed",
+        "wall_seconds": 157.3802194460295,
+        "command": [
+          "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/target-opencl/release/pq-ringct-gpu-aggregate",
+          "architecture-graph",
+          "--case",
+          "n4",
+          "--input-bundle",
+          "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-r42",
+          "--timeout-seconds",
+          "300",
+          "--first-leaf",
+          "4",
+          "--leaves",
+          "8",
+          "--native-source",
+          "revalidate-archive",
+          "--repetitions",
+          "3",
+          "--group-width",
+          "4",
+          "--recursion-backend",
+          "machine"
+        ],
+        "record": ".tools/pq-opencl-opt/runs/gpu-agg-machine-graph8-r86.json",
+        "record_sha256": "c93b31053f5932360ab47b0aa70a0cbe306c1bcbb1dec074deab9878b047a1dd",
+        "log_sha256": "ea5652a873fd1a71b19b66abf9e3ff74c5a30fb797a76b2efac61583621f3d3f",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "host_memory_profile": {
+          "name": "expanded-36",
+          "worker_host_bytes": 38654705664,
+          "memory_max_bytes": 54760833024,
+          "memory_high_bytes": 52613349376,
+          "fresh_memavailable_required_bytes": 56908316672
+        },
+        "observed_process_gpu_peak_bytes": 10290724864,
+        "observed_cgroup_memory_peak_bytes": 8390340608
+      },
+      "options": {
+        "bundle": "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-r42",
+        "command": "architecture-graph",
+        "compiler_policy": "standard",
+        "family": "graph",
+        "first_leaf": 4,
+        "gpu_managed_mib": "auto",
+        "group_width": 4,
+        "identity": "cpu",
+        "input": "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-r42/inputs.json",
+        "leaves": 8,
+        "max_components": 18446744073709551615,
+        "memory_qualification": null,
+        "native_source": "revalidate-archive",
+        "ntt_profile": "smalltile",
+        "output": "",
+        "parallel": true,
+        "poseidon_profile": "baseline",
+        "preparation_workers": 16,
+        "profile": "grouped-v5",
+        "query_gather": "batch",
+        "recursion_backend": "machine",
+        "repetitions": 3,
+        "request": null,
+        "seconds": 300,
+        "selection": null,
+        "transactions": 4,
+        "workload": 0
+      },
+      "source_sha3": "d8dfac279498347ec632f7dec10403b0cef99b1a4f88b8bf4971dd42ff3a73e8",
+      "input_sha3": "55ac26cf63b7660ed1e62367466bccb71355affbd4befd9831e2cdf83e8eeda6",
+      "archive_source_sha3": "44078dcedec6e35a52ff5d4225fc82a2b5b274a8c40376696ee3b843b7d69b37",
+      "imports": [
+        {
+          "archive_key": "0ec552305575dcdc83ea3d563eb9985eb9989924ce64fb2ebedf6039fe58cf38",
+          "archive_sha3": "24c3076ce6c05cd5c9dfea872498e423abfc599813c8a5224a93121b33007e2c",
+          "current_key": "52b5a95e5d48b4625ccee1468918e934cd327931824a61b0a86d4dc46a377e7f",
+          "leaf": 4,
+          "verified_against_current_contract": true
+        },
+        {
+          "archive_key": "3bc48346ddaba01d47f73a94836aa778c39df75b173550a90eaf3a98f9c599c6",
+          "archive_sha3": "8d291555849640301c87737a6f8cbb3701a6feef383926e2239802264da8ce0f",
+          "current_key": "71d6be0e3d61488f8bd1d135ecd36a3525d7cada0c4957cd3c3b959b6897baf4",
+          "leaf": 5,
+          "verified_against_current_contract": true
+        },
+        {
+          "archive_key": "42ef964d5e90533480af6a2fd99bde1443782a8c397bf6cf75b144cc088ddbd1",
+          "archive_sha3": "19ee4f088bb8bfe78aab6db54fa4b776f75b445309a9056b5f707f46073fcb71",
+          "current_key": "bdc3645b7f1ca81e70f79255e2646a1537bd69622591da7e765f9bcc2f34e00a",
+          "leaf": 6,
+          "verified_against_current_contract": true
+        },
+        {
+          "archive_key": "dd690a888d297073ae53826ff7e1c0e9faecb83caf6d228c2658422090670440",
+          "archive_sha3": "89ce6de364a6f22850d088d72e9c95b41e4e2ebfb33cf0b6ed527b2e00df7000",
+          "current_key": "4572ef55ae2fd15fcbaa6ad2b7443faf6a55caa764c35db4964b29a04fe006b8",
+          "leaf": 7,
+          "verified_against_current_contract": true
+        },
+        {
+          "archive_key": "9949ac6f8e61e3dcc337104d82dd684a13f22e8fc4be9644efac24d28a3999c8",
+          "archive_sha3": "8750d80949237415d6239566ad78cb374ab491dcadc3138afa80746dfe55d9b3",
+          "current_key": "e91997cd657650c4136034f87822c6df7270f81ad47f9296f2dc6761ec1287a5",
+          "leaf": 8,
+          "verified_against_current_contract": true
+        },
+        {
+          "archive_key": "e6397ede428ffbcc40fea073aa6e1ad8647a4e1c4ea1d324477e9ef8759fddbc",
+          "archive_sha3": "343e05e17ab63d166018cf5fc9bbb06700bfbd8fbff23e77bb180e34d424a8bd",
+          "current_key": "ef707a5155df41daf8ba896f11d5e35383d2c80eb9161e9d738d6ff24e7cdbd3",
+          "leaf": 9,
+          "verified_against_current_contract": true
+        },
+        {
+          "archive_key": "d8abdc2e8297bcd9364c1d45a818ddf11db332d0458dc2d39e7f513836dc8724",
+          "archive_sha3": "40e2e1361038dbde6e81a8424f048df147c0bf1cde2198af23d76894fe522423",
+          "current_key": "0923027338043e8b6358e79c49bae46bb1871896993b09471ba7ad8905e43828",
+          "leaf": 10,
+          "verified_against_current_contract": true
+        },
+        {
+          "archive_key": "c546c4ef83041579a8345cd32ef13637b863148923277a22d20c1b5170c56d4c",
+          "archive_sha3": "d8bdb891d2bb1576f2b730d06d389435d37c06141c7f43a2fd4cecb3863d807c",
+          "current_key": "87ad1c6244deb3c43efed1dacb4c58d75b71dd80c1ec055afdcad03258ea1054",
+          "leaf": 11,
+          "verified_against_current_contract": true
+        }
+      ],
+      "first_leaf": 4,
+      "native_graph_leaves": 8,
+      "native_group_width": 4,
+      "groups": [
+        [
+          4,
+          4
+        ],
+        [
+          8,
+          4
+        ]
+      ],
+      "compiler_policy": {
+        "backend_host_bytes": 21474836480,
+        "input_values": 1048576,
+        "live_jobs": 4,
+        "name": "standard",
+        "program_bytes": 2147483648,
+        "symbolic_bytes": 1073741824,
+        "tree_host_bytes": 8589934592
+      },
+      "memory": {
+        "context_bytes": 4294967296,
+        "device_uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615",
+        "driver": "615.78.08",
+        "executable_sha3": "7676620d734cfab72e807c78b51b70c4171b745be335045fcf34023ad95c6c9d",
+        "headroom_bytes": 536870912,
+        "kernel_policy": {
+          "backend_host_bytes": 21474836480,
+          "compiler": "standard",
+          "input_values": 1048576,
+          "live_jobs": 4,
+          "ntt": "smalltile",
+          "poseidon": "baseline",
+          "program_bytes": 2147483648,
+          "symbolic_bytes": 1073741824,
+          "tree_host_bytes": 8589934592
+        },
+        "managed_bytes": 11274289152,
+        "max_allocation_bytes": 4175986688,
+        "max_rows": 1048576,
+        "physical_global_bytes": 16703946752,
+        "qualification_sha256": null,
+        "qualified_geometries": null,
+        "query_gather": "batch",
+        "source_sha3": "d8dfac279498347ec632f7dec10403b0cef99b1a4f88b8bf4971dd42ff3a73e8",
+        "startup_free_bytes": 16195256320
+      },
+      "cold_seconds": 51.193146483,
+      "warm_median_seconds": 50.6476654055,
+      "samples_seconds": [
+        51.193146483,
+        50.595249035,
+        50.700081776
+      ],
+      "proofs_per_sample": 3,
+      "samples": [
+        {
+          "seconds": 51.193146483,
+          "recursive_proofs": 3,
+          "public_mutation_rejected": true,
+          "order_mutation_rejected": null,
+          "preparation": null,
+          "public_template_cache": null,
+          "production_cpu_lookahead": true,
+          "singleton_dry_compilations": null,
+          "measurements": []
+        },
+        {
+          "seconds": 50.595249035,
+          "recursive_proofs": 3,
+          "public_mutation_rejected": true,
+          "order_mutation_rejected": null,
+          "preparation": null,
+          "public_template_cache": null,
+          "production_cpu_lookahead": true,
+          "singleton_dry_compilations": null,
+          "measurements": []
+        },
+        {
+          "seconds": 50.700081776,
+          "recursive_proofs": 3,
+          "public_mutation_rejected": true,
+          "order_mutation_rejected": null,
+          "preparation": null,
+          "public_template_cache": null,
+          "production_cpu_lookahead": true,
+          "singleton_dry_compilations": null,
+          "measurements": []
+        }
+      ],
+      "session_closed": true,
+      "cleanup": {
+        "allocations": 15890,
+        "commits": 225,
+        "completion_claimed": false,
+        "completion_scope": "cleanup_only",
+        "context_closed": true,
+        "device": {
+          "driver": "615.78.08",
+          "global_bytes": 16703946752,
+          "max_allocation_bytes": 4175986688,
+          "name": "NVIDIA GeForce RTX 5080",
+          "opencl_index": 0,
+          "pci": "0000:08:00.0",
+          "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+        },
+        "device_allowance_bytes": 11274289152,
+        "device_max_work_group_size": 1024,
+        "downloaded_bytes": 57998818136,
+        "gpu_context_allowance_bytes": 4294967296,
+        "host_allowance_bytes": 21474836480,
+        "managed_peak_bytes": 10871952480,
+        "max_rows": 1048576,
+        "queue_drained": true,
+        "stark_completion_claimed": false,
+        "telemetry_scope": "Observed GPU resources and verified teardown; successful native operation requires separate validated worker receipts",
+        "uploaded_bytes": 67827376368,
+        "validated_native_spend_reports": 0
+      }
+    },
+    "candidate": {
+      "receipt": {
+        "label": "gpu-agg-typed-graph8-r86",
+        "status": "passed",
+        "wall_seconds": 63.576341535081156,
+        "command": [
+          "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/target-opencl/release/pq-ringct-gpu-aggregate",
+          "architecture-graph",
+          "--case",
+          "n4",
+          "--input-bundle",
+          "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-r42",
+          "--timeout-seconds",
+          "300",
+          "--first-leaf",
+          "4",
+          "--leaves",
+          "8",
+          "--native-source",
+          "revalidate-archive",
+          "--repetitions",
+          "3"
+        ],
+        "record": ".tools/pq-opencl-opt/runs/gpu-agg-typed-graph8-r86.json",
+        "record_sha256": "0bacce1e9f204f8dad10f4922165b68847dd8d96c70e79d9f5c13969ff8af50b",
+        "log_sha256": "442d1a2b047c9dec51ca32498d7a99636520883b9a79f5a454d5d26c7b9e05dd",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "host_memory_profile": {
+          "name": "expanded-36",
+          "worker_host_bytes": 38654705664,
+          "memory_max_bytes": 54760833024,
+          "memory_high_bytes": 52613349376,
+          "fresh_memavailable_required_bytes": 56908316672
+        },
+        "observed_process_gpu_peak_bytes": 10481565696,
+        "observed_cgroup_memory_peak_bytes": 9569251328
+      },
+      "options": {
+        "bundle": "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-r42",
+        "command": "architecture-graph",
+        "compiler_policy": "typed-batch",
+        "family": "graph",
+        "first_leaf": 4,
+        "gpu_managed_mib": "auto",
+        "group_width": 16,
+        "identity": "cpu",
+        "input": "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-r42/inputs.json",
+        "leaves": 8,
+        "max_components": 18446744073709551615,
+        "memory_qualification": null,
+        "native_source": "revalidate-archive",
+        "ntt_profile": "smalltile",
+        "output": "",
+        "parallel": true,
+        "poseidon_profile": "baseline",
+        "preparation_workers": 16,
+        "profile": "grouped-v5",
+        "query_gather": "batch",
+        "recursion_backend": "typed",
+        "repetitions": 3,
+        "request": null,
+        "seconds": 300,
+        "selection": null,
+        "transactions": 4,
+        "workload": 0
+      },
+      "source_sha3": "d8dfac279498347ec632f7dec10403b0cef99b1a4f88b8bf4971dd42ff3a73e8",
+      "input_sha3": "55ac26cf63b7660ed1e62367466bccb71355affbd4befd9831e2cdf83e8eeda6",
+      "archive_source_sha3": "44078dcedec6e35a52ff5d4225fc82a2b5b274a8c40376696ee3b843b7d69b37",
+      "imports": [
+        {
+          "archive_key": "0ec552305575dcdc83ea3d563eb9985eb9989924ce64fb2ebedf6039fe58cf38",
+          "archive_sha3": "24c3076ce6c05cd5c9dfea872498e423abfc599813c8a5224a93121b33007e2c",
+          "current_key": "52b5a95e5d48b4625ccee1468918e934cd327931824a61b0a86d4dc46a377e7f",
+          "leaf": 4,
+          "verified_against_current_contract": true
+        },
+        {
+          "archive_key": "3bc48346ddaba01d47f73a94836aa778c39df75b173550a90eaf3a98f9c599c6",
+          "archive_sha3": "8d291555849640301c87737a6f8cbb3701a6feef383926e2239802264da8ce0f",
+          "current_key": "71d6be0e3d61488f8bd1d135ecd36a3525d7cada0c4957cd3c3b959b6897baf4",
+          "leaf": 5,
+          "verified_against_current_contract": true
+        },
+        {
+          "archive_key": "42ef964d5e90533480af6a2fd99bde1443782a8c397bf6cf75b144cc088ddbd1",
+          "archive_sha3": "19ee4f088bb8bfe78aab6db54fa4b776f75b445309a9056b5f707f46073fcb71",
+          "current_key": "bdc3645b7f1ca81e70f79255e2646a1537bd69622591da7e765f9bcc2f34e00a",
+          "leaf": 6,
+          "verified_against_current_contract": true
+        },
+        {
+          "archive_key": "dd690a888d297073ae53826ff7e1c0e9faecb83caf6d228c2658422090670440",
+          "archive_sha3": "89ce6de364a6f22850d088d72e9c95b41e4e2ebfb33cf0b6ed527b2e00df7000",
+          "current_key": "4572ef55ae2fd15fcbaa6ad2b7443faf6a55caa764c35db4964b29a04fe006b8",
+          "leaf": 7,
+          "verified_against_current_contract": true
+        },
+        {
+          "archive_key": "9949ac6f8e61e3dcc337104d82dd684a13f22e8fc4be9644efac24d28a3999c8",
+          "archive_sha3": "8750d80949237415d6239566ad78cb374ab491dcadc3138afa80746dfe55d9b3",
+          "current_key": "e91997cd657650c4136034f87822c6df7270f81ad47f9296f2dc6761ec1287a5",
+          "leaf": 8,
+          "verified_against_current_contract": true
+        },
+        {
+          "archive_key": "e6397ede428ffbcc40fea073aa6e1ad8647a4e1c4ea1d324477e9ef8759fddbc",
+          "archive_sha3": "343e05e17ab63d166018cf5fc9bbb06700bfbd8fbff23e77bb180e34d424a8bd",
+          "current_key": "ef707a5155df41daf8ba896f11d5e35383d2c80eb9161e9d738d6ff24e7cdbd3",
+          "leaf": 9,
+          "verified_against_current_contract": true
+        },
+        {
+          "archive_key": "d8abdc2e8297bcd9364c1d45a818ddf11db332d0458dc2d39e7f513836dc8724",
+          "archive_sha3": "40e2e1361038dbde6e81a8424f048df147c0bf1cde2198af23d76894fe522423",
+          "current_key": "0923027338043e8b6358e79c49bae46bb1871896993b09471ba7ad8905e43828",
+          "leaf": 10,
+          "verified_against_current_contract": true
+        },
+        {
+          "archive_key": "c546c4ef83041579a8345cd32ef13637b863148923277a22d20c1b5170c56d4c",
+          "archive_sha3": "d8bdb891d2bb1576f2b730d06d389435d37c06141c7f43a2fd4cecb3863d807c",
+          "current_key": "87ad1c6244deb3c43efed1dacb4c58d75b71dd80c1ec055afdcad03258ea1054",
+          "leaf": 11,
+          "verified_against_current_contract": true
+        }
+      ],
+      "first_leaf": 4,
+      "native_graph_leaves": 8,
+      "native_group_width": 8,
+      "groups": [
+        [
+          4,
+          8
+        ]
+      ],
+      "compiler_policy": {
+        "backend_host_bytes": 25769803776,
+        "input_values": 8388608,
+        "live_jobs": 1,
+        "name": "typed-batch",
+        "program_bytes": 6442450944,
+        "symbolic_bytes": 3221225472,
+        "tree_host_bytes": 17179869184
+      },
+      "memory": {
+        "context_bytes": 4294967296,
+        "device_uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615",
+        "driver": "615.78.08",
+        "executable_sha3": "7676620d734cfab72e807c78b51b70c4171b745be335045fcf34023ad95c6c9d",
+        "headroom_bytes": 536870912,
+        "kernel_policy": {
+          "backend_host_bytes": 25769803776,
+          "compiler": "typed-batch",
+          "input_values": 8388608,
+          "live_jobs": 1,
+          "ntt": "smalltile",
+          "poseidon": "baseline",
+          "program_bytes": 6442450944,
+          "symbolic_bytes": 3221225472,
+          "tree_host_bytes": 17179869184
+        },
+        "managed_bytes": 11274289152,
+        "max_allocation_bytes": 4175986688,
+        "max_rows": 1048576,
+        "physical_global_bytes": 16703946752,
+        "qualification_sha256": null,
+        "qualified_geometries": null,
+        "query_gather": "batch",
+        "source_sha3": "d8dfac279498347ec632f7dec10403b0cef99b1a4f88b8bf4971dd42ff3a73e8",
+        "startup_free_bytes": 16195256320
+      },
+      "cold_seconds": 20.979355064,
+      "warm_median_seconds": 18.9939415955,
+      "samples_seconds": [
+        20.979355064,
+        19.177314801,
+        18.81056839
+      ],
+      "proofs_per_sample": 1,
+      "samples": [
+        {
+          "seconds": 20.979355064,
+          "recursive_proofs": 1,
+          "public_mutation_rejected": true,
+          "order_mutation_rejected": false,
+          "preparation": {
+            "peak_bytes": 8187281408,
+            "peak_jobs": 1,
+            "workers": 1
+          },
+          "public_template_cache": {
+            "hits": 0,
+            "misses": 1
+          },
+          "production_cpu_lookahead": null,
+          "singleton_dry_compilations": 0,
+          "measurements": [
+            {
+              "compile_seconds": 3.056170812,
+              "count": 8,
+              "first": 4,
+              "parent": false,
+              "setup_seconds": 4.522988143,
+              "host_witness_seconds": 1.137134618,
+              "upload_seconds": 0.332878565,
+              "gpu_prove_seconds": 11.651621495,
+              "cpu_verify_seconds": 0.069348482,
+              "proof_json_bytes": 8020159,
+              "verified": true,
+              "preprocessing_reused": false,
+              "public_prefix_host_bytes": 1133515464,
+              "public_salt_host_bytes": 1107304648,
+              "gpu_stage_coverage_complete": true
+            }
+          ]
+        },
+        {
+          "seconds": 19.177314801,
+          "recursive_proofs": 1,
+          "public_mutation_rejected": true,
+          "order_mutation_rejected": false,
+          "preparation": {
+            "peak_bytes": 8187281408,
+            "peak_jobs": 1,
+            "workers": 1
+          },
+          "public_template_cache": {
+            "hits": 1,
+            "misses": 1
+          },
+          "production_cpu_lookahead": null,
+          "singleton_dry_compilations": 0,
+          "measurements": [
+            {
+              "compile_seconds": 3.776049387,
+              "count": 8,
+              "first": 4,
+              "parent": false,
+              "setup_seconds": 2.323006196,
+              "host_witness_seconds": 1.1416246110000001,
+              "upload_seconds": 0.326917617,
+              "gpu_prove_seconds": 11.337641317,
+              "cpu_verify_seconds": 0.067769178,
+              "proof_json_bytes": 8019255,
+              "verified": true,
+              "preprocessing_reused": true,
+              "public_prefix_host_bytes": 1133515464,
+              "public_salt_host_bytes": 1107304648,
+              "gpu_stage_coverage_complete": true
+            }
+          ]
+        },
+        {
+          "seconds": 18.81056839,
+          "recursive_proofs": 1,
+          "public_mutation_rejected": true,
+          "order_mutation_rejected": false,
+          "preparation": {
+            "peak_bytes": 8187281408,
+            "peak_jobs": 1,
+            "workers": 1
+          },
+          "public_template_cache": {
+            "hits": 2,
+            "misses": 1
+          },
+          "production_cpu_lookahead": null,
+          "singleton_dry_compilations": 0,
+          "measurements": [
+            {
+              "compile_seconds": 3.07130245,
+              "count": 8,
+              "first": 4,
+              "parent": false,
+              "setup_seconds": 2.370276806,
+              "host_witness_seconds": 1.176385221,
+              "upload_seconds": 0.343168167,
+              "gpu_prove_seconds": 11.563756547,
+              "cpu_verify_seconds": 0.068382389,
+              "proof_json_bytes": 8018548,
+              "verified": true,
+              "preprocessing_reused": true,
+              "public_prefix_host_bytes": 1133515464,
+              "public_salt_host_bytes": 1107304648,
+              "gpu_stage_coverage_complete": true
+            }
+          ]
+        }
+      ],
+      "session_closed": true,
+      "cleanup": {
+        "allocations": 11329,
+        "commits": 73,
+        "completion_claimed": false,
+        "completion_scope": "cleanup_only",
+        "context_closed": true,
+        "device": {
+          "driver": "615.78.08",
+          "global_bytes": 16703946752,
+          "max_allocation_bytes": 4175986688,
+          "name": "NVIDIA GeForce RTX 5080",
+          "opencl_index": 0,
+          "pci": "0000:08:00.0",
+          "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+        },
+        "device_allowance_bytes": 11274289152,
+        "device_max_work_group_size": 1024,
+        "downloaded_bytes": 19429972008,
+        "gpu_context_allowance_bytes": 4294967296,
+        "host_allowance_bytes": 25769803776,
+        "managed_peak_bytes": 10193807952,
+        "max_rows": 1048576,
+        "queue_drained": true,
+        "stark_completion_claimed": false,
+        "telemetry_scope": "Observed GPU resources and verified teardown; successful native operation requires separate validated worker receipts",
+        "uploaded_bytes": 39952939576,
+        "validated_native_spend_reports": 0
+      }
+    },
+    "comparison": {
+      "cold_speedup": 2.4401677900406975,
+      "warm_speedup": 2.666516854905952,
+      "warm_time_reduction_fraction": 0.6249789315375357
+    }
+  },
+  "four_child_parent_qualification": {
+    "receipt": {
+      "label": "gpu-agg-typed-graph8-four-parent-r86",
+      "status": "passed",
+      "wall_seconds": 77.86425877898,
+      "command": [
+        "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/target-opencl/release/pq-ringct-gpu-aggregate",
+        "architecture-graph",
+        "--case",
+        "n4",
+        "--input-bundle",
+        "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-r42",
+        "--timeout-seconds",
+        "300",
+        "--first-leaf",
+        "4",
+        "--leaves",
+        "8",
+        "--native-source",
+        "revalidate-archive",
+        "--repetitions",
+        "1",
+        "--group-width",
+        "1"
+      ],
+      "record": ".tools/pq-opencl-opt/runs/gpu-agg-typed-graph8-four-parent-r86.json",
+      "record_sha256": "026f64a86b386b11fcbee3883bde4f8bb2b42ab73f85d700f1ca97aa9eab5659",
+      "log_sha256": "dc2fef8f9e73dab0403cd51ec40b4c815cf728c7302a1f51e1d6079fff508533",
+      "source_inputs_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "host_memory_profile": {
+        "name": "expanded-36",
+        "worker_host_bytes": 38654705664,
+        "memory_max_bytes": 54760833024,
+        "memory_high_bytes": 52613349376,
+        "fresh_memavailable_required_bytes": 56908316672
+      },
+      "observed_process_gpu_peak_bytes": 10481565696,
+      "observed_cgroup_memory_peak_bytes": 9765613568
+    },
+    "options": {
+      "bundle": "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-r42",
+      "command": "architecture-graph",
+      "compiler_policy": "typed-batch",
+      "family": "graph",
+      "first_leaf": 4,
+      "gpu_managed_mib": "auto",
+      "group_width": 1,
+      "identity": "cpu",
+      "input": "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-r42/inputs.json",
+      "leaves": 8,
+      "max_components": 18446744073709551615,
+      "memory_qualification": null,
+      "native_source": "revalidate-archive",
+      "ntt_profile": "smalltile",
+      "output": "",
+      "parallel": true,
+      "poseidon_profile": "baseline",
+      "preparation_workers": 16,
+      "profile": "grouped-v5",
+      "query_gather": "batch",
+      "recursion_backend": "typed",
+      "repetitions": 1,
+      "request": null,
+      "seconds": 300,
+      "selection": null,
+      "transactions": 4,
+      "workload": 0
+    },
+    "source_sha3": "d8dfac279498347ec632f7dec10403b0cef99b1a4f88b8bf4971dd42ff3a73e8",
+    "input_sha3": "55ac26cf63b7660ed1e62367466bccb71355affbd4befd9831e2cdf83e8eeda6",
+    "archive_source_sha3": "44078dcedec6e35a52ff5d4225fc82a2b5b274a8c40376696ee3b843b7d69b37",
+    "imports": [
+      {
+        "archive_key": "0ec552305575dcdc83ea3d563eb9985eb9989924ce64fb2ebedf6039fe58cf38",
+        "archive_sha3": "24c3076ce6c05cd5c9dfea872498e423abfc599813c8a5224a93121b33007e2c",
+        "current_key": "52b5a95e5d48b4625ccee1468918e934cd327931824a61b0a86d4dc46a377e7f",
+        "leaf": 4,
+        "verified_against_current_contract": true
+      },
+      {
+        "archive_key": "3bc48346ddaba01d47f73a94836aa778c39df75b173550a90eaf3a98f9c599c6",
+        "archive_sha3": "8d291555849640301c87737a6f8cbb3701a6feef383926e2239802264da8ce0f",
+        "current_key": "71d6be0e3d61488f8bd1d135ecd36a3525d7cada0c4957cd3c3b959b6897baf4",
+        "leaf": 5,
+        "verified_against_current_contract": true
+      },
+      {
+        "archive_key": "42ef964d5e90533480af6a2fd99bde1443782a8c397bf6cf75b144cc088ddbd1",
+        "archive_sha3": "19ee4f088bb8bfe78aab6db54fa4b776f75b445309a9056b5f707f46073fcb71",
+        "current_key": "bdc3645b7f1ca81e70f79255e2646a1537bd69622591da7e765f9bcc2f34e00a",
+        "leaf": 6,
+        "verified_against_current_contract": true
+      },
+      {
+        "archive_key": "dd690a888d297073ae53826ff7e1c0e9faecb83caf6d228c2658422090670440",
+        "archive_sha3": "89ce6de364a6f22850d088d72e9c95b41e4e2ebfb33cf0b6ed527b2e00df7000",
+        "current_key": "4572ef55ae2fd15fcbaa6ad2b7443faf6a55caa764c35db4964b29a04fe006b8",
+        "leaf": 7,
+        "verified_against_current_contract": true
+      },
+      {
+        "archive_key": "9949ac6f8e61e3dcc337104d82dd684a13f22e8fc4be9644efac24d28a3999c8",
+        "archive_sha3": "8750d80949237415d6239566ad78cb374ab491dcadc3138afa80746dfe55d9b3",
+        "current_key": "e91997cd657650c4136034f87822c6df7270f81ad47f9296f2dc6761ec1287a5",
+        "leaf": 8,
+        "verified_against_current_contract": true
+      },
+      {
+        "archive_key": "e6397ede428ffbcc40fea073aa6e1ad8647a4e1c4ea1d324477e9ef8759fddbc",
+        "archive_sha3": "343e05e17ab63d166018cf5fc9bbb06700bfbd8fbff23e77bb180e34d424a8bd",
+        "current_key": "ef707a5155df41daf8ba896f11d5e35383d2c80eb9161e9d738d6ff24e7cdbd3",
+        "leaf": 9,
+        "verified_against_current_contract": true
+      },
+      {
+        "archive_key": "d8abdc2e8297bcd9364c1d45a818ddf11db332d0458dc2d39e7f513836dc8724",
+        "archive_sha3": "40e2e1361038dbde6e81a8424f048df147c0bf1cde2198af23d76894fe522423",
+        "current_key": "0923027338043e8b6358e79c49bae46bb1871896993b09471ba7ad8905e43828",
+        "leaf": 10,
+        "verified_against_current_contract": true
+      },
+      {
+        "archive_key": "c546c4ef83041579a8345cd32ef13637b863148923277a22d20c1b5170c56d4c",
+        "archive_sha3": "d8bdb891d2bb1576f2b730d06d389435d37c06141c7f43a2fd4cecb3863d807c",
+        "current_key": "87ad1c6244deb3c43efed1dacb4c58d75b71dd80c1ec055afdcad03258ea1054",
+        "leaf": 11,
+        "verified_against_current_contract": true
+      }
+    ],
+    "first_leaf": 4,
+    "native_graph_leaves": 8,
+    "native_group_width": 1,
+    "groups": [
+      [
+        4,
+        1
+      ],
+      [
+        5,
+        1
+      ],
+      [
+        6,
+        1
+      ],
+      [
+        7,
+        1
+      ],
+      [
+        8,
+        1
+      ],
+      [
+        9,
+        1
+      ],
+      [
+        10,
+        1
+      ],
+      [
+        11,
+        1
+      ]
+    ],
+    "compiler_policy": {
+      "backend_host_bytes": 25769803776,
+      "input_values": 8388608,
+      "live_jobs": 1,
+      "name": "typed-batch",
+      "program_bytes": 6442450944,
+      "symbolic_bytes": 3221225472,
+      "tree_host_bytes": 17179869184
+    },
+    "memory": {
+      "context_bytes": 4294967296,
+      "device_uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615",
+      "driver": "615.78.08",
+      "executable_sha3": "7676620d734cfab72e807c78b51b70c4171b745be335045fcf34023ad95c6c9d",
+      "headroom_bytes": 536870912,
+      "kernel_policy": {
+        "backend_host_bytes": 25769803776,
+        "compiler": "typed-batch",
+        "input_values": 8388608,
+        "live_jobs": 1,
+        "ntt": "smalltile",
+        "poseidon": "baseline",
+        "program_bytes": 6442450944,
+        "symbolic_bytes": 3221225472,
+        "tree_host_bytes": 17179869184
+      },
+      "managed_bytes": 11274289152,
+      "max_allocation_bytes": 4175986688,
+      "max_rows": 1048576,
+      "physical_global_bytes": 16703946752,
+      "qualification_sha256": null,
+      "qualified_geometries": null,
+      "query_gather": "batch",
+      "source_sha3": "d8dfac279498347ec632f7dec10403b0cef99b1a4f88b8bf4971dd42ff3a73e8",
+      "startup_free_bytes": 16195256320
+    },
+    "cold_seconds": 72.931326369,
+    "warm_median_seconds": null,
+    "samples_seconds": [
+      72.931326369
+    ],
+    "proofs_per_sample": 11,
+    "samples": [
+      {
+        "seconds": 72.931326369,
+        "recursive_proofs": 11,
+        "public_mutation_rejected": true,
+        "order_mutation_rejected": true,
+        "preparation": {
+          "peak_bytes": 7247757312,
+          "peak_jobs": 1,
+          "workers": 8
+        },
+        "public_template_cache": {
+          "hits": 0,
+          "misses": 11
+        },
+        "production_cpu_lookahead": null,
+        "singleton_dry_compilations": 0,
+        "measurements": [
+          {
+            "compile_seconds": 0.350084731,
+            "count": 1,
+            "first": 4,
+            "parent": false,
+            "setup_seconds": 0.543931286,
+            "host_witness_seconds": 0.142273024,
+            "upload_seconds": 0.044954573,
+            "gpu_prove_seconds": 2.075651131,
+            "cpu_verify_seconds": 0.075266842,
+            "proof_json_bytes": 8772299,
+            "verified": true,
+            "preprocessing_reused": false,
+            "public_prefix_host_bytes": 0,
+            "public_salt_host_bytes": 0,
+            "gpu_stage_coverage_complete": true
+          },
+          {
+            "compile_seconds": 0.372550187,
+            "count": 1,
+            "first": 5,
+            "parent": false,
+            "setup_seconds": 0.546070159,
+            "host_witness_seconds": 0.14255915,
+            "upload_seconds": 0.045370622,
+            "gpu_prove_seconds": 2.01425042,
+            "cpu_verify_seconds": 0.07464405,
+            "proof_json_bytes": 8771242,
+            "verified": true,
+            "preprocessing_reused": false,
+            "public_prefix_host_bytes": 0,
+            "public_salt_host_bytes": 0,
+            "gpu_stage_coverage_complete": true
+          },
+          {
+            "compile_seconds": 0.372235188,
+            "count": 1,
+            "first": 6,
+            "parent": false,
+            "setup_seconds": 0.546810462,
+            "host_witness_seconds": 0.146840978,
+            "upload_seconds": 0.044500453,
+            "gpu_prove_seconds": 2.024785403,
+            "cpu_verify_seconds": 0.079926989,
+            "proof_json_bytes": 8771952,
+            "verified": true,
+            "preprocessing_reused": false,
+            "public_prefix_host_bytes": 0,
+            "public_salt_host_bytes": 0,
+            "gpu_stage_coverage_complete": true
+          },
+          {
+            "compile_seconds": 0.359317609,
+            "count": 1,
+            "first": 7,
+            "parent": false,
+            "setup_seconds": 0.673747565,
+            "host_witness_seconds": 0.143003298,
+            "upload_seconds": 0.044823391,
+            "gpu_prove_seconds": 2.042918491,
+            "cpu_verify_seconds": 0.101622839,
+            "proof_json_bytes": 8772831,
+            "verified": true,
+            "preprocessing_reused": false,
+            "public_prefix_host_bytes": 0,
+            "public_salt_host_bytes": 0,
+            "gpu_stage_coverage_complete": true
+          },
+          {
+            "compile_seconds": 0.367282583,
+            "count": 1,
+            "first": 8,
+            "parent": false,
+            "setup_seconds": 0.558957871,
+            "host_witness_seconds": 0.14408198,
+            "upload_seconds": 0.045680108,
+            "gpu_prove_seconds": 2.018611811,
+            "cpu_verify_seconds": 0.074868264,
+            "proof_json_bytes": 8772104,
+            "verified": true,
+            "preprocessing_reused": false,
+            "public_prefix_host_bytes": 0,
+            "public_salt_host_bytes": 0,
+            "gpu_stage_coverage_complete": true
+          },
+          {
+            "compile_seconds": 0.377113356,
+            "count": 1,
+            "first": 9,
+            "parent": false,
+            "setup_seconds": 0.54549892,
+            "host_witness_seconds": 0.144062599,
+            "upload_seconds": 0.044750079,
+            "gpu_prove_seconds": 2.013871756,
+            "cpu_verify_seconds": 0.074622018,
+            "proof_json_bytes": 8772058,
+            "verified": true,
+            "preprocessing_reused": false,
+            "public_prefix_host_bytes": 0,
+            "public_salt_host_bytes": 0,
+            "gpu_stage_coverage_complete": true
+          },
+          {
+            "compile_seconds": 0.365340581,
+            "count": 1,
+            "first": 10,
+            "parent": false,
+            "setup_seconds": 0.546765464,
+            "host_witness_seconds": 0.143220841,
+            "upload_seconds": 0.047668039,
+            "gpu_prove_seconds": 2.008295995,
+            "cpu_verify_seconds": 0.074621208,
+            "proof_json_bytes": 8771636,
+            "verified": true,
+            "preprocessing_reused": false,
+            "public_prefix_host_bytes": 0,
+            "public_salt_host_bytes": 0,
+            "gpu_stage_coverage_complete": true
+          },
+          {
+            "compile_seconds": 0.378490222,
+            "count": 1,
+            "first": 11,
+            "parent": false,
+            "setup_seconds": 0.548871756,
+            "host_witness_seconds": 0.142807963,
+            "upload_seconds": 0.043715677,
+            "gpu_prove_seconds": 2.003457908,
+            "cpu_verify_seconds": 0.077969867,
+            "proof_json_bytes": 8772401,
+            "verified": true,
+            "preprocessing_reused": false,
+            "public_prefix_host_bytes": 0,
+            "public_salt_host_bytes": 0,
+            "gpu_stage_coverage_complete": true
+          },
+          {
+            "children": 4,
+            "compile_seconds": 2.664918462,
+            "parent": true,
+            "setup_seconds": 4.46548559,
+            "host_witness_seconds": 1.104891779,
+            "upload_seconds": 0.320996585,
+            "gpu_prove_seconds": 11.536732115,
+            "cpu_verify_seconds": 0.067703352,
+            "proof_json_bytes": 8028095,
+            "verified": true,
+            "preprocessing_reused": false,
+            "public_prefix_host_bytes": 1133515464,
+            "public_salt_host_bytes": 1107304648,
+            "gpu_stage_coverage_complete": true
+          },
+          {
+            "children": 4,
+            "compile_seconds": 2.383453775,
+            "parent": true,
+            "setup_seconds": 4.371918402,
+            "host_witness_seconds": 1.151286518,
+            "upload_seconds": 0.324049782,
+            "gpu_prove_seconds": 11.374722071,
+            "cpu_verify_seconds": 0.067836535,
+            "proof_json_bytes": 8028772,
+            "verified": true,
+            "preprocessing_reused": false,
+            "public_prefix_host_bytes": 1133515464,
+            "public_salt_host_bytes": 1107304648,
+            "gpu_stage_coverage_complete": true
+          },
+          {
+            "children": 2,
+            "compile_seconds": 0.956622903,
+            "parent": true,
+            "setup_seconds": 1.879123958,
+            "host_witness_seconds": 0.81837175,
+            "upload_seconds": 0.350753529,
+            "gpu_prove_seconds": 4.628212844,
+            "cpu_verify_seconds": 0.063335981,
+            "proof_json_bytes": 7499357,
+            "verified": true,
+            "preprocessing_reused": false,
+            "public_prefix_host_bytes": 0,
+            "public_salt_host_bytes": 0,
+            "gpu_stage_coverage_complete": true
+          }
+        ]
+      }
+    ],
+    "session_closed": true,
+    "cleanup": {
+      "allocations": 46156,
+      "commits": 249,
+      "completion_claimed": false,
+      "completion_scope": "cleanup_only",
+      "context_closed": true,
+      "device": {
+        "driver": "615.78.08",
+        "global_bytes": 16703946752,
+        "max_allocation_bytes": 4175986688,
+        "name": "NVIDIA GeForce RTX 5080",
+        "opencl_index": 0,
+        "pci": "0000:08:00.0",
+        "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+      },
+      "device_allowance_bytes": 11274289152,
+      "device_max_work_group_size": 1024,
+      "downloaded_bytes": 25455548496,
+      "gpu_context_allowance_bytes": 4294967296,
+      "host_allowance_bytes": 25769803776,
+      "managed_peak_bytes": 10193807952,
+      "max_rows": 1048576,
+      "queue_drained": true,
+      "stark_completion_claimed": false,
+      "telemetry_scope": "Observed GPU resources and verified teardown; successful native operation requires separate validated worker receipts",
+      "uploaded_bytes": 37860116496,
+      "validated_native_spend_reports": 0
+    }
+  },
+  "n4_planning": {
+    "native_crypto_instances": 536,
+    "native_graph_leaves_per_transaction": 91,
+    "transactions": 4,
+    "previous_recursive_proofs": 239,
+    "current_recursive_proofs": 131,
+    "recursive_proofs_eliminated": 108,
+    "reduction_fraction": 0.4518828451882845,
+    "previous_graph_proofs": 180,
+    "current_graph_proofs": 64,
+    "previous_crypto_proofs": 56,
+    "current_crypto_proofs": 64,
+    "final_ordered_proofs": 3,
+    "excludes_auxiliary_branches": true,
+    "graph_geometry_admission_complete": false,
+    "per_transaction_requests": [
+      {
+        "maximum_group": 1,
+        "native": 1,
+        "outer": 1,
+        "request": 0,
+        "transaction": 0
+      },
+      {
+        "maximum_group": 16,
+        "native": 109,
+        "outer": 10,
+        "request": 1,
+        "transaction": 0
+      },
+      {
+        "maximum_group": 3,
+        "native": 3,
+        "outer": 1,
+        "request": 2,
+        "transaction": 0
+      },
+      {
+        "maximum_group": 1,
+        "native": 1,
+        "outer": 1,
+        "request": 3,
+        "transaction": 0
+      },
+      {
+        "maximum_group": 5,
+        "native": 5,
+        "outer": 1,
+        "request": 4,
+        "transaction": 0
+      },
+      {
+        "maximum_group": 5,
+        "native": 5,
+        "outer": 1,
+        "request": 5,
+        "transaction": 0
+      },
+      {
+        "maximum_group": 10,
+        "native": 10,
+        "outer": 1,
+        "request": 6,
+        "transaction": 0
+      }
+    ],
+    "receipts": [
+      {
+        "label": "gpu-agg-aes-default-plan-r83",
+        "status": "passed",
+        "wall_seconds": 4.254685480962507,
+        "command": [
+          "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/target-opencl/release/pq-ringct-gpu-aggregate",
+          "plan",
+          "--case",
+          "n4",
+          "--input-bundle",
+          "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-r40",
+          "--timeout-seconds",
+          "300"
+        ],
+        "record": ".tools/pq-opencl-opt/runs/gpu-agg-aes-default-plan-r83.json",
+        "record_sha256": "d8d28339213e17c73f7545dddf18a1f09c3847d9e294b782b863f77a23e1e7c0",
+        "log_sha256": "a4ff9e8276f19faf5b98eb4becdbe4855141cdc0823989b0db0462d811e8ec62",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "host_memory_profile": {
+          "name": "expanded-36",
+          "worker_host_bytes": 38654705664,
+          "memory_max_bytes": 54760833024,
+          "memory_high_bytes": 52613349376,
+          "fresh_memavailable_required_bytes": 56908316672
+        },
+        "observed_process_gpu_peak_bytes": null,
+        "observed_cgroup_memory_peak_bytes": 536313856
+      },
+      {
+        "label": "gpu-agg-typed-graph-plan-r86",
+        "status": "passed",
+        "wall_seconds": 4.2560465020360425,
+        "command": [
+          "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/target-opencl/release/pq-ringct-gpu-aggregate",
+          "plan",
+          "--case",
+          "n4",
+          "--input-bundle",
+          "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-r42",
+          "--timeout-seconds",
+          "300"
+        ],
+        "record": ".tools/pq-opencl-opt/runs/gpu-agg-typed-graph-plan-r86.json",
+        "record_sha256": "0c61694d6d22efdf226cd76504a9c2064f5a12b5f3fb2e465d1d7b18b9b88cab",
+        "log_sha256": "2aa58da0b839ef9d4bf621eb2144b2e179275483daba2a5c6871e26235962238",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "host_memory_profile": {
+          "name": "expanded-36",
+          "worker_host_bytes": 38654705664,
+          "memory_max_bytes": 54760833024,
+          "memory_high_bytes": 52613349376,
+          "fresh_memavailable_required_bytes": 56908316672
+        },
+        "observed_process_gpu_peak_bytes": null,
+        "observed_cgroup_memory_peak_bytes": 542887936
+      }
+    ]
+  },
+  "validation": {
+    "research_tests_passed": 39,
+    "research_tests_ignored": 2,
+    "python_tests_passed": 73,
+    "cpu_only_check_passed": true,
+    "receipts": [
+      {
+        "label": "gpu-agg-research-build-r86",
+        "status": "passed",
+        "wall_seconds": 120.6769109730376,
+        "command": [
+          "/home/access/code/lattica/.tools/rust-1.96.0/bin/cargo",
+          "test",
+          "--release",
+          "--locked",
+          "--offline",
+          "--no-default-features",
+          "--config",
+          "profile.release.lto=false",
+          "--config",
+          "profile.release.codegen-units=16",
+          "-j2",
+          "--no-run",
+          "--lib",
+          "--manifest-path",
+          "research/pq-ringct/Cargo.toml",
+          "--features",
+          "gpu-aggregation-experiment"
+        ],
+        "record": ".tools/pq-opencl-opt/runs/gpu-agg-research-build-r86.json",
+        "record_sha256": "7306f2d6b8519b0fdb9feb0b711ba1a69d5999d2005641bcade498845de7cd22",
+        "log_sha256": "2184fe065fb4529539f0d5dae929078a632d618ed8057dc5e26d84acbee502d2",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "host_memory_profile": {
+          "name": "standard",
+          "worker_host_bytes": 34359738368,
+          "memory_max_bytes": 50465865728,
+          "memory_high_bytes": 48318382080,
+          "fresh_memavailable_required_bytes": 52613349376
+        },
+        "observed_process_gpu_peak_bytes": null,
+        "observed_cgroup_memory_peak_bytes": 3280191488
+      },
+      {
+        "label": "gpu-agg-runner-build-r86",
+        "status": "passed",
+        "wall_seconds": 82.56070010410622,
+        "command": [
+          "/home/access/code/lattica/.tools/rust-1.96.0/bin/cargo",
+          "build",
+          "--release",
+          "--locked",
+          "--offline",
+          "--no-default-features",
+          "--config",
+          "profile.release.lto=false",
+          "--config",
+          "profile.release.codegen-units=16",
+          "-j2",
+          "--manifest-path",
+          "research/pq-ringct/Cargo.toml",
+          "--features",
+          "gpu-aggregation-experiment",
+          "--bin",
+          "pq-ringct-gpu-aggregate"
+        ],
+        "record": ".tools/pq-opencl-opt/runs/gpu-agg-runner-build-r86.json",
+        "record_sha256": "a7418d25c5cee8707b3bacf050b2883178ee781b74472c824c8b56e843d4fd9e",
+        "log_sha256": "30dba376ff0e1abafa3ea7c04f70c703c45b790b846fe8641aae7984b319fdd2",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "host_memory_profile": {
+          "name": "standard",
+          "worker_host_bytes": 34359738368,
+          "memory_max_bytes": 50465865728,
+          "memory_high_bytes": 48318382080,
+          "fresh_memavailable_required_bytes": 52613349376
+        },
+        "observed_process_gpu_peak_bytes": null,
+        "observed_cgroup_memory_peak_bytes": 2491621376
+      },
+      {
+        "label": "gpu-agg-research-tests-r86",
+        "status": "passed",
+        "wall_seconds": 18.306105528958142,
+        "command": [
+          "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/target-opencl/release/deps/lattica_pq_ringct_research-573c656086b2cc88",
+          "gpu_aggregation::",
+          "graph_tree::tree::recursion::tests",
+          "ordered_aggregation::tests",
+          "component_tree::recursion::tests",
+          "component_tree::aes_group::tests",
+          "request_bridge::tests",
+          "imported_group_layout_tests",
+          "direct_tests",
+          "graph_proofs::tests::cache",
+          "--test-threads=2"
+        ],
+        "record": ".tools/pq-opencl-opt/runs/gpu-agg-research-tests-r86.json",
+        "record_sha256": "abd280482af73dc2595fef66ee8482bbfc6901c664aa94260669c82ad145e383",
+        "log_sha256": "43477a14ca6443c876f434aa5804f33eee7c605f1762bc9d66bfd43c5dfb73b7",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "host_memory_profile": {
+          "name": "standard",
+          "worker_host_bytes": 34359738368,
+          "memory_max_bytes": 50465865728,
+          "memory_high_bytes": 48318382080,
+          "fresh_memavailable_required_bytes": 52613349376
+        },
+        "observed_process_gpu_peak_bytes": null,
+        "observed_cgroup_memory_peak_bytes": 1713225728
+      },
+      {
+        "label": "gpu-agg-cpu-feature-check-r86",
+        "status": "passed",
+        "wall_seconds": 10.28479237202555,
+        "command": [
+          "/home/access/code/lattica/.tools/rust-1.96.0/bin/cargo",
+          "check",
+          "--release",
+          "--locked",
+          "--offline",
+          "--no-default-features",
+          "--config",
+          "profile.release.lto=false",
+          "--config",
+          "profile.release.codegen-units=16",
+          "-j2",
+          "--manifest-path",
+          "research/pq-ringct/Cargo.toml",
+          "--features",
+          "cpu-proof-experiment",
+          "--lib"
+        ],
+        "record": ".tools/pq-opencl-opt/runs/gpu-agg-cpu-feature-check-r86.json",
+        "record_sha256": "52c52bf98b1d9241735655f01d5037dc55dde52a248f809ca7b71e81a564ae21",
+        "log_sha256": "069b08938f5e0c78d772b050cd48e80c88f51b6f6d86674aac73e589fbf20a2f",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "host_memory_profile": {
+          "name": "standard",
+          "worker_host_bytes": 34359738368,
+          "memory_max_bytes": 50465865728,
+          "memory_high_bytes": 48318382080,
+          "fresh_memavailable_required_bytes": 52613349376
+        },
+        "observed_process_gpu_peak_bytes": null,
+        "observed_cgroup_memory_peak_bytes": 568901632
+      }
+    ],
+    "python": {
+      "status": "passed",
+      "wall_seconds": 1.21862803096883,
+      "log": "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/gpu-agg-python-tests-r86.controller.log",
+      "sha256": "97f35a9757cf582d18d479165d4823e4f9855cb879bb128725f0ba03123c164a"
+    }
+  },
+  "failed_attempts": [
+    {
+      "receipt": {
+        "label": "gpu-agg-typed-graph8-r84",
+        "status": "failed_or_incomplete",
+        "wall_seconds": 66.48168735101353,
+        "command": [
+          "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/target-opencl/release/pq-ringct-gpu-aggregate",
+          "architecture-graph",
+          "--case",
+          "n4",
+          "--input-bundle",
+          "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-r42",
+          "--timeout-seconds",
+          "300",
+          "--first-leaf",
+          "4",
+          "--leaves",
+          "8",
+          "--native-source",
+          "revalidate-archive",
+          "--repetitions",
+          "3"
+        ],
+        "record": ".tools/pq-opencl-opt/runs/gpu-agg-typed-graph8-r84.json",
+        "record_sha256": "2a473caca32c4b1c6ef43855e1076827f5428bb052a39104c56452135640ea3b",
+        "log_sha256": "76acf82e198d8b88b75a18ecb1f0efb9917353fb3ea4076869f424ec5dc777ba",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "host_memory_profile": {
+          "name": "expanded-36",
+          "worker_host_bytes": 38654705664,
+          "memory_max_bytes": 54760833024,
+          "memory_high_bytes": 52613349376,
+          "fresh_memavailable_required_bytes": 56908316672
+        },
+        "observed_process_gpu_peak_bytes": null,
+        "observed_cgroup_memory_peak_bytes": 9591238656
+      },
+      "reason": "All three proofs verified, but cleanup validation failed with KeyError(session_finish) because the new command was absent from the memory checker. Command recognition, external VRAM observation and a regression test were added; r85 and r86 receipts pass."
+    },
+    {
+      "receipt": {
+        "label": "gpu-agg-typed-graph8-parent-r85",
+        "status": "failed_or_incomplete",
+        "wall_seconds": 39.01310559292324,
+        "command": [
+          "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/target-opencl/release/pq-ringct-gpu-aggregate",
+          "architecture-graph",
+          "--case",
+          "n4",
+          "--input-bundle",
+          "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-r42",
+          "--timeout-seconds",
+          "300",
+          "--first-leaf",
+          "4",
+          "--leaves",
+          "8",
+          "--native-source",
+          "revalidate-archive",
+          "--repetitions",
+          "1",
+          "--group-width",
+          "1"
+        ],
+        "record": ".tools/pq-opencl-opt/runs/gpu-agg-typed-graph8-parent-r85.json",
+        "record_sha256": "713635952d1c3ab2f83a6e23eecc3eab7d4c0c298cfea3f2606dc8f6b8dbda28",
+        "log_sha256": "0419103ab7ca50e6eea072f982623ba8a6c601e862470bb72face3699031caea",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "host_memory_profile": {
+          "name": "expanded-36",
+          "worker_host_bytes": 38654705664,
+          "memory_max_bytes": 54760833024,
+          "memory_high_bytes": 52613349376,
+          "fresh_memavailable_required_bytes": 56908316672
+        },
+        "observed_process_gpu_peak_bytes": 5494538240,
+        "observed_cgroup_memory_peak_bytes": 4784242688
+      },
+      "reason": "Eight-child graph parent refused by fixed device allocation admission. Its eight singleton leaf proofs completed; no parent or full graph completion claimed.",
+      "required_fixed_device_bytes": 15278810040,
+      "managed_device_budget_bytes": 11274289152,
+      "response": "Reduced default typed recursive fan-in to four; r86 two-level GPU parent qualification passed."
+    }
+  ],
+  "scope_limits": [
+    "Measured workload: eight contiguous GBound graph leaves (offsets 4 through 11) from transaction 0 of deterministic N4. This is a graph subtree, not a complete transaction graph or aggregate.",
+    "Per-sample timing includes archive reimport and current-contract native-proof verification, group compilation, recursive proof generation, independent CPU verification, and public mutation rejection. Native proof generation, initial workflow metadata preparation, and process/GPU-context startup are excluded; guarded wall time is recorded separately.",
+    "Baseline and candidate use identical archived native proofs, inputs, source revision, GPU, 10.5 GiB managed GPU allowance, and 36 GiB worker envelope. Their bounded compiler policies differ: standard production MachineAir with CPU lookahead versus the typed-batch policy.",
+    "Warm time is the median of samples 2 and 3. The typed path reuses one exact-template public preprocessing entry; every recursive proof is freshly generated. A full workflow has multiple distinct templates, so warm subtree speedup must not be extrapolated to the full workflow.",
+    "The four-child GPU parent screen uses eight singleton native groups, two four-child parents and one two-child root. It covers two reduction levels, not every possible heterogeneous full-workflow child geometry.",
+    "N4 proof counts are descriptor-planning results excluding auxiliary branches. Full N3/N4 execution, heterogeneous graph grouping, and final aggregate GPU execution were not timed in this pass. The typed final-consumer adapter passed CPU compilation/evaluation and mutation tests."
+  ]
+}

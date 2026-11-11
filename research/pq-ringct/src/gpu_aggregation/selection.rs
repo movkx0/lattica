@@ -65,14 +65,22 @@ pub(crate) fn choose(
     Ok(selected.1)
 }
 pub(crate) fn widths(options: &Options) -> Result<(usize, usize)> {
+    if options.typed_recursion() {
+        ensure(
+            options.selection.is_none(),
+            "machine grouping cost files cannot select typed batches",
+        )?;
+        return Ok((
+            options.group_width,
+            options
+                .group_width
+                .min(if options.transactions == 4 { 8 } else { 4 }),
+        ));
+    }
     if options.profile == "legacy" {
         return Ok((options.group_width, 1));
     }
     let Some(path) = &options.selection else {
-        ensure(
-            options.command != "run",
-            "grouped-v2 run requires a measured selection file; use screen first",
-        )?;
         return Ok((options.group_width, options.group_width));
     };
     ensure(
@@ -82,9 +90,10 @@ pub(crate) fn widths(options: &Options) -> Result<(usize, usize)> {
     let value: Selection =
         serde_json::from_slice(&std::fs::read(path).map_err(error)?).map_err(error)?;
     ensure(
-        (if options.profile == "grouped-v4" {
+        (if matches!(options.profile.as_str(), "grouped-v4" | "grouped-v5") {
             value.schema == "ringct-gpu-aggregation-selection-v3"
-                && value.profile.as_deref() == Some("grouped-v4") && value.baseline_width == Some(4)
+                && value.profile.as_deref() == Some(options.profile.as_str())
+                && value.baseline_width == Some(4)
                 && value.memory == Some(memory::signature(options)?)
         } else if options.profile == "grouped-v3" {
             value.schema == "ringct-gpu-aggregation-selection-v2"
@@ -99,12 +108,23 @@ pub(crate) fn widths(options: &Options) -> Result<(usize, usize)> {
         "selection source/device identity mismatch",
     )?;
     Ok((
-        choose(&value.costs, "shake", options.group_width, if options.profile == "grouped-v4" { 4 } else { 2 })?,
+        choose(
+            &value.costs,
+            "shake",
+            options.group_width,
+            if matches!(options.profile.as_str(), "grouped-v4" | "grouped-v5") {
+                4
+            } else {
+                2
+            },
+        )?,
         choose(
             &value.costs,
             "graph",
             options.group_width,
-            if options.profile == "grouped-v4" { 4 } else if options.profile == "grouped-v3" {
+            if matches!(options.profile.as_str(), "grouped-v4" | "grouped-v5") {
+                4
+            } else if options.profile == "grouped-v3" {
                 2
             } else {
                 1
@@ -116,10 +136,16 @@ pub(super) fn graph_costs(options: &Options, maximum: usize) -> Result<Vec<(usiz
     // widths() validates the source/device binding before this data is used.
     widths(options)?;
     let mut result = vec![(1, 1.0)];
-    if matches!(options.profile.as_str(), "grouped-v3" | "grouped-v4") && maximum >= 2 {
+    if matches!(
+        options.profile.as_str(),
+        "grouped-v3" | "grouped-v4" | "grouped-v5"
+    ) && maximum >= 2
+    {
         result.push((2, 1.0));
     }
-    if options.profile == "grouped-v4" && maximum >= 4 { result.push((4, 1.0)); }
+    if matches!(options.profile.as_str(), "grouped-v4" | "grouped-v5") && maximum >= 4 {
+        result.push((4, 1.0));
+    }
     if let Some(path) = &options.selection {
         let value: Selection =
             serde_json::from_slice(&std::fs::read(path).map_err(error)?).map_err(error)?;

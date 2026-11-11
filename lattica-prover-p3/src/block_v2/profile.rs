@@ -282,6 +282,15 @@ pub fn make_cpu_config() -> Config {
         true,
     )
 }
+/// Deterministic public setup for the bounded multi-table CPU oracle only.
+/// Never use this configuration for proving private witnesses.
+pub(crate) fn recursion_reference_preprocessing_config() -> Config {
+    config_with_cpu_selection(
+        ChaCha20Rng::from_seed([0; 32]),
+        ChaCha20Rng::from_seed([0; 32]),
+        None, false, false, None, true,
+    )
+}
 
 /// Explicit CPU-only research selection, with independent fresh salt/hiding streams.
 #[cfg(all(

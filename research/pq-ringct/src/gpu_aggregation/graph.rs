@@ -7,7 +7,15 @@ use crate::{
     proof_cache_policy::ProofCachePolicy,
 };
 use std::collections::BTreeMap;
-type Roots = Vec<graph_crypto::CompleteRequestProof>;
+pub(super) enum RequestRoot {
+    Machine(graph_crypto::CompleteRequestProof),
+    Typed(super::typed::Root),
+}
+enum GraphRoot {
+    Machine(graph_tree::ProvenNode),
+    Typed(graph_tree::recursion::ProvenNode),
+}
+type Roots = Vec<RequestRoot>;
 type Branches = BTreeMap<(usize, u8), producer_branch::ProvenBranch>;
 fn missing<T>(value: Option<T>) -> Result<T> {
     value.ok_or("missing native component; run prepare-inputs separately".into())
@@ -19,17 +27,23 @@ fn request_index(case: &inputs::Case, operation: usize, subrequest: usize) -> Re
         .position(|r| r.operation_index() == operation && r.subrequest() as usize == subrequest)
         .ok_or("missing trusted crypto request".into())
 }
-fn sha(root: &graph_crypto::CompleteRequestProof) -> ShakeProof<'_> {
-    ShakeProof::Tree {
-        key: &root.key,
-        proof: &root.proof,
+fn sha(root: &RequestRoot) -> ShakeProof<'_> {
+    match root {
+        RequestRoot::Machine(root) => ShakeProof::Tree {
+            key: &root.key,
+            proof: &root.proof,
+        },
+        RequestRoot::Typed(root) => ShakeProof::TypedTree(&root.node),
     }
 }
-fn aes(root: &graph_crypto::CompleteRequestProof) -> AesProof<'_> {
-    AesProof::Tree {
-        key: &root.key,
-        proof: &root.proof,
-    }
+fn aes(root: &RequestRoot) -> Result<AesProof<'_>> {
+    Ok(match root {
+        RequestRoot::Machine(root) => AesProof::Tree {
+            key: &root.key,
+            proof: &root.proof,
+        },
+        RequestRoot::Typed(root) => AesProof::TypedTree(&root.node),
+    })
 }
 fn branch(value: &producer_branch::ProvenBranch) -> producer_branch::Artifact<'_> {
     producer_branch::Artifact {
@@ -63,7 +77,7 @@ impl Loaded {
             Self::Algebra(p) => p.as_leaf_artifact(),
             Self::Parameters(i) => LeafArtifact::ParametersPp(sha(&roots[*i])),
             Self::Sample(i, p) => LeafArtifact::SampleG {
-                aes: aes(&roots[*i]),
+                aes: aes(&roots[*i])?,
                 sampler: p.uniform().map_err(error)?,
             },
             Self::Alpha(op) => LeafArtifact::ExpandAlphaBranches {
@@ -188,6 +202,18 @@ fn validate_native(
     }
     Ok(total)
 }
+fn request_spans(
+    request: &graph_crypto::Request,
+    maximum: usize,
+    options: &Options,
+) -> Result<Vec<graph_crypto::ShakeWrapperSpan>> {
+    if options.typed_recursion() {
+        architecture::direct_spans(request, maximum)
+    } else {
+        graph_crypto::imported_group_spans(request, maximum.min(8), options.max_rows())
+            .map_err(error)
+    }
+}
 pub(crate) fn plan(options: &Options, deadline: &Deadline) -> Result<serde_json::Value> {
     let (cases, digest) = inputs::load(options)?;
     let (shake_width, graph_width) = selection::widths(options)?;
@@ -197,20 +223,27 @@ pub(crate) fn plan(options: &Options, deadline: &Deadline) -> Result<serde_json:
     for (transaction, case) in cases.iter().enumerate() {
         deadline.check()?;
         for (index, request) in case.plan.requests().iter().enumerate() {
-            let spans =
-                graph_crypto::imported_group_spans(request, shake_width, options.max_rows())
-                    .map_err(error)?;
+            let spans = request_spans(request, shake_width, options)?;
             let leaves = if spans.is_empty() {
                 request.segments().len()
             } else {
                 spans.len()
             };
             native += request.segments().len();
-            outer += 2 * leaves - 1;
-            rows.push(serde_json::json!({"transaction":transaction,"request":index,"native":request.segments().len(),"outer":2*leaves-1,"maximum_group":spans.iter().map(|s|s.segment_count).max().unwrap_or(1)}));
+            let proofs = if options.typed_recursion() && !spans.is_empty() {
+                super::typed::proof_count(leaves)
+            } else {
+                2 * leaves - 1
+            };
+            outer += proofs;
+            rows.push(serde_json::json!({"transaction":transaction,"request":index,"native":request.segments().len(),"outer":proofs,"maximum_group":spans.iter().map(|s|s.segment_count).max().unwrap_or(1)}));
         }
         let leaves = case.tree.leaves().len().div_ceil(graph_width);
-        outer += 2 * leaves - 1;
+        outer += if options.typed_recursion() {
+            super::typed::proof_count(leaves)
+        } else {
+            2 * leaves - 1
+        };
     }
     Ok(
         serde_json::json!({"scope":"descriptor-planning","input_sha3":digest,"source_sha3":hex(&crate::graph_proofs::compiled_source_fingerprint()),
@@ -260,27 +293,22 @@ fn branches(
         };
         match leaf.kind() {
             LeafKind::Operations(OperationFamily::ExpandAlpha) => {
-                let u = &roots[request_index(case, op, 0)?];
-                let s = &roots[request_index(case, op, 1)?];
+                let u = aes(&roots[request_index(case, op, 0)?])?;
+                let s = aes(&roots[request_index(case, op, 1)?])?;
                 let uniform = load(op, Role::AlphaUniform)?;
                 let sparse = load(op, Role::AlphaSparse)?;
                 prove(
                     op,
                     0,
                     factory
-                        .compile_alpha_uniform(
-                            op,
-                            &u.key,
-                            &u.proof,
-                            uniform.uniform().map_err(error)?,
-                        )
+                        .compile_alpha_uniform_request(op, u, uniform.uniform().map_err(error)?)
                         .map_err(error)?,
                 )?;
                 prove(
                     op,
                     1,
                     factory
-                        .compile_alpha_sparse(op, &s.key, &s.proof, sparse.sparse().map_err(error)?)
+                        .compile_alpha_sparse_request(op, s, sparse.sparse().map_err(error)?)
                         .map_err(error)?,
                 )?;
             }
@@ -291,10 +319,9 @@ fn branches(
                     op,
                     2,
                     factory
-                        .compile_hash_x(
+                        .compile_hash_x_request(
                             op,
-                            &root.key,
-                            &root.proof,
+                            sha(root),
                             transcript.transcript().map_err(error)?,
                         )
                         .map_err(error)?,
@@ -315,7 +342,7 @@ fn prove_graph(
     options: &Options,
     width: usize,
     deadline: &Deadline,
-) -> Result<(graph_tree::ProvenNode, Vec<serde_json::Value>)> {
+) -> Result<(GraphRoot, Vec<serde_json::Value>)> {
     let sources = graph_sources::SourceFactory::new(
         &case.tree,
         &case.graph,
@@ -330,6 +357,45 @@ fn prove_graph(
             .map_err(error)?;
     let algebra = case.algebra()?;
     execution.release_prepared()?;
+    if options.typed_recursion() {
+        let groups = super::typed_graph::groups(0, case.tree.leaves().len(), width)?;
+        let mut cache =
+            lattica_prover_p3::block_v2::machine::recursion::GpuRecursionCache::default();
+        let (node, report) = super::typed_graph::prove(
+            &groups,
+            &case.tree,
+            &case.context,
+            options,
+            deadline,
+            &mut cache,
+            |first, count| {
+                let loaded = (first..first + count)
+                    .map(|i| load_leaf(case, i, caches, &sources, &auxiliary, &algebra))
+                    .collect::<Result<Vec<_>>>()?;
+                let artifacts = loaded
+                    .iter()
+                    .map(|leaf| leaf.artifact(roots, branches))
+                    .collect::<Result<Vec<_>>>()?;
+                graph_tree::compile_group_bounded(
+                    &case.tree,
+                    &case.graph,
+                    first,
+                    &case.context,
+                    artifacts,
+                    construction(),
+                )
+                .map_err(error)
+            },
+        )?;
+        node.verify_complete(&case.context).map_err(error)?;
+        return Ok((
+            GraphRoot::Typed(node),
+            report["measurements"]
+                .as_array()
+                .ok_or("typed graph telemetry")?
+                .clone(),
+        ));
+    }
     let groups = if width == 1 {
         (0..case.tree.leaves().len())
             .map(|i| (i, 1))
@@ -367,7 +433,9 @@ fn prove_graph(
             &facts,
             &selection::graph_costs(options, width)?,
             options.max_rows(),
-            if options.profile == "grouped-v4" { 4 } else if options.profile == "grouped-v3" {
+            if matches!(options.profile.as_str(), "grouped-v4" | "grouped-v5") {
+                4
+            } else if options.profile == "grouped-v3" {
                 2
             } else {
                 1
@@ -383,7 +451,9 @@ fn prove_graph(
         execution,
     )
     .map_err(error)?;
-    let preflight = (options.profile == "grouped-v4").then(|| execution.aggregation_backend_limits()).transpose()?;
+    let preflight = (matches!(options.profile.as_str(), "grouped-v4" | "grouped-v5"))
+        .then(|| execution.aggregation_backend_limits())
+        .transpose()?;
     let prepare_group = |first: usize, count: usize| {
         deadline.check()?;
         let start = Instant::now();
@@ -407,15 +477,23 @@ fn prove_graph(
         let geometry = compiled.geometry().map_err(error)?;
         ensure(
             geometry.padded_rows <= options.max_rows()
-                && compiled.program().construction_host_bytes() <= 2 << 30,
+                && compiled.program().construction_host_bytes() <= policy::current().program_bytes,
             "graph grouping exceeds admitted height/compiler ceiling",
         )?;
-        if let Some(limits) = preflight { compiled.preflight_imported(limits)?; }
+        if let Some(limits) = preflight {
+            compiled.preflight_imported(limits)?;
+        }
         Ok((first, end - first, compiled, start.elapsed().as_nanos()))
     };
-    let groups = if options.profile == "grouped-v4" && groups.iter().any(|g| g.1 > 4) {
-        layout::admit_groups(&groups, |first, count| prepare_group(first, count).map(|_| ()))?
-    } else { groups };
+    let groups = if matches!(options.profile.as_str(), "grouped-v4" | "grouped-v5")
+        && groups.iter().any(|g| g.1 > 4)
+    {
+        layout::admit_groups(&groups, |first, count| {
+            prepare_group(first, count).map(|_| ())
+        })?
+    } else {
+        groups
+    };
     let count = groups.len();
     let prepare = |index: usize| prepare_group(groups[index].0, groups[index].1);
     if execution.consuming_aggregation() {
@@ -430,7 +508,7 @@ fn prove_graph(
         root.verify_complete(&case.context).map_err(error)?;
         let mut rows = rows.into_inner().map_err(|_| "graph telemetry poisoned")?;
         rows.sort_by_key(|row| row["first"].as_u64());
-        return Ok((root, rows));
+        return Ok((GraphRoot::Machine(root), rows));
     }
     let mut nodes = Vec::new();
     let mut rows = Vec::new();
@@ -463,7 +541,7 @@ fn prove_graph(
         )
         .map_err(error)?;
     root.verify_complete(&case.context).map_err(error)?;
-    Ok((root, rows))
+    Ok((GraphRoot::Machine(root), rows))
 }
 pub(crate) fn run(options: &Options, deadline: &Deadline) -> Result<serde_json::Value> {
     bundle::validate(options, true)?;
@@ -486,10 +564,7 @@ pub(crate) fn run(options: &Options, deadline: &Deadline) -> Result<serde_json::
             case.plan
                 .requests()
                 .iter()
-                .map(|request| {
-                    graph_crypto::imported_group_spans(request, shake_width, options.max_rows())
-                        .map_err(error)
-                })
+                .map(|request| request_spans(request, shake_width, options))
                 .collect::<Result<Vec<_>>>()
         })
         .collect::<Result<Vec<_>>>()?;
@@ -502,6 +577,12 @@ pub(crate) fn run(options: &Options, deadline: &Deadline) -> Result<serde_json::
         let mut graphs = Vec::new();
         let mut reports = Vec::new();
         let mut recursive_proofs = 0;
+        let (mut typed_roots, typed_report) = if options.typed_recursion() {
+            let (roots, report) = super::typed::prove_all(&cases, &caches, options, deadline)?;
+            (roots, Some(report))
+        } else {
+            (BTreeMap::new(), None)
+        };
         for (index, case) in cases.iter().enumerate() {
             let requests = graph_crypto::RequestProver::new_with_context(
                 &caches.crypto,
@@ -511,8 +592,20 @@ pub(crate) fn run(options: &Options, deadline: &Deadline) -> Result<serde_json::
             )
             .map_err(error)?;
             let mut roots = Vec::new();
-            for (request, spans) in case.plan.requests().iter().zip(&layouts[index]) {
+            for (request_index, (request, spans)) in
+                case.plan.requests().iter().zip(&layouts[index]).enumerate()
+            {
                 deadline.check()?;
+                if options.typed_recursion() {
+                    let root = typed_roots
+                        .remove(&(index, request_index))
+                        .ok_or("missing typed request root")?;
+                    recursive_proofs += root.leaves + root.parents;
+                    reports.push(serde_json::json!({"transaction":index,"request":request_index,"family":"crypto",
+                        "backend":"typed","outer_leaves":root.leaves,"outer_parents":root.parents}));
+                    roots.push(RequestRoot::Typed(root));
+                    continue;
+                }
                 let start = Instant::now();
                 let proof = requests
                     .prove_imported(
@@ -526,7 +619,7 @@ pub(crate) fn run(options: &Options, deadline: &Deadline) -> Result<serde_json::
                     .map_err(error)?;
                 recursive_proofs += proof.report.outer_leaves + proof.report.outer_parents;
                 reports.push(serde_json::json!({"transaction":index,"family":"crypto","seconds":start.elapsed().as_secs_f64(),"native_imports":proof.report.native_cache_hits,"outer_leaves":proof.report.outer_leaves,"outer_parents":proof.report.outer_parents}));
-                roots.push(proof);
+                roots.push(RequestRoot::Machine(proof));
             }
             let branch_roots = branches(case, &roots, &caches, &execution, &outer, deadline)?;
             recursive_proofs += branch_roots.len();
@@ -541,7 +634,11 @@ pub(crate) fn run(options: &Options, deadline: &Deadline) -> Result<serde_json::
                 graph_width,
                 deadline,
             )?;
-            recursive_proofs += 2 * rows.len() - 1;
+            recursive_proofs += if options.typed_recursion() {
+                rows.len()
+            } else {
+                2 * rows.len() - 1
+            };
             reports.push(serde_json::json!({"transaction":index,"family":"graph","leaves":rows}));
             graphs.push(root);
         }
@@ -568,9 +665,14 @@ pub(crate) fn run(options: &Options, deadline: &Deadline) -> Result<serde_json::
             .zip(&cases)
             .enumerate()
             .map(|(i, (node, case))| {
-                plan.graph_child(i as u32, node.key(), node.proof(), &case.context)
-                    .map(Into::into)
-                    .map_err(error)
+                match node {
+                    GraphRoot::Machine(node) => {
+                        plan.graph_child(i as u32, node.key(), node.proof(), &case.context)
+                    }
+                    GraphRoot::Typed(node) => plan.typed_graph_child(i as u32, node, &case.context),
+                }
+                .map(Into::into)
+                .map_err(error)
             })
             .collect::<Result<Vec<_>>>()?;
         let (root, final_rows) =
@@ -643,13 +745,15 @@ pub(crate) fn run(options: &Options, deadline: &Deadline) -> Result<serde_json::
         Ok(
             serde_json::json!({"scope":"aggregation-from-native-components","complete":true,"input_sha3":input_sha3,
 "source_sha3":hex(&crate::graph_proofs::compiled_source_fingerprint()),"selection_sha3":selection_sha3,"native_proofs_created":0,"native_components_verified":native_count,
-            "recursive_proofs":recursive_proofs,"import_and_planning_seconds":import_seconds,"stages":reports,"final":final_rows,
+"recursive_proofs":recursive_proofs,"import_and_planning_seconds":import_seconds,"stages":reports,"final":final_rows,
+"recursion_backend":options.recursion_backend,"typed_requests":typed_report,
             "final_cpu_verified":true,"artifact_round_trip":true,"public_mutation_rejected":true,"final_verification_seconds":final_verification_seconds,
             "artifact_sha3":artifact_sha3,"proof_mutation_rejected":true,"order_mutation_rejected":true,"identity":execution.aggregation_identity_report()?}),
         )
     })();
     let cleanup = match &outcome {
-        Ok(_) => execution.finish(),
+        Ok(_) if options.command != "preflight-groups" => execution.finish(),
+        Ok(_) => execution.close_without_completion(),
         Err(_) => execution.close_without_completion(),
     }?;
     let mut report = outcome?;
@@ -679,6 +783,9 @@ pub(crate) fn run(options: &Options, deadline: &Deadline) -> Result<serde_json::
     Ok(report)
 }
 pub(crate) fn screen(options: &Options, deadline: &Deadline) -> Result<serde_json::Value> {
+    if options.native_source == "revalidate-archive" {
+        return super::architecture::archive_request(options, deadline);
+    }
     bundle::validate(options, false)?;
     let (cases, input_sha3) = inputs::load(options)?;
     let case = &cases[0];
@@ -717,10 +824,33 @@ pub(crate) fn screen(options: &Options, deadline: &Deadline) -> Result<serde_jso
         )
         .map_err(error)?;
         let admitted;
-        let spans = if options.profile == "grouped-v4" && options.group_width > 4 {
-            admitted = prover.admitted_imported_spans(request, &case.context, &spans, deadline).map_err(error)?;
+        let spans = if matches!(options.profile.as_str(), "grouped-v4" | "grouped-v5")
+            && options.group_width > 4
+        {
+            admitted = prover
+                .admitted_imported_spans(request, &case.context, &spans, deadline)
+                .map_err(error)?;
             &admitted
-        } else { &spans };
+        } else {
+            &spans
+        };
+        if options.command == "preflight-groups" {
+            let checked = if options.group_width > 4 {
+                spans.to_vec()
+            } else {
+                prover
+                    .admitted_imported_spans(request, &case.context, &spans, deadline)
+                    .map_err(error)?
+            };
+            let architecture = prover
+                .inspect_imported_architecture(request, &case.context, &checked, deadline)
+                .map_err(error)?;
+            return Ok(
+                serde_json::json!({"scope":"shake-group-preflight","proofs_generated":0,
+                "admitted_maximum_group":checked.iter().map(|s|s.segment_count).max().unwrap_or(1),
+                "source_and_backend_checked":true,"architecture":architecture}),
+            );
+        }
         let mut samples = Vec::new();
         let mut recursive_proofs = 0;
         for repetition in 0..options.repetitions {
@@ -750,7 +880,8 @@ pub(crate) fn screen(options: &Options, deadline: &Deadline) -> Result<serde_jso
         )
     })();
     let cleanup = match &outcome {
-        Ok(_) => execution.finish(),
+        Ok(_) if options.command != "preflight-groups" => execution.finish(),
+        Ok(_) => execution.close_without_completion(),
         Err(_) => execution.close_without_completion(),
     }?;
     let mut report = outcome?;

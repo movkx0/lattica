@@ -18,14 +18,26 @@ pub(crate) fn tree_programs<T: Send, N: Send + Sync>(
     let authority = execution.aggregation_cpu_authority();
     let prepare = |value: T| {
         let program = program(&value);
+        let timing = super::telemetry::Span::start("identity");
         let prefix = authority.prepare_cpu_only(&program, 512 << 20)?;
+        drop(timing);
         Ok((value, program, prefix))
     };
     ready::tree(
         &pool,
         leaves,
-        |i| prepare(prepare_leaf(i)?),
-        |left, right| prepare(prepare_parent(left, right)?),
+        |i| {
+            let timing = super::telemetry::Span::start("compile");
+            let value = prepare_leaf(i)?;
+            drop(timing);
+            prepare(value)
+        },
+        |left, right| {
+            let timing = super::telemetry::Span::start("compile");
+            let value = prepare_parent(left, right)?;
+            drop(timing);
+            prepare(value)
+        },
         |(value, program, (prefix, report))| {
             execution.install_aggregation_cpu_prefixes(vec![(program, prefix, report)])?;
             consume(value)
@@ -48,7 +60,11 @@ pub(crate) fn programs<T: Send>(
     ordered_batches(
         count,
         parallel,
-        if gpu_identity { 4 } else { 1 },
+        if gpu_identity {
+            super::policy::current().live_jobs
+        } else {
+            1
+        },
         |index| {
             let value = prepare(index)?;
             let program = program(&value);
@@ -145,7 +161,8 @@ pub(crate) fn ordered_batches<T: Send>(
     prepare: impl Fn(usize) -> Result<T> + Sync,
     mut consume: impl FnMut(Vec<(usize, T)>) -> Result<()>,
 ) -> Result<()> {
-    if !(1..=4).contains(&width) {
+    let live_jobs = super::policy::current().live_jobs;
+    if !(1..=live_jobs).contains(&width) {
         return Err("preparation cohort exceeds ready window".into());
     }
     if !parallel {
@@ -159,13 +176,13 @@ pub(crate) fn ordered_batches<T: Send>(
         return Ok(());
     }
     let window = Window {
-        available: Mutex::new(4),
+        available: Mutex::new(live_jobs),
         ready: Condvar::new(),
         canceled: AtomicBool::new(false),
     };
     let next = AtomicUsize::new(0);
     std::thread::scope(|scope| {
-        let (sender, receiver) = std::sync::mpsc::sync_channel(4);
+        let (sender, receiver) = std::sync::mpsc::sync_channel(live_jobs);
         let _cancel = Cancel(&window);
         let mut workers = Vec::new();
         for _ in 0..2 {

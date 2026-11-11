@@ -46,7 +46,7 @@ pub(super) fn partition_bounded(
                     .checked_add(fact.program_bytes)
                     .ok_or("graph program sum overflow")?;
             }
-            if rows > max_rows || bytes > 2 << 30 {
+            if rows > max_rows || bytes > policy::current().program_bytes {
                 continue;
             }
             let cost = rest + unit_cost * width as f64;
@@ -72,12 +72,16 @@ pub(super) fn partition_bounded(
 /// Compile/check every contraction before the first proof; a refusal can only
 /// split its original contiguous range. No proof is retried after dispatch.
 pub(crate) fn admit_groups(
-    groups: &[(usize, usize)], mut check: impl FnMut(usize, usize) -> Result<()>,
+    groups: &[(usize, usize)],
+    mut check: impl FnMut(usize, usize) -> Result<()>,
 ) -> Result<Vec<(usize, usize)>> {
     let mut pending: std::collections::VecDeque<_> = groups.iter().copied().collect();
     let mut accepted = Vec::new();
     while let Some((first, count)) = pending.pop_front() {
-        ensure((1..=8).contains(&count) && first.checked_add(count).is_some(), "preflight group geometry")?;
+        ensure(
+            (1..=8).contains(&count) && first.checked_add(count).is_some(),
+            "preflight group geometry",
+        )?;
         match check(first, count) {
             Ok(()) => accepted.push((first, count)),
             Err(reason) if count > 1 => {
@@ -99,12 +103,20 @@ mod tests {
         let mut attempts = Vec::new();
         let groups = super::admit_groups(&[(0, 8), (8, 3)], |first, count| {
             attempts.push((first, count));
-            if count > 2 { Err("phase allowance".into()) } else { Ok(()) }
-        }).unwrap();
-        assert_eq!(groups, vec![(0,2),(2,2),(4,2),(6,2),(8,2),(10,1)]);
-        assert_eq!(attempts[0],(0,8));
-        assert!(super::admit_groups(&[(0,4)], |_,_| Err("invalid singleton".into())).is_err());
-        assert!(super::admit_groups(&[(usize::MAX,2)], |_,_| Ok(())).is_err());
+            if count > 2 {
+                Err("phase allowance".into())
+            } else {
+                Ok(())
+            }
+        })
+        .unwrap();
+        assert_eq!(
+            groups,
+            vec![(0, 2), (2, 2), (4, 2), (6, 2), (8, 2), (10, 1)]
+        );
+        assert_eq!(attempts[0], (0, 8));
+        assert!(super::admit_groups(&[(0, 4)], |_, _| Err("invalid singleton".into())).is_err());
+        assert!(super::admit_groups(&[(usize::MAX, 2)], |_, _| Ok(())).is_err());
     }
 
     use super::*;

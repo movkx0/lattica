@@ -37,6 +37,16 @@ pub const EXT_LANES: usize = LANES / 3;
 pub const MAX_PUBLIC_VALUES: usize = 64;
 pub const MAX_WIRES: usize = 1 << 26;
 
+/// The first refused construction request; later cleanup must not replace it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ConstructionFailure {
+    pub resource: &'static str,
+    pub requested: usize,
+    pub limit: usize,
+    pub live_bytes: usize,
+    pub peak_bytes: usize,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Wire(pub(crate) usize);
 
@@ -51,6 +61,7 @@ pub struct ConstructionCounters {
     pub input_limit: usize,
     pub requested_bytes_peak: usize,
     pub resource_failed: bool,
+    pub first_failure: Option<ConstructionFailure>,
 }
 
 /// Explicit limits for host compilation of public verifier metadata.
@@ -483,7 +494,11 @@ impl<'a> ScopedProgramBuilder<'a> {
     }
     fn allocate(&mut self) -> Wire {
         if self.memory.failed || self.wires >= self.memory.wire_limit {
-            self.memory.reject();
+            self.memory.reject_resource(
+                "wires",
+                self.wires.saturating_add(1),
+                self.memory.wire_limit,
+            );
             return Wire(0);
         }
         let w = Wire(self.wires);
@@ -509,7 +524,11 @@ impl<'a> ScopedProgramBuilder<'a> {
     }
     pub fn input(&mut self) -> Wire {
         if self.memory.failed || self.witnesses >= self.memory.input_limit {
-            self.memory.reject();
+            self.memory.reject_resource(
+                "input-values",
+                self.witnesses.saturating_add(1),
+                self.memory.input_limit,
+            );
             return Wire(0);
         }
         let out = self.allocate();
@@ -549,6 +568,7 @@ impl<'a> ScopedProgramBuilder<'a> {
             input_limit: self.memory.input_limit,
             requested_bytes_peak: self.memory.peak,
             resource_failed: self.memory.failed,
+            first_failure: self.memory.first_failure,
         }
     }
 

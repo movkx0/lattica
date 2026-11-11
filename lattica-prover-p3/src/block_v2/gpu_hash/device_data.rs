@@ -85,10 +85,10 @@ impl CandidateMmcs {
     ) -> Result<(<Self as Mmcs<Val>>::Commitment, ProverData<RowMajorMatrix<Val>>), String> {
         let cap = <Self as Mmcs<Val>>::Commitment::new(output.cap().to_vec());
         let owned = (!output.device_matrices.is_empty()).then(|| {
-            OwnedInputs::new(
+            OwnedInputs::new_with_heights(
                 output.device_matrices,
                 preprocessing,
-                output.plan.output_height(),
+                &output.plan.output_heights(),
             )
         });
         let data = match output.plan.retention {

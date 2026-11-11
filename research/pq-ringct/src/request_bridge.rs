@@ -26,12 +26,18 @@ pub struct TreeArtifacts<'a> {
 pub enum AesRequest<'a> {
     Direct(AesArtifacts<'a>),
     Tree(TreeArtifacts<'a>),
+    #[cfg(feature = "gpu-aggregation-experiment")]
+    TypedTree { node: &'a crate::component_tree::recursion::ProvenNode,
+        context: &'a ContextWires, index: u32 },
     #[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
     BoundedTree(BoundedTreeArtifacts<'a>),
 }
 pub enum ShakeRequest<'a> {
     Direct(ShakeArtifacts<'a>),
     Tree(TreeArtifacts<'a>),
+    #[cfg(feature = "gpu-aggregation-experiment")]
+    TypedTree { node: &'a crate::component_tree::recursion::ProvenNode,
+        context: &'a ContextWires, index: u32 },
     #[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
     BoundedTree(BoundedTreeArtifacts<'a>),
 }
@@ -153,6 +159,17 @@ pub(crate) fn verify_aes_request(
             };
             a.verify(b, inputs, shape, input, output)
         }
+        #[cfg(feature = "gpu-aggregation-experiment")]
+        AesRequest::TypedTree { node, context, index } => {
+            let shape = CryptoShape::Aes { index, domain: descriptor.domain,
+                start_counter: descriptor.start_counter, output_len: descriptor.output_len };
+            require_shape(&node.manifest_shape().map_err(|e| Error::Tree(e.to_string()))?, &shape)?;
+            let roots = node.compile_manifest_record(b, inputs, context).map_err(|e| Error::Tree(e.to_string()))?;
+            for (actual, expected) in roots.iter().zip([input, output]) {
+                for i in 0..4 { b.assert_equal(actual[i], expected[i]); }
+            }
+            Ok(())
+        }
         #[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
         AesRequest::BoundedTree(a) => {
             let shape = CryptoShape::Aes { index: a.tree.index, domain: descriptor.domain,
@@ -186,6 +203,16 @@ pub(crate) fn verify_shake_request(
                 output_len: descriptor.output_len,
             };
             a.verify(b, inputs, shape, input, output)
+        }
+        #[cfg(feature = "gpu-aggregation-experiment")]
+        ShakeRequest::TypedTree { node, context, index } => {
+            let shape = CryptoShape::Shake { index, input_len: descriptor.input_len, output_len: descriptor.output_len };
+            require_shape(&node.manifest_shape().map_err(|e| Error::Tree(e.to_string()))?, &shape)?;
+            let roots = node.compile_manifest_record(b, inputs, context).map_err(|e| Error::Tree(e.to_string()))?;
+            for (actual, expected) in roots.iter().zip([input, output]) {
+                for i in 0..4 { b.assert_equal(actual[i], expected[i]); }
+            }
+            Ok(())
         }
         #[cfg(all(feature = "full-workflow-experiment", not(debug_assertions), target_os = "linux", target_arch = "x86_64"))]
         ShakeRequest::BoundedTree(a) => {

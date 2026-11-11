@@ -324,6 +324,15 @@ pub(crate) fn prepare_machine(
     air: &super::MachineAir,
     constants: Constants<'_>,
 ) -> Result<Prepared, CompileError> {
+    prepare_air(air, constants)
+}
+
+pub(crate) fn prepare_air<
+    A: BaseAir<Val> + Air<Builder> + Air<p3_lookup::InteractionSymbolicBuilder<Val, Challenge>>,
+>(
+    air: &A,
+    constants: Constants<'_>,
+) -> Result<Prepared, CompileError> {
     match constants {
         Constants::Cpu(run) => Constants::cpu_work(run, || {
             let layout = AirLayout::from_air::<Val>(air);
@@ -456,7 +465,8 @@ pub mod ringct_aes;
     feature = "stream",
     feature = "ringct-research-quota"
 ))]
-mod ringct_recording_host;
+#[doc(hidden)]
+pub mod ringct_graph_source;
 #[cfg(all(
     not(debug_assertions),
     target_os = "linux",
@@ -465,8 +475,7 @@ mod ringct_recording_host;
     feature = "stream",
     feature = "ringct-research-quota"
 ))]
-#[doc(hidden)]
-pub mod ringct_graph_source;
+mod ringct_recording_host;
 #[cfg(all(
     not(debug_assertions),
     target_os = "linux",

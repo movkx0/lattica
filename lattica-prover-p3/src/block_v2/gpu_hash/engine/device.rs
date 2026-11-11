@@ -274,6 +274,16 @@ pub struct DeviceMatrix {
     spec: MatrixSpec,
 }
 impl DeviceMatrix {
+    /// Count only storage that consuming this handle will actually release.
+    /// Aliases, including random-buffer scrub owners, receive no credit.
+    pub(crate) fn exclusive_bytes(&self) -> usize {
+        if Arc::strong_count(&self.storage) == 1 && self.private_random.is_none() {
+            self.spec.bytes()
+        } else {
+            0
+        }
+    }
+
     pub fn spec(&self) -> MatrixSpec {
         self.spec
     }

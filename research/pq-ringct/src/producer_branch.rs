@@ -4,7 +4,7 @@
 use crate::{
     component_tree, graph_tree,
     obligation_manifest::ContextWires,
-    request_bridge::{self, AesRequest, ShakeRequest, TreeArtifacts},
+    request_bridge,
     rust_verify::{
         committed_backend::{
             Operation, PolynomialKind, Source, TranscriptPart, UnprovedRelationGraph,
@@ -356,6 +356,14 @@ impl<'a> Factory<'a> {
         aes_proof: &component_tree::NodeProof,
         sampler: &UniformArtifact,
     ) -> Result<CompiledNode> {
+        self.compile_alpha_uniform_request(operation, crate::graph_tree::AesProof::Tree {
+            key: aes_key, proof: aes_proof,
+        }, sampler)
+    }
+    pub(crate) fn compile_alpha_uniform_request(
+        &self, operation: usize, aes: crate::graph_tree::AesProof<'_>,
+        sampler: &UniformArtifact,
+    ) -> Result<CompiledNode> {
         let descriptor = Descriptor::AlphaUniform;
         let roots = self.alpha_roots(operation, &descriptor)?;
         let spec = self.spec(operation, descriptor)?;
@@ -363,8 +371,7 @@ impl<'a> Factory<'a> {
             spec,
             &self.context,
             roots,
-            aes_key,
-            aes_proof,
+            aes,
             &sampler.public_values,
             &sampler.proof,
         )
@@ -376,6 +383,14 @@ impl<'a> Factory<'a> {
         aes_proof: &component_tree::NodeProof,
         sampler: &SparseArtifact,
     ) -> Result<CompiledNode> {
+        self.compile_alpha_sparse_request(operation, crate::graph_tree::AesProof::Tree {
+            key: aes_key, proof: aes_proof,
+        }, sampler)
+    }
+    pub(crate) fn compile_alpha_sparse_request(
+        &self, operation: usize, aes: crate::graph_tree::AesProof<'_>,
+        sampler: &SparseArtifact,
+    ) -> Result<CompiledNode> {
         let descriptor = Descriptor::AlphaSparse;
         let roots = self.alpha_roots(operation, &descriptor)?;
         let spec = self.spec(operation, descriptor)?;
@@ -383,8 +398,7 @@ impl<'a> Factory<'a> {
             spec,
             &self.context,
             roots,
-            aes_key,
-            aes_proof,
+            aes,
             &sampler.public_values,
             &sampler.proof,
         )
@@ -394,6 +408,14 @@ impl<'a> Factory<'a> {
         operation: usize,
         shake_key: &component_tree::NodeKey,
         shake_proof: &component_tree::NodeProof,
+        transcript: &TranscriptArtifact,
+    ) -> Result<CompiledNode> {
+        self.compile_hash_x_request(operation, crate::graph_tree::ShakeProof::Tree {
+            key: shake_key, proof: shake_proof,
+        }, transcript)
+    }
+    pub(crate) fn compile_hash_x_request(
+        &self, operation: usize, shake: crate::graph_tree::ShakeProof<'_>,
         transcript: &TranscriptArtifact,
     ) -> Result<CompiledNode> {
         let Some(Operation::HashX { parts, .. }) = self.graph.operations().get(operation) else {
@@ -420,8 +442,7 @@ impl<'a> Factory<'a> {
         }
         let air = TranscriptAir::new(kinds.clone()).map_err(err)?;
         let input = self.transcript_bundle(&air, &roots)?;
-        let output = shake_proof
-            .public
+        let output = shake.tree_public().ok_or_else(|| Error("SHAKE producer requires recursive request".into()))?
             .get(component_tree::EXPECTED_OUTPUT..component_tree::EXPECTED_OUTPUT + 4)
             .ok_or_else(|| Error("SHAKE producer public width".into()))?
             .try_into()
@@ -456,12 +477,7 @@ impl<'a> Factory<'a> {
             },
             &child[4..8].try_into().map_err(err)?,
             &wires[OUTPUT..].try_into().map_err(err)?,
-            ShakeRequest::Tree(TreeArtifacts {
-                key: shake_key,
-                proof: shake_proof,
-                context: &context,
-                index: spec.request_index()?,
-            }),
+            shake.request(&context, spec.request_index()?),
         )
         .map_err(err)?;
         Ok(CompiledNode {
@@ -489,8 +505,7 @@ fn compile_alpha(
     spec: Spec,
     context: &graph_tree::GraphContext,
     roots: [[Val; 4]; 2],
-    aes_key: &component_tree::NodeKey,
-    aes_proof: &component_tree::NodeProof,
+    aes: crate::graph_tree::AesProof<'_>,
     sampler_public: &[Val; 8],
     sampler_proof: &p3_uni_stark::Proof<Config>,
 ) -> Result<CompiledNode> {
@@ -536,12 +551,7 @@ fn compile_alpha(
         spec.descriptor.aes()?,
         &wires[INPUT..OUTPUT].try_into().map_err(err)?,
         &child[..4].try_into().map_err(err)?,
-        AesRequest::Tree(TreeArtifacts {
-            key: aes_key,
-            proof: aes_proof,
-            context: &context,
-            index: spec.request_index()?,
-        }),
+        aes.request(&context, spec.request_index()?),
     )
     .map_err(err)?;
     Ok(CompiledNode {

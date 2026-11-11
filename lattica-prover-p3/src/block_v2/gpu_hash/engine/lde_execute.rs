@@ -17,9 +17,10 @@ use p3_matrix::dense::RowMajorMatrix;
 use rayon::prelude::*;
 use std::time::Instant;
 
-mod report;
+mod mixed;
 #[cfg(all(target_os = "linux", target_arch = "x86_64", feature = "gpu"))]
 pub(crate) mod note_storage;
+mod report;
 
 pub(super) const KERNEL_SRC: &str = r#"
 // Absorb an uninterrupted column stream. A tile or matrix boundary is NOT a
@@ -53,6 +54,24 @@ __kernel void lde_leaf_finalize(__global const ulong *states, __global ulong *le
 }
 // IDFT already multiplied coefficient i by (generator / domain_shift)^i.
 // This applies the same balanced hiding polynomial as CPU fused_ldes.
+__kernel void lde_leaf_finalize_at(__global const ulong *states, __global ulong *tree,
+    uint offset, uint height, uint rate_offset, uint inject,
+    __global const ulong *rci, __global const ulong *rcp,
+    __global const ulong *rcf, __global const ulong *diag) {
+    size_t row = get_global_id(0);
+    if (row >= height) return;
+    ulong s[8];
+    for (uint k = 0; k < 8; ++k) s[k] = states[row * 8 + k];
+    if (rate_offset != 0) perm8(s, rci, rcp, rcf, diag);
+    size_t base = (size_t)offset + row * 4;
+    if (inject) {
+        ulong combined[8];
+        for (uint k = 0; k < 4; ++k) { combined[k] = tree[base + k]; combined[k + 4] = s[k]; }
+        perm8(combined, rci, rcp, rcf, diag);
+        for (uint k = 0; k < 4; ++k) s[k] = combined[k];
+    }
+    for (uint k = 0; k < 4; ++k) tree[base + k] = gl_canon(s[k]);
+}
 __kernel void quotient_mask(__global ulong *coefficients, __global const ulong *masks,
     uint height, uint width, ulong generator, ulong ratio_h) {
     size_t index = get_global_id(0);
@@ -77,6 +96,12 @@ pub struct LdeInput<'a> {
 #[derive(Clone, Copy)]
 enum CommitSource<'a> {
     Trace(&'a super::device::TraceCommitInput),
+    ConsumedTrace(&'a std::cell::RefCell<Option<super::device::TraceCommitInput>>),
+    ConsumedQuotient {
+        cell: &'a std::cell::RefCell<Option<super::device::QuotientCommitInput>>,
+        chunk: usize,
+        last: bool,
+    },
     Evaluations(&'a super::device::EvaluationInput),
     Host {
         evaluations: &'a RowMajorMatrix<Val>,
@@ -397,12 +422,30 @@ impl Engine {
     ) -> Result<bool, String> {
         #[cfg(feature = "gpu-metal")]
         let tile_log2 = self.pq.ntt_tile_log2();
-        #[cfg(feature = "gpu")]
-        let tile_log2 = 12;
         let log_h = height.trailing_zeros() as usize;
         #[cfg(feature = "gpu")]
         let max_column_bits =
             crate::gpu::ntt_cache::max_column_bits(self.pq.device(), log_h, width);
+        #[cfg(feature = "gpu")]
+        let schedule = if self.nvidia_shuffle && self.tuning.ntt_schedule.admitted(height, width) {
+            self.tuning.ntt_schedule
+        } else {
+            super::tuning::Ntt::Baseline
+        };
+        #[cfg(feature = "gpu")]
+        let (max_column_bits, tile_log2) = schedule.geometry(max_column_bits);
+        #[cfg(feature = "gpu")]
+        let local_limit = match self
+            .pq
+            .device()
+            .info(ocl::core::DeviceInfo::LocalMemSize)
+            .map_err(|e| e.to_string())?
+        {
+            ocl::core::DeviceInfoResult::LocalMemSize(bytes) => {
+                usize::try_from(bytes).map_err(|_| "local memory overflow")?
+            }
+            _ => return Err("missing local memory limit".into()),
+        };
         #[cfg(feature = "gpu-metal")]
         let max_column_bits = 4;
         let groups = ntt_groups(height, width, max_column_bits, tile_log2)?;
@@ -455,16 +498,27 @@ impl Engine {
             let workgroups = (height >> count) * width.div_ceil(1 << log_c);
             let mut event = Event::empty();
             #[cfg(feature = "gpu")]
-            let power_words = crate::gpu::ntt_cache::power_words(
+            let storage = schedule.storage(
                 count,
                 log_c,
                 last && (post_c != 1 || post_b != 1),
+                local_limit,
             );
+            #[cfg(feature = "gpu")]
+            let power_words = storage.map(|s| s.1);
+            #[cfg(feature = "gpu")]
+            let tile_elements = storage.map_or(local_elements, |s| s.0);
+            #[cfg(feature = "gpu-metal")]
+            let tile_elements = local_elements;
             #[cfg(feature = "gpu-metal")]
             let power_words: Option<usize> = None;
             #[cfg(feature = "gpu")]
             let kernel_name = if power_words.is_some() {
-                if self.nvidia_shuffle && self.tuning.ntt_powers(height, width) {
+                if schedule == super::tuning::Ntt::Padded {
+                    "ntt_tile_cached_padded"
+                } else if schedule != super::tuning::Ntt::Baseline
+                    || (self.nvidia_shuffle && self.tuning.ntt_powers(height, width))
+                {
                     "ntt_tile_cached_tuned"
                 } else {
                     "ntt_tile_cached"
@@ -519,7 +573,7 @@ impl Engine {
                     builder
                 };
                 let builder = builder
-                    .arg_local::<u64>(local_elements)
+                    .arg_local::<u64>(tile_elements)
                     .global_work_size(workgroups * workgroup)
                     .local_work_size(workgroup);
                 #[cfg(feature = "gpu")]
@@ -527,6 +581,28 @@ impl Engine {
                     builder.arg_local::<u64>(words);
                 }
                 let kernel = builder.build().map_err(|e| e.to_string())?;
+                #[cfg(feature = "gpu")]
+                if schedule != super::tuning::Ntt::Baseline {
+                    use ocl::core::{KernelWorkGroupInfo as I, KernelWorkGroupInfoResult as R};
+                    let info = |kind| {
+                        kernel
+                            .wg_info(self.pq.device(), kind)
+                            .map_err(|e| e.to_string())
+                    };
+                    let R::LocalMemSize(local) = info(I::LocalMemSize)? else {
+                        return Err("missing kernel local bound".into());
+                    };
+                    let R::WorkGroupSize(maximum) = info(I::WorkGroupSize)? else {
+                        return Err("missing kernel group bound".into());
+                    };
+                    if local > local_limit as u64 || workgroup > maximum {
+                        return Err("NTT kernel resource admission".into());
+                    }
+                    if std::env::var("LATTICA_V2_GPU_AGGREGATION_DIAGNOSTICS").as_deref() == Ok("1")
+                    {
+                        eprintln!("gpu_aggregation_ntt rows={height} width={width} stage={stage} count={count} columns={} kernel={kernel_name} local_bytes={local} private={:?}", 1 << log_c, info(I::PrivateMemSize)?);
+                    }
+                }
                 let command = kernel.cmd().enew(&mut event);
                 #[cfg(test)]
                 let command = if let Some(gate) = self.lde_gate.as_ref() {
@@ -771,9 +847,12 @@ impl Engine {
         let started = Instant::now();
         let shapes: Vec<_> = inputs.iter().map(|input| input.shape).collect();
         let masked = masks.is_some()
-            || inputs
-                .iter()
-                .any(|input| matches!(input.source, CommitSource::Quotient { .. }));
+            || inputs.iter().any(|input| {
+                matches!(
+                    input.source,
+                    CommitSource::Quotient { .. } | CommitSource::ConsumedQuotient { .. }
+                )
+            });
         super::validate_device_retention(&shapes, retention, capture.map(|_| usize::from(masked)))?;
         if capture.is_some() && !cfg!(feature = "gpu") {
             return Err("owned LDE capture requires an OpenCL transform".into());
@@ -806,6 +885,33 @@ impl Engine {
         } else {
             0
         };
+        let prefix_peak = if capture.is_some() {
+            let released = inputs
+                .iter()
+                .map(|input| match input.source {
+                    CommitSource::ConsumedTrace(cell) => cell
+                        .borrow()
+                        .as_ref()
+                        .ok_or_else(|| "consumed trace is already released".to_string())?
+                        .released_bytes(),
+                    CommitSource::ConsumedQuotient {
+                        cell, last: true, ..
+                    } => cell
+                        .borrow()
+                        .as_ref()
+                        .ok_or_else(|| "consumed quotient is already released".to_string())?
+                        .released_bytes(),
+                    _ => Ok(0),
+                })
+                .collect::<Result<Vec<_>, String>>()?;
+            super::lde_plan::streaming_prefix_peak(
+                &shapes,
+                &device_specs.iter().map(|s| s.bytes()).collect::<Vec<_>>(),
+                &released,
+            )?
+        } else {
+            0
+        };
         let replay_bytes = inputs.iter().try_fold(0usize, |peak, input| {
             Ok::<_, String>(peak.max(match input.salts {
                 SaltInput::Replay(recipe) => recipe.workspace_bytes(self)?,
@@ -818,7 +924,7 @@ impl Engine {
             execution_limits,
             self.max_alloc,
             self.mode.slots(),
-            live.checked_add(device_bytes)
+            live.checked_add(prefix_peak)
                 .and_then(|bytes| bytes.checked_add(replay_bytes))
                 .ok_or("owned LDE capture budget overflow")?,
             old_workspace,
@@ -829,7 +935,9 @@ impl Engine {
         plan.device_output_bytes = device_bytes;
         let height = plan.output_height();
         for input in inputs {
-            input.salts.validate(height, capture, self)?;
+            input
+                .salts
+                .validate(input.shape.height << input.shape.added_bits, capture, self)?;
         }
         // Admission telemetry only: this snapshot does not attest to completed
         // arithmetic. Transform tiles consume spare assigned memory, so the
@@ -858,9 +966,12 @@ impl Engine {
         );
         if masked {
             if masks.is_none()
-                && inputs
-                    .iter()
-                    .all(|input| matches!(input.source, CommitSource::Quotient { .. }))
+                && inputs.iter().all(|input| {
+                    matches!(
+                        input.source,
+                        CommitSource::Quotient { .. } | CommitSource::ConsumedQuotient { .. }
+                    )
+                })
             {
                 plan.validate_quotient_batch_storage(inputs.len())?;
             } else {
@@ -874,10 +985,8 @@ impl Engine {
                 plan.predicted_host_peak_bytes,
             );
         }
-        let width = shapes
-            .iter()
-            .try_fold(0usize, |n, s| n.checked_add(s.width)?.checked_add(4))
-            .ok_or("resident LDE row width overflow")?;
+        let width = plan.maximum_row_width();
+        let mixed = shapes.iter().any(|s| s.height << s.added_bits != height);
         let hash_plan = OwnedHashPlan::new(
             height,
             width,
@@ -889,7 +998,7 @@ impl Engine {
         if hash_plan.bytes + super::transport_bytes(execution_limits) != plan.hash_workspace_bytes {
             return Err("owned hash schedule differs from admitted LDE plan".into());
         }
-        let direct_layers = hash_plan.workspace.is_none();
+        let direct_layers = mixed || hash_plan.workspace.is_none();
         let layout = retained_layout(height, cap_height, self.max_alloc)?;
         if plan.tree_storage_mode != self.tree_storage.selection().mode {
             return Err("retained tree storage changed after LDE planning".into());
@@ -926,14 +1035,8 @@ impl Engine {
         };
         let mut storage = alloc(plan.retained_tree_bytes)?;
         storage._lease.mark_retained()?;
-        let device_matrices = if let Some(session) = capture {
-            device_specs
-                .into_iter()
-                .map(|spec| session.allocate(self, spec))
-                .collect::<Result<Vec<_>, _>>()?
-        } else {
-            Vec::new()
-        };
+        let mut device_matrices: Vec<Option<super::device::DeviceMatrix>> =
+            (0..device_specs.len()).map(|_| None).collect();
         // Must outlive all pending operations and drop BEFORE any owned buffer
         // above, on normal return, device error, or unwind.
         let fence = self.fence();
@@ -955,8 +1058,73 @@ impl Engine {
             // not invert roots on the CPU during a device-owned proof.
             dst[0] = super::fri_fold::inverse_root((row + 1) as u32);
         })?;
-        for (matrix_index, input) in inputs.iter().enumerate() {
+        // Stable ordering within each height matches the CPU MMCS. Outputs and
+        // captured prefixes keep the caller's original matrix indices.
+        let mut order: Vec<_> = (0..inputs.len()).collect();
+        order.sort_by_key(|&i| std::cmp::Reverse(shapes[i].height << shapes[i].added_bits));
+        let mut layer_rows = height;
+        let mut layer_offset = 0usize;
+        for (position, &matrix_index) in order.iter().enumerate() {
+            let original = &inputs[matrix_index];
+            let consumed = if let CommitSource::ConsumedTrace(cell) = original.source {
+                Some(cell.borrow())
+            } else {
+                None
+            };
+            let quotient = if let CommitSource::ConsumedQuotient { cell, .. } = original.source {
+                Some(cell.borrow())
+            } else {
+                None
+            };
+            let source = if let Some(borrow) = &consumed {
+                CommitSource::Trace(
+                    borrow
+                        .as_ref()
+                        .ok_or("consumed trace is already released")?,
+                )
+            } else if let (Some(borrow), CommitSource::ConsumedQuotient { chunk, .. }) =
+                (&quotient, original.source)
+            {
+                CommitSource::Quotient {
+                    input: borrow
+                        .as_ref()
+                        .ok_or("consumed quotient is already released")?,
+                    chunk,
+                }
+            } else {
+                original.source
+            };
+            let input = &CommitInput {
+                source,
+                salts: original.salts,
+                shape: original.shape,
+            };
+            if let Some(session) = capture {
+                device_matrices[matrix_index] =
+                    Some(session.allocate(self, device_specs[matrix_index])?);
+            }
             let shape = shapes[matrix_index];
+            let matrix_height = shape.height << shape.added_bits;
+            if mixed
+                && (position == 0
+                    || matrix_height
+                        != shapes[order[position - 1]].height
+                            << shapes[order[position - 1]].added_bits)
+            {
+                self.advance_mixed_lde_layers(
+                    &storage,
+                    &mut layer_rows,
+                    &mut layer_offset,
+                    matrix_height,
+                )?;
+                buffers
+                    .sponge
+                    .buffer
+                    .cmd()
+                    .fill(0u64, None)
+                    .enq()
+                    .map_err(|e| e.to_string())?;
+            }
             #[cfg(feature = "gpu-metal")]
             let shared = if crate::metal_compute::resident::enabled() && retention_bits > 0 {
                 Some(crate::metal_compute::resident::SharedWords::new(
@@ -1032,6 +1200,9 @@ impl Engine {
                     .enq()
                     .map_err(|e| e.to_string())?;
                 let (normalization, transform_shift) = match input.source {
+                    CommitSource::ConsumedTrace(_) | CommitSource::ConsumedQuotient { .. } => {
+                        unreachable!("consumed trace is borrowed for this table")
+                    }
                     CommitSource::Evaluations(owned) => {
                         owned.load_columns(
                             self,
@@ -1182,7 +1353,7 @@ impl Engine {
                     &buffers.a.buffer,
                     &buffers.forward.buffer,
                     false,
-                    height,
+                    matrix_height,
                     tile.columns,
                     1,
                     1,
@@ -1200,11 +1371,11 @@ impl Engine {
                     transformed,
                     &buffers.sponge.buffer,
                     0,
-                    height,
+                    matrix_height,
                     tile.columns,
                     tile.sponge_rate_offset,
                 )?;
-                if let Some(matrix) = device_matrices.get(matrix_index) {
+                if let Some(matrix) = device_matrices.get(matrix_index).and_then(Option::as_ref) {
                     matrix.capture_columns(self, transformed, tile.columns, tile.first_column)?;
                 }
                 if let Some(readback) = &mut readback {
@@ -1262,20 +1433,35 @@ impl Engine {
                     shape.width,
                 ));
             }
+            // All input columns are consumed. Drain before releasing trace and
+            // hiding samples; the commitment retains only the captured prefix.
+            drop(consumed);
+            drop(quotient);
+            if let CommitSource::ConsumedTrace(cell) = original.source {
+                self.fence().finish()?;
+                cell.borrow_mut().take();
+            }
+            if let CommitSource::ConsumedQuotient {
+                cell, last: true, ..
+            } = original.source
+            {
+                self.fence().finish()?;
+                cell.borrow_mut().take();
+            }
             // Reuse a transform buffer for bounded salt bands only AFTER its
             // transformed columns have been hashed, captured and optionally read back.
-            let replayed = match input.salts {
+            let replayed = match original.salts {
                 SaltInput::Replay(recipe) => Some(recipe.materialize_in(self)?),
                 _ => None,
             };
-            let salts = replayed.as_ref().map_or(input.salts, SaltInput::Device);
+            let salts = replayed.as_ref().map_or(original.salts, SaltInput::Device);
             let salt_columns = plan.columns_per_tile().min(4);
             for first_salt in (0..4).step_by(salt_columns) {
                 let columns = salt_columns.min(4 - first_salt);
                 let band_rows =
                     (buffers.a.buffer.len() / columns).min(self.staging[0].map.len() / columns);
-                for row0 in (0..height).step_by(band_rows) {
-                    let rows = band_rows.min(height - row0);
+                for row0 in (0..matrix_height).step_by(band_rows) {
+                    let rows = band_rows.min(matrix_height - row0);
                     match salts {
                         SaltInput::Host(salts) => {
                             self.lde_upload_rows(&buffers.a.buffer, rows, columns, |row, dst| {
@@ -1307,38 +1493,58 @@ impl Engine {
                     )?;
                 }
             }
+            if mixed
+                && (position + 1 == order.len()
+                    || matrix_height
+                        != shapes[order[position + 1]].height
+                            << shapes[order[position + 1]].added_bits)
+            {
+                self.finalize_mixed_lde_height(
+                    &buffers.sponge,
+                    &storage,
+                    matrix_height,
+                    layer_offset,
+                    plan.salt_rate_offset(matrix_index).unwrap(),
+                    matrix_height != height,
+                )?;
+            }
         }
-        let final_offset = plan.salt_rate_offset(inputs.len() - 1).unwrap();
-        let mut event = Event::empty();
-        // SAFETY: full-height states and leaf workspace were jointly admitted.
-        unsafe {
-            self.commitment_builder("lde_leaf_finalize", height)?
-                .arg(&buffers.sponge.buffer)
-                .arg(if direct_layers {
-                    &storage.buffer
-                } else {
-                    &self.workspace.as_ref().unwrap().a.buffer
-                })
-                .arg(height as u32)
-                .arg(final_offset as u32)
-                .arg(&self.constants[0].buffer)
-                .arg(&self.constants[1].buffer)
-                .arg(&self.constants[2].buffer)
-                .arg(&self.constants[3].buffer)
-                .build()
-                .map_err(|e| e.to_string())?
-                .cmd()
-                .enew(&mut event)
-                .enq()
-                .map_err(|e| e.to_string())?;
-        }
-        let ns = self.timeline.record("lde_leaf_finalize", &event)?;
-        self.stats.lde_sponge_ns += ns;
-        self.stats.leaf_kernel_ns += ns;
-        let cap = if direct_layers {
-            self.finish_direct_retained_layers(&storage, height, layout)?
+        let cap = if mixed {
+            self.advance_mixed_lde_layers(&storage, &mut layer_rows, &mut layer_offset, 1)?;
+            self.download_buffer(&storage.buffer, layout.cap_offset, layout.cap_rows)?
         } else {
-            self.finish_retained_layers(&storage, height, layout)?
+            let final_offset = plan.salt_rate_offset(inputs.len() - 1).unwrap();
+            let mut event = Event::empty();
+            // SAFETY: full-height states and leaf workspace were jointly admitted.
+            unsafe {
+                self.commitment_builder("lde_leaf_finalize", height)?
+                    .arg(&buffers.sponge.buffer)
+                    .arg(if direct_layers {
+                        &storage.buffer
+                    } else {
+                        &self.workspace.as_ref().unwrap().a.buffer
+                    })
+                    .arg(height as u32)
+                    .arg(final_offset as u32)
+                    .arg(&self.constants[0].buffer)
+                    .arg(&self.constants[1].buffer)
+                    .arg(&self.constants[2].buffer)
+                    .arg(&self.constants[3].buffer)
+                    .build()
+                    .map_err(|e| e.to_string())?
+                    .cmd()
+                    .enew(&mut event)
+                    .enq()
+                    .map_err(|e| e.to_string())?;
+            }
+            let ns = self.timeline.record("lde_leaf_finalize", &event)?;
+            self.stats.lde_sponge_ns += ns;
+            self.stats.leaf_kernel_ns += ns;
+            if direct_layers {
+                self.finish_direct_retained_layers(&storage, height, layout)?
+            } else {
+                self.finish_retained_layers(&storage, height, layout)?
+            }
         };
         fence.finish()?;
         self.stats.commits += 1;
@@ -1348,7 +1554,13 @@ impl Engine {
             self.stats.quotient_lde_commits += 1;
         }
         self.stats.lde_wall_ns += started.elapsed().as_nanos();
-        self.context_checkpoint(if std::env::var("LATTICA_V2_GPU_AGGREGATION_DIAGNOSTICS").as_deref() == Ok("1") { "aggregation LDE peak" } else { "resident LDE complete" })?;
+        self.context_checkpoint(
+            if std::env::var("LATTICA_V2_GPU_AGGREGATION_DIAGNOSTICS").as_deref() == Ok("1") {
+                "aggregation LDE peak"
+            } else {
+                "resident LDE complete"
+            },
+        )?;
         if crate::block_v2::worker_memory::reclaim_enabled() {
             self.workspace = None;
         }
@@ -1373,7 +1585,10 @@ impl Engine {
         let storage = self.retain_completed_tree(storage, host_reservation, layout)?;
         Ok(LdeCommitOutput {
             matrices,
-            device_matrices,
+            device_matrices: device_matrices
+                .into_iter()
+                .map(|m| m.ok_or("commitment prefix was not filled"))
+                .collect::<Result<Vec<_>, _>>()?,
             prefixes,
             plan,
             cap_height,
@@ -1686,6 +1901,41 @@ mod tests {
             "live tree must retain context lease"
         );
         output
+    }
+
+    #[test]
+    #[cfg(feature = "gpu")]
+    #[ignore = "requires NVIDIA GPU; also run without gpu-tuning to check the standard kernel"]
+    fn gpu_default_ntt_matches_cpu_without_research_selection() {
+        let _shutdown = super::super::TestShutdownGuard;
+        super::super::initialize_mode(
+            super::super::Limits {
+                managed_bytes: 128 << 20,
+                tile_bytes: 4 << 20,
+                staging_bytes: 64 << 10,
+            },
+            super::super::TransferMode::Serial,
+        )
+        .unwrap();
+        {
+            let mut slot = ENGINE.get().unwrap().lock().unwrap();
+            let engine = slot.as_mut().unwrap();
+            assert!(engine.nvidia_shuffle);
+            assert_eq!(
+                engine.tuning.ntt_schedule,
+                super::super::tuning::Ntt::SmallTile
+            );
+        }
+        let evals = matrix(1 << 16, 3, 17);
+        let salts = matrix(1 << 18, 4, 23);
+        let inputs = [LdeInput {
+            evaluations: &evals,
+            salts: &salts,
+            added_bits: 2,
+            shift: Val::GENERATOR,
+        }];
+        let output = check_cpu_reference(&inputs, 6);
+        drop(output);
     }
 
     #[test]
@@ -2022,20 +2272,69 @@ pub(crate) fn commit_traces_with_salts(
     if inputs.is_empty() || inputs.len() > 256 || salts.len() != inputs.len() {
         return Err("invalid device trace commitment batch".into());
     }
-    let height = inputs
-        .iter()
-        .map(|input| input.shape.height)
-        .max()
-        .unwrap()
-        .checked_shl(crate::block_v2::profile::LOG_BLOWUP as u32)
-        .ok_or("device trace LDE height overflow")?;
     let mut prepared = Vec::with_capacity(inputs.len());
     for (input, salts) in inputs.iter().zip(salts) {
         input.check_session(session)?;
         input.check_engine(engine)?;
+        let height = input
+            .shape
+            .height
+            .checked_shl(crate::block_v2::profile::LOG_BLOWUP as u32)
+            .ok_or("device trace LDE height overflow")?;
         salts.validate(height, Some(session), engine)?;
         prepared.push(CommitInput {
             source: CommitSource::Trace(input),
+            salts: *salts,
+            shape: input.shape.lde_shape(),
+        });
+    }
+    engine.commit_inputs(
+        &prepared,
+        None,
+        cap_height,
+        host_budget,
+        retention,
+        Some(session),
+    )
+}
+
+/// Consumes private inputs table by table. Only unique storage receives a
+/// preflight credit; aliases remain fully charged until their owner releases.
+pub(crate) fn commit_consumed_traces_with_salts(
+    inputs: Vec<super::device::TraceCommitInput>,
+    salts: &[SaltInput<'_>],
+    session: &super::device::DeviceSession,
+    cap_height: usize,
+    host_budget: usize,
+    retention: LdeRetention,
+) -> Result<LdeCommitOutput, String> {
+    if inputs.is_empty() || inputs.len() > 256 || salts.len() != inputs.len() {
+        return Err("invalid consumed trace commitment batch".into());
+    }
+    let cells: Vec<_> = inputs
+        .into_iter()
+        .map(|input| std::cell::RefCell::new(Some(input)))
+        .collect();
+    let mut slot = ENGINE
+        .get()
+        .ok_or("GPU engine is not initialized")?
+        .lock()
+        .map_err(|_| "GPU engine poisoned")?;
+    let engine = slot.as_mut().ok_or("GPU engine is not initialized")?;
+    let mut prepared = Vec::with_capacity(cells.len());
+    for (cell, salts) in cells.iter().zip(salts) {
+        let borrowed = cell.borrow();
+        let input = borrowed.as_ref().ok_or("consumed trace is missing")?;
+        input.check_session(session)?;
+        input.check_engine(engine)?;
+        let height = input
+            .shape
+            .height
+            .checked_shl(crate::block_v2::profile::LOG_BLOWUP as u32)
+            .ok_or("device trace LDE height overflow")?;
+        salts.validate(height, Some(session), engine)?;
+        prepared.push(CommitInput {
+            source: CommitSource::ConsumedTrace(cell),
             salts: *salts,
             shape: input.shape.lde_shape(),
         });
@@ -2115,16 +2414,6 @@ pub(crate) fn commit_quotient_batch_with_salts(
     for input in inputs {
         input.check_engine(engine)?;
     }
-    let output_height = inputs
-        .iter()
-        .map(|input| input.shape.height)
-        .max()
-        .unwrap()
-        .checked_shl((crate::block_v2::profile::LOG_BLOWUP + 1) as u32)
-        .ok_or("owned quotient LDE height overflow")?;
-    for salt in salts {
-        salt.validate(output_height, capture, engine)?;
-    }
     let mut prepared = Vec::with_capacity(chunks);
     let mut salt_iter = salts.iter();
     for input in inputs {
@@ -2134,14 +2423,86 @@ pub(crate) fn commit_quotient_batch_with_salts(
             added_bits: crate::block_v2::profile::LOG_BLOWUP + 1,
         };
         for chunk in 0..input.shape.chunks {
+            let salt = *salt_iter.next().expect("validated quotient salt count");
+            let height = shape
+                .height
+                .checked_shl(shape.added_bits as u32)
+                .ok_or("owned quotient LDE height overflow")?;
+            salt.validate(height, capture, engine)?;
             prepared.push(CommitInput {
                 source: CommitSource::Quotient { input, chunk },
-                salts: *salt_iter.next().expect("validated quotient salt count"),
+                salts: salt,
                 shape,
             });
         }
     }
     engine.commit_inputs(&prepared, None, cap_height, host_budget, retention, capture)
+}
+
+/// Commit each group's chunks in their original order, then retire that
+/// group's hiding buffers. Original quotient outputs receive no release credit.
+pub(crate) fn commit_consumed_quotients_with_salts(
+    inputs: Vec<super::device::QuotientCommitInput>,
+    salts: &[SaltInput<'_>],
+    session: &super::device::DeviceSession,
+    cap_height: usize,
+    host_budget: usize,
+) -> Result<LdeCommitOutput, String> {
+    let chunks = inputs.iter().try_fold(0usize, |sum, input| {
+        sum.checked_add(input.shape.chunks)
+            .ok_or("quotient batch count overflow")
+    })?;
+    if inputs.is_empty() || chunks > 256 || salts.len() != chunks {
+        return Err("invalid consumed quotient commitment batch".into());
+    }
+    let cells: Vec<_> = inputs
+        .into_iter()
+        .map(|input| std::cell::RefCell::new(Some(input)))
+        .collect();
+    let mut slot = ENGINE
+        .get()
+        .ok_or("GPU engine is not initialized")?
+        .lock()
+        .map_err(|_| "GPU engine poisoned")?;
+    let engine = slot.as_mut().ok_or("GPU engine is not initialized")?;
+    let mut prepared = Vec::with_capacity(chunks);
+    let mut salt_iter = salts.iter();
+    for cell in &cells {
+        let borrowed = cell.borrow();
+        let input = borrowed.as_ref().ok_or("consumed quotient is missing")?;
+        input.check_session(session)?;
+        input.check_engine(engine)?;
+        let shape = InputShape {
+            height: input.shape.height,
+            width: input.shape.width,
+            added_bits: crate::block_v2::profile::LOG_BLOWUP + 1,
+        };
+        let height = shape
+            .height
+            .checked_shl(shape.added_bits as u32)
+            .ok_or("quotient commitment height overflow")?;
+        for chunk in 0..input.shape.chunks {
+            let salt = *salt_iter.next().ok_or("quotient salt count")?;
+            salt.validate(height, Some(session), engine)?;
+            prepared.push(CommitInput {
+                source: CommitSource::ConsumedQuotient {
+                    cell,
+                    chunk,
+                    last: chunk + 1 == input.shape.chunks,
+                },
+                salts: salt,
+                shape,
+            });
+        }
+    }
+    engine.commit_inputs(
+        &prepared,
+        None,
+        cap_height,
+        host_budget,
+        LdeRetention::DeviceOnly,
+        Some(session),
+    )
 }
 
 pub(crate) fn commit_owned_evaluations(

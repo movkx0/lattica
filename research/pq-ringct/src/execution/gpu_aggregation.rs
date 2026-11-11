@@ -128,7 +128,8 @@ impl ProvingContext {
         self.diagnostics.mark_stark_work_attempted();
         let session = DeviceSession::new()?;
         let limits = self.aggregation_backend_limits()?;
-        let native = crate::gpu_aggregation::CONSUMING_GPU_HOST_BYTES
+        let native = crate::gpu_aggregation::policy::current()
+            .backend_host_bytes
             .checked_sub(limits.retained_tree_host_bytes())
             .ok_or("host tree quota exhausts aggregation backend phase")?;
         let admission = OuterBackendPlan::new(&program, public, witness, limits, native)?
@@ -142,8 +143,10 @@ impl ProvingContext {
             footprint.backend_scope_host_bytes
         );
         let started = Instant::now();
+        let timing = crate::gpu_aggregation::telemetry::Span::start("registration");
         let registered =
             self.register_aggregation_program(Arc::clone(&program), admission.host_budget_bytes())?;
+        drop(timing);
         let registration_seconds = started.elapsed().as_secs_f64();
         session.aggregation_memory_checkpoint("aggregation registration")?;
         let cap = registered.preprocessing_cap().roots().to_vec();
@@ -157,6 +160,7 @@ impl ProvingContext {
             state.registration_setup_seconds += started.elapsed().as_secs_f64();
         }
         let started = Instant::now();
+        let timing = crate::gpu_aggregation::telemetry::Span::start("gpu-proof");
         let result = registered
             .into_prove_outer_with_request_and_report(&admission, self.request)
             .map_err(error);
@@ -166,10 +170,13 @@ impl ProvingContext {
             program.active_rows(),
             program.height(),
         );
+        drop(timing);
         let (proof, _report) = result?;
         session.aggregation_memory_checkpoint("aggregation proof complete")?;
         let started = Instant::now();
+        let timing = crate::gpu_aggregation::telemetry::Span::start("verification");
         let verified = verifier.verify(&proof, public);
+        drop(timing);
         self.diagnostics
             .verify_finished(started.elapsed().as_secs_f64(), verified.is_ok());
         verified?;
@@ -180,13 +187,36 @@ impl ProvingContext {
             proof,
         })
     }
-    pub(crate) fn aggregation_backend_limits(&self) -> Result<lattica_prover_p3::block_v2::machine::RegisteredGpuLimits, String> {
+    pub(crate) fn aggregation_backend_limits(
+        &self,
+    ) -> Result<lattica_prover_p3::block_v2::machine::RegisteredGpuLimits, String> {
         use lattica_prover_p3::block_v2::machine::RegisteredGpuLimits;
         if std::env::var("LATTICA_V2_GPU_AGGREGATION_V4").as_deref() == Ok("1") {
-            let device = self.session.as_ref().ok_or("aggregation needs live session")?.limits().device_bytes;
-            let reserve = std::env::var("LATTICA_V2_GPU_CONTEXT_BYTES").map_err(error)?.parse().map_err(error)?;
-            RegisteredGpuLimits::new_aggregation(self.host_profile.worker_bytes(), device, reserve, self.aggregation_row_limit())
-        } else { RegisteredGpuLimits::new(self.host_profile.worker_bytes(), 8 << 30, 4 << 30, self.aggregation_row_limit()) }
+            let device = self
+                .session
+                .as_ref()
+                .ok_or("aggregation needs live session")?
+                .limits()
+                .device_bytes;
+            let reserve = std::env::var("LATTICA_V2_GPU_CONTEXT_BYTES")
+                .map_err(error)?
+                .parse()
+                .map_err(error)?;
+            RegisteredGpuLimits::new_aggregation(
+                self.host_profile.worker_bytes(),
+                device,
+                reserve,
+                self.aggregation_row_limit(),
+            )?
+            .with_aggregation_tree_quota(crate::gpu_aggregation::policy::current().tree_host_bytes)
+        } else {
+            RegisteredGpuLimits::new(
+                self.host_profile.worker_bytes(),
+                8 << 30,
+                4 << 30,
+                self.aggregation_row_limit(),
+            )
+        }
     }
     pub(crate) fn configure_consuming_aggregation(&self) -> Result<(), String> {
         let mut queue = self.aggregation_identity.borrow_mut();
@@ -219,7 +249,10 @@ impl ProvingContext {
     }
     pub(crate) fn aggregation_row_limit(&self) -> usize {
         if self.consuming_aggregation() {
-            self.session.as_ref().map(|s| s.limits().max_rows).unwrap_or(crate::gpu_aggregation::MAX_CONSUMING_ROWS)
+            self.session
+                .as_ref()
+                .map(|s| s.limits().max_rows)
+                .unwrap_or(crate::gpu_aggregation::MAX_CONSUMING_ROWS)
         } else {
             crate::gpu_aggregation::MAX_RECURSIVE_ROWS
         }
@@ -233,7 +266,8 @@ impl ProvingContext {
             || self.session.is_none()
             || std::env::var("LATTICA_V2_GPU_WITNESS").as_deref() != Ok("1")
             || program.height() > self.aggregation_row_limit()
-            || program.construction_host_bytes() > 2 << 30
+            || program.construction_host_bytes()
+                > crate::gpu_aggregation::policy::current().program_bytes
         {
             return Err("imported aggregation requires bounded owned GPU proving".into());
         }
@@ -254,8 +288,9 @@ impl ProvingContext {
         let mut queue = self.aggregation_identity.borrow_mut();
         if !queue.pending.is_empty()
             || !queue.cpu_pending.is_empty()
-            || prefixes.len() > 4
-            || queue.cpu_reports.len() + prefixes.len() > 4096
+            || prefixes.len() > crate::gpu_aggregation::policy::current().live_jobs
+            || queue.cpu_reports.len() + prefixes.len()
+                > 4096
         {
             return Err("CPU identity queue capacity or unconsumed prefixes".into());
         }

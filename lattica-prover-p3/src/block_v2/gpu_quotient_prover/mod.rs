@@ -629,263 +629,263 @@ where
         })
         .collect();
 
-    // Each instance's quotient chunks are independent, so compute them in
-    // parallel. `quotient_values` already parallelises over rows; with many
-    // instances this fills the cores that a single instance leaves idle.
-    let per_instance: Vec<InstanceOutput<SC>> = (0..n_instances)
-        .into_par_iter()
-        .map(|i| {
-            let _air_span = info_span!("compute quotient", air_idx = i).entered();
+    // GPU table jobs share one ordered queue. Parallel host jobs would retain
+    // several full quotient-domain views and scratch allocations concurrently,
+    // without parallel GPU execution. Keep one GPU table owner; CPU evaluation
+    // still uses both instance and row parallelism.
+    let compute_quotient = |i: usize| {
+        let _air_span = info_span!("compute quotient", air_idx = i).entered();
 
-            let log_chunks = log_num_quotient_chunks[i];
-            let n_chunks = num_quotient_chunks[i];
-            // Build the quotient domain: disjoint from the trace domain,
-            // with size = ext_degree * num_quotient_chunks.
-            let quotient_domain =
-                ext_trace_domains[i].quotient(pcs, log_ext_degrees[i] + log_chunks);
+        let log_chunks = log_num_quotient_chunks[i];
+        let n_chunks = num_quotient_chunks[i];
+        // Build the quotient domain: disjoint from the trace domain,
+        // with size = ext_degree * num_quotient_chunks.
+        let quotient_domain = ext_trace_domains[i].quotient(pcs, log_ext_degrees[i] + log_chunks);
 
-            let sym_layout = AirLayout {
-                preprocessed_width: preprocessed_widths[i],
-                main_width: airs[i].width(),
-                num_public_values: airs[i].num_public_values(),
-                num_periodic_columns: airs[i].num_periodic_columns(),
-                ..Default::default()
-            };
+        let sym_layout = AirLayout {
+            preprocessed_width: preprocessed_widths[i],
+            main_width: airs[i].width(),
+            num_public_values: airs[i].num_public_values(),
+            num_periodic_columns: airs[i].num_periodic_columns(),
+            ..Default::default()
+        };
 
-            if let Some(compiled) = &compiled {
-                debug_assert!(airs[i]
-                    .num_constraints()
-                    .is_none_or(|n| n == compiled.get(i).base_constraints));
-            } else {
-                // Debug-only: verify the static constraint-count hint matches symbolic analysis.
-                debug_assert!(
-                    airs[i].num_constraints().is_none_or(|n| {
-                        n == get_symbolic_constraints(
-                            airs[i],
-                            sym_layout,
-                            all_lookups[i],
-                            &lookup_gadget,
-                        )
-                        .0
-                        .len()
-                    }),
-                    "num_constraints() = {} but symbolic evaluation found {} base constraints",
-                    airs[i].num_constraints().unwrap(),
-                    get_symbolic_constraints(airs[i], sym_layout, all_lookups[i], &lookup_gadget,)
-                        .0
-                        .len(),
-                );
-            }
-
-            let q_values: QuotientOutput<SC> =
-                if super::quotient_pcs::gpu_quotient_resident_enabled() {
-                    QuotientOutput::Device(
-                        run.measure(
-                            crate::proving::Stage::Quotient,
-                            crate::proving::Backend::OpenCl,
-                            || {
-                                use super::gpu_hash::device::Extension;
-                                let session = pcs
-                                    .quotient_session()
-                                    .expect("owned quotient session required");
-                                let main = pcs
-                                    .quotient_device_prefix(
-                                        &main_data,
-                                        i,
-                                        quotient_domain,
-                                        airs[i].width(),
-                                        Extension::Base,
-                                    )
-                                    .expect("owned main LDE required; no fallback");
-                                let permutation = if all_lookups[i].is_empty() {
-                                    None
-                                } else {
-                                    Some(
-                                        pcs.quotient_device_prefix(
-                                            permutation_data.expect("permutation data"),
-                                            perm_indices[i],
-                                            quotient_domain,
-                                            all_lookups[i].len() + 1,
-                                            Extension::Cubic,
-                                        )
-                                        .expect("owned permutation LDE required; no fallback"),
-                                    )
-                                };
-                                let preprocessed = common
-                                    .preprocessed
-                                    .as_ref()
-                                    .and_then(|g| g.instances[i].as_ref())
-                                    .map(|meta| {
-                                        pcs.quotient_device_prefix(
-                                            prover_data
-                                                .prover_only
-                                                .preprocessed_prover_data
-                                                .as_ref()
-                                                .expect("preprocessing data"),
-                                            meta.matrix_index,
-                                            quotient_domain,
-                                            preprocessed_widths[i],
-                                            Extension::Base,
-                                        )
-                                        .expect("owned public preprocessing required; no fallback")
-                                    });
-                                let terminals: Vec<_> =
-                                    lookup_terminals[i].iter().map(|t| t.0).collect();
-                                evaluate::owned_quotient(
-                                    &session,
-                                    &compiled
-                                        .as_ref()
-                                        .expect("selected GPU program")
-                                        .get(i)
-                                        .program,
-                                    pub_vals[i],
-                                    trace_domains[i],
-                                    quotient_domain,
-                                    &main,
-                                    permutation.as_ref(),
-                                    &terminals,
-                                    &challenges_per_instance[i],
-                                    preprocessed.as_ref(),
-                                    alpha,
-                                )
-                                .expect("owned GPU quotient evaluation failed; no fallback")
-                            },
-                        )
-                        .expect("admitted owned GPU quotient stage"),
+        if let Some(compiled) = &compiled {
+            debug_assert!(airs[i]
+                .num_constraints()
+                .is_none_or(|n| n == compiled.get(i).base_constraints));
+        } else {
+            // Debug-only: verify the static constraint-count hint matches symbolic analysis.
+            debug_assert!(
+                airs[i].num_constraints().is_none_or(|n| {
+                    n == get_symbolic_constraints(
+                        airs[i],
+                        sym_layout,
+                        all_lookups[i],
+                        &lookup_gadget,
                     )
-                } else {
-                    // Evaluate the committed main trace on the quotient domain via LDE.
-                    let trace_on_quotient_domain =
-                        pcs.get_evaluations_on_domain(&main_data, i, quotient_domain.cpu());
+                    .0
+                    .len()
+                }),
+                "num_constraints() = {} but symbolic evaluation found {} base constraints",
+                airs[i].num_constraints().unwrap(),
+                get_symbolic_constraints(airs[i], sym_layout, all_lookups[i], &lookup_gadget,)
+                    .0
+                    .len(),
+            );
+        }
 
-                    // Evaluate the permutation trace on the quotient domain (if lookups exist).
-                    let permutation_on_quotient_domain = permutation_data
-                        .filter(|_| !all_lookups[i].is_empty())
-                        .map(|perm_data| {
-                            pcs.get_evaluations_on_domain(
-                                perm_data,
-                                perm_indices[i],
-                                quotient_domain.cpu(),
+        let q_values: QuotientOutput<SC> = if super::quotient_pcs::gpu_quotient_resident_enabled() {
+            QuotientOutput::Device(
+                run.measure(
+                    crate::proving::Stage::Quotient,
+                    crate::proving::Backend::OpenCl,
+                    || {
+                        use super::gpu_hash::device::Extension;
+                        let session = pcs
+                            .quotient_session()
+                            .expect("owned quotient session required");
+                        let main = pcs
+                            .quotient_device_prefix(
+                                &main_data,
+                                i,
+                                quotient_domain,
+                                airs[i].width(),
+                                Extension::Base,
                             )
-                        });
+                            .expect("owned main LDE required; no fallback");
+                        let permutation = if all_lookups[i].is_empty() {
+                            None
+                        } else {
+                            Some(
+                                pcs.quotient_device_prefix(
+                                    permutation_data.expect("permutation data"),
+                                    perm_indices[i],
+                                    quotient_domain,
+                                    all_lookups[i].len() + 1,
+                                    Extension::Cubic,
+                                )
+                                .expect("owned permutation LDE required; no fallback"),
+                            )
+                        };
+                        let preprocessed = common
+                            .preprocessed
+                            .as_ref()
+                            .and_then(|g| g.instances[i].as_ref())
+                            .map(|meta| {
+                                pcs.quotient_device_prefix(
+                                    prover_data
+                                        .prover_only
+                                        .preprocessed_prover_data
+                                        .as_ref()
+                                        .expect("preprocessing data"),
+                                    meta.matrix_index,
+                                    quotient_domain,
+                                    preprocessed_widths[i],
+                                    Extension::Base,
+                                )
+                                .expect("owned public preprocessing required; no fallback")
+                            });
+                        let terminals: Vec<_> = lookup_terminals[i].iter().map(|t| t.0).collect();
+                        evaluate::owned_quotient(
+                            &session,
+                            &compiled
+                                .as_ref()
+                                .expect("selected GPU program")
+                                .get(i)
+                                .program,
+                            pub_vals[i],
+                            trace_domains[i],
+                            quotient_domain,
+                            &main,
+                            permutation.as_ref(),
+                            &terminals,
+                            &challenges_per_instance[i],
+                            preprocessed.as_ref(),
+                            alpha,
+                        )
+                        .expect("owned GPU quotient evaluation failed; no fallback")
+                    },
+                )
+                .expect("admitted owned GPU quotient stage"),
+            )
+        } else {
+            // Evaluate the committed main trace on the quotient domain via LDE.
+            let trace_on_quotient_domain =
+                pcs.get_evaluations_on_domain(&main_data, i, quotient_domain.cpu());
 
-                    // Evaluate preprocessed columns on the quotient domain (if present).
-                    let preprocessed_on_quotient_domain = common
-                        .preprocessed
-                        .as_ref()
-                        .and_then(|g| g.instances[i].as_ref())
-                        .map(|meta| {
-                            let preprocessed_prover_data = prover_data
+            // Evaluate the permutation trace on the quotient domain (if lookups exist).
+            let permutation_on_quotient_domain = permutation_data
+                .filter(|_| !all_lookups[i].is_empty())
+                .map(|perm_data| {
+                    pcs.get_evaluations_on_domain(perm_data, perm_indices[i], quotient_domain.cpu())
+                });
+
+            // Evaluate preprocessed columns on the quotient domain (if present).
+            let preprocessed_on_quotient_domain = common
+                .preprocessed
+                .as_ref()
+                .and_then(|g| g.instances[i].as_ref())
+                .map(|meta| {
+                    let preprocessed_prover_data = prover_data
                         .prover_only
                         .preprocessed_prover_data
                         .as_ref()
                         .expect(
                             "preprocessed_prover_data must exist when preprocessed columns exist",
                         );
-                            pcs.get_evaluations_on_domain_no_random(
-                                preprocessed_prover_data,
-                                meta.matrix_index,
+                    pcs.get_evaluations_on_domain_no_random(
+                        preprocessed_prover_data,
+                        meta.matrix_index,
+                        quotient_domain.cpu(),
+                    )
+                });
+
+            // Compute quotient(x) = constraints(x) / Z_H(x) on the quotient domain.
+            let perm_vals: Vec<_> = lookup_terminals[i].iter().map(|t| t.0).collect();
+            let gpu_evaluation = super::quotient_pcs::gpu_quotient_eval_enabled();
+            #[cfg(feature = "gpu-metal")]
+            let metal_evaluation = crate::metal_compute::resident::gpu_quotient()
+                .expect("validated Metal quotient policy");
+            #[cfg(not(feature = "gpu-metal"))]
+            let metal_evaluation = false;
+            let q_values = run
+                .measure(
+                    crate::proving::Stage::Quotient,
+                    if gpu_evaluation {
+                        crate::proving::Backend::OpenCl
+                    } else if metal_evaluation {
+                        crate::proving::Backend::Metal
+                    } else {
+                        crate::proving::Backend::Cpu
+                    },
+                    || {
+                        if gpu_evaluation {
+                            return evaluate::quotient_values(
+                                &compiled
+                                    .as_ref()
+                                    .expect("selected GPU program")
+                                    .get(i)
+                                    .program,
+                                pub_vals[i],
+                                trace_domains[i].cpu(),
                                 quotient_domain.cpu(),
+                                &trace_on_quotient_domain,
+                                permutation_on_quotient_domain.as_ref(),
+                                &perm_vals,
+                                &challenges_per_instance[i],
+                                preprocessed_on_quotient_domain.as_ref(),
+                                alpha,
                             )
-                        });
-
-                    // Compute quotient(x) = constraints(x) / Z_H(x) on the quotient domain.
-                    let perm_vals: Vec<_> = lookup_terminals[i].iter().map(|t| t.0).collect();
-                    let gpu_evaluation = super::quotient_pcs::gpu_quotient_eval_enabled();
-                    #[cfg(feature = "gpu-metal")]
-                    let metal_evaluation = crate::metal_compute::resident::gpu_quotient()
-                        .expect("validated Metal quotient policy");
-                    #[cfg(not(feature = "gpu-metal"))]
-                    let metal_evaluation = false;
-                    let q_values = run
-                        .measure(
-                            crate::proving::Stage::Quotient,
-                            if gpu_evaluation {
-                                crate::proving::Backend::OpenCl
-                            } else if metal_evaluation {
-                                crate::proving::Backend::Metal
-                            } else {
-                                crate::proving::Backend::Cpu
-                            },
-                            || {
-                                if gpu_evaluation {
-                                    return evaluate::quotient_values(
-                                        &compiled
-                                            .as_ref()
-                                            .expect("selected GPU program")
-                                            .get(i)
-                                            .program,
-                                        pub_vals[i],
-                                        trace_domains[i].cpu(),
-                                        quotient_domain.cpu(),
-                                        &trace_on_quotient_domain,
-                                        permutation_on_quotient_domain.as_ref(),
-                                        &perm_vals,
-                                        &challenges_per_instance[i],
-                                        preprocessed_on_quotient_domain.as_ref(),
-                                        alpha,
-                                    )
-                                    .expect("GPU quotient evaluation failed; no silent fallback");
-                                }
-                                #[cfg(feature = "gpu-metal")]
-                                if metal_evaluation {
-                                    return metal::evaluate::<SC, _, _>(
-                                        pcs,
-                                        airs[i],
-                                        pub_vals[i],
-                                        sym_layout,
-                                        trace_domains[i].cpu(),
-                                        quotient_domain.cpu(),
-                                        &trace_on_quotient_domain,
-                                        permutation_on_quotient_domain.as_ref(),
-                                        all_lookups[i],
-                                        &perm_vals,
-                                        &lookup_gadget,
-                                        &challenges_per_instance[i],
-                                        preprocessed_on_quotient_domain.as_ref(),
-                                        alpha,
-                                    )
-                                    .expect("validated Metal quotient evaluation");
-                                }
-                                quotient_values(
-                                    pcs,
-                                    airs[i],
-                                    pub_vals[i],
-                                    sym_layout,
-                                    trace_domains[i].cpu(),
-                                    quotient_domain.cpu(),
-                                    &trace_on_quotient_domain,
-                                    permutation_on_quotient_domain.as_ref(),
-                                    all_lookups[i],
-                                    &perm_vals,
-                                    &lookup_gadget,
-                                    &challenges_per_instance[i],
-                                    preprocessed_on_quotient_domain.as_ref(),
-                                    alpha,
-                                )
-                            },
+                            .expect("GPU quotient evaluation failed; no silent fallback");
+                        }
+                        #[cfg(feature = "gpu-metal")]
+                        if metal_evaluation {
+                            return metal::evaluate::<SC, _, _>(
+                                pcs,
+                                airs[i],
+                                pub_vals[i],
+                                sym_layout,
+                                trace_domains[i].cpu(),
+                                quotient_domain.cpu(),
+                                &trace_on_quotient_domain,
+                                permutation_on_quotient_domain.as_ref(),
+                                all_lookups[i],
+                                &perm_vals,
+                                &lookup_gadget,
+                                &challenges_per_instance[i],
+                                preprocessed_on_quotient_domain.as_ref(),
+                                alpha,
+                            )
+                            .expect("validated Metal quotient evaluation");
+                        }
+                        quotient_values(
+                            pcs,
+                            airs[i],
+                            pub_vals[i],
+                            sym_layout,
+                            trace_domains[i].cpu(),
+                            quotient_domain.cpu(),
+                            &trace_on_quotient_domain,
+                            permutation_on_quotient_domain.as_ref(),
+                            all_lookups[i],
+                            &perm_vals,
+                            &lookup_gadget,
+                            &challenges_per_instance[i],
+                            preprocessed_on_quotient_domain.as_ref(),
+                            alpha,
                         )
-                        .expect("admitted CPU quotient stage");
-                    QuotientOutput::Host(q_values)
-                };
+                    },
+                )
+                .expect("admitted CPU quotient stage");
+            QuotientOutput::Host(q_values)
+        };
 
-            // Flatten extension values to base field and split into degree-bounded chunks.
-            match q_values {
-                QuotientOutput::Device(values) => InstanceOutput::Device {
-                    domain: quotient_domain.into(),
-                    chunks: n_chunks,
-                    values,
-                },
-                QuotientOutput::Host(values) => {
-                    let q_flat = RowMajorMatrix::new_col(values).flatten_to_base();
-                    InstanceOutput::Host((
-                        quotient_domain.cpu().split_domains(n_chunks),
-                        quotient_domain.cpu().split_evals(n_chunks, q_flat),
-                    ))
-                }
+        // Flatten extension values to base field and split into degree-bounded chunks.
+        match q_values {
+            QuotientOutput::Device(values) => InstanceOutput::Device {
+                domain: quotient_domain.into(),
+                chunks: n_chunks,
+                values,
+            },
+            QuotientOutput::Host(values) => {
+                let q_flat = RowMajorMatrix::new_col(values).flatten_to_base();
+                InstanceOutput::Host((
+                    quotient_domain.cpu().split_domains(n_chunks),
+                    quotient_domain.cpu().split_evals(n_chunks, q_flat),
+                ))
             }
-        })
-        .collect();
+        }
+    };
+    let per_instance: Vec<InstanceOutput<SC>> =
+        if super::quotient_pcs::gpu_quotient_resident_enabled() {
+            (0..n_instances).map(compute_quotient).collect()
+        } else {
+            (0..n_instances)
+                .into_par_iter()
+                .map(compute_quotient)
+                .collect()
+        };
 
     release_quotient_prefix(&mut main_data);
     if let Some((_, data)) = &mut permutation_commit_and_data {

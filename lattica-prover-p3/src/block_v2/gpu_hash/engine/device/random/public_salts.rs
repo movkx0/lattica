@@ -5,9 +5,14 @@ use rand::SeedableRng;
 
 #[derive(Clone)]
 pub struct PublicSalts {
-    storage: Arc<SecretAllocation>,
+    storage: PublicSaltStorage,
     context: Arc<JobLease>,
     spec: MatrixSpec,
+}
+#[derive(Clone)]
+enum PublicSaltStorage {
+    Resident(Arc<SecretAllocation>),
+    Host(Arc<Vec<u64>>),
 }
 
 #[derive(Clone)]
@@ -35,21 +40,57 @@ impl DeviceSession {
 
     pub(crate) fn import_public_salts(&self, salts: &PublicSalts) -> Result<DeviceMatrix, String> {
         salts.check_context(self)?;
-        Ok(DeviceMatrix {
-            storage: salts.storage.allocation.clone(),
-            // Retain the cleanup guard through every alias, including aliases
-            // in a fresh proof session. It cannot be used to promote a trace.
-            private_random: Some(salts.storage.clone()),
-            session: self.session.clone(),
-            spec: salts.spec,
-        })
+        match &salts.storage {
+            PublicSaltStorage::Host(words) => self.upload(salts.spec, words),
+            PublicSaltStorage::Resident(storage) => Ok(DeviceMatrix {
+                storage: storage.allocation.clone(),
+                // Retain the cleanup guard through every alias, including aliases
+                // in a fresh proof session. It cannot be used to promote a trace.
+                private_random: Some(storage.clone()),
+                session: self.session.clone(),
+                spec: salts.spec,
+            }),
+        }
     }
 }
 
 impl PublicSalts {
     pub(crate) fn cached_host_backing(&self) -> usize {
         use crate::block_v2::gpu_hash::cache_metadata::arc_bytes;
-        arc_bytes::<SecretAllocation>() + arc_bytes::<Allocation>()
+        match &self.storage {
+            PublicSaltStorage::Resident(_) => {
+                arc_bytes::<SecretAllocation>() + arc_bytes::<Allocation>()
+            }
+            PublicSaltStorage::Host(words) => arc_bytes::<Vec<u64>>() + words.capacity() * 8,
+        }
+    }
+    pub(crate) fn host_bound(&self) -> usize {
+        self.spec.bytes() + crate::block_v2::gpu_hash::cache_metadata::arc_bytes::<Vec<u64>>()
+    }
+    pub(crate) fn parked_bytes(&self) -> usize {
+        if matches!(self.storage, PublicSaltStorage::Host(_)) {
+            self.spec.bytes()
+        } else {
+            0
+        }
+    }
+    /// Only the fixed public preprocessing stream constructs this type. The
+    /// private sample/salt interfaces cannot enter this host storage path.
+    pub(crate) fn park(
+        &mut self,
+        session: &DeviceSession,
+        allowance: usize,
+    ) -> Result<usize, String> {
+        self.check_context(session)?;
+        if self.host_bound() > allowance {
+            return Err("public salt host allowance".into());
+        }
+        if matches!(self.storage, PublicSaltStorage::Resident(_)) {
+            let matrix = session.import_public_salts(self)?;
+            let words = session.read(&matrix, self.spec.bytes())?;
+            self.storage = PublicSaltStorage::Host(Arc::new(words));
+        }
+        Ok(self.cached_host_backing())
     }
     pub(crate) fn spec(&self) -> MatrixSpec {
         self.spec
@@ -184,7 +225,7 @@ impl PublicSaltStream {
                 }
             };
             output.push(PublicSalts {
-                storage: Arc::new(words.storage),
+                storage: PublicSaltStorage::Resident(Arc::new(words.storage)),
                 context: words.session.session.context.clone(),
                 spec: shape,
             });

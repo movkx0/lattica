@@ -142,3 +142,20 @@ fn host_tree_quota_does_not_erase_device_construction_or_public_salts() {
         );
     }
 }
+
+#[test]
+#[cfg(all(feature = "gpu", feature = "gpu-tuning"))]
+fn expanded_aggregation_tree_quota_requires_explicit_captured_selection() {
+    let trees = Selection { mode: RetainedTreeStorageMode::HostBacking, host_bytes: 16 << 30 };
+    let mut limits = RegisteredGpuLimits::with_selection(HOST_LIMIT, DEVICE_LIMIT, CONTEXT_RESERVE, ROW_LIMIT, trees).unwrap();
+    assert_eq!(limits.outer_tree_host_limit, 8 << 30);
+    assert!(limits.with_aggregation_tree_quota(16 << 30).is_err());
+    limits.aggregation_v4 = true;
+    assert!(limits.with_aggregation_tree_quota(8 << 30).is_err());
+    assert!(limits.with_aggregation_tree_quota(32 << 30).is_err());
+    let wide = limits.with_aggregation_tree_quota(16 << 30).unwrap();
+    assert_eq!(wide.outer_tree_host_limit, 16 << 30);
+    assert_eq!(wide.host_bytes, HOST_LIMIT);
+    assert_eq!(wide.device_bytes, DEVICE_LIMIT);
+    assert_eq!(wide.max_rows, ROW_LIMIT);
+}

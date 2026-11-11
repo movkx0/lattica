@@ -209,6 +209,7 @@ fn gpu_device_salts_preserve_shared_trace_and_randomization_streams() {
                 )
                 .unwrap();
             let shape = TraceCommitShape::new(spec, profile::NUM_RANDOM_CODEWORDS).unwrap();
+            assert_eq!(trace.exclusive_bytes(), spec.bytes());
             let baseline = engine::report("device salt trace baseline").unwrap();
             for (random, salt_stream) in [(&random, &salt_clone), (&random_clone, &salt_stream)] {
                 let prepared = session
@@ -218,14 +219,16 @@ fn gpu_device_salts_preserve_shared_trace_and_randomization_streams() {
                         random.sample_fields(shape.random_words).unwrap(),
                     )
                     .unwrap();
+                assert_eq!(trace.exclusive_bytes(), 0, "shared trace must stay charged");
                 let actual = gpu
                     .commit_traces_with_device_salts(
-                        &[prepared],
+                        vec![prepared],
                         salts(salt_stream, (2 * height) << profile::LOG_BLOWUP, 1),
                         &session,
                         64 << 20,
                     )
                     .unwrap();
+                assert_eq!(trace.exclusive_bytes(), spec.bytes());
                 compare_owned(
                     &cpu_mmcs,
                     &gpu,
@@ -600,7 +603,7 @@ fn gpu_device_random_storage_rejects_domains_sessions_and_budgets() {
     );
     let before = engine::report("private preprocessing salt rejection before").unwrap();
     let error = gpu
-        .commit_traces_with_device_salts(&[preprocessing], private_salts, &session, 64 << 20)
+        .commit_traces_with_device_salts(vec![preprocessing], private_salts, &session, 64 << 20)
         .err()
         .unwrap();
     assert!(error.contains("private device salts"));

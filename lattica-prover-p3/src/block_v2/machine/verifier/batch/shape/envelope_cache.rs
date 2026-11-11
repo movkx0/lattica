@@ -99,15 +99,25 @@ impl HeightEnvelopeCacheScope {
     /// a coordinator prepare snapshots without nesting a compiler worker pool.
     pub fn lookup_only<T>(operation: impl FnOnce() -> T) -> T {
         struct Restore(bool);
-        impl Drop for Restore { fn drop(&mut self) { LOOKUP_ONLY.with(|slot| slot.set(self.0)); } }
+        impl Drop for Restore {
+            fn drop(&mut self) {
+                LOOKUP_ONLY.with(|slot| slot.set(self.0));
+            }
+        }
         let restore = Restore(LOOKUP_ONLY.with(|slot| slot.replace(true)));
-        let result = operation(); drop(restore); result
+        let result = operation();
+        drop(restore);
+        result
     }
     pub fn snapshot() -> Result<HeightEnvelopeCacheSnapshot, CompileError> {
         CACHE.with(|slot| {
             let cache = slot.try_borrow().map_err(|_| busy())?;
             let cache = cache.as_ref().filter(|c| !c.read_only).ok_or_else(busy)?;
-            Ok(HeightEnvelopeCacheSnapshot { source: cache.source, entries: cache.entries, clock: cache.clock })
+            Ok(HeightEnvelopeCacheSnapshot {
+                source: cache.source,
+                entries: cache.entries,
+                clock: cache.clock,
+            })
         })
     }
     pub fn begin_read_only(snapshot: &HeightEnvelopeCacheSnapshot) -> Result<Self, CompileError> {
@@ -130,14 +140,27 @@ impl HeightEnvelopeCacheScope {
         })
     }
     pub fn absorb_worker(statistics: HeightEnvelopeCacheStatistics) -> Result<(), CompileError> {
-        if statistics.misses != 0 || statistics.evictions != 0 || statistics.failed_computations != 0 {
-            return Err(CompileError::Shape("read-only geometry worker performed a computation"));
+        if statistics.misses != 0
+            || statistics.evictions != 0
+            || statistics.failed_computations != 0
+        {
+            return Err(CompileError::Shape(
+                "read-only geometry worker performed a computation",
+            ));
         }
         CACHE.with(|slot| {
             let mut slot = slot.try_borrow_mut().map_err(|_| busy())?;
             let cache = slot.as_mut().filter(|c| !c.read_only).ok_or_else(busy)?;
-            cache.statistics.hits = cache.statistics.hits.checked_add(statistics.hits).ok_or_else(overflow)?;
-            cache.statistics.planning_ns = cache.statistics.planning_ns.checked_add(statistics.planning_ns).ok_or_else(overflow)?;
+            cache.statistics.hits = cache
+                .statistics
+                .hits
+                .checked_add(statistics.hits)
+                .ok_or_else(overflow)?;
+            cache.statistics.planning_ns = cache
+                .statistics
+                .planning_ns
+                .checked_add(statistics.planning_ns)
+                .ok_or_else(overflow)?;
             Ok(())
         })
     }
@@ -209,7 +232,9 @@ pub(super) fn memoized(
     let key = CACHE.with(|slot| {
         let mut slot = slot.try_borrow_mut().map_err(|_| busy())?;
         let Some(cache) = slot.as_mut() else {
-            if LOOKUP_ONLY.with(|slot| slot.get()) { return Err(busy()); }
+            if LOOKUP_ONLY.with(|slot| slot.get()) {
+                return Err(busy());
+            }
             return Ok(None);
         };
         cache.clock = cache.clock.checked_add(1).ok_or_else(overflow)?;
@@ -232,9 +257,13 @@ pub(super) fn memoized(
         if cache.read_only {
             return Err(CompileError::Shape("unresolved geometry worker descriptor"));
         }
-        if LOOKUP_ONLY.with(|slot| slot.get()) && (!cache.precomputed
-            || super::precomputed::lookup(publics, height, limits, auxiliary)?.is_none()) {
-            return Err(CompileError::Shape("geometry descriptor requires deferred compilation"));
+        if LOOKUP_ONLY.with(|slot| slot.get())
+            && (!cache.precomputed
+                || super::precomputed::lookup(publics, height, limits, auxiliary)?.is_none())
+        {
+            return Err(CompileError::Shape(
+                "geometry descriptor requires deferred compilation",
+            ));
         }
         cache.statistics.misses = cache
             .statistics
@@ -320,14 +349,37 @@ mod tests {
     #[test]
     fn lookup_only_defers_compilation_and_restores_after_unwind() {
         let scope = HeightEnvelopeCacheScope::begin([23; 32]).unwrap();
-        assert!(HeightEnvelopeCacheScope::lookup_only(|| memoized(28, 8, limits(), 512 << 20,
-            || panic!("lookup-only scope compiled"))).is_err());
+        assert!(HeightEnvelopeCacheScope::lookup_only(|| memoized(
+            28,
+            8,
+            limits(),
+            512 << 20,
+            || panic!("lookup-only scope compiled")
+        ))
+        .is_err());
         assert_eq!(scope.statistics().misses, 0);
-        assert!(std::panic::catch_unwind(|| HeightEnvelopeCacheScope::lookup_only(|| panic!("injected lookup unwind"))).is_err());
+        assert!(
+            std::panic::catch_unwind(|| HeightEnvelopeCacheScope::lookup_only(|| panic!(
+                "injected lookup unwind"
+            )))
+            .is_err()
+        );
         let expected = value(28);
-        assert_eq!(memoized(28, 8, limits(), 512 << 20, || Ok(expected)).unwrap(), expected);
-        assert_eq!(HeightEnvelopeCacheScope::lookup_only(|| memoized(28, 8, limits(), 512 << 20,
-            || panic!("cached descriptor compiled"))).unwrap(), expected);
+        assert_eq!(
+            memoized(28, 8, limits(), 512 << 20, || Ok(expected)).unwrap(),
+            expected
+        );
+        assert_eq!(
+            HeightEnvelopeCacheScope::lookup_only(|| memoized(
+                28,
+                8,
+                limits(),
+                512 << 20,
+                || panic!("cached descriptor compiled")
+            ))
+            .unwrap(),
+            expected
+        );
         assert_eq!((scope.statistics().hits, scope.statistics().misses), (1, 1));
     }
     #[test]
@@ -336,15 +388,27 @@ mod tests {
         let expected = value(28);
         memoized(28, 8, limits(), 512 << 20, || Ok(expected)).unwrap();
         let snapshot = HeightEnvelopeCacheScope::snapshot().unwrap();
-        let statistics = std::thread::scope(|threads| threads.spawn(|| {
-            let reader = HeightEnvelopeCacheScope::begin_read_only(&snapshot).unwrap();
-            assert_eq!(memoized(28, 8, limits(), 512 << 20,
-                || panic!("read-only hit compiled")).unwrap(), expected);
-            let statistics = reader.take_worker_statistics();
-            assert!(memoized(28, 16, limits(), 512 << 20,
-                || panic!("read-only miss compiled")).is_err());
-            statistics
-        }).join().unwrap());
+        let statistics = std::thread::scope(|threads| {
+            threads
+                .spawn(|| {
+                    let reader = HeightEnvelopeCacheScope::begin_read_only(&snapshot).unwrap();
+                    assert_eq!(
+                        memoized(28, 8, limits(), 512 << 20, || panic!(
+                            "read-only hit compiled"
+                        ))
+                        .unwrap(),
+                        expected
+                    );
+                    let statistics = reader.take_worker_statistics();
+                    assert!(memoized(28, 16, limits(), 512 << 20, || panic!(
+                        "read-only miss compiled"
+                    ))
+                    .is_err());
+                    statistics
+                })
+                .join()
+                .unwrap()
+        });
         HeightEnvelopeCacheScope::absorb_worker(statistics).unwrap();
         assert_eq!((scope.statistics().hits, scope.statistics().misses), (1, 1));
     }

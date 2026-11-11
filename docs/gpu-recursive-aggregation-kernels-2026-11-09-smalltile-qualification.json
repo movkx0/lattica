@@ -1,0 +1,2264 @@
+{
+  "schema": "ringct-gpu-memory-qualification-v1",
+  "source_sha3": "41bce0551046aeac52b894ed45b1189590562b14e77c1208103f7f51aef4451b",
+  "executable_sha3": "191fa43d179b2ca7a30c0fc44118273b8906a3e6f85be5d9950d0cc5ef7edd4f",
+  "device_uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615",
+  "driver": "615.78.08",
+  "query_gather": "batch",
+  "kernel_policy": {
+    "ntt": "smalltile",
+    "poseidon": "baseline",
+    "compiler": "standard",
+    "program_bytes": 2147483648,
+    "input_values": 1048576,
+    "live_jobs": 4,
+    "backend_host_bytes": 21474836480,
+    "tree_host_bytes": 8589934592
+  },
+  "opaque_peak_bytes": 284996432,
+  "context_bytes": 2147483648,
+  "max_rows": 524288,
+  "verified": true,
+  "geometries": [
+    {
+      "rows": 262144,
+      "public_values": 46
+    },
+    {
+      "rows": 524288,
+      "public_values": 28
+    },
+    {
+      "rows": 524288,
+      "public_values": 46
+    }
+  ],
+  "smaller_reserve_qualified": true,
+  "supported_reserve": true,
+  "managed_bytes_tested": 8589934592,
+  "checkpoints": [
+    {
+      "context_bytes": 278635696,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7650696016,
+      "pid": 2198838,
+      "process_bytes": 7929331712,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 278636088,
+      "label": "aggregation registration",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 3590609352,
+      "pid": 2198838,
+      "process_bytes": 3869245440,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 278920192,
+      "label": "aggregation trace",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 2675966976,
+      "pid": 2198838,
+      "process_bytes": 2954887168,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 278863712,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7147151520,
+      "pid": 2198838,
+      "process_bytes": 7426015232,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 278863712,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7247814816,
+      "pid": 2198838,
+      "process_bytes": 7526678528,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283114352,
+      "label": "specialized quotient compilation",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 4781507728,
+      "pid": 2198838,
+      "process_bytes": 5064622080,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 82129584,
+      "label": "specialized quotient execution",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5055892816,
+      "pid": 2198838,
+      "process_bytes": 5138022400,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283113616,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7830767472,
+      "pid": 2198838,
+      "process_bytes": 8113881088,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283113984,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7843350016,
+      "pid": 2198838,
+      "process_bytes": 8126464000,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2198838,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2198838,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2198838,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2198838,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2198838,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5905580400,
+      "pid": 2198838,
+      "process_bytes": 6188695552,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5637144944,
+      "pid": 2198838,
+      "process_bytes": 5920260096,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5502927216,
+      "pid": 2198838,
+      "process_bytes": 5786042368,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5435818352,
+      "pid": 2198838,
+      "process_bytes": 5718933504,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5402263920,
+      "pid": 2198838,
+      "process_bytes": 5685379072,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5385486704,
+      "pid": 2198838,
+      "process_bytes": 5668601856,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5377098096,
+      "pid": 2198838,
+      "process_bytes": 5660213248,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5372903792,
+      "pid": 2198838,
+      "process_bytes": 5656018944,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5370806640,
+      "pid": 2198838,
+      "process_bytes": 5653921792,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 284163728,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5369758064,
+      "pid": 2198838,
+      "process_bytes": 5653921792,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 282590864,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5369233776,
+      "pid": 2198838,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 282853008,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368971632,
+      "pid": 2198838,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 282984080,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368840560,
+      "pid": 2198838,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283049616,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368775024,
+      "pid": 2198838,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283082384,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368742256,
+      "pid": 2198838,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283098768,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368725872,
+      "pid": 2198838,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283106960,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368717680,
+      "pid": 2198838,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283114768,
+      "label": "aggregation proof complete",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 67109616,
+      "pid": 2198838,
+      "process_bytes": 350224384,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 284896160,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7650727008,
+      "pid": 2198838,
+      "process_bytes": 7935623168,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 284896552,
+      "label": "aggregation registration",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 3590640344,
+      "pid": 2198838,
+      "process_bytes": 3875536896,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283114496,
+      "label": "aggregation trace",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 2675966976,
+      "pid": 2198838,
+      "process_bytes": 2959081472,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283058016,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7147151520,
+      "pid": 2198838,
+      "process_bytes": 7430209536,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283058016,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7247814816,
+      "pid": 2198838,
+      "process_bytes": 7530872832,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283113616,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7830767472,
+      "pid": 2198838,
+      "process_bytes": 8113881088,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283113984,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7843350016,
+      "pid": 2198838,
+      "process_bytes": 8126464000,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2198838,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2198838,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2198838,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2198838,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2198838,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5905580400,
+      "pid": 2198838,
+      "process_bytes": 6188695552,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5637144944,
+      "pid": 2198838,
+      "process_bytes": 5920260096,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5502927216,
+      "pid": 2198838,
+      "process_bytes": 5786042368,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5435818352,
+      "pid": 2198838,
+      "process_bytes": 5718933504,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5402263920,
+      "pid": 2198838,
+      "process_bytes": 5685379072,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5385486704,
+      "pid": 2198838,
+      "process_bytes": 5668601856,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5377098096,
+      "pid": 2198838,
+      "process_bytes": 5660213248,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5372903792,
+      "pid": 2198838,
+      "process_bytes": 5656018944,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5370806640,
+      "pid": 2198838,
+      "process_bytes": 5653921792,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 284163728,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5369758064,
+      "pid": 2198838,
+      "process_bytes": 5653921792,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 282590864,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5369233776,
+      "pid": 2198838,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 282853008,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368971632,
+      "pid": 2198838,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 282984080,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368840560,
+      "pid": 2198838,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283049616,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368775024,
+      "pid": 2198838,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283082384,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368742256,
+      "pid": 2198838,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283098768,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368725872,
+      "pid": 2198838,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283106960,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368717680,
+      "pid": 2198838,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283114768,
+      "label": "aggregation proof complete",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 67109616,
+      "pid": 2198838,
+      "process_bytes": 350224384,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 284996040,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 8061668920,
+      "pid": 2198838,
+      "process_bytes": 8346664960,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 284996432,
+      "label": "aggregation registration",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 2927840432,
+      "pid": 2198838,
+      "process_bytes": 3212836864,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283114496,
+      "label": "aggregation trace",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 2675966976,
+      "pid": 2198838,
+      "process_bytes": 2959081472,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283058016,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7147151520,
+      "pid": 2198838,
+      "process_bytes": 7430209536,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283058016,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7247814816,
+      "pid": 2198838,
+      "process_bytes": 7530872832,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283113616,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7830767472,
+      "pid": 2198838,
+      "process_bytes": 8113881088,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283113984,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7843350016,
+      "pid": 2198838,
+      "process_bytes": 8126464000,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2198838,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2198838,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2198838,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2198838,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2198838,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5905580400,
+      "pid": 2198838,
+      "process_bytes": 6188695552,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5637144944,
+      "pid": 2198838,
+      "process_bytes": 5920260096,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5502927216,
+      "pid": 2198838,
+      "process_bytes": 5786042368,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5435818352,
+      "pid": 2198838,
+      "process_bytes": 5718933504,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5402263920,
+      "pid": 2198838,
+      "process_bytes": 5685379072,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5385486704,
+      "pid": 2198838,
+      "process_bytes": 5668601856,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5377098096,
+      "pid": 2198838,
+      "process_bytes": 5660213248,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5372903792,
+      "pid": 2198838,
+      "process_bytes": 5656018944,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5370806640,
+      "pid": 2198838,
+      "process_bytes": 5653921792,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 284163728,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5369758064,
+      "pid": 2198838,
+      "process_bytes": 5653921792,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 282590864,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5369233776,
+      "pid": 2198838,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 282853008,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368971632,
+      "pid": 2198838,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 282984080,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368840560,
+      "pid": 2198838,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283049616,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368775024,
+      "pid": 2198838,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283082384,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368742256,
+      "pid": 2198838,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283098768,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368725872,
+      "pid": 2198838,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283106960,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368717680,
+      "pid": 2198838,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283114768,
+      "label": "aggregation proof complete",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 67109616,
+      "pid": 2198838,
+      "process_bytes": 350224384,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283114768,
+      "label": "worker context observation",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 67109616,
+      "pid": 2198838,
+      "process_bytes": 350224384,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283114768,
+      "label": "recursive OpenCL session complete",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 67109616,
+      "pid": 2198838,
+      "process_bytes": 350224384,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 278391056,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7543985904,
+      "pid": 2199369,
+      "process_bytes": 7822376960,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 278391448,
+      "label": "aggregation registration",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 3483899240,
+      "pid": 2199369,
+      "process_bytes": 3762290688,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 278920192,
+      "label": "aggregation trace",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 2675966976,
+      "pid": 2199369,
+      "process_bytes": 2954887168,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 278858080,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7147157152,
+      "pid": 2199369,
+      "process_bytes": 7426015232,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 278858080,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7247820448,
+      "pid": 2199369,
+      "process_bytes": 7526678528,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283114352,
+      "label": "specialized quotient compilation",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 4781507728,
+      "pid": 2199369,
+      "process_bytes": 5064622080,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 82022496,
+      "label": "specialized quotient execution",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5055999904,
+      "pid": 2199369,
+      "process_bytes": 5138022400,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283113616,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7830767472,
+      "pid": 2199369,
+      "process_bytes": 8113881088,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283113984,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7843350016,
+      "pid": 2199369,
+      "process_bytes": 8126464000,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2199369,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2199369,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2199369,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2199369,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2199369,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5905580400,
+      "pid": 2199369,
+      "process_bytes": 6188695552,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5637144944,
+      "pid": 2199369,
+      "process_bytes": 5920260096,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5502927216,
+      "pid": 2199369,
+      "process_bytes": 5786042368,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5435818352,
+      "pid": 2199369,
+      "process_bytes": 5718933504,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5402263920,
+      "pid": 2199369,
+      "process_bytes": 5685379072,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5385486704,
+      "pid": 2199369,
+      "process_bytes": 5668601856,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5377098096,
+      "pid": 2199369,
+      "process_bytes": 5660213248,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5372903792,
+      "pid": 2199369,
+      "process_bytes": 5656018944,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5370806640,
+      "pid": 2199369,
+      "process_bytes": 5653921792,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 284163728,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5369758064,
+      "pid": 2199369,
+      "process_bytes": 5653921792,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 282590864,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5369233776,
+      "pid": 2199369,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 282853008,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368971632,
+      "pid": 2199369,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 282984080,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368840560,
+      "pid": 2199369,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283049616,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368775024,
+      "pid": 2199369,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283082384,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368742256,
+      "pid": 2199369,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283098768,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368725872,
+      "pid": 2199369,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283106960,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368717680,
+      "pid": 2199369,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283114768,
+      "label": "aggregation proof complete",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 67109616,
+      "pid": 2199369,
+      "process_bytes": 350224384,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283180248,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7555973928,
+      "pid": 2199369,
+      "process_bytes": 7839154176,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283180640,
+      "label": "aggregation registration",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 3495887264,
+      "pid": 2199369,
+      "process_bytes": 3779067904,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283114496,
+      "label": "aggregation trace",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 2675966976,
+      "pid": 2199369,
+      "process_bytes": 2959081472,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283052384,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7147157152,
+      "pid": 2199369,
+      "process_bytes": 7430209536,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283052384,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7247820448,
+      "pid": 2199369,
+      "process_bytes": 7530872832,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283113616,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7830767472,
+      "pid": 2199369,
+      "process_bytes": 8113881088,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283113984,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7843350016,
+      "pid": 2199369,
+      "process_bytes": 8126464000,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2199369,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2199369,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2199369,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2199369,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2199369,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5905580400,
+      "pid": 2199369,
+      "process_bytes": 6188695552,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5637144944,
+      "pid": 2199369,
+      "process_bytes": 5920260096,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5502927216,
+      "pid": 2199369,
+      "process_bytes": 5786042368,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5435818352,
+      "pid": 2199369,
+      "process_bytes": 5718933504,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5402263920,
+      "pid": 2199369,
+      "process_bytes": 5685379072,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5385486704,
+      "pid": 2199369,
+      "process_bytes": 5668601856,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5377098096,
+      "pid": 2199369,
+      "process_bytes": 5660213248,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5372903792,
+      "pid": 2199369,
+      "process_bytes": 5656018944,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5370806640,
+      "pid": 2199369,
+      "process_bytes": 5653921792,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 284163728,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5369758064,
+      "pid": 2199369,
+      "process_bytes": 5653921792,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 282590864,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5369233776,
+      "pid": 2199369,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 282853008,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368971632,
+      "pid": 2199369,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 282984080,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368840560,
+      "pid": 2199369,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283049616,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368775024,
+      "pid": 2199369,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283082384,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368742256,
+      "pid": 2199369,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283098768,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368725872,
+      "pid": 2199369,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283106960,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368717680,
+      "pid": 2199369,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283114768,
+      "label": "aggregation proof complete",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 67109616,
+      "pid": 2199369,
+      "process_bytes": 350224384,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 284660136,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7478996568,
+      "pid": 2199369,
+      "process_bytes": 7763656704,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 284660512,
+      "label": "aggregation registration",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 1690856672,
+      "pid": 2199369,
+      "process_bytes": 1975517184,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283114496,
+      "label": "aggregation trace",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 1371538432,
+      "pid": 2199369,
+      "process_bytes": 1654652928,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283052400,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7365260944,
+      "pid": 2199369,
+      "process_bytes": 7648313344,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283052400,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7415592592,
+      "pid": 2199369,
+      "process_bytes": 7698644992,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283113632,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 4351592288,
+      "pid": 2199369,
+      "process_bytes": 4634705920,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283114000,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 3955230192,
+      "pid": 2199369,
+      "process_bytes": 4238344192,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 3254780272,
+      "pid": 2199369,
+      "process_bytes": 3537895424,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 3254780272,
+      "pid": 2199369,
+      "process_bytes": 3537895424,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 3254780272,
+      "pid": 2199369,
+      "process_bytes": 3537895424,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 3254780272,
+      "pid": 2199369,
+      "process_bytes": 3537895424,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 3254780272,
+      "pid": 2199369,
+      "process_bytes": 3537895424,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 2986344816,
+      "pid": 2199369,
+      "process_bytes": 3269459968,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 2852127088,
+      "pid": 2199369,
+      "process_bytes": 3135242240,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 2785018224,
+      "pid": 2199369,
+      "process_bytes": 3068133376,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 2751463792,
+      "pid": 2199369,
+      "process_bytes": 3034578944,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 2734686576,
+      "pid": 2199369,
+      "process_bytes": 3017801728,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 2726297968,
+      "pid": 2199369,
+      "process_bytes": 3009413120,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 2722103664,
+      "pid": 2199369,
+      "process_bytes": 3005218816,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 2720006512,
+      "pid": 2199369,
+      "process_bytes": 3003121664,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 284163728,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 2718957936,
+      "pid": 2199369,
+      "process_bytes": 3003121664,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 282590864,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 2718433648,
+      "pid": 2199369,
+      "process_bytes": 3001024512,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 282853008,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 2718171504,
+      "pid": 2199369,
+      "process_bytes": 3001024512,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 282984080,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 2718040432,
+      "pid": 2199369,
+      "process_bytes": 3001024512,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283049616,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 2717974896,
+      "pid": 2199369,
+      "process_bytes": 3001024512,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283082384,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 2717942128,
+      "pid": 2199369,
+      "process_bytes": 3001024512,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283098768,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 2717925744,
+      "pid": 2199369,
+      "process_bytes": 3001024512,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283106960,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 2717917552,
+      "pid": 2199369,
+      "process_bytes": 3001024512,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283114768,
+      "label": "aggregation proof complete",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 67109616,
+      "pid": 2199369,
+      "process_bytes": 350224384,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 284796720,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 8061868240,
+      "pid": 2199369,
+      "process_bytes": 8346664960,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 284797112,
+      "label": "aggregation registration",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 2928039752,
+      "pid": 2199369,
+      "process_bytes": 3212836864,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283114496,
+      "label": "aggregation trace",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 2675966976,
+      "pid": 2199369,
+      "process_bytes": 2959081472,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283052384,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7147157152,
+      "pid": 2199369,
+      "process_bytes": 7430209536,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283052384,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7247820448,
+      "pid": 2199369,
+      "process_bytes": 7530872832,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283113616,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7830767472,
+      "pid": 2199369,
+      "process_bytes": 8113881088,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283113984,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7843350016,
+      "pid": 2199369,
+      "process_bytes": 8126464000,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2199369,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2199369,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2199369,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2199369,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2199369,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5905580400,
+      "pid": 2199369,
+      "process_bytes": 6188695552,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5637144944,
+      "pid": 2199369,
+      "process_bytes": 5920260096,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5502927216,
+      "pid": 2199369,
+      "process_bytes": 5786042368,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5435818352,
+      "pid": 2199369,
+      "process_bytes": 5718933504,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5402263920,
+      "pid": 2199369,
+      "process_bytes": 5685379072,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5385486704,
+      "pid": 2199369,
+      "process_bytes": 5668601856,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5377098096,
+      "pid": 2199369,
+      "process_bytes": 5660213248,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5372903792,
+      "pid": 2199369,
+      "process_bytes": 5656018944,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5370806640,
+      "pid": 2199369,
+      "process_bytes": 5653921792,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 284163728,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5369758064,
+      "pid": 2199369,
+      "process_bytes": 5653921792,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 282590864,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5369233776,
+      "pid": 2199369,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 282853008,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368971632,
+      "pid": 2199369,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 282984080,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368840560,
+      "pid": 2199369,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283049616,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368775024,
+      "pid": 2199369,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283082384,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368742256,
+      "pid": 2199369,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283098768,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368725872,
+      "pid": 2199369,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283106960,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368717680,
+      "pid": 2199369,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283114768,
+      "label": "aggregation proof complete",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 67109616,
+      "pid": 2199369,
+      "process_bytes": 350224384,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 284181128,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 8047803768,
+      "pid": 2199369,
+      "process_bytes": 8331984896,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 284181520,
+      "label": "aggregation registration",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 2913975280,
+      "pid": 2199369,
+      "process_bytes": 3198156800,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283114496,
+      "label": "aggregation trace",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 2675966976,
+      "pid": 2199369,
+      "process_bytes": 2959081472,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283052384,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7147157152,
+      "pid": 2199369,
+      "process_bytes": 7430209536,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283052384,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7247820448,
+      "pid": 2199369,
+      "process_bytes": 7530872832,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283113616,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7830767472,
+      "pid": 2199369,
+      "process_bytes": 8113881088,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283113984,
+      "label": "aggregation LDE peak",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 7843350016,
+      "pid": 2199369,
+      "process_bytes": 8126464000,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2199369,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2199369,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2199369,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2199369,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 6442451312,
+      "pid": 2199369,
+      "process_bytes": 6725566464,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5905580400,
+      "pid": 2199369,
+      "process_bytes": 6188695552,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5637144944,
+      "pid": 2199369,
+      "process_bytes": 5920260096,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5502927216,
+      "pid": 2199369,
+      "process_bytes": 5786042368,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5435818352,
+      "pid": 2199369,
+      "process_bytes": 5718933504,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5402263920,
+      "pid": 2199369,
+      "process_bytes": 5685379072,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5385486704,
+      "pid": 2199369,
+      "process_bytes": 5668601856,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5377098096,
+      "pid": 2199369,
+      "process_bytes": 5660213248,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5372903792,
+      "pid": 2199369,
+      "process_bytes": 5656018944,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283115152,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5370806640,
+      "pid": 2199369,
+      "process_bytes": 5653921792,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 284163728,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5369758064,
+      "pid": 2199369,
+      "process_bytes": 5653921792,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 282590864,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5369233776,
+      "pid": 2199369,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 282853008,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368971632,
+      "pid": 2199369,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 282984080,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368840560,
+      "pid": 2199369,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283049616,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368775024,
+      "pid": 2199369,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283082384,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368742256,
+      "pid": 2199369,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283098768,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368725872,
+      "pid": 2199369,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283106960,
+      "label": "aggregation query batch",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 5368717680,
+      "pid": 2199369,
+      "process_bytes": 5651824640,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283114768,
+      "label": "aggregation proof complete",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 67109616,
+      "pid": 2199369,
+      "process_bytes": 350224384,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283114768,
+      "label": "worker context observation",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 67109616,
+      "pid": 2199369,
+      "process_bytes": 350224384,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    },
+    {
+      "context_bytes": 283114768,
+      "label": "recursive OpenCL session complete",
+      "limit_bytes": 12884901888,
+      "managed_live_bytes": 67109616,
+      "pid": 2199369,
+      "process_bytes": 350224384,
+      "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+    }
+  ]
+}

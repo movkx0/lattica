@@ -4,9 +4,13 @@ use crate::block_v2::compute;
 use crate::block_v2::worker_memory::MEMORY_BACKEND;
 use crate::config::Val;
 mod capacity;
-#[cfg(all(target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info"))]
-pub(crate) mod note_ocl_wrapper_census;
 pub mod device;
+#[cfg(all(
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info"
+))]
+pub(crate) mod note_ocl_wrapper_census;
 pub use device::public_hash::report::PublicHashExecution;
 mod direct_tree;
 pub(crate) mod fri_fold;
@@ -26,6 +30,8 @@ use std::{
     sync::{Arc, Mutex, OnceLock},
     time::Instant,
 };
+#[cfg(all(feature = "gpu", feature = "gpu-tuning"))]
+pub use tuning::screen::run as aggregation_kernel_screen;
 
 const MIB: usize = 1 << 20;
 const GIB: usize = 1 << 30;
@@ -195,11 +201,17 @@ pub(crate) fn retained_query_base_bytes(limits: Limits) -> Result<usize, String>
 /// Extra batch owners are temporary, but are reserved by every phase census.
 pub(crate) fn query_batch_device_bytes() -> Result<usize, String> {
     #[cfg(all(feature = "gpu", feature = "gpu-tuning"))]
-    if tuning::Tuning::from_env()?.queries { return Ok(retained_storage::batch::DEVICE_BYTES); }
+    if tuning::Tuning::from_env()?.queries {
+        return Ok(retained_storage::batch::DEVICE_BYTES);
+    }
     Ok(0)
 }
 pub(crate) fn query_batch_host_bytes() -> Result<usize, String> {
-    Ok(if query_batch_device_bytes()? != 0 { 1 << 20 } else { 0 })
+    Ok(if query_batch_device_bytes()? != 0 {
+        1 << 20
+    } else {
+        0
+    })
 }
 
 /// A one-shot plan starts before registration creates any shared context.
@@ -932,7 +944,11 @@ fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, S
         mode,
         #[cfg(feature = "gpu")]
         None,
-        #[cfg(all(target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info"))]
+        #[cfg(all(
+            target_os = "linux",
+            target_arch = "x86_64",
+            feature = "gpu-bounded-info"
+        ))]
         None,
     )
 }
@@ -941,7 +957,11 @@ fn initialize_mode_tracked(limits: Limits, mode: TransferMode) -> Result<bool, S
 /// a sealed startup plan. The caller retains its real startup reservation and
 /// immutable configuration owner across source/context construction and cleanup.
 /// The borrowed selection remains owned for subsequent physical rechecks.
-#[cfg(all(target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info"))]
+#[cfg(all(
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info"
+))]
 pub(crate) fn initialize_explicit(
     limits: Limits,
     selected: &crate::gpu_device::bounded::Snapshot,
@@ -957,7 +977,10 @@ pub(crate) fn initialize_explicit(
     let requested_uuid = std::env::var("LATTICA_GPU_DEVICE_UUID")
         .map_err(|_| "explicit GPU startup requires its pinned UUID")?;
     if requested_index != Some(selected.identity().opencl_index)
-        || !selected.identity().uuid.as_ref()
+        || !selected
+            .identity()
+            .uuid
+            .as_ref()
             .is_some_and(|uuid| uuid.eq_ignore_ascii_case(&requested_uuid))
     {
         return Err("explicit GPU selection differs from sealed selectors".into());
@@ -975,9 +998,16 @@ pub(crate) fn initialize_explicit(
 fn initialize_mode_selected(
     limits: Limits,
     mode: TransferMode,
-    #[cfg(feature = "gpu")]
-    explicit: Option<(ocl::Platform, ocl::Device, &crate::gpu_device::Identity)>,
-    #[cfg(all(target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info"))]
+    #[cfg(feature = "gpu")] explicit: Option<(
+        ocl::Platform,
+        ocl::Device,
+        &crate::gpu_device::Identity,
+    )>,
+    #[cfg(all(
+        target_os = "linux",
+        target_arch = "x86_64",
+        feature = "gpu-bounded-info"
+    ))]
     owner_out: Option<&mut Option<owned_runtime::OwnedRuntime>>,
 ) -> Result<bool, String> {
     #[cfg(feature = "gpu")]
@@ -1103,6 +1133,7 @@ fn initialize_mode_selected(
             .src(
                 [
                     device::public_hash::nvidia::source_prefix(device),
+                    tuning.poseidon_schedule.defines(),
                     crate::gpu::KERNEL_SRC,
                     RETAINED_PATH_KERNEL,
                     lde_execute::KERNEL_SRC,
@@ -1126,9 +1157,9 @@ fn initialize_mode_selected(
                     device::PQ_POSEIDON_KERNEL_SRC,
                     #[cfg(feature = "gpu")]
                     device::PQ_OPERATIONS_KERNEL_SRC,
-                // Shared eight-lane Poseidon helpers precede raw field commitments.
-                device::PUBLIC_HASH_KERNEL_SRC,
-                device::OPERATIONS_HASH_KERNEL_SRC,
+                    // Shared eight-lane Poseidon helpers precede raw field commitments.
+                    device::PUBLIC_HASH_KERNEL_SRC,
+                    device::OPERATIONS_HASH_KERNEL_SRC,
                     #[cfg(feature = "gpu")]
                     device::PQ_CRYPTO_KERNEL_SRC,
                     device::PQ_RAW_CRYPTO_KERNEL_SRC,
@@ -1353,11 +1384,16 @@ fn initialize_mode_selected(
         .get_or_init(|| Mutex::new(None))
         .lock()
         .map_err(|_| "GPU engine poisoned")?;
-    #[cfg(all(target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info"))]
+    #[cfg(all(
+        target_os = "linux",
+        target_arch = "x86_64",
+        feature = "gpu-bounded-info"
+    ))]
     if let Some(owner_out) = owner_out {
         // Capture the exact epoch before publication and while INITIALIZE is
         // still held. OwnedRuntime has no public constructor or clone path.
-        let owner = owned_runtime::OwnedRuntime::new(Arc::clone(&engine._job_lease), initialized_device);
+        let owner =
+            owned_runtime::OwnedRuntime::new(Arc::clone(&engine._job_lease), initialized_device);
         *slot = Some(engine);
         *owner_out = Some(owner);
         return Ok(true);
@@ -1447,6 +1483,26 @@ pub(crate) fn plan_lde_commit_storage(
     capture: Option<usize>,
     extra_allocations: &[usize],
 ) -> Result<lde_plan::LdeCommitPlan, String> {
+    plan_lde_commit_storage_releasing(
+        inputs,
+        cap_height,
+        host_output_budget_bytes,
+        retention,
+        capture,
+        extra_allocations,
+        None,
+    )
+}
+
+pub(crate) fn plan_lde_commit_storage_releasing(
+    inputs: &[lde_plan::InputShape],
+    cap_height: usize,
+    host_output_budget_bytes: usize,
+    retention: lde_plan::LdeRetention,
+    capture: Option<usize>,
+    extra_allocations: &[usize],
+    released: Option<&[usize]>,
+) -> Result<lde_plan::LdeCommitPlan, String> {
     validate_device_retention(inputs, retention, capture)?;
     let guard = ENGINE
         .get()
@@ -1471,9 +1527,22 @@ pub(crate) fn plan_lde_commit_storage(
     } else {
         0
     };
+    let prefix_peak = if let Some(released) = released {
+        let specs = device::capture_specs(&device_capture_shapes(
+            inputs,
+            capture.ok_or("streamed commitment requires prefix capture")?,
+        )?)?;
+        lde_plan::streaming_prefix_peak(
+            inputs,
+            &specs.iter().map(|s| s.bytes()).collect::<Vec<_>>(),
+            released,
+        )?
+    } else {
+        capture_bytes
+    };
     let additional = extra_allocations
         .iter()
-        .try_fold(capture_bytes, |total, bytes| {
+        .try_fold(prefix_peak, |total, bytes| {
             if *bytes > engine.max_alloc {
                 return Err("LDE auxiliary allocation exceeds device limit".to_owned());
             }
@@ -3784,5 +3853,9 @@ impl Engine {
     }
 }
 
-#[cfg(all(target_os = "linux", target_arch = "x86_64", feature = "gpu-bounded-info"))]
+#[cfg(all(
+    target_os = "linux",
+    target_arch = "x86_64",
+    feature = "gpu-bounded-info"
+))]
 pub(crate) mod owned_runtime;

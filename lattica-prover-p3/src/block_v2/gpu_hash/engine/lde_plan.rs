@@ -60,6 +60,8 @@ pub(crate) fn device_minimum(
     }
     let mut output_height = 0usize;
     let mut width = 0usize;
+    let mut minimum_height = usize::MAX;
+    let mut group_widths = [0usize; 32];
     for input in inputs {
         if input.height < 2
             || !input.height.is_power_of_two()
@@ -75,11 +77,17 @@ pub(crate) fn device_minimum(
             .checked_shl(input.added_bits as u32)
             .filter(|&n| n <= u32::MAX as usize && n >= input.height)
             .ok_or("LDE feasibility height overflow")?;
-        if output_height != 0 && output_height != height {
-            return Err("LDE feasibility requires equal output heights".into());
-        }
-        output_height = height;
-        width = add(width, add(input.width, SALT_COLUMNS)?)?;
+        output_height = output_height.max(height);
+        minimum_height = minimum_height.min(height);
+        let group = &mut group_widths[height.ilog2() as usize];
+        *group = add(*group, add(input.width, SALT_COLUMNS)?)?;
+        width = width.max(*group);
+    }
+    if minimum_height != output_height
+        && (!cfg!(feature = "gpu")
+            || minimum_height < 1usize << cap_height.min(output_height.ilog2() as usize))
+    {
+        return Err("mixed-height feasibility requires OpenCL and injections below the cap".into());
     }
     let persistent = add(CONSTANT_BYTES, limits.staging_bytes)?;
     if live < persistent {
@@ -113,7 +121,7 @@ pub(crate) fn device_minimum(
     .unwrap();
     largest = largest.max(limits.staging_bytes / slots);
     if largest > max_allocation || mul(2, transform_buffer_bytes)? > transform_allowance {
-        return Err("LDE complete transform column exceeds allocation or scratch allowance".into());
+        return Err(format!("LDE complete transform column exceeds allocation or scratch allowance: allocation_required={largest} allocation_limit={max_allocation} transform_required={} transform_limit={transform_allowance}", 2 * transform_buffer_bytes));
     }
     let mut peak = live;
     for amount in [
@@ -127,7 +135,7 @@ pub(crate) fn device_minimum(
         peak = add(peak, amount)?;
     }
     if peak > limits.managed_bytes {
-        return Err("LDE minimum complete transform exceeds managed allowance".into());
+        return Err(format!("LDE minimum complete transform exceeds managed allowance: device_required={peak} device_limit={}", limits.managed_bytes));
     }
     Ok(DeviceMinimum {
         minimum_peak_bytes: peak,
@@ -186,6 +194,28 @@ pub struct LdeCommitPlan {
     pub projected_salt_upload_bytes: usize,
     pub projected_host_readback_bytes: usize,
 }
+/// Additional prefix storage while inputs are consumed in stable MMCS order.
+/// Each prefix is allocated before its input can be released. `released`
+/// must come from exclusive owners, never from logical matrix dimensions.
+pub(super) fn streaming_prefix_peak(
+    shapes: &[InputShape],
+    prefix_bytes: &[usize],
+    released: &[usize],
+) -> Result<usize, String> {
+    if shapes.len() != prefix_bytes.len() || shapes.len() != released.len() {
+        return Err("streamed commitment shape count".into());
+    }
+    let mut order: Vec<_> = (0..shapes.len()).collect();
+    order.sort_by_key(|&i| std::cmp::Reverse(shapes[i].height << shapes[i].added_bits));
+    let (mut allocated, mut freed, mut peak) = (0usize, 0usize, 0usize);
+    for i in order {
+        allocated = add(allocated, prefix_bytes[i])?;
+        peak = peak.max(allocated.saturating_sub(freed));
+        freed = add(freed, released[i])?;
+    }
+    Ok(peak)
+}
+
 fn add(a: usize, b: usize) -> Result<usize, String> {
     a.checked_add(b)
         .ok_or_else(|| "LDE plan addition overflow".into())
@@ -351,6 +381,7 @@ impl LdeCommitPlan {
         let mut host_output = 0;
         let mut host_output_backing_bytes = 0;
         let mut prefixes = Vec::with_capacity(inputs.len());
+        let mut height_widths = std::collections::BTreeMap::<usize, usize>::new();
         for input in inputs {
             // Current tiled kernel requires at least one butterfly stage.
             if input.height < 2
@@ -369,12 +400,17 @@ impl LdeCommitPlan {
             if height > u32::MAX as usize || height < input.height {
                 return Err("LDE output exceeds kernel indexing".into());
             }
-            if output_height != 0 && output_height != height {
+            if retention != LdeRetention::DeviceOnly
+                && output_height != 0
+                && output_height != height
+            {
                 return Err("resident commitment requires equal output heights".into());
             }
-            output_height = height;
-            prefixes.push(total_row_width);
-            total_row_width = add(total_row_width, add(input.width, SALT_COLUMNS)?)?;
+            output_height = output_height.max(height);
+            let group_width = height_widths.entry(height).or_default();
+            prefixes.push(*group_width);
+            *group_width = add(*group_width, add(input.width, SALT_COLUMNS)?)?;
+            total_row_width = total_row_width.max(*group_width);
             max_width = max_width.max(input.width);
             input_upload = add(input_upload, bytes(mul(input.height, input.width)?)?)?;
             let host_elements = mul(retention.host_rows(height), input.width)?;
@@ -386,6 +422,14 @@ impl LdeCommitPlan {
         }
         if host_output_backing_bytes > host_output_budget_bytes {
             return Err("LDE host readback exceeds caller allowance".into());
+        }
+        if height_widths.len() > 1
+            && (!cfg!(feature = "gpu")
+                || height_widths
+                    .keys()
+                    .any(|&h| h < 1usize << cap_height.min(output_height.ilog2() as usize)))
+        {
+            return Err("mixed-height device commitment requires OpenCL and every injection at or below the cap".into());
         }
         let tree_selection = super::retained_storage::Selection::from_env()?;
         let hash = OwnedHashPlan::new(
@@ -431,7 +475,7 @@ impl LdeCommitPlan {
         let remaining = limits
             .managed_bytes
             .checked_sub(fixed)
-            .ok_or("resident LDE fixed allocations exceed managed budget")?;
+            .ok_or_else(|| format!("resident LDE fixed allocations exceed managed budget: fixed_required={fixed} device_limit={}", limits.managed_bytes))?;
         let per_column_bytes = bytes(output_height)?;
         let transform_allowance = match std::env::var(crate::block_v2::worker_memory::env_name(
             "LDE_SCRATCH_BYTES",
@@ -449,7 +493,7 @@ impl LdeCommitPlan {
             .min(max_alloc / per_column_bytes)
             .min((u32::MAX as usize) / output_height);
         if maximum == 0 {
-            return Err("no complete transform column fits remaining device budget".into());
+            return Err(format!("no complete transform column fits remaining device budget: fixed_required={fixed} remaining={remaining} one_column_bytes={per_column_bytes} device_limit={}", limits.managed_bytes));
         }
         let columns_per_tile = 1usize << maximum.ilog2();
         let mut host_reorder_workspace_bytes = 0;
@@ -474,8 +518,12 @@ impl LdeCommitPlan {
         if predicted_managed_peak_bytes > limits.managed_bytes {
             return Err("LDE plan exceeds managed budget".into());
         }
-        let projected_salt_upload_bytes =
-            bytes(mul(mul(output_height, SALT_COLUMNS)?, inputs.len())?)?;
+        let projected_salt_upload_bytes = inputs.iter().try_fold(0usize, |sum, input| {
+            add(
+                sum,
+                bytes(mul(input.height << input.added_bits, SALT_COLUMNS)?)?,
+            )
+        })?;
         Ok(Self {
             inputs: inputs.to_vec(),
             prefixes,
@@ -508,6 +556,20 @@ impl LdeCommitPlan {
     pub fn output_height(&self) -> usize {
         self.output_height
     }
+    pub(crate) fn output_heights(&self) -> Vec<usize> {
+        self.inputs
+            .iter()
+            .map(|s| s.height << s.added_bits)
+            .collect()
+    }
+    pub(super) fn maximum_row_width(&self) -> usize {
+        self.inputs
+            .iter()
+            .zip(&self.prefixes)
+            .map(|(s, p)| p + s.width + SALT_COLUMNS)
+            .max()
+            .unwrap_or(0)
+    }
     /// Host output rows; zero only for the explicit DeviceOnly retention mode.
     pub fn retained_height(&self) -> usize {
         self.retained_height
@@ -530,7 +592,7 @@ impl LdeCommitPlan {
                             first_column,
                             columns,
                             input_elements: shape.height * columns,
-                            output_elements: self.output_height * columns,
+                            output_elements: (shape.height << shape.added_bits) * columns,
                             sponge_rate_offset: (self.prefixes[matrix] + first_column) % RATE,
                         }
                     })
@@ -550,6 +612,38 @@ mod backing_tests;
 mod minimum_tests {
     use super::*;
     use crate::spill_alloc::allocation_requests::measure;
+
+    #[test]
+    fn streaming_prefix_admission_counts_coexisting_input_and_output() {
+        let shape = |height| InputShape {
+            height,
+            width: 1,
+            added_bits: 4,
+        };
+        // Stable height order is 1, 2, 0. Current input stays live while its
+        // replacement is allocated; previously consumed unique inputs do not.
+        let shapes = [shape(8), shape(32), shape(32)];
+        let prefixes = [128, 512, 512];
+        assert_eq!(
+            streaming_prefix_peak(&shapes, &prefixes, &[128, 512, 512]).unwrap(),
+            512
+        );
+        assert_eq!(
+            streaming_prefix_peak(&shapes, &prefixes, &[0, 0, 0]).unwrap(),
+            1152
+        );
+        assert_eq!(
+            streaming_prefix_peak(&shapes, &prefixes, &[128, 0, 512]).unwrap(),
+            1024
+        );
+        assert!(streaming_prefix_peak(&shapes, &prefixes, &[]).is_err());
+        assert!(streaming_prefix_peak(&shapes, &[usize::MAX, 1, 1], &[0, 0, 0]).is_err());
+        // A quotient group's masks cannot be released before its last chunk.
+        assert_eq!(
+            streaming_prefix_peak(&[shape(32); 8], &[8; 8], &[0, 0, 0, 32, 0, 0, 0, 32]).unwrap(),
+            32
+        );
+    }
 
     #[test]
     fn allocation_free_minimum_matches_runtime_at_the_one_column_boundary() {
@@ -621,7 +715,13 @@ mod minimum_tests {
             &inputs,
             6,
             limits,
-            minimum.largest_allocation_bytes - 1,
+            // Hash input tiles can shrink as max_allocation decreases. Test
+            // the non-tileable tree/sponge allocation floor instead.
+            minimum
+                .full_tree_bytes
+                .max(minimum.sponge_bytes)
+                .max(minimum.transform_buffer_bytes)
+                - 1,
             1,
             live,
             usize::MAX,
@@ -668,9 +768,9 @@ mod minimum_tests {
             }],
             vec![
                 InputShape {
-                    height: 8,
+                    height: 2,
                     width: 7,
-                    added_bits: 4,
+                    added_bits: 0,
                 },
                 InputShape {
                     height: 16,
@@ -838,6 +938,55 @@ mod tests {
             assert!(make(256 * MIB, 0, LdeRetention::DeviceOnly, 0, layout).is_err());
             assert!(make(4 * GIB, 7 * GIB, LdeRetention::DeviceOnly, 0, layout).is_err());
             assert!(make(4 * GIB, 0, LdeRetention::HostPrefix(0), 0, layout).is_err());
+        }
+    }
+
+    #[cfg(feature = "gpu")]
+    #[test]
+    fn mixed_height_device_plan_preserves_real_shapes_and_group_boundaries() {
+        let limits = Limits::default();
+        let shapes = [
+            InputShape {
+                height: 8,
+                width: 7,
+                added_bits: 4,
+            },
+            InputShape {
+                height: 32,
+                width: 5,
+                added_bits: 4,
+            },
+            InputShape {
+                height: 8,
+                width: 9,
+                added_bits: 4,
+            },
+        ];
+        let make = |retention| {
+            LdeCommitPlan::new_with_retention(
+                &shapes,
+                6,
+                limits,
+                4 * GIB,
+                1,
+                CONSTANT_BYTES + limits.staging_bytes,
+                0,
+                GIB,
+                retention,
+                super::super::lde_readback::ReadbackLayout::Direct,
+            )
+        };
+        assert!(make(LdeRetention::HostPrefix(0)).is_err());
+        let p = make(LdeRetention::DeviceOnly).unwrap();
+        assert_eq!(p.output_heights(), vec![128, 512, 128]);
+        assert_eq!(p.output_height(), 512);
+        assert_eq!(p.projected_salt_upload_bytes, (128 + 512 + 128) * 32);
+        assert_eq!(p.salt_rate_offset(2), Some((7 + 4 + 9) % 4));
+        for tile in p.tiles() {
+            assert_eq!(
+                tile.output_elements,
+                p.output_heights()[tile.matrix] * tile.columns
+            );
         }
     }
 

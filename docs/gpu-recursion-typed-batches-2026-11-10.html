@@ -1,0 +1,52 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Typed GPU recursion batches — 10 November 2026</title>
+<style>body{font:16px/1.55 system-ui,sans-serif;max-width:1150px;margin:3rem auto;padding:0 1.2rem;color:#17212b}table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}th,td{padding:.55rem;border-bottom:1px solid #ccd2d7;text-align:right}th:first-child,td:first-child{text-align:left}code{overflow-wrap:anywhere}.status{padding:1rem;background:#fff3cf;border-left:4px solid #b87b00}a{color:#075e9d}h2{margin-top:2rem}</style>
+<h1>Typed GPU recursion batches</h1><p>10 November 2026 · RTX 5080 · deterministic N4 archive · <code>gpu-recursive-aggregation</code></p>
+<p class="status">Experimental request proofs are independently CPU verified. Production promotion and full-workflow qualification remain gated. <a href="gpu-recursion-typed-batches-2026-11-10.json">Measurements and receipts (JSON)</a>.</p>
+<p>The complete 10-component request takes <strong>21.83 seconds</strong> in the warm samples, compared with 39.94 seconds when charging native preparation to the earlier path: <strong>1.83× faster</strong>. Recursive proof count falls from four to one.</p>
+<h2>Complete request timing</h2><p>Seconds; each repetition rebuilds its native program and public GPU setup. Total also includes geometry, checks and cleanup, so displayed stages need not sum exactly.</p>
+<table><thead><tr><th>Sample</th><th>Native prep</th><th>Setup</th><th>CPU witness</th><th>Upload</th><th>GPU proof</th><th>CPU verify</th><th>Total</th></tr></thead><tbody><tr><td>1</td><td>3.425</td><td>5.050</td><td>1.410</td><td>0.400</td><td>11.301</td><td>0.089</td><td>21.854</td></tr><tr><td>2</td><td>3.373</td><td>5.317</td><td>1.420</td><td>0.390</td><td>11.230</td><td>0.090</td><td>21.998</td></tr><tr><td>3</td><td>3.350</td><td>5.025</td><td>1.411</td><td>0.389</td><td>11.220</td><td>0.090</td><td>21.665</td></tr></tbody></table>
+<h2>Performance gates</h2><pre>{
+  &quot;complete_10_components&quot;: {
+    &quot;target_seconds&quot;: 20,
+    &quot;samples_seconds&quot;: [
+      21.854213539,
+      21.99795944,
+      21.665198951
+    ],
+    &quot;warm_median_seconds&quot;: 21.831579195499998,
+    &quot;all_samples_pass&quot;: false
+  },
+  &quot;native_16_gpu_cost&quot;: {
+    &quot;baseline_4_native_gpu_seconds&quot;: 6.241874394,
+    &quot;required_speedup_per_native&quot;: 4,
+    &quot;target_16_native_gpu_seconds&quot;: 6.241874394,
+    &quot;passed&quot;: false,
+    &quot;measured&quot;: true,
+    &quot;gpu_samples_seconds&quot;: [
+      18.593016651,
+      18.335267584,
+      18.644822519
+    ],
+    &quot;warm_gpu_seconds_per_native&quot;: 1.15562781571875,
+    &quot;speedup_per_native&quot;: 1.3503210785294715
+  },
+  &quot;complete_109_components&quot;: {
+    &quot;target_seconds&quot;: 45,
+    &quot;measured&quot;: false
+  },
+  &quot;complete_N3&quot;: {
+    &quot;target_seconds&quot;: 180,
+    &quot;measured&quot;: false
+  },
+  &quot;complete_N4&quot;: {
+    &quot;target_seconds&quot;: 240,
+    &quot;measured&quot;: false
+  }
+}</pre>
+<h2>Implemented changes</h2><ul><li>Immutable typed lowering of extension opening reductions, four terms per transition row.</li><li>Two Poseidon operations per row, bounded arithmetic/hash table partitions and trusted geometry.</li><li>Direct native batches up to 16; omit a parent when one batch covers the complete request.</li><li>Compact trusted child verifier keys release source programs and GPU preprocessing before parent compilation.</li><li>Bounded public preprocessing prefix and fixed-salt host backing with context validation and explicit transfer accounting.</li><li>Sequential GPU quotient scratch; trace commitments release unique input/hiding storage table by table and quotient commitments release masks after each group’s final chunk.</li><li>Lazy prefix allocation with stable mixed-height ordering and conservative accounting for shared aliases.</li></ul>
+<h2>Measurement scope</h2><ul><li>Samples revalidate deterministic archived native proofs; they do not generate fresh RingCT transactions.</li><li>Complete request samples include native import/revalidation/compilation, public setup, CPU witness, upload, GPU proving and CPU verification; process startup is excluded.</li><li>The original scalar program is still retained as the CPU witness oracle; this is not a complete direct typed verifier frontend.</li><li>CPU identity hashing and the pinned Goldilocks/FRI security parameters are preserved.</li><li>No complete 109-component request or fresh N3/N4 workflow is claimed.</li></ul>
+<h2>Remaining work after the gates</h2><ul><li>Direct typed transcript/Merkle/FRI frontend and independently bounded verifier witnesses.</li><li>Global dependency scheduling across requests with weighted admission for up to 16 CPU preparation workers.</li><li>AggregatePlan/GpuMemoryPlan integration and bounded AggregateArtifactV2 export/verification with v1 compatibility.</li><li>Complete 109-component and fresh N3/N4 qualification before production promotion.</li></ul>
+<h2>Validation receipts</h2><table><thead><tr><th>Receipt</th><th>Status</th></tr></thead><tbody><tr><td>.tools/pq-opencl-opt/runs/gpu-agg-core-build-r75.json</td><td>passed</td></tr><tr><td>.tools/pq-opencl-opt/runs/gpu-agg-typed-cpu-tests-r75.json</td><td>passed</td></tr><tr><td>.tools/pq-opencl-opt/runs/gpu-agg-public-storage-cpu-tests-r72.json</td><td>passed</td></tr><tr><td>.tools/pq-opencl-opt/runs/gpu-agg-public-eviction-gpu-tests-r75.json</td><td>passed</td></tr><tr><td>.tools/pq-opencl-opt/runs/gpu-agg-streaming-compat-gpu-tests-r75.json</td><td>passed</td></tr><tr><td>.tools/pq-opencl-opt/runs/gpu-agg-runner-build-r75.json</td><td>passed</td></tr><tr><td>.tools/pq-opencl-opt/runs/gpu-agg-research-build-r75.json</td><td>passed</td></tr><tr><td>.tools/pq-opencl-opt/runs/gpu-agg-research-tests-r75.json</td><td>passed</td></tr><tr><td>.tools/pq-opencl-opt/runs/gpu-agg-cpu-compat-build-r75.json</td><td>passed</td></tr></tbody></table>
+<p>GPU managed allowance: 10.5 GiB; driver reserve: 4 GiB; N4 host worker allowance: 36 GiB. The typed backend keeps its 24 GiB host allowance, assigning 11 GiB to PCS workspace and charging public prefix/salt backing separately. Earlier allocation refusals are retained in the JSON evidence. No previous memory certificate was reused for changed geometry.</p>
+</html>

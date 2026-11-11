@@ -19,6 +19,7 @@ pub mod merkle;
 pub mod pq_bytes;
 pub mod pq_modular;
 pub mod program;
+pub mod recursion;
 pub mod programs;
 pub(crate) mod symbolic;
 pub mod transcript;

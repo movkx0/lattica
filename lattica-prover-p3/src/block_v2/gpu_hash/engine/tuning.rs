@@ -1,4 +1,8 @@
-//! Process-local, opt-in candidates; never a change to the proof profile.
+mod schedules;
+#[cfg(all(feature = "gpu", feature = "gpu-tuning"))]
+pub(crate) mod screen;
+pub(super) use schedules::{Ntt, Poseidon};
+// The measured NTT schedule is standard. Other candidates require gpu-tuning.
 #[cfg(all(test, feature = "gpu-tuning"))]
 mod gpu_tests;
 #[cfg(all(test, feature = "gpu-tuning"))]
@@ -12,16 +16,31 @@ pub(super) struct Tuning {
     pub witness: bool,
     pub programs: bool,
     pub queries: bool,
+    pub ntt_schedule: Ntt,
+    pub poseidon_schedule: Poseidon,
 }
 
 impl Tuning {
     pub(super) fn from_env() -> Result<Self, String> {
         let value = match std::env::var("LATTICA_V2_GPU_TUNING") {
             Ok(value) => value,
-            Err(std::env::VarError::NotPresent) => return Ok(Self::default()),
+            Err(std::env::VarError::NotPresent) => String::new(),
             Err(_) => return Err("GPU tuning selection must be UTF-8".into()),
         };
-        Self::parse(&value, cfg!(feature = "gpu-tuning"))
+        let mut selected = Self::parse(&value, cfg!(feature = "gpu-tuning"))?;
+        selected.ntt_schedule = Ntt::parse(
+            &std::env::var("LATTICA_V2_GPU_NTT_PROFILE").unwrap_or_else(|_| "smalltile".into()),
+        )?;
+        selected.poseidon_schedule = Poseidon::parse(
+            &std::env::var("LATTICA_V2_GPU_POSEIDON_PROFILE").unwrap_or_else(|_| "baseline".into()),
+        )?;
+        if !cfg!(feature = "gpu-tuning")
+            && (selected.ntt_schedule != Ntt::default()
+                || selected.poseidon_schedule != Poseidon::Baseline)
+        {
+            return Err("kernel schedules require gpu-tuning".into());
+        }
+        Ok(selected)
     }
 
     fn parse(value: &str, enabled: bool) -> Result<Self, String> {
@@ -63,33 +82,60 @@ impl Tuning {
     }
 }
 
-#[cfg(feature = "gpu-tuning")]
 pub(super) fn kernel_source(nvidia: bool) -> String {
     let mut source = String::new();
-    if nvidia {
-        source.push_str(include_str!("commitment_shuffle.cl"));
+    #[cfg(not(feature = "gpu-tuning"))]
+    let _ = nvidia;
+    #[cfg(feature = "gpu-tuning")]
+    {
+        #[cfg(feature = "gpu")]
+        source.push_str(screen::SOURCE);
+        if nvidia {
+            source.push_str(include_str!("commitment_shuffle.cl"));
+        }
+        source.push_str(include_str!("scale_shared.cl"));
+        source.push_str(include_str!("device/witness_fused.cl"));
     }
-    source.push_str(include_str!("scale_shared.cl"));
-    source.push_str(include_str!("device/witness_fused.cl"));
+    // Required by ordinary OpenCL proving, including builds without gpu-tuning.
     source
         .push_str("\n#define LATTICA_TUNED_NTT 1\n#define ntt_tile_cached ntt_tile_cached_tuned\n");
     source.push_str(include_str!("../../../gpu/ntt_cached.cl"));
-    source.push_str("\n#undef ntt_tile_cached\n#undef LATTICA_TUNED_NTT\n");
+    source.push_str("\n#undef ntt_tile_cached\n");
+    #[cfg(feature = "gpu-tuning")]
+    {
+        source.push_str(
+            "\n#define LATTICA_NTT_PADDED 1\n#define ntt_tile_cached ntt_tile_cached_padded\n",
+        );
+        source.push_str(include_str!("../../../gpu/ntt_cached.cl"));
+        source.push_str("\n#undef ntt_tile_cached\n#undef LATTICA_NTT_PADDED\n");
+    }
+    source.push_str("\n#undef LATTICA_TUNED_NTT\n");
     source
-}
-
-#[cfg(not(feature = "gpu-tuning"))]
-pub(super) fn kernel_source(_: bool) -> String {
-    String::new()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     #[test]
+    fn standard_ntt_does_not_require_research_selection() {
+        let tuning = Tuning::parse("", false).unwrap();
+        assert_eq!(tuning.ntt_schedule, Ntt::SmallTile);
+        assert_eq!(tuning.poseidon_schedule, Poseidon::Baseline);
+        assert!(kernel_source(false).contains("#define ntt_tile_cached ntt_tile_cached_tuned"));
+    }
+
+    #[test]
     fn candidates_require_explicit_feature_and_selection() {
         assert_eq!(Tuning::parse("", false).unwrap(), Tuning::default());
-        for value in ["events", "commitment", "scale", "ntt", "witness", "programs", "queries"] {
+        for value in [
+            "events",
+            "commitment",
+            "scale",
+            "ntt",
+            "witness",
+            "programs",
+            "queries",
+        ] {
             assert!(Tuning::parse(value, false).is_err());
             assert_ne!(Tuning::parse(value, true).unwrap(), Tuning::default());
         }

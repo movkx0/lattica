@@ -75,11 +75,11 @@ impl Partition {
         let backend = native
             .checked_sub(runtime)
             .filter(|bytes| *bytes > 0)
-            .ok_or("outer backend runtime exhausts native allowance")?;
+            .ok_or_else(|| format!("outer backend runtime exhausts native allowance: runtime_required={runtime} native_limit={native}"))?;
         let pcs = backend
             .checked_sub(witness)
             .filter(|bytes| *bytes > 0)
-            .ok_or("outer backend witness exhausts backend allowance")?;
+            .ok_or_else(|| format!("outer backend witness exhausts backend allowance: witness_required={witness} backend_limit={backend}"))?;
         Ok(Self { backend, pcs })
     }
 }
@@ -138,8 +138,10 @@ fn inspect_bounds(
         }
         .reservation(1)?
         .host_bytes,
-        add(crate::block_v2::challenger::resources::reservation().host_bytes,
-            crate::block_v2::gpu_hash::engine::query_batch_host_bytes()? as u64)?,
+        add(
+            crate::block_v2::challenger::resources::reservation().host_bytes,
+            crate::block_v2::gpu_hash::engine::query_batch_host_bytes()? as u64,
+        )?,
     )?;
     let partition = Partition::new(
         native_host_budget_bytes,
@@ -174,8 +176,13 @@ fn inspect_bounds(
         max_allocation,
         selected.slots,
         selected.transform_allowance,
-    )?;
-    let opening_plan = if limits.aggregation_v4 { opening::aggregation_plan } else { opening::plan };
+    )
+    .map_err(|reason| format!("outer precommit rows={}: {reason}", bounds.rows))?;
+    let opening_plan = if limits.aggregation_v4 {
+        opening::aggregation_plan
+    } else {
+        opening::plan
+    };
     let opening = opening_plan(
         bounds.rows as usize,
         precommit.common_device_bytes,
@@ -183,7 +190,8 @@ fn inspect_bounds(
         device_limits,
         max_allocation,
         limits.trees,
-    )?;
+    )
+    .map_err(|reason| format!("outer opening/FRI/query rows={}: {reason}", bounds.rows))?;
     let backend_host = sum(&[
         witness_reserved.host_bytes,
         opening.host_workspace_peak_bytes as u64,
@@ -207,7 +215,11 @@ fn inspect_bounds(
         || largest > selected.physical_max_allocation_bytes
         || opening.required_tree_host_bytes > limits.trees.host_bytes
     {
-        return Err("outer backend phase bound exceeds scoped allowance".into());
+        return Err(format!("outer backend phase bound exceeds scoped allowance: rows={} host_complete={} host_required={backend_host} host_limit={} device_required={device} device_minimum={minimum} device_limit={} allocation_required={largest} allocation_limit={} tree_required={} tree_limit={} precommit={} opening={} fri={} query={}",
+            bounds.rows, opening.host_bound_complete, partition.backend, limits.device_bytes,
+            selected.physical_max_allocation_bytes, opening.required_tree_host_bytes, limits.trees.host_bytes,
+            precommit.peak_device_bytes, opening.opening_device_peak_bytes,
+            opening.fri_device_peak_bytes, opening.query_device_peak_bytes));
     }
     Ok(OuterBackendFootprint {
         public_values: public_values as u64,
@@ -256,9 +268,11 @@ impl<'inputs> OuterBackendPlan<'inputs> {
             || public.len() != public_values
             || witness.len() != program.witness_values()
             || program.height() > limits.max_rows
-            || limits.trees.host_bytes > 8 << 30
+            || limits.trees.host_bytes as u64 > limits.outer_tree_host_limit
         {
-            return Err("outer backend source/input/profile mismatch".into());
+            return Err(format!("outer backend source/input/profile mismatch: rows={} row_limit={} tree_bytes={} tree_limit={} publics={}/{} witnesses={}/{}",
+                program.height(), limits.max_rows, limits.trees.host_bytes, limits.outer_tree_host_limit,
+                public.len(), public_values, witness.len(), program.witness_values()));
         }
         let bounds = Bounds::for_program_with_tree_storage(program, true, limits.trees)?;
         let footprint = inspect_bounds(

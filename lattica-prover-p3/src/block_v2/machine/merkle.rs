@@ -1,5 +1,5 @@
-//! Fixed-shape salted MMCS authentication. This gadget handles the equal-height
-//! matrices used by a single-instance candidate proof, not arbitrary MMCS trees.
+//! Fixed-shape salted MMCS authentication. Matrix heights and ordering must
+//! come from a trusted verifier template, never from an untrusted proof.
 use super::circuit::Extension;
 use super::program::ScopedProgramBuilder as ProgramBuilder;
 use super::program::Val;
@@ -54,10 +54,34 @@ impl ProgramBuilder<'_> {
         salts: &[[Wire; 4]],
         siblings: &[Digest],
     ) -> Result<(), ExecutionError> {
+        self.authenticate_mixed_height_mmcs(
+            cap,
+            index_bits,
+            rows,
+            &vec![index_bits.len(); rows.len()],
+            salts,
+            siblings,
+        )
+    }
+    /// Heights are fixed by the trusted verifier, never supplied by a proof.
+    pub fn authenticate_mixed_height_mmcs<R: AsRef<[Wire]>>(
+        &mut self,
+        cap: &[Digest],
+        index_bits: &[Wire],
+        rows: &[R],
+        log_heights: &[usize],
+        salts: &[[Wire; 4]],
+        siblings: &[Digest],
+    ) -> Result<(), ExecutionError> {
         if cap.is_empty()
             || !cap.len().is_power_of_two()
             || rows.is_empty()
             || rows.len() != salts.len()
+            || rows.len() != log_heights.len()
+            || log_heights.iter().copied().max() != Some(index_bits.len())
+            || log_heights
+                .iter()
+                .any(|&h| h > index_bits.len() || h < cap.len().ilog2() as usize)
             || rows.iter().any(|row| row.as_ref().is_empty())
             || index_bits.len() > 32
             || siblings.len() + cap.len().ilog2() as usize != index_bits.len()
@@ -70,12 +94,25 @@ impl ProgramBuilder<'_> {
         let fields = rows
             .iter()
             .zip(salts)
-            .flat_map(|(row, salt)| row.as_ref().iter().chain(salt).copied());
+            .zip(log_heights)
+            .filter(|(_, h)| **h == index_bits.len())
+            .flat_map(|((row, salt), _)| row.as_ref().iter().chain(salt).copied());
         let mut digest = self.mmcs_leaf_hash_iter(fields);
         for (depth, &sibling) in siblings.iter().enumerate() {
             let left = self.select_digest(index_bits[depth], digest, sibling);
             let right = self.select_digest(index_bits[depth], sibling, digest);
             digest = self.compress(left, right);
+            let height = index_bits.len() - depth - 1;
+            if log_heights.contains(&height) {
+                let fields = rows
+                    .iter()
+                    .zip(salts)
+                    .zip(log_heights)
+                    .filter(|(_, h)| **h == height)
+                    .flat_map(|((row, salt), _)| row.as_ref().iter().chain(salt).copied());
+                let injected = self.mmcs_leaf_hash_iter(fields);
+                digest = self.compress(digest, injected);
+            }
         }
         // Authenticate against the full tree above the cap instead of selecting
         // one of 64 digests with a large mux for every query. The full cap tree
@@ -249,6 +286,93 @@ mod tests {
                     program.evaluate(&[], &witness).unwrap_err(),
                     ExecutionError::Unsatisfied
                 );
+            }
+        }
+    }
+    #[test]
+    fn salted_mixed_height_merkle_matches_native() {
+        for cap_height in [0, 1, 4] {
+            let perm = default_goldilocks_poseidon2_8();
+            let mmcs = ValMmcs::new(
+                MyHash::new(perm.clone()),
+                MyCompress::new(perm),
+                cap_height,
+                ChaCha20Rng::from_seed([5; 32]),
+            );
+            let matrices = [(32, 3), (128, 5), (16, 7), (32, 1)].map(|(height, width)| {
+                RowMajorMatrix::new(
+                    (0..height * width)
+                        .map(|i| Val::from_usize(i + width))
+                        .collect(),
+                    width,
+                )
+            });
+            let (commit, data) = mmcs.commit(matrices.to_vec());
+            for index in [0, 1, 31, 64, 127] {
+                let opening = mmcs.open_batch(index, &data);
+                let mut b = ProgramBuilder::new(0).unwrap();
+                let mut witness = Vec::new();
+                let cap: Vec<_> = commit
+                    .roots()
+                    .iter()
+                    .map(|d| d.map(|v| b.constant(v)))
+                    .collect();
+                let bits: Vec<_> = (0..7)
+                    .map(|i| b.constant(Val::from_usize((index >> i) & 1)))
+                    .collect();
+                let rows: Vec<Vec<_>> = opening
+                    .opened_values
+                    .iter()
+                    .map(|row| {
+                        row.iter()
+                            .map(|&v| {
+                                witness.push(v);
+                                b.input()
+                            })
+                            .collect()
+                    })
+                    .collect();
+                let salts: Vec<[Wire; 4]> = opening
+                    .opening_proof
+                    .0
+                    .iter()
+                    .map(|salt| {
+                        core::array::from_fn(|i| {
+                            witness.push(salt[i]);
+                            b.input()
+                        })
+                    })
+                    .collect();
+                let siblings: Vec<_> = opening
+                    .opening_proof
+                    .1
+                    .iter()
+                    .map(|digest| {
+                        digest.map(|v| {
+                            witness.push(v);
+                            b.input()
+                        })
+                    })
+                    .collect();
+                b.authenticate_mixed_height_mmcs(
+                    &cap,
+                    &bits,
+                    &rows,
+                    &[5, 7, 4, 5],
+                    &salts,
+                    &siblings,
+                )
+                .unwrap();
+                let program = b.finish(None).unwrap();
+                program.evaluate(&[], &witness).unwrap();
+                for changed in [0, 3, 8, 15, 16, 20, 24, 28, witness.len() - 1] {
+                    witness[changed] += Val::ONE;
+                    assert_eq!(
+                        program.evaluate(&[], &witness).unwrap_err(),
+                        ExecutionError::Unsatisfied
+                    );
+                    witness[changed] -= Val::ONE;
+                }
             }
         }
     }

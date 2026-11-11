@@ -65,4 +65,6 @@ fn registered_cpu_scaling_16() {
 
 #[test]
 #[ignore = "CPU-only perf comparison; serialized scaling guard required"]
-fn registered_cpu_scaling_12() { comparison(12); }
+fn registered_cpu_scaling_12() {
+    comparison(12);
+}

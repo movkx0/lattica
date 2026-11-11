@@ -19,6 +19,41 @@ pub(super) enum SaltView<'a> {
     Replay(&'a [ReplaySalts]),
 }
 impl SaltStore {
+    pub(crate) fn park_public(
+        &mut self,
+        session: &DeviceSession,
+        allowance: usize,
+    ) -> Result<usize, String> {
+        let Self::PublicDevice(matrices) = self else {
+            return Err("only fixed public salts can enter host backing".into());
+        };
+        let required = matrices
+            .iter()
+            .try_fold(0usize, |n, m| n.checked_add(m.host_bound()))
+            .ok_or("public salt host size overflow")?;
+        if required > allowance {
+            return Err("public salt host admission".into());
+        }
+        let mut bytes = 0usize;
+        for matrix in matrices {
+            bytes = bytes
+                .checked_add(matrix.park(session, allowance - bytes)?)
+                .ok_or("public salt host size overflow")?;
+        }
+        Ok(bytes)
+    }
+
+    pub(crate) fn public_upload_bytes(&self) -> Result<usize, String> {
+        if let Self::PublicDevice(matrices) = self {
+            matrices
+                .iter()
+                .try_fold(0usize, |n, m| n.checked_add(m.parked_bytes()))
+                .ok_or_else(|| "public salt upload size overflow".into())
+        } else {
+            Ok(0)
+        }
+    }
+
     pub(super) fn retained_host_backing(&self) -> Result<usize, String> {
         use super::cache_metadata::{add, capacity};
         let mut bytes;
@@ -138,14 +173,27 @@ impl SaltView<'_> {
         height: usize,
         count: usize,
     ) -> Result<(), String> {
+        self.validate_heights(session, &vec![height; count])
+    }
+    pub(super) fn validate_heights(
+        self,
+        session: &DeviceSession,
+        heights: &[usize],
+    ) -> Result<(), String> {
+        let count = heights.len();
+        if heights.iter().any(|h| !h.is_power_of_two() || *h > 1 << 25) {
+            return Err("owned PCS salt height bound".into());
+        }
         match self {
             Self::Compact(salts) => {
                 if salts.len() != count {
                     return Err("owned PCS compact salt count mismatch".into());
                 }
-                for salt in salts {
+                for (salt, &height) in salts.iter().zip(heights) {
                     let compact_salts::SaltMatrix::Dense(salt) = salt else {
-                        return Err("host salt replay is not available in an owned GPU query".into());
+                        return Err(
+                            "host salt replay is not available in an owned GPU query".into()
+                        );
                     };
                     if salt.width != 4 || height.checked_mul(4) != Some(salt.values.len()) {
                         return Err("owned PCS compact salt geometry mismatch".into());
@@ -154,9 +202,9 @@ impl SaltView<'_> {
             }
             Self::Host(salts) => {
                 if salts.len() != count
-                    || salts
-                        .iter()
-                        .any(|s| s.width != 4 || height.checked_mul(4) != Some(s.values.len()))
+                    || salts.iter().zip(heights).any(|(s, height)| {
+                        s.width != 4 || height.checked_mul(4) != Some(s.values.len())
+                    })
                 {
                     return Err("owned PCS salt geometry mismatch".into());
                 }
@@ -165,7 +213,7 @@ impl SaltView<'_> {
                 if salts.len() != count {
                     return Err("owned PCS device salt count mismatch".into());
                 }
-                for salt in salts {
+                for (salt, &height) in salts.iter().zip(heights) {
                     salt.check_session(session)?;
                     let s = salt.spec();
                     if s.rows() != height
@@ -182,7 +230,7 @@ impl SaltView<'_> {
                 if salts.len() != count {
                     return Err("owned PCS replay salt count mismatch".into());
                 }
-                for salt in salts {
+                for (salt, &height) in salts.iter().zip(heights) {
                     salt.check_session(session)?;
                     let s = salt.spec();
                     if s.rows() != height
@@ -199,7 +247,7 @@ impl SaltView<'_> {
                 if salts.len() != count {
                     return Err("owned PCS public salt count mismatch".into());
                 }
-                for salt in salts {
+                for (salt, &height) in salts.iter().zip(heights) {
                     salt.check_context(session)?;
                     let s = salt.spec();
                     if s.rows() != height
@@ -222,6 +270,38 @@ impl SaltView<'_> {
         indices: &[usize],
         allowance: usize,
     ) -> Result<Vec<Vec<Vec<Val>>>, String> {
+        let height = match self {
+            Self::Host(m) => m.first().map(|m| m.values.len() / 4),
+            Self::Compact(m) => m.first().and_then(|m| match m {
+                compact_salts::SaltMatrix::Dense(m) => Some(m.values.len() / 4),
+                _ => None,
+            }),
+            Self::Device(m) => m.first().map(|m| m.spec().rows()),
+            Self::PublicDevice(m) => m.first().map(|m| m.spec().rows()),
+            Self::Replay(m) => m.first().map(|m| m.spec().rows()),
+        }
+        .ok_or("empty salt query")?;
+        self.gather_scaled(session, indices, height, allowance)
+    }
+    pub(super) fn gather_scaled(
+        self,
+        session: &DeviceSession,
+        indices: &[usize],
+        tree_height: usize,
+        allowance: usize,
+    ) -> Result<Vec<Vec<Vec<Val>>>, String> {
+        if !tree_height.is_power_of_two() || indices.iter().any(|i| *i >= tree_height) {
+            return Err("salt query tree geometry".into());
+        }
+        let selected = |height: usize| -> Result<Vec<usize>, String> {
+            if !height.is_power_of_two() || height > tree_height {
+                return Err("salt query matrix height".into());
+            }
+            Ok(indices
+                .iter()
+                .map(|i| i >> (tree_height.ilog2() - height.ilog2()))
+                .collect())
+        };
         let count = match self {
             Self::Host(m) => m.len(),
             Self::Compact(m) => m.len(),
@@ -243,18 +323,25 @@ impl SaltView<'_> {
             Self::Compact(matrices) => {
                 for matrix in matrices {
                     let compact_salts::SaltMatrix::Dense(m) = matrix else {
-                        return Err("host salt replay is not available in an owned GPU query".into());
+                        return Err(
+                            "host salt replay is not available in an owned GPU query".into()
+                        );
                     };
-                    for (row, &index) in rows.iter_mut().zip(indices) {
+                    for (row, index) in rows.iter_mut().zip(selected(m.values.len() / 4)?) {
                         let start = index.checked_mul(4).ok_or("salt row overflow")?;
                         let end = start.checked_add(4).ok_or("salt row overflow")?;
-                        row.push(m.values.get(start..end).ok_or("salt row outside commitment")?.to_vec());
+                        row.push(
+                            m.values
+                                .get(start..end)
+                                .ok_or("salt row outside commitment")?
+                                .to_vec(),
+                        );
                     }
                 }
             }
             Self::Host(matrices) => {
                 for m in matrices {
-                    for (row, &index) in rows.iter_mut().zip(indices) {
+                    for (row, index) in rows.iter_mut().zip(selected(m.values.len() / 4)?) {
                         row.push(
                             m.values
                                 .get(index * 4..index * 4 + 4)
@@ -266,7 +353,7 @@ impl SaltView<'_> {
             }
             Self::Device(matrices) => {
                 for m in matrices {
-                    let words = session.gather_rows(m, indices, allowance)?;
+                    let words = session.gather_rows(m, &selected(m.spec().rows())?, allowance)?;
                     for (row, salt) in rows.iter_mut().zip(words.chunks_exact(4)) {
                         row.push(salt.iter().map(|&n| Val::new(n)).collect());
                     }
@@ -275,7 +362,11 @@ impl SaltView<'_> {
             Self::Replay(recipes) => {
                 for recipe in recipes {
                     let matrix = recipe.materialize(session)?;
-                    let words = session.gather_rows(&matrix, indices, allowance)?;
+                    let words = session.gather_rows(
+                        &matrix,
+                        &selected(matrix.spec().rows())?,
+                        allowance,
+                    )?;
                     for (row, salt) in rows.iter_mut().zip(words.chunks_exact(4)) {
                         row.push(salt.iter().map(|&n| Val::new(n)).collect());
                     }
@@ -286,7 +377,8 @@ impl SaltView<'_> {
             Self::PublicDevice(matrices) => {
                 for m in matrices {
                     let alias = session.import_public_salts(m)?;
-                    let words = session.gather_rows(&alias, indices, allowance)?;
+                    let words =
+                        session.gather_rows(&alias, &selected(alias.spec().rows())?, allowance)?;
                     for (row, salt) in rows.iter_mut().zip(words.chunks_exact(4)) {
                         row.push(salt.iter().map(|&n| Val::new(n)).collect());
                     }
@@ -319,34 +411,50 @@ impl CandidateMmcs {
         capture_bits: usize,
         pending: &[usize],
     ) -> Result<LdeCommitPlan, String> {
+        self.preflight_private_salts_releasing(shapes, host_budget, capture_bits, pending, None)
+    }
+
+    pub(crate) fn preflight_private_salts_releasing(
+        &self,
+        shapes: &[LdeInputShape],
+        host_budget: usize,
+        capture_bits: usize,
+        pending: &[usize],
+        released: Option<&[usize]>,
+    ) -> Result<LdeCommitPlan, String> {
         self.require_device_salts()?;
         if !self.rng.is_device()? || shapes.is_empty() || shapes.len() > 256 {
             return Err("private GPU salt stream or commitment geometry is unavailable".into());
         }
-        let height = shapes[0]
-            .height
-            .checked_shl(
-                shapes[0]
-                    .added_bits
-                    .try_into()
-                    .map_err(|_| "salt height overflow")?,
-            )
-            .filter(|h| *h <= 1 << 25)
-            .ok_or("private salt height exceeds its bound")?;
+        let heights = shapes
+            .iter()
+            .map(|s| {
+                s.height
+                    .checked_shl(
+                        s.added_bits
+                            .try_into()
+                            .map_err(|_| "salt height overflow")?,
+                    )
+                    .filter(|h| *h <= 1 << 25)
+                    .ok_or("private salt height exceeds its bound")
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        let height = *heights.iter().max().unwrap();
         let mut extra = pending.to_vec();
         // Private salts are replayed one matrix at a time. Include both the
         // temporary output and rejection sampler scratch during commitment.
         extra.push(device::salt_replay_workspace_bytes(height * 4)?);
-        let plan = engine::plan_lde_commit_storage(
+        let plan = engine::plan_lde_commit_storage_releasing(
             shapes,
             self.cap_height,
             host_budget,
             engine::lde_plan::LdeRetention::DeviceOnly,
             Some(capture_bits),
             &extra,
+            released,
         )?;
         self.rng.with_device(|rng| {
-            rng.preflight_salt_replay(&vec![height * 4; shapes.len()], pending)
+            rng.preflight_salt_replay(&heights.iter().map(|h| h * 4).collect::<Vec<_>>(), pending)
         })?;
         Ok(plan)
     }
@@ -364,6 +472,22 @@ impl CandidateMmcs {
         self.rng
             .with_device(|rng| rng.prepare_salt_replay(spec, count))
     }
+    pub(crate) fn private_device_salts_for_heights(
+        &self,
+        heights: &[usize],
+    ) -> Result<Vec<ReplaySalts>, String> {
+        if heights.is_empty() || heights.len() > 256 {
+            return Err("private salt matrix count".into());
+        }
+        if heights.iter().all(|h| *h == heights[0]) {
+            return self.private_device_salts(heights[0], heights.len());
+        }
+        let mut salts = Vec::with_capacity(heights.len());
+        for &height in heights {
+            salts.extend(self.private_device_salts(height, 1)?);
+        }
+        Ok(salts)
+    }
 
     pub(crate) fn preflight_public_preprocessing_salts(
         &self,
@@ -379,8 +503,11 @@ impl CandidateMmcs {
         {
             return Err("public salt admission requires preprocessing shapes".into());
         }
-        let height = shapes[0]
-            .height
+        let height = shapes
+            .iter()
+            .map(|s| s.height)
+            .max()
+            .unwrap()
             .checked_shl(super::super::profile::LOG_BLOWUP as u32)
             .filter(|h| *h <= 1 << 25)
             .ok_or("public salt commitment height exceeds its bound")?;
@@ -428,7 +555,7 @@ impl CandidateMmcs {
 
     pub(crate) fn commit_traces_with_device_salts(
         &self,
-        inputs: &[device::TraceCommitInput],
+        inputs: Vec<device::TraceCommitInput>,
         salts: Vec<ReplaySalts>,
         session: &DeviceSession,
         host_budget: usize,
@@ -441,7 +568,7 @@ impl CandidateMmcs {
             .iter()
             .map(engine::lde_execute::SaltInput::Replay)
             .collect();
-        let output = engine::lde_execute::commit_traces_with_salts(
+        let output = engine::lde_execute::commit_consumed_traces_with_salts(
             inputs,
             &borrowed,
             session,
@@ -481,6 +608,28 @@ impl CandidateMmcs {
             host_budget,
             engine::lde_plan::LdeRetention::DeviceOnly,
             Some(session),
+        )?;
+        self.finish_device_salts(output, salts, session)
+    }
+
+    pub(crate) fn commit_consumed_quotients_with_device_salts(
+        &self,
+        inputs: Vec<device::QuotientCommitInput>,
+        salts: Vec<ReplaySalts>,
+        session: &DeviceSession,
+        host_budget: usize,
+    ) -> Result<(Commitment, ProverData<RowMajorMatrix<Val>>), String> {
+        self.require_device_salts()?;
+        let borrowed: Vec<_> = salts
+            .iter()
+            .map(engine::lde_execute::SaltInput::Replay)
+            .collect();
+        let output = engine::lde_execute::commit_consumed_quotients_with_salts(
+            inputs,
+            &borrowed,
+            session,
+            self.cap_height,
+            host_budget,
         )?;
         self.finish_device_salts(output, salts, session)
     }
@@ -544,16 +693,14 @@ impl CandidateMmcs {
         {
             return Err("device salt commitment unexpectedly materialized host storage".into());
         }
-        salts.view().validate(
-            session,
-            output.plan.output_height(),
-            output.device_matrices.len(),
-        )?;
+        salts
+            .view()
+            .validate_heights(session, &output.plan.output_heights())?;
         let cap = Commitment::new(output.cap().to_vec());
-        let owned = OwnedInputs::new(
+        let owned = OwnedInputs::new_with_heights(
             output.device_matrices,
             preprocessing,
-            output.plan.output_height(),
+            &output.plan.output_heights(),
         );
         Ok((
             cap,

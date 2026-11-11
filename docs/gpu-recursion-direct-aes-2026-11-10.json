@@ -1,0 +1,1243 @@
+{
+  "schema": "ringct-direct-aes-recursion-v1",
+  "date": "2026-11-10",
+  "branch": "gpu-recursive-aggregation",
+  "committed": false,
+  "default_enabled": true,
+  "default_scope": "All AES and SHAKE requests in the imported-component GPU aggregation runner. N4 batches up to 16 native segments; N3 uses up to four. Existing graph/final proof format is preserved.",
+  "complete_fresh_workflow_measured": false,
+  "production_performance_qualified": false,
+  "implemented": [
+    "Direct typed verification of up to sixteen unchanged native AES segments in one recursive proof, eliminating intermediate singleton and binary wrappers.",
+    "Exact descriptor/index/family binding, contiguous span checks, shared input commitment constraints, adjacent endpoint constraints, and complete request start/output bindings.",
+    "AES roots join the global weighted CPU preparation queue and the one-entry exact-template public GPU preprocessing cache.",
+    "Constrained typed AES adapters for graph leaves and Alpha uniform/sparse producer branches, preserving existing public legacy APIs and final aggregate format.",
+    "Read-only archive benchmark support for AES, with a fresh-proof reference using the production MachineAir CPU lookahead pipeline."
+  ],
+  "complete_aes_request": {
+    "baseline": {
+      "receipt": {
+        "label": "gpu-agg-aes-machine-request4-r83",
+        "status": "passed",
+        "wall_seconds": 171.68005913007073,
+        "command": [
+          "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/target-opencl/release/pq-ringct-gpu-aggregate",
+          "architecture-request",
+          "--case",
+          "n4",
+          "--input-bundle",
+          "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-aes-r83",
+          "--timeout-seconds",
+          "300",
+          "--screen-family",
+          "aes",
+          "--request",
+          "4",
+          "--native-source",
+          "revalidate-archive",
+          "--repetitions",
+          "3",
+          "--group-width",
+          "1",
+          "--recursion-backend",
+          "machine",
+          "--compiler-policy",
+          "wide-memory"
+        ],
+        "record": ".tools/pq-opencl-opt/runs/gpu-agg-aes-machine-request4-r83.json",
+        "record_sha256": "9187cfd1eb3334a30b21d93d58526ebe1fd90fc8d2b8aeb2c80179426ffb5d9d",
+        "raw_log_sha256": "a85c9e9db3464a26302d3d26ec9c3d48984bf2e654403f5631bbc5ac3b0deee8",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "host_memory_profile": {
+          "name": "expanded-36",
+          "worker_host_bytes": 38654705664,
+          "memory_max_bytes": 54760833024,
+          "memory_high_bytes": 52613349376,
+          "fresh_memavailable_required_bytes": 56908316672
+        },
+        "observed_process_gpu_peak_bytes": 7467958272,
+        "observed_cgroup_memory_peak_bytes": 4544512000
+      },
+      "options": {
+        "bundle": "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-aes-r83",
+        "command": "architecture-request",
+        "compiler_policy": "wide-memory",
+        "family": "aes",
+        "first_leaf": 0,
+        "gpu_managed_mib": "auto",
+        "group_width": 1,
+        "identity": "cpu",
+        "input": "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-aes-r83/inputs.json",
+        "leaves": 8,
+        "max_components": 18446744073709551615,
+        "memory_qualification": null,
+        "native_source": "revalidate-archive",
+        "ntt_profile": "smalltile",
+        "output": "",
+        "parallel": true,
+        "poseidon_profile": "baseline",
+        "preparation_workers": 16,
+        "profile": "grouped-v5",
+        "query_gather": "batch",
+        "recursion_backend": "machine",
+        "repetitions": 3,
+        "request": 4,
+        "seconds": 300,
+        "selection": null,
+        "transactions": 4,
+        "workload": 0
+      },
+      "source_sha3": "4c039762e87638dd8c0b7ad96c14635ba3dd572eb644cb2a51cc88e65b216f2e",
+      "input_sha3": "55ac26cf63b7660ed1e62367466bccb71355affbd4befd9831e2cdf83e8eeda6",
+      "imports": [
+        {
+          "archive_key": "399637a8f3c840b8aeeb26703a1e3a10a05843adf0741025137c7ce7eeeabc3c",
+          "archive_sha3": "b8e8efb09e514761f1a9804468e0200ba314c8b012150b202e4f0a41bc7b4e8f",
+          "current_request_key": "399637a8f3c840b8aeeb26703a1e3a10a05843adf0741025137c7ce7eeeabc3c",
+          "segment": 0,
+          "verified_against_current_contract": true
+        },
+        {
+          "archive_key": "983ca6c3f9aff793863369bddd0341f88ae42a32eb07077217c2740f9038ed3f",
+          "archive_sha3": "4d3af6476aef744f6c224b20bd927c9ba7396f110e036e8a53cb1e47f8836281",
+          "current_request_key": "983ca6c3f9aff793863369bddd0341f88ae42a32eb07077217c2740f9038ed3f",
+          "segment": 1,
+          "verified_against_current_contract": true
+        },
+        {
+          "archive_key": "8a12fd0f3de597477902e6af7fcba92e17f4d9849b2f51e63e33996eae7d0df3",
+          "archive_sha3": "8def21ddfffc041f5bdb7bc286e4a72a403795989581f50fe03e45c9d63e7d6a",
+          "current_request_key": "8a12fd0f3de597477902e6af7fcba92e17f4d9849b2f51e63e33996eae7d0df3",
+          "segment": 2,
+          "verified_against_current_contract": true
+        },
+        {
+          "archive_key": "78db6740563cb528499e064b2c0878f6abf68f28526756b6db5637540dd03253",
+          "archive_sha3": "2c8bd1611c3175d046877c0ee6281f1bf865ee4ff53f2fe0556ca33e2a8d045b",
+          "current_request_key": "78db6740563cb528499e064b2c0878f6abf68f28526756b6db5637540dd03253",
+          "segment": 3,
+          "verified_against_current_contract": true
+        },
+        {
+          "archive_key": "afa2f4f61efcbc1d00bd15b51bb2afb9653d63af658909f7f85cc7546551f96d",
+          "archive_sha3": "12f6d5c1401c9a05e6be58bb3764886796ee9d33bae79afb88f1b82512aa9b50",
+          "current_request_key": "afa2f4f61efcbc1d00bd15b51bb2afb9653d63af658909f7f85cc7546551f96d",
+          "segment": 4,
+          "verified_against_current_contract": true
+        }
+      ],
+      "native_components": 5,
+      "cold_seconds": 54.796777332,
+      "warm_median_seconds": 56.290515415499996,
+      "samples_seconds": [
+        54.796777332,
+        56.26980726,
+        56.311223571
+      ],
+      "proofs_per_sample": 9,
+      "stages": [
+        {
+          "native_preparation_seconds": 1.740639319,
+          "leaves": [
+            {
+              "compile_seconds": 0.348793266,
+              "seconds": 3.432363288,
+              "verified": true
+            },
+            {
+              "compile_seconds": 0.355726013,
+              "seconds": 3.408963754,
+              "verified": true
+            },
+            {
+              "compile_seconds": 0.349075022,
+              "seconds": 3.520433443,
+              "verified": true
+            },
+            {
+              "compile_seconds": 0.308042116,
+              "seconds": 3.391355577,
+              "verified": true
+            },
+            {
+              "compile_seconds": 0.379002902,
+              "seconds": 3.429332042,
+              "verified": true
+            }
+          ],
+          "parents": [
+            {
+              "compile_seconds": 2.189205389,
+              "seconds": 6.489819996,
+              "verified": true
+            },
+            {
+              "compile_seconds": 0.785441374,
+              "seconds": 6.536355382,
+              "verified": true
+            },
+            {
+              "compile_seconds": 2.140799482,
+              "seconds": 6.470766669,
+              "verified": true
+            },
+            {
+              "compile_seconds": 0.61750454,
+              "seconds": 6.46124207,
+              "verified": true
+            }
+          ]
+        },
+        {
+          "native_preparation_seconds": 1.6464107710000002,
+          "leaves": [
+            {
+              "compile_seconds": 0.341217384,
+              "seconds": 3.384996127,
+              "verified": true
+            },
+            {
+              "compile_seconds": 0.335685008,
+              "seconds": 3.408183945,
+              "verified": true
+            },
+            {
+              "compile_seconds": 0.346960195,
+              "seconds": 3.452035818,
+              "verified": true
+            },
+            {
+              "compile_seconds": 0.2760519,
+              "seconds": 3.397992205,
+              "verified": true
+            },
+            {
+              "compile_seconds": 0.346496284,
+              "seconds": 3.447410764,
+              "verified": true
+            }
+          ],
+          "parents": [
+            {
+              "compile_seconds": 0.735894244,
+              "seconds": 6.452713996,
+              "verified": true
+            },
+            {
+              "compile_seconds": 0.718558859,
+              "seconds": 6.444655056,
+              "verified": true
+            },
+            {
+              "compile_seconds": 0.63565704,
+              "seconds": 6.472355643,
+              "verified": true
+            },
+            {
+              "compile_seconds": 0.63427094,
+              "seconds": 6.477553755,
+              "verified": true
+            }
+          ]
+        },
+        {
+          "native_preparation_seconds": 1.6374090010000002,
+          "leaves": [
+            {
+              "compile_seconds": 0.344178074,
+              "seconds": 3.378591531,
+              "verified": true
+            },
+            {
+              "compile_seconds": 0.340405885,
+              "seconds": 3.404099088,
+              "verified": true
+            },
+            {
+              "compile_seconds": 0.348195299,
+              "seconds": 3.458842311,
+              "verified": true
+            },
+            {
+              "compile_seconds": 0.264477694,
+              "seconds": 3.411064771,
+              "verified": true
+            },
+            {
+              "compile_seconds": 0.340152049,
+              "seconds": 3.459726855,
+              "verified": true
+            }
+          ],
+          "parents": [
+            {
+              "compile_seconds": 0.739086708,
+              "seconds": 6.44144003,
+              "verified": true
+            },
+            {
+              "compile_seconds": 0.730663419,
+              "seconds": 6.453478175,
+              "verified": true
+            },
+            {
+              "compile_seconds": 0.654623526,
+              "seconds": 6.471235943,
+              "verified": true
+            },
+            {
+              "compile_seconds": 0.627939093,
+              "seconds": 6.4559904249999995,
+              "verified": true
+            }
+          ]
+        }
+      ],
+      "public_template_cache": null,
+      "production_cpu_lookahead": true,
+      "session_closed": true,
+      "cleanup": {
+        "allocations": 49610,
+        "commits": 633,
+        "completion_claimed": false,
+        "completion_scope": "cleanup_only",
+        "context_closed": true,
+        "device": {
+          "driver": "615.78.08",
+          "global_bytes": 16703946752,
+          "max_allocation_bytes": 4175986688,
+          "name": "NVIDIA GeForce RTX 5080",
+          "opencl_index": 0,
+          "pci": "0000:08:00.0",
+          "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+        },
+        "device_allowance_bytes": 11274289152,
+        "device_max_work_group_size": 1024,
+        "downloaded_bytes": 62859429872,
+        "gpu_context_allowance_bytes": 4294967296,
+        "host_allowance_bytes": 25769803776,
+        "managed_peak_bytes": 7580745440,
+        "max_rows": 1048576,
+        "queue_drained": true,
+        "stark_completion_claimed": false,
+        "telemetry_scope": "Observed GPU resources and verified teardown; successful native operation requires separate validated worker receipts",
+        "uploaded_bytes": 74283340176,
+        "validated_native_spend_reports": 0
+      },
+      "geometry": null
+    },
+    "candidate": {
+      "receipt": {
+        "label": "gpu-agg-aes-direct-request4-fresh-inputs-r83",
+        "status": "passed",
+        "wall_seconds": 34.90906542004086,
+        "command": [
+          "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/target-opencl/release/pq-ringct-gpu-aggregate",
+          "architecture-request",
+          "--case",
+          "n4",
+          "--input-bundle",
+          "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-aes-r83",
+          "--timeout-seconds",
+          "300",
+          "--screen-family",
+          "aes",
+          "--request",
+          "4",
+          "--native-source",
+          "revalidate-archive",
+          "--repetitions",
+          "3"
+        ],
+        "record": ".tools/pq-opencl-opt/runs/gpu-agg-aes-direct-request4-fresh-inputs-r83.json",
+        "record_sha256": "241d06f06096a3eb3c86d94d0366d43b7700f3ffffca99baab1cf38def43a239",
+        "raw_log_sha256": "bad44cd0367ea67dfc8d3af6fe9fdab5bf89754743dd3a5aa6320764c6d2d364",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "host_memory_profile": {
+          "name": "expanded-36",
+          "worker_host_bytes": 38654705664,
+          "memory_max_bytes": 54760833024,
+          "memory_high_bytes": 52613349376,
+          "fresh_memavailable_required_bytes": 56908316672
+        },
+        "observed_process_gpu_peak_bytes": 6958350336,
+        "observed_cgroup_memory_peak_bytes": 3521900544
+      },
+      "options": {
+        "bundle": "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-aes-r83",
+        "command": "architecture-request",
+        "compiler_policy": "typed-batch",
+        "family": "aes",
+        "first_leaf": 0,
+        "gpu_managed_mib": "auto",
+        "group_width": 16,
+        "identity": "cpu",
+        "input": "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-aes-r83/inputs.json",
+        "leaves": 8,
+        "max_components": 18446744073709551615,
+        "memory_qualification": null,
+        "native_source": "revalidate-archive",
+        "ntt_profile": "smalltile",
+        "output": "",
+        "parallel": true,
+        "poseidon_profile": "baseline",
+        "preparation_workers": 16,
+        "profile": "grouped-v5",
+        "query_gather": "batch",
+        "recursion_backend": "typed",
+        "repetitions": 3,
+        "request": 4,
+        "seconds": 300,
+        "selection": null,
+        "transactions": 4,
+        "workload": 0
+      },
+      "source_sha3": "4c039762e87638dd8c0b7ad96c14635ba3dd572eb644cb2a51cc88e65b216f2e",
+      "input_sha3": "55ac26cf63b7660ed1e62367466bccb71355affbd4befd9831e2cdf83e8eeda6",
+      "imports": [
+        {
+          "archive_key": "399637a8f3c840b8aeeb26703a1e3a10a05843adf0741025137c7ce7eeeabc3c",
+          "archive_sha3": "b8e8efb09e514761f1a9804468e0200ba314c8b012150b202e4f0a41bc7b4e8f",
+          "current_request_key": "399637a8f3c840b8aeeb26703a1e3a10a05843adf0741025137c7ce7eeeabc3c",
+          "segment": 0,
+          "verified_against_current_contract": true
+        },
+        {
+          "archive_key": "983ca6c3f9aff793863369bddd0341f88ae42a32eb07077217c2740f9038ed3f",
+          "archive_sha3": "4d3af6476aef744f6c224b20bd927c9ba7396f110e036e8a53cb1e47f8836281",
+          "current_request_key": "983ca6c3f9aff793863369bddd0341f88ae42a32eb07077217c2740f9038ed3f",
+          "segment": 1,
+          "verified_against_current_contract": true
+        },
+        {
+          "archive_key": "8a12fd0f3de597477902e6af7fcba92e17f4d9849b2f51e63e33996eae7d0df3",
+          "archive_sha3": "8def21ddfffc041f5bdb7bc286e4a72a403795989581f50fe03e45c9d63e7d6a",
+          "current_request_key": "8a12fd0f3de597477902e6af7fcba92e17f4d9849b2f51e63e33996eae7d0df3",
+          "segment": 2,
+          "verified_against_current_contract": true
+        },
+        {
+          "archive_key": "78db6740563cb528499e064b2c0878f6abf68f28526756b6db5637540dd03253",
+          "archive_sha3": "2c8bd1611c3175d046877c0ee6281f1bf865ee4ff53f2fe0556ca33e2a8d045b",
+          "current_request_key": "78db6740563cb528499e064b2c0878f6abf68f28526756b6db5637540dd03253",
+          "segment": 3,
+          "verified_against_current_contract": true
+        },
+        {
+          "archive_key": "afa2f4f61efcbc1d00bd15b51bb2afb9653d63af658909f7f85cc7546551f96d",
+          "archive_sha3": "12f6d5c1401c9a05e6be58bb3764886796ee9d33bae79afb88f1b82512aa9b50",
+          "current_request_key": "afa2f4f61efcbc1d00bd15b51bb2afb9653d63af658909f7f85cc7546551f96d",
+          "segment": 4,
+          "verified_against_current_contract": true
+        }
+      ],
+      "native_components": 5,
+      "cold_seconds": 11.039763722,
+      "warm_median_seconds": 9.806577852,
+      "samples_seconds": [
+        11.039763722,
+        9.808882669,
+        9.804273035
+      ],
+      "proofs_per_sample": 1,
+      "stages": [
+        {
+          "native_preparation_seconds": 1.52844602,
+          "setup_seconds": 2.433427436,
+          "host_witness_seconds": 0.70765324,
+          "upload_seconds": 0.191775119,
+          "gpu_prove_seconds": 6.042859875,
+          "cpu_verify_seconds": 0.090226125,
+          "proof_json_bytes": 10286198,
+          "verified": true,
+          "preprocessing_reused": false
+        },
+        {
+          "native_preparation_seconds": 1.51531683,
+          "setup_seconds": 1.2866466619999999,
+          "host_witness_seconds": 0.706180078,
+          "upload_seconds": 0.193633217,
+          "gpu_prove_seconds": 5.971890956,
+          "cpu_verify_seconds": 0.087239132,
+          "proof_json_bytes": 10285855,
+          "verified": true,
+          "preprocessing_reused": true
+        },
+        {
+          "native_preparation_seconds": 1.5081280449999999,
+          "setup_seconds": 1.287528069,
+          "host_witness_seconds": 0.707443774,
+          "upload_seconds": 0.1928147,
+          "gpu_prove_seconds": 5.973857678,
+          "cpu_verify_seconds": 0.087234211,
+          "proof_json_bytes": 10288069,
+          "verified": true,
+          "preprocessing_reused": true
+        }
+      ],
+      "public_template_cache": {
+        "hits": 2,
+        "misses": 1
+      },
+      "production_cpu_lookahead": null,
+      "session_closed": true,
+      "cleanup": {
+        "allocations": 15122,
+        "commits": 67,
+        "completion_claimed": false,
+        "completion_scope": "cleanup_only",
+        "context_closed": true,
+        "device": {
+          "driver": "615.78.08",
+          "global_bytes": 16703946752,
+          "max_allocation_bytes": 4175986688,
+          "name": "NVIDIA GeForce RTX 5080",
+          "opencl_index": 0,
+          "pci": "0000:08:00.0",
+          "uuid": "GPU-279a9bfd-fd33-cd25-430a-4ceec2f63615"
+        },
+        "device_allowance_bytes": 11274289152,
+        "device_max_work_group_size": 1024,
+        "downloaded_bytes": 5397906064,
+        "gpu_context_allowance_bytes": 4294967296,
+        "host_allowance_bytes": 25769803776,
+        "managed_peak_bytes": 6934096304,
+        "max_rows": 1048576,
+        "queue_drained": true,
+        "stark_completion_claimed": false,
+        "telemetry_scope": "Observed GPU resources and verified teardown; successful native operation requires separate validated worker receipts",
+        "uploaded_bytes": 15713471536,
+        "validated_native_spend_reports": 0
+      },
+      "geometry": {
+        "committed_lde_fields": 5610963968,
+        "degree_gate": true,
+        "lde_payload_bytes": 44887711744,
+        "quotient_gate": true,
+        "tables": [
+          {
+            "active_rows": 131072,
+            "committed_lde_fields": 1698693120,
+            "constraint_degree": 4,
+            "constraints": 310,
+            "first_row": 0,
+            "height": 131072,
+            "main_width": 92,
+            "permutation_width": 96,
+            "preprocessed_width": 146,
+            "quotient_chunks": 8,
+            "table": "arithmetic"
+          },
+          {
+            "active_rows": 26310,
+            "committed_lde_fields": 424673280,
+            "constraint_degree": 4,
+            "constraints": 310,
+            "first_row": 131072,
+            "height": 32768,
+            "main_width": 92,
+            "permutation_width": 96,
+            "preprocessed_width": 146,
+            "quotient_chunks": 8,
+            "table": "arithmetic"
+          },
+          {
+            "active_rows": 8396,
+            "committed_lde_fields": 156237824,
+            "constraint_degree": 4,
+            "constraints": 108,
+            "first_row": 0,
+            "height": 16384,
+            "main_width": 63,
+            "permutation_width": 66,
+            "preprocessed_width": 98,
+            "quotient_chunks": 8,
+            "table": "cubic-extension"
+          },
+          {
+            "active_rows": 131072,
+            "committed_lde_fields": 2168455168,
+            "constraint_degree": 4,
+            "constraints": 718,
+            "first_row": 0,
+            "height": 131072,
+            "main_width": 360,
+            "permutation_width": 36,
+            "preprocessed_width": 50,
+            "quotient_chunks": 8,
+            "table": "poseidon2"
+          },
+          {
+            "active_rows": 27828,
+            "committed_lde_fields": 542113792,
+            "constraint_degree": 4,
+            "constraints": 718,
+            "first_row": 131072,
+            "height": 32768,
+            "main_width": 360,
+            "permutation_width": 36,
+            "preprocessed_width": 50,
+            "quotient_chunks": 8,
+            "table": "poseidon2"
+          },
+          {
+            "active_rows": 1,
+            "committed_lde_fields": 33792,
+            "constraint_degree": 2,
+            "constraints": 13,
+            "first_row": 0,
+            "height": 8,
+            "main_width": 1,
+            "permutation_width": 6,
+            "preprocessed_width": 54,
+            "quotient_chunks": 8,
+            "table": "public-bindings"
+          },
+          {
+            "active_rows": 100755,
+            "committed_lde_fields": 620756992,
+            "constraint_degree": 4,
+            "constraints": 33,
+            "first_row": 0,
+            "height": 131072,
+            "main_width": 19,
+            "permutation_width": 27,
+            "preprocessed_width": 31,
+            "quotient_chunks": 8,
+            "table": "typed-opening-reductions"
+          }
+        ],
+        "template_identity": [
+          57,
+          145,
+          205,
+          119,
+          221,
+          175,
+          176,
+          159,
+          119,
+          124,
+          170,
+          11,
+          149,
+          72,
+          187,
+          203,
+          209,
+          9,
+          102,
+          247,
+          8,
+          38,
+          222,
+          187,
+          209,
+          164,
+          235,
+          6,
+          119,
+          193,
+          244,
+          0
+        ],
+        "typed": {
+          "reduction_chains": 11595,
+          "reduction_terms": 323290,
+          "removed_scalar_operations": 1939740
+        }
+      }
+    },
+    "comparison": {
+      "cold_speedup": 4.963582438164069,
+      "warm_speedup": 5.740077350634588,
+      "warm_time_reduction_fraction": 0.8257863197802646
+    }
+  },
+  "n4_planning": {
+    "native_components": 536,
+    "previous_recursive_proofs": 319,
+    "current_recursive_proofs": 239,
+    "recursive_proofs_eliminated": 80,
+    "reduction_fraction": 0.2507836990595611,
+    "previous_aes_proofs": 100,
+    "current_aes_proofs": 20,
+    "excludes_auxiliary_branches": true,
+    "per_transaction_requests": [
+      {
+        "maximum_group": 1,
+        "native": 1,
+        "outer": 1,
+        "request": 0,
+        "transaction": 0
+      },
+      {
+        "maximum_group": 16,
+        "native": 109,
+        "outer": 8,
+        "request": 1,
+        "transaction": 0
+      },
+      {
+        "maximum_group": 3,
+        "native": 3,
+        "outer": 1,
+        "request": 2,
+        "transaction": 0
+      },
+      {
+        "maximum_group": 1,
+        "native": 1,
+        "outer": 1,
+        "request": 3,
+        "transaction": 0
+      },
+      {
+        "maximum_group": 5,
+        "native": 5,
+        "outer": 1,
+        "request": 4,
+        "transaction": 0
+      },
+      {
+        "maximum_group": 5,
+        "native": 5,
+        "outer": 1,
+        "request": 5,
+        "transaction": 0
+      },
+      {
+        "maximum_group": 10,
+        "native": 10,
+        "outer": 1,
+        "request": 6,
+        "transaction": 0
+      }
+    ],
+    "receipts": [
+      {
+        "label": "gpu-agg-default-plan-r79",
+        "status": "passed",
+        "wall_seconds": 4.258125168969855,
+        "command": [
+          "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/target-opencl/release/pq-ringct-gpu-aggregate",
+          "plan",
+          "--case",
+          "n4",
+          "--input-bundle",
+          "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-r40",
+          "--timeout-seconds",
+          "300"
+        ],
+        "record": ".tools/pq-opencl-opt/runs/gpu-agg-default-plan-r79.json",
+        "record_sha256": "84e34cd50066a430fcda6903f244bb8a6bc6a937f63516a41ffb13e0bba1cbab",
+        "raw_log_sha256": "68ebf8609c88b1bc71ce5a8c9ce6c410737717070dad51279d739f5e09abf1bf",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "host_memory_profile": {
+          "name": "expanded-36",
+          "worker_host_bytes": 38654705664,
+          "memory_max_bytes": 54760833024,
+          "memory_high_bytes": 52613349376,
+          "fresh_memavailable_required_bytes": 56908316672
+        },
+        "observed_process_gpu_peak_bytes": null,
+        "observed_cgroup_memory_peak_bytes": 543703040
+      },
+      {
+        "label": "gpu-agg-aes-default-plan-r83",
+        "status": "passed",
+        "wall_seconds": 4.254685480962507,
+        "command": [
+          "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/target-opencl/release/pq-ringct-gpu-aggregate",
+          "plan",
+          "--case",
+          "n4",
+          "--input-bundle",
+          "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-r40",
+          "--timeout-seconds",
+          "300"
+        ],
+        "record": ".tools/pq-opencl-opt/runs/gpu-agg-aes-default-plan-r83.json",
+        "record_sha256": "d8d28339213e17c73f7545dddf18a1f09c3847d9e294b782b863f77a23e1e7c0",
+        "raw_log_sha256": "a4ff9e8276f19faf5b98eb4becdbe4855141cdc0823989b0db0462d811e8ec62",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "host_memory_profile": {
+          "name": "expanded-36",
+          "worker_host_bytes": 38654705664,
+          "memory_max_bytes": 54760833024,
+          "memory_high_bytes": 52613349376,
+          "fresh_memavailable_required_bytes": 56908316672
+        },
+        "observed_process_gpu_peak_bytes": null,
+        "observed_cgroup_memory_peak_bytes": 536313856
+      }
+    ]
+  },
+  "validation": {
+    "research_tests_passed": 30,
+    "research_tests_ignored": 2,
+    "python_tests_passed": 71,
+    "cpu_only_check_passed": true,
+    "receipts": [
+      {
+        "label": "gpu-agg-research-build-r83",
+        "status": "passed",
+        "wall_seconds": 122.70702496403828,
+        "command": [
+          "/home/access/code/lattica/.tools/rust-1.96.0/bin/cargo",
+          "test",
+          "--release",
+          "--locked",
+          "--offline",
+          "--no-default-features",
+          "--config",
+          "profile.release.lto=false",
+          "--config",
+          "profile.release.codegen-units=16",
+          "-j2",
+          "--no-run",
+          "--lib",
+          "--manifest-path",
+          "research/pq-ringct/Cargo.toml",
+          "--features",
+          "gpu-aggregation-experiment"
+        ],
+        "record": ".tools/pq-opencl-opt/runs/gpu-agg-research-build-r83.json",
+        "record_sha256": "a5952033e585c87b46dd50bafaac38a0ccb159f2e1f2861781aa5e75076c6e8d",
+        "raw_log_sha256": "4491b0e1899807e14c2579d0fff521aaaedc6181aabe028ba5fdd453267335fc",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "host_memory_profile": {
+          "name": "standard",
+          "worker_host_bytes": 34359738368,
+          "memory_max_bytes": 50465865728,
+          "memory_high_bytes": 48318382080,
+          "fresh_memavailable_required_bytes": 52613349376
+        },
+        "observed_process_gpu_peak_bytes": null,
+        "observed_cgroup_memory_peak_bytes": 3249299456
+      },
+      {
+        "label": "gpu-agg-runner-build-r83",
+        "status": "passed",
+        "wall_seconds": 84.54933866695501,
+        "command": [
+          "/home/access/code/lattica/.tools/rust-1.96.0/bin/cargo",
+          "build",
+          "--release",
+          "--locked",
+          "--offline",
+          "--no-default-features",
+          "--config",
+          "profile.release.lto=false",
+          "--config",
+          "profile.release.codegen-units=16",
+          "-j2",
+          "--manifest-path",
+          "research/pq-ringct/Cargo.toml",
+          "--features",
+          "gpu-aggregation-experiment",
+          "--bin",
+          "pq-ringct-gpu-aggregate"
+        ],
+        "record": ".tools/pq-opencl-opt/runs/gpu-agg-runner-build-r83.json",
+        "record_sha256": "a5c8d23158c1aa6f7172594cede5295ce1987b120626238c5115a842ac11da69",
+        "raw_log_sha256": "31869b7bb9701c25199dd93f145d7ecdd1c88a274cbb86500140a5c49f5e18e5",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "host_memory_profile": {
+          "name": "standard",
+          "worker_host_bytes": 34359738368,
+          "memory_max_bytes": 50465865728,
+          "memory_high_bytes": 48318382080,
+          "fresh_memavailable_required_bytes": 52613349376
+        },
+        "observed_process_gpu_peak_bytes": null,
+        "observed_cgroup_memory_peak_bytes": 2419802112
+      },
+      {
+        "label": "gpu-agg-research-tests-r83",
+        "status": "passed",
+        "wall_seconds": 12.296055516926572,
+        "command": [
+          "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/target-opencl/release/deps/lattica_pq_ringct_research-573c656086b2cc88",
+          "gpu_aggregation::",
+          "component_tree::recursion::tests",
+          "component_tree::aes_group::tests",
+          "request_bridge::tests",
+          "imported_group_layout_tests",
+          "direct_tests",
+          "--test-threads=2"
+        ],
+        "record": ".tools/pq-opencl-opt/runs/gpu-agg-research-tests-r83.json",
+        "record_sha256": "e350c3b3b3aad86d1e1ff47e0bf98477d31cacde2efa0f6710856323cb144eda",
+        "raw_log_sha256": "a8866795e570179b28a599041edf0976dbb34ab91d5d75dd386380f0907b696a",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "host_memory_profile": {
+          "name": "standard",
+          "worker_host_bytes": 34359738368,
+          "memory_max_bytes": 50465865728,
+          "memory_high_bytes": 48318382080,
+          "fresh_memavailable_required_bytes": 52613349376
+        },
+        "observed_process_gpu_peak_bytes": null,
+        "observed_cgroup_memory_peak_bytes": 1670041600
+      },
+      {
+        "label": "gpu-agg-cpu-feature-check-r83",
+        "status": "passed",
+        "wall_seconds": 10.285150467068888,
+        "command": [
+          "/home/access/code/lattica/.tools/rust-1.96.0/bin/cargo",
+          "check",
+          "--release",
+          "--locked",
+          "--offline",
+          "--no-default-features",
+          "--config",
+          "profile.release.lto=false",
+          "--config",
+          "profile.release.codegen-units=16",
+          "-j2",
+          "--manifest-path",
+          "research/pq-ringct/Cargo.toml",
+          "--features",
+          "cpu-proof-experiment",
+          "--lib"
+        ],
+        "record": ".tools/pq-opencl-opt/runs/gpu-agg-cpu-feature-check-r83.json",
+        "record_sha256": "ae7cdb210d2fac76082b772be77ee1ca3107cbe47188370443684a78f7d8e6ff",
+        "raw_log_sha256": "f0d5f153a4b0f7a419eead1cc70365a6e3da2d16449bedf4c3aa09e72f986186",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "host_memory_profile": {
+          "name": "standard",
+          "worker_host_bytes": 34359738368,
+          "memory_max_bytes": 50465865728,
+          "memory_high_bytes": 48318382080,
+          "fresh_memavailable_required_bytes": 52613349376
+        },
+        "observed_process_gpu_peak_bytes": null,
+        "observed_cgroup_memory_peak_bytes": 570245120
+      }
+    ],
+    "python": {
+      "status": "passed",
+      "wall_seconds": 1.2185109260026366,
+      "log": "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/gpu-agg-python-tests-r83.controller.log",
+      "sha256": "99c0feaaf33b4f9041ca8b77fcec0937dd3c51eec82966ba14c0d227841082ee"
+    }
+  },
+  "native_preparation": {
+    "receipt": {
+      "label": "gpu-agg-aes-native-request4-r83",
+      "status": "passed",
+      "wall_seconds": 44.402617582003586,
+      "command": [
+        "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/target-opencl/release/pq-ringct-gpu-aggregate",
+        "prepare-inputs",
+        "--case",
+        "n4",
+        "--input-bundle",
+        "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-aes-r83",
+        "--timeout-seconds",
+        "300",
+        "--request",
+        "4",
+        "--max-components",
+        "5"
+      ],
+      "record": ".tools/pq-opencl-opt/runs/gpu-agg-aes-native-request4-r83.json",
+      "record_sha256": "e147ce2cba5d2f00aafccead837a3011994b88fd3aaa96d21f069ebbabd38df9",
+      "raw_log_sha256": "29e8a0c0a0a30cf595ca0eb24b78b9b2ad81368c073c339f3d31ddac634f9ca9",
+      "source_inputs_unchanged": true,
+      "all_subprocesses_terminal_and_reaped": true,
+      "host_memory_profile": {
+        "name": "expanded-36",
+        "worker_host_bytes": 38654705664,
+        "memory_max_bytes": 54760833024,
+        "memory_high_bytes": 52613349376,
+        "fresh_memavailable_required_bytes": 56908316672
+      },
+      "observed_process_gpu_peak_bytes": null,
+      "observed_cgroup_memory_peak_bytes": 1411710976
+    },
+    "report": {
+      "aggregation_timed": false,
+      "compiler_policy": {
+        "backend_host_bytes": 21474836480,
+        "input_values": 1048576,
+        "live_jobs": 4,
+        "name": "standard",
+        "program_bytes": 2147483648,
+        "symbolic_bytes": 1073741824,
+        "tree_host_bytes": 8589934592
+      },
+      "complete": false,
+      "component_instances": 5,
+      "coordinator_metadata": {
+        "geometry": {
+          "entries": 0,
+          "evictions": 0,
+          "failed_computations": 0,
+          "hits": 0,
+          "misses": 0,
+          "planning_ns": 0,
+          "reserved_host_bytes": 1048576,
+          "table_hits": 0
+        },
+        "native": {
+          "admission_stalls": 0,
+          "admitted_host_bytes_peak": 0,
+          "affinity_failures": 0,
+          "budget_reductions": 0,
+          "cohorts": 0,
+          "completions_drained": 0,
+          "coordinator_wait_ns": 0,
+          "cost_hint_jobs": 0,
+          "entries": 0,
+          "evictions": 0,
+          "failed_computations": 0,
+          "hits": 0,
+          "idle_compiler_bytes_peak": 0,
+          "jobs_started": 0,
+          "maintenance_jobs": 0,
+          "misses": 0,
+          "peak_workers": 0,
+          "periodic_preparations": 0,
+          "phase_extra_bytes_peak": 0,
+          "pinned_workers": 0,
+          "planning_ns": 0,
+          "preparation_ns": 0,
+          "queue_refills": 0,
+          "reserved_host_bytes": 2097152,
+          "restored_workspaces": 0,
+          "retained_worker_bytes_peak": 0,
+          "table_hits": 0,
+          "threads_spawned": 0,
+          "trimmed_compiler_bytes": 0,
+          "workspace_reuses": 0
+        },
+        "planning": {
+          "admitted_host_bytes_peak": 0,
+          "affinity_failures": 0,
+          "budget_reductions": 0,
+          "cohorts": 0,
+          "coordinator_wait_ns": 0,
+          "envelopes": 0,
+          "failed_envelopes": 0,
+          "heights_completed": 0,
+          "jobs_started": 0,
+          "largest_cohort": 0,
+          "peak_active_workers": 0,
+          "pinned_workers": 0,
+          "queue_refills": 0,
+          "shared_symbolic_bytes_peak": 0,
+          "symbolic_preparations": 0,
+          "threads_spawned": 0,
+          "wall_ns": 0,
+          "worker_auxiliary_bytes_peak": 0,
+          "worker_ceiling": 2,
+          "worker_elapsed_ns": 0,
+          "workspace_reuses": 0
+        }
+      },
+      "generated": 5,
+      "resources": {
+        "cpu_compilers": 2,
+        "current_device_bytes": 0,
+        "current_host_bytes": 0,
+        "maximum_live_jobs": 4,
+        "maximum_recursive_rows": 1048576,
+        "preparation_admission": "fixed-job-count",
+        "reservation_counters_are_not_rss": true,
+        "reserved_device_peak_bytes": 8589934592,
+        "reserved_host_peak_bytes": 34359738368,
+        "single_gpu_consumer": true,
+        "worker_host_bytes": 38654705664
+      },
+      "scope": "native-component-preparation",
+      "session_closed": true
+    }
+  },
+  "reference_pilot": {
+    "label": "gpu-agg-aes-machine-request4-pilot-r83",
+    "status": "passed",
+    "wall_seconds": 61.45687294891104,
+    "command": [
+      "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/target-opencl/release/pq-ringct-gpu-aggregate",
+      "architecture-request",
+      "--case",
+      "n4",
+      "--input-bundle",
+      "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-aes-r83",
+      "--timeout-seconds",
+      "300",
+      "--screen-family",
+      "aes",
+      "--request",
+      "4",
+      "--native-source",
+      "revalidate-archive",
+      "--repetitions",
+      "1",
+      "--group-width",
+      "1",
+      "--recursion-backend",
+      "machine",
+      "--compiler-policy",
+      "wide-memory"
+    ],
+    "record": ".tools/pq-opencl-opt/runs/gpu-agg-aes-machine-request4-pilot-r83.json",
+    "record_sha256": "59c974d27917287d443dfb1240fed11cf94bf17c334f8446fe2b1a2fb60458fa",
+    "raw_log_sha256": "cbc70e3fd0fbda2d85db188ff804b03e2c2229f3286c78a05f557e462cd1b896",
+    "source_inputs_unchanged": true,
+    "all_subprocesses_terminal_and_reaped": true,
+    "host_memory_profile": {
+      "name": "expanded-36",
+      "worker_host_bytes": 38654705664,
+      "memory_max_bytes": 54760833024,
+      "memory_high_bytes": 52613349376,
+      "fresh_memavailable_required_bytes": 56908316672
+    },
+    "observed_process_gpu_peak_bytes": 7467958272,
+    "observed_cgroup_memory_peak_bytes": 4523831296
+  },
+  "failed_attempts": [
+    {
+      "receipt": {
+        "label": "gpu-agg-research-build-r80",
+        "status": "failed_or_incomplete",
+        "wall_seconds": 20.32522873301059,
+        "command": [
+          "/home/access/code/lattica/.tools/rust-1.96.0/bin/cargo",
+          "test",
+          "--release",
+          "--locked",
+          "--offline",
+          "--no-default-features",
+          "--config",
+          "profile.release.lto=false",
+          "--config",
+          "profile.release.codegen-units=16",
+          "-j2",
+          "--no-run",
+          "--lib",
+          "--manifest-path",
+          "research/pq-ringct/Cargo.toml",
+          "--features",
+          "gpu-aggregation-experiment"
+        ],
+        "record": ".tools/pq-opencl-opt/runs/gpu-agg-research-build-r80.json",
+        "record_sha256": "008279b5370576a4b4d3be2fb250a3733a69153fe44cdc27d9b2a31248ee6d78",
+        "raw_log_sha256": "fd1ea9df35c3cd9f47697cfeb467f5afd8808b6e3d969637f3457a8cc5d3c704",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "host_memory_profile": {
+          "name": "standard",
+          "worker_host_bytes": 34359738368,
+          "memory_max_bytes": 50465865728,
+          "memory_high_bytes": 48318382080,
+          "fresh_memavailable_required_bytes": 52613349376
+        },
+        "observed_process_gpu_peak_bytes": null,
+        "observed_cgroup_memory_peak_bytes": 2039357440
+      },
+      "reason": "Debug-only AES error type passed to Display formatter; corrected."
+    },
+    {
+      "receipt": {
+        "label": "gpu-agg-research-build-r82",
+        "status": "failed_or_incomplete",
+        "wall_seconds": 20.31845543801319,
+        "command": [
+          "/home/access/code/lattica/.tools/rust-1.96.0/bin/cargo",
+          "test",
+          "--release",
+          "--locked",
+          "--offline",
+          "--no-default-features",
+          "--config",
+          "profile.release.lto=false",
+          "--config",
+          "profile.release.codegen-units=16",
+          "-j2",
+          "--no-run",
+          "--lib",
+          "--manifest-path",
+          "research/pq-ringct/Cargo.toml",
+          "--features",
+          "gpu-aggregation-experiment"
+        ],
+        "record": ".tools/pq-opencl-opt/runs/gpu-agg-research-build-r82.json",
+        "record_sha256": "ca410a344b749332298ecaf1338d7ec8779fdc47bd44a4e66e382ae15b7262bb",
+        "raw_log_sha256": "e94a4e84ae860c3f8dc4b01aa575cbe2867fd239d17c4c29036af6dd033c618e",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "host_memory_profile": {
+          "name": "standard",
+          "worker_host_bytes": 34359738368,
+          "memory_max_bytes": 50465865728,
+          "memory_high_bytes": 48318382080,
+          "fresh_memavailable_required_bytes": 52613349376
+        },
+        "observed_process_gpu_peak_bytes": null,
+        "observed_cgroup_memory_peak_bytes": 2036051968
+      },
+      "reason": "Reference CPU closure captured the GPU context; corrected to capture only immutable limits."
+    },
+    {
+      "receipt": {
+        "label": "gpu-agg-aes-direct-request4-r83",
+        "status": "failed_or_incomplete",
+        "wall_seconds": 6.400229563005269,
+        "command": [
+          "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/target-opencl/release/pq-ringct-gpu-aggregate",
+          "architecture-request",
+          "--case",
+          "n4",
+          "--input-bundle",
+          "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-r40",
+          "--timeout-seconds",
+          "300",
+          "--screen-family",
+          "aes",
+          "--request",
+          "4",
+          "--native-source",
+          "revalidate-archive",
+          "--repetitions",
+          "3"
+        ],
+        "record": ".tools/pq-opencl-opt/runs/gpu-agg-aes-direct-request4-r83.json",
+        "record_sha256": "9cc85fe99bd071ebce44ab037bb12ec1f3f07e5eeafd71a39de755e2a41098bf",
+        "raw_log_sha256": "d4d554f8e38de16f4ee2b3c7580292b38eb74543f045f49e643911adb8b10b24",
+        "source_inputs_unchanged": true,
+        "all_subprocesses_terminal_and_reaped": true,
+        "host_memory_profile": {
+          "name": "expanded-36",
+          "worker_host_bytes": 38654705664,
+          "memory_max_bytes": 54760833024,
+          "memory_high_bytes": 52613349376,
+          "fresh_memavailable_required_bytes": 56908316672
+        },
+        "observed_process_gpu_peak_bytes": 10485760,
+        "observed_cgroup_memory_peak_bytes": 674091008
+      },
+      "reason": "Older archive lacked the selected AES inputs. No recursive proof was attempted; prepared missing native inputs in a separate bundle."
+    }
+  ],
+  "scope_limits": [
+    "Timing covers recursive aggregation of one five-segment AES request (request 4, transaction 0). Native AES proof generation is excluded; reimport, verification, compilation and recursive proof generation are included.",
+    "Native AES inputs were absent from the older SHAKE archive. Five native proofs were generated once from exactly the same deterministic N4 inputs in a separate bundle; both recursive paths revalidate identical files.",
+    "Both paths use the same source revision, GPU, 10.5 GiB managed GPU allowance and 36 GiB worker envelope. The machine reference uses the existing production CPU lookahead with the wide-memory policy (two ready jobs, 34 GiB reservation); typed batching uses the typed-batch policy (36 GiB reservation).",
+    "The reference uses the same bounded native compiler as the candidate. Its outer proof execution and binary reduction use the existing MachineAir pipeline. This is a matched request comparison, not a rerun of the full earlier workflow.",
+    "Warm median is the median of samples 2 and 3. The typed path retains one exact-template public preprocessing entry between samples; every recursive proof is freshly generated and independently CPU verified.",
+    "Full N3/N4 aggregation, graph/Alpha consumer proof execution with these request roots, and transaction generation were not timed in this pass. Proof-count savings are planning results and do not establish a whole-workflow speedup."
+  ]
+}

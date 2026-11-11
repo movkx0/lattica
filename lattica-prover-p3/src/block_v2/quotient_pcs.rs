@@ -30,12 +30,18 @@ use super::profile::{self, Challenge};
 #[cfg(not(any(feature = "gpu", feature = "gpu-metal")))]
 use p3_commit::ExtensionMmcs;
 type ChallengeMmcs<E = Challenge> = ExtensionMmcs<Val, E, ValMmcs>;
+#[cfg(all(
+    feature = "cpu-proof-experiment",
+    not(any(feature = "gpu", feature = "gpu-metal"))
+))]
+use super::cpu_commitment::CpuMmcs as ValMmcs;
 #[cfg(not(feature = "stream"))]
 use crate::config::Dft;
-#[cfg(all(not(feature = "cpu-proof-experiment"), not(any(feature = "gpu", feature = "gpu-metal"))))]
+#[cfg(all(
+    not(feature = "cpu-proof-experiment"),
+    not(any(feature = "gpu", feature = "gpu-metal"))
+))]
 use crate::config::ValMmcs;
-#[cfg(all(feature = "cpu-proof-experiment", not(any(feature = "gpu", feature = "gpu-metal"))))]
-use super::cpu_commitment::CpuMmcs as ValMmcs;
 
 type Domain = TwoAdicMultiplicativeCoset<Val>;
 type Inner<E = Challenge> = HidingFriPcs<Val, Dft, ValMmcs, ChallengeMmcs<E>, ChaCha20Rng>;
@@ -649,7 +655,10 @@ pub struct CandidatePcs<E: PcsField = Challenge> {
 }
 
 impl<E: PcsField> CandidatePcs<E> {
-    #[cfg(all(feature = "cpu-proof-experiment", not(any(feature = "gpu", feature = "gpu-metal"))))]
+    #[cfg(all(
+        feature = "cpu-proof-experiment",
+        not(any(feature = "gpu", feature = "gpu-metal"))
+    ))]
     pub(crate) fn with_cpu_bounded_openings(mut self) -> Self {
         let Backend::Reference(inner) = self.inner;
         self.inner = Backend::Reference(inner.with_bounded_opening_reduction());
@@ -835,7 +844,16 @@ impl<E: PcsField> CandidatePcs<E> {
                 .iter()
                 .map(|(_, trace)| session.prepare_preprocessing_commit(trace))
                 .collect::<Result<Vec<_>, _>>()?;
-            let salts = stream.generate(plan.output_height(), shapes.len())?;
+            let heights = plan.output_heights();
+            let salts = if heights.iter().all(|h| *h == heights[0]) {
+                stream.generate(plan.output_height(), shapes.len())?
+            } else {
+                let mut salts = Vec::with_capacity(heights.len());
+                for height in heights {
+                    salts.extend(stream.generate(height, 1)?);
+                }
+                salts
+            };
             let result = match state.mmcs.commit_preprocessing_with_public_salts(
                 &prepared,
                 salts,
@@ -941,10 +959,25 @@ impl<E: PcsField> CandidatePcs<E> {
         if let Some(failure) = &state.device_randomness {
             let pending: Vec<_> = shapes.iter().flat_map(|s| s.allocation_bytes()).collect();
             let lde_shapes: Vec<_> = shapes.iter().map(|s| s.lde_shape()).collect();
-            let plan =
-                state
-                    .mmcs
-                    .preflight_private_salts(&lde_shapes, state.host_budget, 0, &pending)?;
+            let released = inputs
+                .iter()
+                .zip(&shapes)
+                .map(|((_, trace), shape)| {
+                    shape
+                        .allocation_bytes()
+                        .into_iter()
+                        .try_fold(trace.exclusive_bytes(), |sum, n| {
+                            sum.checked_add(n).ok_or("trace release size overflow")
+                        })
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            let plan = state.mmcs.preflight_private_salts_releasing(
+                &lde_shapes,
+                state.host_budget,
+                0,
+                &pending,
+                Some(&released),
+            )?;
             state.rng.with_device(|rng| {
                 rng.preflight_fields(
                     &shapes.iter().map(|s| s.random_words).collect::<Vec<_>>(),
@@ -954,11 +987,11 @@ impl<E: PcsField> CandidatePcs<E> {
             let guard = failure.begin()?;
             let prepared = state.rng.with_device(|rng| {
                 inputs
-                    .iter()
+                    .into_iter()
                     .zip(&shapes)
                     .map(|((_, trace), shape)| {
                         session.prepare_trace_commit_with_random(
-                            trace,
+                            &trace,
                             self.random_columns,
                             rng.sample_fields(shape.random_words)?,
                         )
@@ -967,9 +1000,9 @@ impl<E: PcsField> CandidatePcs<E> {
             })?;
             let salts = state
                 .mmcs
-                .private_device_salts(plan.output_height(), prepared.len())?;
+                .private_device_salts_for_heights(&plan.output_heights())?;
             let result = state.mmcs.commit_traces_with_device_salts(
-                &prepared,
+                prepared,
                 salts,
                 &session,
                 state.host_budget,
@@ -1082,10 +1115,35 @@ impl<E: PcsField> CandidatePcs<E> {
                 .iter()
                 .flat_map(|shape| shape.allocation_words().map(|words| words * 8))
                 .collect();
-            let plan =
-                state
-                    .mmcs
-                    .preflight_private_salts(&lde_shapes, state.host_budget, 1, &pending)?;
+            // A group's masks are needed through its final chunk. Stable MMCS
+            // ordering keeps a group's equal-height chunks contiguous.
+            let mut released = Vec::with_capacity(lde_shapes.len());
+            for shape in &shapes {
+                let bytes =
+                    shape
+                        .allocation_words()
+                        .into_iter()
+                        .try_fold(0usize, |sum, words| {
+                            words
+                                .checked_mul(8)
+                                .and_then(|n| sum.checked_add(n))
+                                .ok_or("quotient release size overflow")
+                        })?;
+                released.extend((0..shape.chunks).map(|chunk| {
+                    if chunk + 1 == shape.chunks {
+                        bytes
+                    } else {
+                        0
+                    }
+                }));
+            }
+            let plan = state.mmcs.preflight_private_salts_releasing(
+                &lde_shapes,
+                state.host_budget,
+                1,
+                &pending,
+                Some(&released),
+            )?;
             plan.validate_quotient_batch_storage(lde_shapes.len())?;
             let samples: Vec<_> = shapes
                 .iter()
@@ -1112,12 +1170,11 @@ impl<E: PcsField> CandidatePcs<E> {
                     })
                     .collect::<Result<Vec<_>, String>>()
             })?;
-            let inputs: Vec<_> = prepared.iter().collect();
             let salts = state
                 .mmcs
-                .private_device_salts(plan.output_height(), lde_shapes.len())?;
-            let result = state.mmcs.commit_quotients_with_device_salts(
-                &inputs,
+                .private_device_salts_for_heights(&plan.output_heights())?;
+            let result = state.mmcs.commit_consumed_quotients_with_device_salts(
+                prepared,
                 salts,
                 &session,
                 state.host_budget,

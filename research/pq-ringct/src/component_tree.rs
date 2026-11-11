@@ -22,6 +22,10 @@ use p3_field::{PrimeCharacteristicRing, PrimeField64};
 use std::sync::Arc;
 
 mod cache;
+#[cfg(feature = "gpu-aggregation-experiment")]
+pub(crate) mod aes_group;
+#[cfg(feature = "gpu-aggregation-experiment")]
+pub mod recursion;
 #[cfg(feature = "cpu-proof-experiment")]
 pub(crate) mod cpu;
 mod classified_verification;
@@ -352,6 +356,8 @@ pub struct Geometry {
 impl CompiledNode {
     #[cfg(feature = "gpu-aggregation-experiment")]
     pub(crate) fn shared_program(&self) -> Arc<Program> { Arc::clone(&self.program) }
+    #[cfg(feature = "gpu-aggregation-experiment")]
+    pub(crate) fn witness_values(&self) -> &[Val] { &self.witness }
     pub fn program(&self) -> &Program {
         &self.program
     }

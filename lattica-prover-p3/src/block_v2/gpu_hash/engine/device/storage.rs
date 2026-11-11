@@ -159,14 +159,65 @@ pub(crate) fn capture_specs(inputs: &[InputShape]) -> Result<Vec<MatrixSpec>, St
 /// hiding column, witness or challenge is promoted by the PCS implementation.
 #[derive(Clone)]
 pub(crate) struct PublicMatrix {
-    storage: Arc<Allocation>,
+    storage: PublicStorage,
     context: Arc<JobLease>,
     spec: MatrixSpec,
 }
 
+#[derive(Clone)]
+enum PublicStorage {
+    Resident(Arc<Allocation>),
+    Host(Arc<Vec<u64>>),
+}
+
 impl PublicMatrix {
+    pub(crate) fn checked_spec(&self, session: &DeviceSession) -> Result<MatrixSpec, String> {
+        if !Arc::ptr_eq(&session.session.context, &self.context) {
+            return Err("public preprocessing belongs to another GPU context".into());
+        }
+        Ok(self.spec)
+    }
+    pub(crate) fn parked_bytes(&self) -> usize {
+        if matches!(self.storage, PublicStorage::Host(_)) {
+            self.spec.bytes()
+        } else {
+            0
+        }
+    }
     pub(crate) fn cached_host_backing(&self) -> usize {
-        crate::block_v2::gpu_hash::cache_metadata::arc_bytes::<Allocation>()
+        match &self.storage {
+            PublicStorage::Resident(_) => {
+                crate::block_v2::gpu_hash::cache_metadata::arc_bytes::<Allocation>()
+            }
+            PublicStorage::Host(words) => {
+                crate::block_v2::gpu_hash::cache_metadata::arc_bytes::<Vec<u64>>()
+                    + words.capacity() * 8
+            }
+        }
+    }
+    pub(crate) fn host_bound(&self) -> usize {
+        self.spec.bytes() + crate::block_v2::gpu_hash::cache_metadata::arc_bytes::<Vec<u64>>()
+    }
+    /// Public preprocessing only. Private matrices and randomizers cannot enter
+    /// this type. Admission covers all matrices before the first readback.
+    pub(crate) fn park(
+        &mut self,
+        session: &DeviceSession,
+        allowance: usize,
+    ) -> Result<usize, String> {
+        if !Arc::ptr_eq(&session.session.context, &self.context) {
+            return Err("public preprocessing belongs to another GPU context".into());
+        }
+        if self.host_bound() > allowance {
+            return Err("public preprocessing host allowance".into());
+        }
+        if matches!(self.storage, PublicStorage::Resident(_)) {
+            let matrix = session.import_preprocessing(self)?;
+            let words = session.read(&matrix, self.spec.bytes())?;
+            // Retain the Vec allocation; converting to Arc<[u64]> copies it.
+            self.storage = PublicStorage::Host(Arc::new(words));
+        }
+        Ok(self.cached_host_backing())
     }
 }
 
@@ -243,7 +294,7 @@ impl DeviceMatrix {
             "private random data cannot become public preprocessing"
         );
         PublicMatrix {
-            storage: self.storage,
+            storage: PublicStorage::Resident(self.storage),
             context: self.session.context.clone(),
             spec: self.spec,
         }
@@ -415,12 +466,16 @@ impl DeviceSession {
         if !Arc::ptr_eq(&self.session.context, &matrix.context) {
             return Err("public preprocessing belongs to another GPU context".into());
         }
-        Ok(DeviceMatrix {
-            storage: matrix.storage.clone(),
-            private_random: None,
-            session: self.session.clone(),
-            spec: matrix.spec,
-        })
+        match &matrix.storage {
+            PublicStorage::Resident(storage) => Ok(DeviceMatrix {
+                storage: storage.clone(),
+                private_random: None,
+                session: self.session.clone(),
+                spec: matrix.spec,
+            }),
+            // This upload belongs to the borrowing phase, not the public key.
+            PublicStorage::Host(words) => self.upload(matrix.spec, words),
+        }
     }
 
     /// Select the AIR's columns and the bit-reversed prefix for its quotient

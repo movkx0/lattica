@@ -8,8 +8,28 @@ pub(crate) fn tree<T: Send, N: Send + Sync>(
     leaves: usize,
     prepare_leaf: impl Fn(usize) -> Result<T> + Sync,
     prepare_parent: impl Fn(&N, &N) -> Result<T> + Sync,
+    consume: impl FnMut(T) -> Result<N>,
+) -> Result<N> {
+    tree_with_window(
+        pool,
+        leaves,
+        super::super::policy::current().live_jobs,
+        prepare_leaf,
+        prepare_parent,
+        consume,
+    )
+}
+fn tree_with_window<T: Send, N: Send + Sync>(
+    pool: &rayon::ThreadPool,
+    leaves: usize,
+    live_jobs: usize,
+    prepare_leaf: impl Fn(usize) -> Result<T> + Sync,
+    prepare_parent: impl Fn(&N, &N) -> Result<T> + Sync,
     mut consume: impl FnMut(T) -> Result<N>,
 ) -> Result<N> {
+    if !matches!(live_jobs, 2 | 4) {
+        return Err("invalid ready tree window".into());
+    }
     if leaves == 0 || leaves > 4096 {
         return Err("ready tree leaf capacity".into());
     }
@@ -33,6 +53,7 @@ pub(crate) fn tree<T: Send, N: Send + Sync>(
         level = next;
     }
     let root = level[0];
+    let tree_id = super::super::telemetry::tree();
     let canceled = AtomicBool::new(false);
     struct Cancel<'a>(&'a AtomicBool);
     impl Drop for Cancel<'_> {
@@ -42,13 +63,13 @@ pub(crate) fn tree<T: Send, N: Send + Sync>(
     }
     pool.in_place_scope(|scope| {
         let _cancel = Cancel(&canceled);
-        let (sender, receiver) = std::sync::mpsc::sync_channel(4);
+        let (sender, receiver) = std::sync::mpsc::sync_channel(live_jobs);
         let mut ready: BTreeSet<(bool, usize)> = (0..leaves).map(|id| (true, id)).collect();
         let mut outputs: Vec<Option<Arc<N>>> = (0..children.len()).map(|_| None).collect();
         let (mut active, mut completed, mut peak) = (0usize, 0usize, 0usize);
         let (mut preparation_ns, mut idle_ns) = (0u128, 0u128);
         while completed < children.len() {
-            while active < 4 {
+            while active < live_jobs {
                 let Some((_, id)) = ready.pop_first() else { break; };
                 let inputs = if let Some((left, right)) = children[id] {
                     Some((outputs[left].take().ok_or("missing left dependency")?,
@@ -56,7 +77,11 @@ pub(crate) fn tree<T: Send, N: Send + Sync>(
                 } else { None };
                 let sender = sender.clone();
                 let (prepare_leaf, prepare_parent, canceled) = (&prepare_leaf, &prepare_parent, &canceled);
+                let queued = super::super::telemetry::now();
                 scope.spawn(move |_| {
+                    let entered = super::super::telemetry::now();
+                    let _job = super::super::telemetry::Job::enter(tree_id, id);
+                    super::super::telemetry::interval(tree_id, id, "cpu-queue", queued, entered);
                     let started = Instant::now();
                     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                         if canceled.load(Ordering::Acquire) { return Err("ready tree canceled".into()); }
@@ -65,16 +90,22 @@ pub(crate) fn tree<T: Send, N: Send + Sync>(
                             None => prepare_leaf(id),
                         }
                     })).unwrap_or_else(|_| Err("ready preparation worker panicked".into()));
-                    let _ = sender.send((id, result, started.elapsed().as_nanos()));
+                    let _ = sender.send((id, result, started.elapsed().as_nanos(), super::super::telemetry::now()));
                 });
                 active += 1; peak = peak.max(active);
             }
             if active == 0 { return Err("ready tree dependency deadlock".into()); }
             let wait = Instant::now();
-            let (id, prepared, elapsed) = receiver.recv().map_err(|_| "ready preparation channel closed")?;
+            let waiting_at = super::super::telemetry::now();
+            let (id, prepared, elapsed, ready_at) = receiver.recv().map_err(|_| "ready preparation channel closed")?;
+            super::super::telemetry::interval(tree_id, id, "gpu-input-wait", waiting_at, super::super::telemetry::now());
             idle_ns += wait.elapsed().as_nanos(); preparation_ns += elapsed;
             // The permit includes the completed program and the GPU callback.
+            let _job = super::super::telemetry::Job::enter(tree_id, id);
+            super::super::telemetry::interval(tree_id, id, "gpu-ready-wait", ready_at, super::super::telemetry::now());
+            let timing = super::super::telemetry::Span::start("consume");
             let node = consume(prepared?)?;
+            drop(timing);
             outputs[id] = Some(Arc::new(node));
             active -= 1; completed += 1;
             if let Some(parent) = parents[id] {
@@ -97,7 +128,10 @@ mod tests {
             .num_threads(2)
             .build()
             .unwrap();
-        for count in [1, 2, 3, 7, 16, 31] {
+        for (count, live_jobs) in [1, 2, 3, 7, 16, 31]
+            .into_iter()
+            .flat_map(|count| [2, 4].map(|jobs| (count, jobs)))
+        {
             let live = AtomicUsize::new(0);
             let peak = AtomicUsize::new(0);
             let started_leaves = AtomicUsize::new(0);
@@ -105,9 +139,10 @@ mod tests {
             let enter = || {
                 peak.fetch_max(live.fetch_add(1, Ordering::SeqCst) + 1, Ordering::SeqCst);
             };
-            let root = tree(
+            let root = tree_with_window(
                 &pool,
                 count,
+                live_jobs,
                 |i| {
                     enter();
                     started_leaves.fetch_add(1, Ordering::SeqCst);
@@ -132,7 +167,7 @@ mod tests {
             .unwrap();
             assert_eq!(root, (0..count).collect::<Vec<_>>());
             assert_eq!(live.load(Ordering::SeqCst), 0);
-            assert!(peak.load(Ordering::SeqCst) <= 4);
+            assert!(peak.load(Ordering::SeqCst) <= live_jobs);
             if count >= 16 {
                 assert!(first_parent.load(Ordering::SeqCst) < count);
             }

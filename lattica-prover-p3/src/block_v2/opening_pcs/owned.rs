@@ -63,8 +63,7 @@ pub(super) fn evaluate_and_reduce<F: FriExtension>(
         }
         for (index, (matrix, points)) in matrices.iter().zip(points).enumerate() {
             let height = matrix.height;
-            let prefix = data.owned_matrix(session, index)?;
-            let spec = prefix.spec();
+            let spec = data.owned_matrix_spec(session, index)?;
             if matrix_count >= shapes.len()
                 || points.is_empty()
                 || points.len() > 32
@@ -96,6 +95,10 @@ pub(super) fn evaluate_and_reduce<F: FriExtension>(
     )?;
     plan.report();
     let before = session.stats();
+    let prefix_upload_bytes = rounds.iter().try_fold(0usize, |sum, (data, _)| {
+        sum.checked_add(data.public_prefix_upload_bytes()?)
+            .ok_or_else(|| "opening upload size overflow".to_owned())
+    })?;
     let mut prepared = FriData::proof_vector(matrix_count)?;
     let mut opened = FriData::proof_vector(rounds.len())?;
     for (data, matrices) in rounds {
@@ -166,7 +169,7 @@ pub(super) fn evaluate_and_reduce<F: FriExtension>(
         .map(|values| values.len() * F::DIMENSION * 8)
         .sum::<usize>();
     let host_peak = plan.total_bytes;
-    eprintln!("bounded_owned_opening_proof matrices={} evaluations={} reductions={} claimed_value_readback_bytes={} fri_vector_readback_bytes={fri_bytes} prefix_upload_bytes=0 prefix_readback_bytes=0 host_peak_plan_bytes={host_peak} host_allowance_bytes={host_allowance}",
+    eprintln!("bounded_owned_opening_proof matrices={} evaluations={} reductions={} claimed_value_readback_bytes={} fri_vector_readback_bytes={fri_bytes} prefix_upload_bytes={prefix_upload_bytes} public_prefix_upload_bytes={prefix_upload_bytes} private_prefix_upload_bytes=0 prefix_readback_bytes=0 host_peak_plan_bytes={host_peak} host_allowance_bytes={host_allowance}",
         prepared.len(), after.opening_evaluations - before.opening_evaluations,
         after.opening_reductions - before.opening_reductions,
         after.opening_value_bytes - before.opening_value_bytes);

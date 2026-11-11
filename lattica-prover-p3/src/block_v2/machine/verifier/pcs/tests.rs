@@ -239,6 +239,7 @@ fn authentication_rejects_oversized_scratch_before_inputs() {
         &cap,
         &[],
         &rows,
+        &[0; MAX_MATRICES + 1],
         Some(&salts),
         Some(&[])
     )
@@ -249,6 +250,7 @@ fn authentication_rejects_oversized_scratch_before_inputs() {
         &cap,
         &[Wire(0); MAX_LOG + 1],
         &rows[..1],
+        &[MAX_LOG + 1],
         Some(&salts[..1]),
         Some(&[[Val::ZERO; 4]; MAX_LOG + 1 - profile::CAP_HEIGHT])
     )

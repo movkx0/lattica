@@ -14,7 +14,7 @@ def memory_signature(memory):
     keys = ('managed_bytes', 'context_bytes', 'query_gather', 'max_rows', 'driver',
             'executable_sha3', 'qualification_sha256')
     require(all(k in memory for k in keys), 'missing effective memory signature')
-    return {k: memory[k] for k in keys}
+    return {**{k: memory[k] for k in keys}, **({'kernel_policy': memory['kernel_policy']} if 'kernel_policy' in memory else {})}
 
 
 def matched_cost(baseline, candidate):
@@ -25,13 +25,13 @@ def matched_cost(baseline, candidate):
         require(row['options']['command'] == 'screen' and row['report']['verified']
                 and row['report']['complete_aggregation'] is False, 'only verified subtree screens provide grouping costs')
     require((a['options']['profile'], b['options']['profile']) in
-            (('legacy', 'grouped-v2'), ('grouped-v2', 'grouped-v3'), ('grouped-v3', 'grouped-v4')), 'supported baseline/candidate pair required')
+            (('legacy', 'grouped-v2'), ('grouped-v2', 'grouped-v3'), ('grouped-v3', 'grouped-v4'), ('grouped-v4', 'grouped-v5'), ('grouped-v5', 'grouped-v5')), 'supported baseline/candidate pair required')
     if b['options']['profile'] == 'grouped-v3':
         require(a['report']['width'] == 2, 'grouped-v3 comparisons require the optimized paired baseline')
         require(a['options'].get('identity') == b['options'].get('identity') == 'cpu'
                 and a['options'].get('parallel') is True and b['options'].get('parallel') is True,
                 'grouped-v3 compares CPU lookahead pipelines')
-    if b['options']['profile'] == 'grouped-v4':
+    if b['options']['profile'] in ('grouped-v4', 'grouped-v5'):
         require(a['report']['width'] == 4, 'grouped-v4 requires the optimized four-child baseline')
         require(a['options'].get('identity') == b['options'].get('identity') == 'cpu'
                 and a['options'].get('parallel') is True and b['options'].get('parallel') is True,
@@ -71,7 +71,7 @@ def main():
         source, uuid, cost, note = matched_cost(baseline_record, candidate_record)
         profile = candidate_record['gpu_aggregation_acceptance']['options']['profile']
         profiles.add(profile)
-        if profile == "grouped-v4": memories.add(json.dumps(memory_signature(candidate_record["gpu_aggregation_acceptance"]["report"]["memory"]), sort_keys=True))
+        if profile in ("grouped-v4", "grouped-v5"): memories.add(json.dumps(memory_signature(candidate_record["gpu_aggregation_acceptance"]["report"]["memory"]), sort_keys=True))
         note['baseline_options'] = baseline_record['gpu_aggregation_acceptance']['options']
         note['candidate_options'] = candidate_record['gpu_aggregation_acceptance']['options']
         identities.add((source, uuid)); costs.append(cost); notes.append(note)
@@ -81,9 +81,11 @@ def main():
                  costs=costs, observations=notes, performance_qualified=False)
     if profiles == {'grouped-v3'}:
         value.update(schema='ringct-gpu-aggregation-selection-v2', profile='grouped-v3', baseline_width=2)
-    if profiles == {'grouped-v4'}:
+    if profiles == {'grouped-v5'}:
+        require({c['family'] for c in costs} == {'graph', 'shake'}, 'V5 selection needs both families')
+    if profiles in ({'grouped-v4'}, {'grouped-v5'}):
         require(len(memories) == 1, 'selection mixes effective memory/gather settings')
-        value.update(schema='ringct-gpu-aggregation-selection-v3', profile='grouped-v4', baseline_width=4,
+        value.update(schema='ringct-gpu-aggregation-selection-v3', profile=next(iter(profiles)), baseline_width=4,
                      memory=json.loads(memories.pop()))
     with args.output.open('x') as output:
         json.dump(value, output, indent=2); output.write('\n')

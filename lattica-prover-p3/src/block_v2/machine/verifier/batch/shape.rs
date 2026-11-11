@@ -25,12 +25,12 @@ mod metadata_planning;
 mod precomputed;
 pub use envelope::{verifier_height_envelope, VerifierHeightEnvelope};
 pub use envelope_cache::{
-    HeightEnvelopeCacheScope, HeightEnvelopeCacheSnapshot, HeightEnvelopeCacheStatistics, HEIGHT_ENVELOPE_CACHE_ENTRIES,
-    HEIGHT_ENVELOPE_CACHE_RESERVED_BYTES,
+    HeightEnvelopeCacheScope, HeightEnvelopeCacheSnapshot, HeightEnvelopeCacheStatistics,
+    HEIGHT_ENVELOPE_CACHE_ENTRIES, HEIGHT_ENVELOPE_CACHE_RESERVED_BYTES,
 };
 pub use metadata_planning::{
-    metadata_cpu_worker_ceiling, native_metadata_cpu_worker_ceiling,
-    MetadataCpuOptions, MetadataPlanningScope, MetadataPlanningStatistics, MAX_METADATA_WORKERS,
+    metadata_cpu_worker_ceiling, native_metadata_cpu_worker_ceiling, MetadataCpuOptions,
+    MetadataPlanningScope, MetadataPlanningStatistics, MAX_METADATA_WORKERS,
     METADATA_PLANNING_SCOPE_RESERVED_BYTES,
 };
 

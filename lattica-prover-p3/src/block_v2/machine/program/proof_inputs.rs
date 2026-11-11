@@ -17,7 +17,12 @@ fn reject(b: &mut ProgramBuilder<'_>) -> CompileError {
     // memory.reject() sets the same sticky flag whose typed error is TooLarge.
     // Do not classify an arbitrary proof Shape or Backend string as admission.
     match b.resource_failure() {
-        Some(error) => CompileError::from_builder_admission(error, "proof input storage allowance"),
+        Some(error) => CompileError::from_builder_admission(
+            error,
+            b.memory
+                .first_failure
+                .map_or("proof input storage allowance", |f| f.resource),
+        ),
         None => CompileError::Shape("proof input storage allowance"),
     }
 }
@@ -55,19 +60,23 @@ impl ProofInputs {
     }
 
     fn admit(&self, b: &mut ProgramBuilder<'_>, fields: usize) -> Result<(), CompileError> {
-        if b.memory.failed
-            || self.values.capacity() > b.memory.input_limit
-            || b.witnesses
-                .checked_add(fields)
-                .is_none_or(|n| n > b.memory.input_limit)
-            || b.wires
-                .checked_add(fields)
-                .is_none_or(|n| n > b.memory.wire_limit)
-            || self
-                .len(b)
-                .checked_add(fields)
-                .is_none_or(|n| n > b.memory.input_limit)
-        {
+        if b.memory.failed {
+            return Err(reject(b));
+        }
+        let inputs = b
+            .witnesses
+            .saturating_add(fields)
+            .max(self.len(b).saturating_add(fields))
+            .max(self.values.capacity());
+        if inputs > b.memory.input_limit {
+            b.memory
+                .reject_resource("input-values", inputs, b.memory.input_limit);
+            return Err(reject(b));
+        }
+        let wires = b.wires.saturating_add(fields);
+        if wires > b.memory.wire_limit {
+            b.memory
+                .reject_resource("wires", wires, b.memory.wire_limit);
             return Err(reject(b));
         }
         Ok(())

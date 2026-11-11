@@ -61,11 +61,22 @@ impl PreparedNode {
 
 impl CompiledNode {
     #[cfg(feature = "gpu-aggregation-experiment")]
-    pub(crate) fn preflight_imported(&self, limits: lattica_prover_p3::block_v2::machine::RegisteredGpuLimits) -> std::result::Result<(), String> {
+    pub(crate) fn preflight_imported(
+        &self,
+        limits: lattica_prover_p3::block_v2::machine::RegisteredGpuLimits,
+    ) -> std::result::Result<(), String> {
         crate::gpu_aggregation::memory::check_program(&self.program)?;
-        let native = crate::gpu_aggregation::CONSUMING_GPU_HOST_BYTES.checked_sub(limits.retained_tree_host_bytes())
+        let native = crate::gpu_aggregation::policy::current()
+            .backend_host_bytes
+            .checked_sub(limits.retained_tree_host_bytes())
             .ok_or("tree quota exhausts backend allowance")?;
-        lattica_prover_p3::block_v2::machine::OuterBackendPlan::new(&self.program, &self.public, &self.witness, limits, native)?;
+        lattica_prover_p3::block_v2::machine::OuterBackendPlan::new(
+            &self.program,
+            &self.public,
+            &self.witness,
+            limits,
+            native,
+        )?;
         Ok(())
     }
     /// Register through an explicit worker context; the current node's trusted
@@ -79,21 +90,38 @@ impl CompiledNode {
         self.prove_with_admission(execution, cache, context, false)
     }
     #[cfg(feature = "gpu-aggregation-experiment")]
-    pub(crate) fn prove_imported_with_context(self, execution: &crate::execution::ProvingContext,
-        cache: &ProofCache, context: &GraphContext) -> Result<(NodeKey, NodeProof, bool)> {
-        require(cache.policy() == crate::proof_cache_policy::ProofCachePolicy::FreshOnly,
-            "imported graph requires fresh recursive proofs")?;
+    pub(crate) fn prove_imported_with_context(
+        self,
+        execution: &crate::execution::ProvingContext,
+        cache: &ProofCache,
+        context: &GraphContext,
+    ) -> Result<(NodeKey, NodeProof, bool)> {
+        require(
+            cache.policy() == crate::proof_cache_policy::ProofCachePolicy::FreshOnly,
+            "imported graph requires fresh recursive proofs",
+        )?;
         self.prove_with_admission(execution, cache, context, true)
     }
-    fn prove_with_admission(self, execution: &crate::execution::ProvingContext,
-        cache: &ProofCache, context: &GraphContext, owned_gpu: bool) -> Result<(NodeKey, NodeProof, bool)> {
+    fn prove_with_admission(
+        self,
+        execution: &crate::execution::ProvingContext,
+        cache: &ProofCache,
+        context: &GraphContext,
+        owned_gpu: bool,
+    ) -> Result<(NodeKey, NodeProof, bool)> {
         let owned_gpu = owned_gpu && cfg!(feature = "gpu-aggregation-experiment");
         #[cfg(feature = "gpu-aggregation-experiment")]
-        if owned_gpu { execution.check_aggregation_gpu_route(&self.program).map_err(err)?; }
-        if !owned_gpu { require(
-            self.geometry()?.retained_lde_bytes <= execution.host_bytes(),
-            "graph node exceeds retained-LDE host admission; this is not a peak-memory bound",
-        )?; }
+        if owned_gpu {
+            execution
+                .check_aggregation_gpu_route(&self.program)
+                .map_err(err)?;
+        }
+        if !owned_gpu {
+            require(
+                self.geometry()?.retained_lde_bytes <= execution.host_bytes(),
+                "graph node exceeds retained-LDE host admission; this is not a peak-memory bound",
+            )?;
+        }
         let Self {
             program,
             spec,

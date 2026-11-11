@@ -74,6 +74,7 @@ pub(super) struct Budget {
     pub(super) peak: usize,
     pub(super) failed: bool,
     pub(super) byte_limit_exceeded: bool,
+    pub(super) first_failure: Option<super::ConstructionFailure>,
 }
 
 impl Budget {
@@ -86,6 +87,7 @@ impl Budget {
             peak: 0,
             failed: false,
             byte_limit_exceeded: false,
+            first_failure: None,
         };
         #[cfg(any(feature = "gpu", feature = "gpu-metal"))]
         if matches!(constants, Constants::Device(..)) {
@@ -127,6 +129,25 @@ impl Budget {
     }
 
     pub(super) fn reject(&mut self) -> bool {
+        self.reject_resource("allocation-or-overflow", 0, 0)
+    }
+
+    pub(super) fn reject_resource(
+        &mut self,
+        resource: &'static str,
+        requested: usize,
+        limit: usize,
+    ) -> bool {
+        if self.first_failure.is_none() {
+            self.first_failure = Some(super::ConstructionFailure {
+                resource,
+                requested,
+                limit,
+                live_bytes: self.live,
+                peak_bytes: self.peak,
+            });
+            eprintln!("bounded_construction_refusal resource={resource} requested={requested} limit={limit} live_bytes={} peak_bytes={}", self.live, self.peak);
+        }
         self.failed = true;
         false
     }
@@ -140,7 +161,7 @@ impl Budget {
         };
         if self.limit.is_some_and(|limit| next > limit) {
             self.byte_limit_exceeded = true;
-            return self.reject();
+            return self.reject_resource("program-bytes", next, self.limit.unwrap());
         }
         self.live = next;
         self.peak = self.peak.max(next);

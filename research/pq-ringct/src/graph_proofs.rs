@@ -392,12 +392,15 @@ impl<'a> GraphProofPlan<'a> {
     /// Stable content key, not an authorization token. Every cache hit also
     /// checks the expected roots and verifies the actual child STARK.
     pub fn cache_key(&self, batch_index: usize) -> Result<[u8; 32]> {
+        self.cache_key_at_source(batch_index, self.source_fingerprint)
+    }
+    pub(crate) fn cache_key_at_source(&self, batch_index: usize, source: [u8;32]) -> Result<[u8;32]> {
         let batch = self.batch(batch_index)?;
         let public = self.expected_public_values(batch)?;
         let mut hash = Sha3_256::new();
         hash.update(b"lattica/matrict/actual-child-cache/v1");
         hash.update(profile::CANDIDATE_PROFILE_ID);
-        hash.update(self.source_fingerprint);
+        hash.update(source);
         hash.update(self.shape_fingerprint);
         hash.update((batch.indices.len() as u64).to_le_bytes());
         for &index in &batch.indices {

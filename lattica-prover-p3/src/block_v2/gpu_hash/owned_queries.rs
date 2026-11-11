@@ -25,14 +25,16 @@ impl CandidateMmcs {
         {
             return Err("owned PCS query requires bounded GPU commitment geometry".into());
         }
-        let height = dimensions[0].height;
+        let height = dimensions.iter().map(|d| d.height).max().unwrap();
         if !height.is_power_of_two() || height > 1 << 25 {
             return Err("owned PCS query height exceeds its bound".into());
         }
         let mut fields = 0usize;
         for d in dimensions {
-            if d.height != height || d.width == 0 || d.width > 4096 {
-                return Err("owned PCS query requires equal heights and bounded columns".into());
+            if !d.height.is_power_of_two() || d.height > height || d.width == 0 || d.width > 4096 {
+                return Err(
+                    "owned PCS query requires power-of-two heights and bounded columns".into(),
+                );
             }
             fields += d.width + 4; // data and the four unchanged MMCS salts
         }
@@ -56,7 +58,7 @@ impl CandidateMmcs {
             return Err("owned PCS queries exceed host proof allowance".into());
         }
         let dimensions = data.owned_dimensions()?;
-        let height = dimensions[0].height;
+        let height = dimensions.iter().map(|d| d.height).max().unwrap();
         if indices.iter().any(|i| *i >= height) {
             return Err("owned PCS query outside commitment".into());
         }
@@ -68,15 +70,15 @@ impl CandidateMmcs {
             ProverData::Compact(d) => (super::salt_data::SaltView::Compact(&d.salts), &d.tree),
             _ => return Err("owned PCS query requires retained salts and tree".into()),
         };
-        salts.validate(session, height, dimensions.len())?;
-        // Validate every owner/layout before reconstructing any matrix. Public
-        // preprocessing imports are aliases; private inputs cannot cross jobs.
-        let prefixes: Vec<_> = (0..dimensions.len())
-            .map(|i| data.owned_matrix(session, i))
-            .collect::<Result<_, _>>()?;
-        for (prefix, d) in prefixes.iter().zip(dimensions) {
-            let s = prefix.spec();
-            if s.rows() != height >> super::super::profile::LOG_BLOWUP
+        salts.validate_heights(
+            session,
+            &dimensions.iter().map(|d| d.height).collect::<Vec<_>>(),
+        )?;
+        // Validate every owner/layout before allocating any reconstruction.
+        // Public host prefixes remain evicted until their individual query pass.
+        for (index, d) in dimensions.iter().enumerate() {
+            let s = data.owned_matrix_spec(session, index)?;
+            if s.rows() != d.height >> super::super::profile::LOG_BLOWUP
                 || s.columns() != d.width
                 || s.extension() != Extension::Base
                 || s.order() != RowOrder::BitReversed
@@ -89,12 +91,17 @@ impl CandidateMmcs {
             .map(|_| Vec::with_capacity(dimensions.len()))
             .collect();
         let mut retained_value_bytes = 0;
-        for prefix in &prefixes {
+        for (index, dimension) in dimensions.iter().enumerate() {
+            let prefix = data.owned_matrix(session, index)?;
             let width = prefix.spec().columns();
+            let shifted: Vec<_> = indices
+                .iter()
+                .map(|i| i >> (height.ilog2() - dimension.height.ilog2()))
+                .collect();
             let rows = session.query_rows(
-                prefix,
-                height.ilog2(),
-                indices,
+                &prefix,
+                dimension.height.ilog2(),
+                &shifted,
                 host_peak - retained_value_bytes - HOST_METADATA / 2,
             )?;
             for (query, row) in rows.chunks_exact(width).enumerate() {
@@ -102,7 +109,8 @@ impl CandidateMmcs {
             }
             retained_value_bytes += indices.len() * width * 8;
         }
-        let salt_rows = salts.gather(session, indices, host_peak - retained_value_bytes)?;
+        let salt_rows =
+            salts.gather_scaled(session, indices, height, host_peak - retained_value_bytes)?;
         // Host-backed trees upload once for the complete query batch; the
         // unchanged GPU gather kernel still selects every authentication path.
         let paths = tree.open_many(indices, self.cap_height)?;

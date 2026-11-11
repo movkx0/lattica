@@ -13,7 +13,7 @@ use p3_field::{Field, PrimeCharacteristicRing};
 // These are the shapes emitted by the supported uni/batch verifier compilers.
 // Fixed descriptors and random suffixes never grow with untrusted proof data.
 const MAX_ROUNDS: usize = 5;
-pub(super) const MAX_MATRICES: usize = 1 << (profile::LOG_BLOWUP + 1);
+pub(super) const MAX_MATRICES: usize = 64;
 const MAX_POINTS: usize = 2;
 const MAX_LOG: usize = 32;
 type RandomSuffix = [Extension; profile::NUM_RANDOM_CODEWORDS];
@@ -39,6 +39,7 @@ fn salted_authentication<R: AsRef<[Wire]>>(
     cap: &[Digest],
     bits: &[Wire],
     rows: &[R],
+    log_heights: &[usize],
     salts: Option<&[Vec<Val>]>,
     siblings: Option<&[[Val; 4]]>,
 ) -> Result<(), CompileError> {
@@ -66,10 +67,11 @@ fn salted_authentication<R: AsRef<[Wire]>>(
         *out = inputs.digest(b, siblings.map_or(&[Val::ZERO; 4], |s| &s[index]));
     }
     check_resources(b)?;
-    b.authenticate_equal_height_mmcs(
+    b.authenticate_mixed_height_mmcs(
         cap,
         bits,
         rows,
+        log_heights,
         &salt_wires[..rows.len()],
         &sibling_wires[..sibling_count],
     )
@@ -104,6 +106,18 @@ pub(super) fn verify_view(
     transcript: &mut Transcript,
     rounds: &[Round<'_>],
     proof: Option<&p3_batch_stark::PcsProof<Config>>,
+    timings: Option<&mut super::uni::shape::NativeLoweringTimings>,
+) -> Result<(), CompileError> {
+    verify_with_heights(b, inputs, transcript, rounds, None, proof, timings)
+}
+
+pub(super) fn verify_with_heights(
+    b: &mut ProgramBuilder,
+    inputs: &mut ProofInputs,
+    transcript: &mut Transcript,
+    rounds: &[Round<'_>],
+    matrix_domains: Option<&[Vec<usize>]>,
+    proof: Option<&p3_batch_stark::PcsProof<Config>>,
     mut timings: Option<&mut super::uni::shape::NativeLoweringTimings>,
 ) -> Result<(), CompileError> {
     let started = timings.as_ref().map(|_| std::time::Instant::now());
@@ -122,6 +136,23 @@ pub(super) fn verify_view(
     {
         return Err(CompileError::Shape("PCS descriptor geometry"));
     }
+    if matrix_domains.is_some_and(|domains| {
+        domains.len() != rounds.len()
+            || domains.iter().zip(rounds).any(|(ds, r)| {
+                ds.len() != r.matrices.len()
+                    || ds.iter().copied().max() != Some(r.log_domain)
+                    || ds.iter().any(|d| {
+                        *d == 0
+                            || *d > MAX_LOG - profile::LOG_BLOWUP
+                            || *d + profile::LOG_BLOWUP
+                                < (r.log_domain + profile::LOG_BLOWUP).min(profile::CAP_HEIGHT)
+                    })
+            })
+    }) {
+        return Err(CompileError::Shape("trusted mixed PCS heights"));
+    }
+    let domain_log =
+        |r: usize, m: usize| matrix_domains.map_or(rounds[r].log_domain, |ds| ds[r][m]);
     let random_openings = proof.map(|p| &p.0);
     let fri = proof.map(|p| &p.1);
     if random_openings.is_some_and(|random| random.len() != rounds.len()) {
@@ -302,6 +333,9 @@ pub(super) fn verify_view(
                     &round.commitment,
                     reduced_bits,
                     &rows,
+                    &(0..round.matrices.len())
+                        .map(|m| domain_log(round_index, m) + profile::LOG_BLOWUP)
+                        .collect::<Vec<_>>(),
                     opening.map(|o| o.opening_proof.0.as_slice()),
                     opening.map(|o| o.opening_proof.1.as_slice()),
                 )?;
@@ -309,19 +343,21 @@ pub(super) fn verify_view(
                     t.pcs_opening_ns += started.unwrap().elapsed().as_nanos();
                 }
                 let started = timings.as_ref().map(|_| std::time::Instant::now());
-                let x = b
-                    .subgroup_point(reduced_bits, log_height)
-                    .map_err(|_| CompileError::Shape("query point"))?;
-                let x = b.mul(x, coset);
-                let x_ext = ext_base(b, x);
-                let (mut power, mut reduced) =
-                    reductions[log_height].take().unwrap_or((one_ext, zero_ext));
                 for (matrix_index, ((row, points), random_matrix)) in rows
                     .iter()
                     .zip(round.matrices)
                     .zip(random_round)
                     .enumerate()
                 {
+                    let log_height = domain_log(round_index, matrix_index) + profile::LOG_BLOWUP;
+                    let reduced_bits = &bits[log_global - log_height..];
+                    let x = b
+                        .subgroup_point(reduced_bits, log_height)
+                        .map_err(|_| CompileError::Shape("query point"))?;
+                    let x = b.mul(x, coset);
+                    let x_ext = ext_base(b, x);
+                    let (mut power, mut reduced) =
+                        reductions[log_height].take().unwrap_or((one_ext, zero_ext));
                     // Linearity separates the query-dependent base-field row from the
                     // OOD extension openings. The latter and alpha powers are shared
                     // across every query by SSA CSE, and a row is shared by both points.
@@ -371,8 +407,8 @@ pub(super) fn verify_view(
                         reduced = b.ext_add(reduced, contribution);
                         power = b.ext_mul(power, row_power);
                     }
+                    reductions[log_height] = Some((power, reduced));
                 }
-                reductions[log_height] = Some((power, reduced));
                 if let Some(t) = timings.as_deref_mut() {
                     t.pcs_reduction_ns += started.unwrap().elapsed().as_nanos();
                 }
@@ -408,6 +444,7 @@ pub(super) fn verify_view(
                     &caps[r],
                     &bits[r + 1..],
                     &[row],
+                    &[bits.len() - r - 1],
                     step.map(|s| s.opening_proof.0.as_slice()),
                     step.map(|s| s.opening_proof.1.as_slice()),
                 )?;

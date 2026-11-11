@@ -54,9 +54,23 @@ pub struct RegisteredGpuLimits {
     trees: Selection,
     execution: Option<ExecutionSelection>,
     aggregation_v4: bool,
+    outer_tree_host_limit: u64,
 }
 
 impl RegisteredGpuLimits {
+    /// Explicit backend-only research quota. The enclosing owner must reserve
+    /// every compiler, input and queued program separately from this phase.
+    #[cfg(all(feature = "gpu", feature = "gpu-tuning"))]
+    pub fn with_aggregation_tree_quota(mut self, bytes: u64) -> Result<Self, String> {
+        if !self.aggregation_v4 || self.host_bytes != HOST_LIMIT
+            || !matches!(bytes, n if n == 8 << 30 || n == 16 << 30)
+            || self.trees.host_bytes as u64 != bytes
+        {
+            return Err("aggregation tree quota requires its captured 32 GiB backend envelope".into());
+        }
+        self.outer_tree_host_limit = bytes;
+        Ok(self)
+    }
     /// Capture the selected tree policy once, before reading the immutable
     /// program geometry. The host quota is part of the worker allowance.
     pub fn new(
@@ -125,6 +139,7 @@ impl RegisteredGpuLimits {
             trees,
             execution: None,
             aggregation_v4: false,
+            outer_tree_host_limit: 8 << 30,
         })
     }
 }

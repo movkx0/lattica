@@ -13,7 +13,8 @@ class MemoryPolicyTests(unittest.TestCase):
     def test_auto_budget_keeps_reserve_headroom_and_physical_limit(self):
         G = memory.GIB
         self.assertEqual(memory.budget('auto', 16*G, int(15.1*G), 4*G), int(10.5*G))
-        self.assertEqual(memory.budget('auto', 16*G, int(15.1*G), 2*G), 12*G)
+        self.assertEqual(memory.budget('auto', 16*G, int(15.1*G), 2*G), int(10.5*G))
+        self.assertEqual(memory.budget('12288', 16*G, int(15.1*G), 2*G), 12*G)
         self.assertEqual(memory.budget('auto', 13*G, 16*G, 4*G), int(8.5*G))
         for request, total, free, reserve in [('12288', 16*G, 15*G, 4*G),
                 ('auto', 12*G, 16*G, 4*G), ('8193', 16*G, 16*G, 2*G),
@@ -22,7 +23,7 @@ class MemoryPolicyTests(unittest.TestCase):
                 memory.budget(request, total, free, reserve)
 
     def certificate(self):
-        return dict(schema='ringct-gpu-memory-qualification-v1', source_sha3='source',
+        return dict(schema='ringct-gpu-memory-qualification-v1', kernel_policy={'ntt':'baseline'}, source_sha3='source',
             executable_sha3='exe', device_uuid='GPU-test', driver='driver', query_gather='batch',
             verified=True, max_rows=1 << 19, context_bytes=2*memory.GIB,
             opaque_peak_bytes=memory.GIB, geometries=[dict(rows=1 << 19, public_values=46)])
@@ -38,6 +39,14 @@ class MemoryPolicyTests(unittest.TestCase):
             with self.subTest(key=key), self.assertRaises(RuntimeError):
                 memory.validate_certificate(bad,binding,'batch')
 
+    def test_changed_kernel_or_compiler_policy_invalidates_certificate(self):
+        value = self.certificate()
+        binding = {k: value[k] for k in ('source_sha3', 'executable_sha3', 'device_uuid', 'driver')}
+        memory.validate_certificate(value, binding, 'batch', value['kernel_policy'])
+        for policy in ({'ntt':'split8'}, {'ntt':'baseline', 'compiler':'wide-memory'}):
+            with self.assertRaises(RuntimeError):
+                memory.validate_certificate(value, binding, 'batch', policy)
+
     def test_prepare_resolves_once_using_opencl_and_current_free_bytes(self):
         with tempfile.TemporaryDirectory() as tmp:
             executable=Path(tmp)/'worker';executable.write_bytes(b'qualified executable')
@@ -48,8 +57,18 @@ class MemoryPolicyTests(unittest.TestCase):
             with patch.object(memory,'inventory',return_value=dict(device_uuid='GPU-test',driver='driver',free_bytes=15*memory.GIB)), \
                     patch.object(memory.subprocess,'run',return_value=SimpleNamespace(stdout='GPU_AGGREGATION_DEVICE '+json.dumps(physical))):
                 memory.prepare(plan,{})
-            self.assertEqual(plan['gpu_aggregation']['memory']['managed_bytes'],int(10.5*memory.GIB))
-            self.assertEqual(json.loads(plan['environment']['LATTICA_V2_GPU_AGGREGATION_MEMORY']),plan['gpu_aggregation']['memory'])
+                self.assertEqual(plan['gpu_aggregation']['memory']['managed_bytes'],int(10.5*memory.GIB))
+                self.assertEqual(json.loads(plan['environment']['LATTICA_V2_GPU_AGGREGATION_MEMORY']),plan['gpu_aggregation']['memory'])
+                plan['gpu_aggregation']['values']['--compiler-policy'] = 'typed-batch'
+                memory.prepare(plan, {})
+                policy = plan['gpu_aggregation']['memory']['kernel_policy']
+                self.assertEqual(policy['program_bytes'], 6 * memory.GIB)
+                self.assertEqual(policy['input_values'], 8 << 20)
+                self.assertEqual(policy['live_jobs'], 1)
+                self.assertEqual(policy['backend_host_bytes'], 24 * memory.GIB)
+                self.assertEqual(policy['tree_host_bytes'], 16 * memory.GIB)
+                self.assertEqual((3 * memory.GIB) + policy['symbolic_bytes'] + policy['program_bytes'] * policy['live_jobs']
+                    + policy['backend_host_bytes'], 36 * memory.GIB)
 
     def test_legacy_and_native_preparation_do_not_change_memory_environment(self):
         for profile,command in [('grouped-v3','screen'),('grouped-v4','prepare-inputs')]:
@@ -70,6 +89,51 @@ class MemoryPolicyTests(unittest.TestCase):
             self.assertEqual(len(value['geometries']),2)
             with self.assertRaises(FileExistsError):
                 memory.merge_qualifications([Path(tmp,'a')],Path(tmp,'out'))
+
+    def test_architecture_proof_requires_vram_observation_and_cleanup_envelope(self):
+        selected = dict(managed_bytes=4 * memory.GIB, context_bytes=4 * memory.GIB)
+        cleanup = dict(device_allowance_bytes=selected['managed_bytes'],
+            gpu_context_allowance_bytes=selected['context_bytes'], managed_peak_bytes=memory.GIB)
+        plan = dict(gpu_aggregation=dict(command='architecture-proof', memory=selected),
+            gpu_memory_observation=dict(samples=1),
+            gpu_aggregation_acceptance=dict(report=dict(memory=selected,
+                session=dict(session_cleanup=cleanup, session_closed=True, completion_claimed=False))))
+        memory.validate('', plan)
+        plan['gpu_memory_observation']['samples'] = 0
+        with self.assertRaises(RuntimeError): memory.validate('', plan)
+        plan['gpu_memory_observation']['samples'] = 1
+        cleanup['managed_peak_bytes'] = selected['managed_bytes'] + 1
+        with self.assertRaises(RuntimeError): memory.validate('', plan)
+
+    def test_architecture_parent_requires_vram_observation_and_cleanup_envelope(self):
+        selected = dict(managed_bytes=4 * memory.GIB, context_bytes=4 * memory.GIB)
+        cleanup = dict(device_allowance_bytes=selected['managed_bytes'],
+            gpu_context_allowance_bytes=selected['context_bytes'], managed_peak_bytes=memory.GIB)
+        plan = dict(gpu_aggregation=dict(command='architecture-parent', memory=selected),
+            gpu_memory_observation=dict(samples=1),
+            gpu_aggregation_acceptance=dict(report=dict(memory=selected,
+                session=dict(session_cleanup=cleanup, session_closed=True, completion_claimed=False))))
+        memory.validate('', plan)
+        plan['gpu_memory_observation']['samples'] = 0
+        with self.assertRaises(RuntimeError): memory.validate('', plan)
+        plan['gpu_memory_observation']['samples'] = 1
+        cleanup['managed_peak_bytes'] = selected['managed_bytes'] + 1
+        with self.assertRaises(RuntimeError): memory.validate('', plan)
+
+    def test_architecture_graph_requires_vram_observation_and_cleanup_envelope(self):
+        selected = dict(managed_bytes=4 * memory.GIB, context_bytes=4 * memory.GIB)
+        cleanup = dict(device_allowance_bytes=selected['managed_bytes'],
+            gpu_context_allowance_bytes=selected['context_bytes'], managed_peak_bytes=memory.GIB)
+        plan = dict(gpu_aggregation=dict(command='architecture-graph', memory=selected),
+            gpu_memory_observation=dict(samples=1),
+            gpu_aggregation_acceptance=dict(report=dict(memory=selected,
+                session=dict(session_cleanup=cleanup, session_closed=True, completion_claimed=False))))
+        memory.validate('', plan)
+        plan['gpu_memory_observation']['samples'] = 0
+        with self.assertRaises(RuntimeError): memory.validate('', plan)
+        plan['gpu_memory_observation']['samples'] = 1
+        cleanup['managed_peak_bytes'] = selected['managed_bytes'] + 1
+        with self.assertRaises(RuntimeError): memory.validate('', plan)
 
     def test_publication_requires_success_and_terminal_provenance(self):
         with tempfile.TemporaryDirectory() as tmp:

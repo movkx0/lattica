@@ -171,6 +171,16 @@ impl DeviceSession {
 }
 
 impl TraceCommitInput {
+    pub(crate) fn released_bytes(&self) -> Result<usize, String> {
+        self.shape.allocation_bytes().into_iter().try_fold(
+            self.trace.exclusive_bytes(),
+            |sum, n| {
+                sum.checked_add(n)
+                    .ok_or_else(|| "trace release size overflow".into())
+            },
+        )
+    }
+
     pub(crate) fn is_preprocessing(&self) -> bool {
         self.random.is_none()
     }

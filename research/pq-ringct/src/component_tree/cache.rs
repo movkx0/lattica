@@ -84,11 +84,22 @@ impl PreparedNode {
 
 impl CompiledNode {
     #[cfg(feature = "gpu-aggregation-experiment")]
-    pub(crate) fn preflight_imported(&self, limits: lattica_prover_p3::block_v2::machine::RegisteredGpuLimits) -> std::result::Result<(), String> {
+    pub(crate) fn preflight_imported(
+        &self,
+        limits: lattica_prover_p3::block_v2::machine::RegisteredGpuLimits,
+    ) -> std::result::Result<(), String> {
         crate::gpu_aggregation::memory::check_program(&self.program)?;
-        let native = crate::gpu_aggregation::CONSUMING_GPU_HOST_BYTES.checked_sub(limits.retained_tree_host_bytes())
+        let native = crate::gpu_aggregation::policy::current()
+            .backend_host_bytes
+            .checked_sub(limits.retained_tree_host_bytes())
             .ok_or("tree quota exhausts backend allowance")?;
-        lattica_prover_p3::block_v2::machine::OuterBackendPlan::new(&self.program, &self.public, &self.witness, limits, native)?;
+        lattica_prover_p3::block_v2::machine::OuterBackendPlan::new(
+            &self.program,
+            &self.public,
+            &self.witness,
+            limits,
+            native,
+        )?;
         Ok(())
     }
     /// Reuse only exact registered metadata; every returned key belongs to the
@@ -101,10 +112,15 @@ impl CompiledNode {
         self.prove_or_load_with_context_inner(execution, cache, None, false)
     }
     #[cfg(feature = "gpu-aggregation-experiment")]
-    pub(crate) fn prove_imported_with_context(self, execution: &crate::execution::ProvingContext,
-        cache: &OuterProofCache) -> Result<CacheOutcome> {
-        require(cache.policy() == crate::proof_cache_policy::ProofCachePolicy::FreshOnly,
-            "imported component requires fresh recursive proofs")?;
+    pub(crate) fn prove_imported_with_context(
+        self,
+        execution: &crate::execution::ProvingContext,
+        cache: &OuterProofCache,
+    ) -> Result<CacheOutcome> {
+        require(
+            cache.policy() == crate::proof_cache_policy::ProofCachePolicy::FreshOnly,
+            "imported component requires fresh recursive proofs",
+        )?;
         self.prove_or_load_with_context_inner(execution, cache, None, true)
     }
 
@@ -139,12 +155,18 @@ impl CompiledNode {
     ) -> Result<CacheOutcome> {
         let owned_gpu = owned_gpu && cfg!(feature = "gpu-aggregation-experiment");
         #[cfg(feature = "gpu-aggregation-experiment")]
-        if owned_gpu { execution.check_aggregation_gpu_route(&self.program).map_err(err)?; }
-        if !owned_gpu { require(
-            self.geometry()?.retained_lde_bytes
-                <= remaining_host_bytes.unwrap_or_else(|| execution.host_bytes()),
-            "component exceeds retained-LDE host admission; this is not a peak-memory bound",
-        )?; }
+        if owned_gpu {
+            execution
+                .check_aggregation_gpu_route(&self.program)
+                .map_err(err)?;
+        }
+        if !owned_gpu {
+            require(
+                self.geometry()?.retained_lde_bytes
+                    <= remaining_host_bytes.unwrap_or_else(|| execution.host_bytes()),
+                "component exceeds retained-LDE host admission; this is not a peak-memory bound",
+            )?;
+        }
         let Self {
             program,
             spec,
@@ -180,8 +202,12 @@ impl CompiledNode {
             });
         }
         let prove = |registered: &crate::execution::RegisteredTemplate| {
-            let key = NodeKey { spec: spec.clone(), height: registered.air().program().height(),
-                cap: registered.preprocessing_cap().roots().to_vec(), verifier: registered.verifier() };
+            let key = NodeKey {
+                spec: spec.clone(),
+                height: registered.air().program().height(),
+                cap: registered.preprocessing_cap().roots().to_vec(),
+                verifier: registered.verifier(),
+            };
             let identity = cache_identity(&key, &public).map_err(|e| format!("{e:?}"))?;
             let detail = format!("{scope} program={:02x?} registered_id={:?} cap_sha3={:02x?} cache_identity={:02x?} cache_policy={:?}",
                 registered.program_identity(), registered.id(), crate::proof_cache_policy::cap_identity(&key.cap), identity, cache.policy());
@@ -212,7 +238,12 @@ impl CompiledNode {
                         (public, proof, false)
                     }
                 };
-                Ok(CacheOutcome { key, proof: NodeProof { public, proof }, cache_hit, identity })
+                Ok(CacheOutcome {
+                    key,
+                    proof: NodeProof { public, proof },
+                    cache_hit,
+                    identity,
+                })
             };
             work().map_err(|error| format!("{detail}: {error}"))
         };

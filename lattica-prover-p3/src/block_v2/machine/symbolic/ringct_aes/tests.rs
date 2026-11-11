@@ -15,7 +15,8 @@ fn census() -> AesPreparationPlan {
         output_len: 1,
         first_block: 0,
         blocks: 1,
-    }).unwrap()
+    })
+    .unwrap()
 }
 
 fn ledger() -> Ledger {
@@ -66,7 +67,15 @@ fn expanded_workers_keep_recordings_bounded_and_owned() {
         let ledger = Ledger::new(WorkerAllowance { host, device: 0 });
         let mut oversized = requirements(census());
         let additional = (32u64 << 30) + 1 - oversized.total().unwrap().host;
-        oversized.add(Category::PhaseScratch, Bytes { host: additional, device: 0 }).unwrap();
+        oversized
+            .add(
+                Category::PhaseScratch,
+                Bytes {
+                    host: additional,
+                    device: 0,
+                },
+            )
+            .unwrap();
         // The enclosing worker can fund this token; an operation still cannot.
         let mut token = ledger.admit_phase(oversized).unwrap();
         assert!(AesRecorder::begin(census(), &mut token, &ledger).is_err());
@@ -77,7 +86,13 @@ fn expanded_workers_keep_recordings_bounded_and_owned() {
         drop(token);
         assert_eq!(ledger.snapshot().current, Bytes::ZERO);
     }
-    for host in [(32u64 << 30) + 1, 35u64 << 30, (36u64 << 30) + 1, 39u64 << 30, 41u64 << 30] {
+    for host in [
+        (32u64 << 30) + 1,
+        35u64 << 30,
+        (36u64 << 30) + 1,
+        39u64 << 30,
+        41u64 << 30,
+    ] {
         let ledger = Ledger::new(WorkerAllowance { host, device: 0 });
         let mut token = ledger.admit_phase(requirements(census())).unwrap();
         assert!(AesRecorder::begin(census(), &mut token, &ledger).is_err());

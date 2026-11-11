@@ -17,6 +17,7 @@ use p3_batch_stark::BatchProof;
 use p3_field::PrimeCharacteristicRing;
 use p3_lookup::Kind;
 
+pub(crate) mod mixed;
 pub mod shape;
 /// Source-only reconstruction from an enclosing caller-authenticated cap.
 pub mod source_program;
@@ -409,6 +410,45 @@ fn verify_prepared_view(
         proof.map(|p| &p.opening_proof),
         None,
     )?;
+    assert_air_constraints(
+        b,
+        air,
+        prepared,
+        public,
+        log_height,
+        &local,
+        None,
+        &pre,
+        &perm_local,
+        &perm_next,
+        &quotient_chunks,
+        terminal,
+        zeta,
+        alpha,
+        challenges,
+        constants,
+    )
+}
+
+pub(super) fn assert_air_constraints<A: BaseAir<Val> + super::periodic::Source>(
+    b: &mut ProgramBuilder,
+    air: &A,
+    prepared: &super::super::symbolic::Prepared,
+    public: &[Wire],
+    log_height: usize,
+    local: &[Extension],
+    next: Option<&[Extension]>,
+    pre: &[Extension],
+    perm_local: &[Extension],
+    perm_next: &[Extension],
+    quotient_chunks: &[Vec<Extension>],
+    terminal: Extension,
+    zeta: Extension,
+    alpha: Extension,
+    challenges: Values<'_>,
+    constants: Constants<'_>,
+) -> Result<(), CompileError> {
+    let zero = b.ext_constant([Val::ZERO; 3]);
     let (first, last, transition, inv_vanishing) =
         expressions::selectors_with_constants(b, zeta, log_height, constants)?;
     let periodic_count = air.num_periodic_columns();
@@ -427,7 +467,13 @@ fn verify_prepared_view(
         let zeros = [zero];
         let terminals = [terminal];
         let values = Evaluation {
-            main: [Values::Slice(&local), Values::repeat(&zeros, air.width())?],
+            main: [
+                Values::Slice(&local),
+                match next {
+                    Some(next) => Values::Slice(next),
+                    None => Values::repeat(&zeros, air.width())?,
+                },
+            ],
             preprocessed: [
                 Values::Slice(&pre),
                 Values::repeat(&zeros, air.preprocessed_width())?,

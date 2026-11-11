@@ -1,6 +1,7 @@
 //! GPU recursive witness and preprocessing construction. Immutable compiled
 //! metadata can be reused across fresh sessions; private scratch cannot.
 use super::*;
+use p3_field::PrimeField64;
 mod wave_batches;
 use crate::block_v2::machine::{
     gpu_program::{WitnessProgram, WitnessSchedule},
@@ -30,6 +31,26 @@ pub(crate) struct PreprocessingTrace {
     matrix: DeviceMatrix,
 }
 impl PreprocessingTrace {
+    /// Only immutable compiler metadata enters public reusable storage. This
+    /// constructor accepts no caller-supplied matrix or private witness.
+    #[cfg(feature = "gpu")]
+    pub(crate) fn from_recursion_template(
+        session: &DeviceSession,
+        template: &crate::block_v2::machine::recursion::RecursionTemplate,
+        index: usize,
+        host_limit: usize,
+    ) -> Result<Self, String> {
+        let geometry = template.geometry()?;
+        let table = geometry.tables.get(index).ok_or("recursion preprocessing index")?;
+        let bytes = table.height.checked_mul(table.preprocessed_width)
+            .and_then(|n| n.checked_mul(16)).ok_or("recursion preprocessing byte overflow")?;
+        if bytes > host_limit { return Err("recursion preprocessing staging allowance".into()); }
+        let matrix = template.preprocessing_table(index)?;
+        let spec = MatrixSpec::new(table.height.ilog2(), matrix.width, Extension::Base, RowOrder::Natural, 1)?;
+        let words = matrix.values.iter().map(|v| v.as_canonical_u64()).collect::<Vec<_>>();
+        let matrix = session.upload(spec, &words)?;
+        Ok(Self { matrix })
+    }
     pub(crate) fn spec(&self) -> MatrixSpec {
         self.matrix.spec()
     }
