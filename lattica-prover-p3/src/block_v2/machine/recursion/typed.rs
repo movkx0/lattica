@@ -165,6 +165,9 @@ impl TypedVerifierPlan {
             while at != NONE {
                 let step = &steps[at as usize];
                 for &index in &step.ops {
+                    if index == NONE {
+                        continue;
+                    }
                     if core::mem::replace(&mut removed[index as usize], true) {
                         return Err("overlapping typed reduction".into());
                     }
@@ -274,6 +277,9 @@ fn recognize(program: &Program, writers: &[u32], first: usize) -> Option<Step> {
     let Op::Add { a, b, .. } = adds[0] else {
         return None;
     };
+    if let Some(step) = recognize_cubic_scale(program, writers, first, a, b) {
+        return Some(step);
+    }
     // Commutative CSE may reorder both inputs. Try a deterministic bounded set.
     for term in [a, b] {
         let index = writers[term.0];
@@ -334,6 +340,79 @@ fn recognize(program: &Program, writers: &[u32], first: usize) -> Option<Step> {
             {
                 return Some(result);
             }
+        }
+    }
+    None
+}
+
+/// A base-field operand is established only by immutable Constant operations,
+/// never by witness values. All three product outputs must be consumed exactly
+/// once by these adds before the whole cubic instruction can be removed.
+fn recognize_cubic_scale(
+    program: &Program,
+    writers: &[u32],
+    first: usize,
+    left: Wire,
+    right: Wire,
+) -> Option<Step> {
+    let is_zero = |wire: Wire| {
+        let index = writers[wire.0];
+        index != NONE
+            && matches!(&program.operations[index as usize], Op::Constant { value, .. } if *value == Val::ZERO)
+    };
+    for term in [left, right] {
+        let index = writers[term.0];
+        if index == NONE {
+            continue;
+        }
+        let Op::CubicMul { a, b, out } = &program.operations[index as usize] else {
+            continue;
+        };
+        if out[0] != term || out.iter().any(|w| program.references[w.0] != 1) {
+            continue;
+        }
+        let (weights, scalar) = if is_zero(b[1]) && is_zero(b[2]) {
+            (*a, b[0])
+        } else if is_zero(a[1]) && is_zero(a[2]) {
+            (*b, a[0])
+        } else {
+            continue;
+        };
+        let mut step = Step {
+            weights: weights.map(|w| w.0 as u32),
+            value: scalar.0 as u32,
+            before: [0; 3],
+            after: [0; 3],
+            ops: [
+                index,
+                NONE,
+                NONE,
+                first as u32,
+                (first + 1) as u32,
+                (first + 2) as u32,
+            ],
+            previous: NONE,
+            next: NONE,
+        };
+        let mut valid = true;
+        for (lane, add) in program.operations[first..first + 3].iter().enumerate() {
+            let Op::Add { a, b, out: sum } = *add else {
+                valid = false;
+                break;
+            };
+            let accumulator = if a == out[lane] {
+                b
+            } else if b == out[lane] {
+                a
+            } else {
+                valid = false;
+                break;
+            };
+            step.before[lane] = accumulator.0 as u32;
+            step.after[lane] = sum.0 as u32;
+        }
+        if valid {
+            return Some(step);
         }
     }
     None

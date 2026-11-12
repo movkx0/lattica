@@ -196,7 +196,11 @@ pub fn verify(
                 let mut row_sum = zero_ext;
                 let mut row_power = one_ext;
                 for &value in row {
-                    let term = b.ext_scale(row_power, value);
+                    let term = if row.len() >= 5 {
+                        b.ext_scale_for_reduction(row_power, value)
+                    } else {
+                        b.ext_scale(row_power, value)
+                    };
                     row_sum = b.ext_add(row_sum, term);
                     row_power = b.ext_mul(row_power, alpha);
                 }

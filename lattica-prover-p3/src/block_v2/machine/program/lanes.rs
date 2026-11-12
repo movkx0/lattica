@@ -3,6 +3,36 @@
 use super::*;
 
 impl ScopedProgramBuilder<'_> {
+    /// Keep dynamic extension scaling in one existing cubic instruction. The
+    /// recursion lowerer can consume it directly instead of reconstructing
+    /// three scalar products. Retain scalar folding and shared-lane CSE when
+    /// either would eliminate a product.
+    pub(crate) fn scale_cubic_lanes(&mut self, a: [Wire; 3], scalar: Wire) -> [Wire; 3] {
+        if self.memory.failed {
+            return [Wire(0); 3];
+        }
+        if self.known.get(&scalar).is_some()
+            || a.iter().any(|w| self.known.get(w).is_some())
+            || a[0] == a[1]
+            || a[0] == a[2]
+            || a[1] == a[2]
+        {
+            return self.scale_lanes(a, scalar);
+        }
+        let zero = self.constant(Val::ZERO);
+        let b = [scalar, zero, zero];
+        let key = (0, a.min(b), a.max(b));
+        let vacant = match self.cubic_expressions.probe(key) {
+            Ok(value) => return value,
+            Err(vacant) => vacant,
+        };
+        let out = core::array::from_fn(|_| self.allocate());
+        self.push_operation(Op::CubicMul { a, b, out });
+        self.cubic_expressions
+            .insert_vacant(vacant, out, &mut self.memory);
+        out
+    }
+
     pub(crate) fn scale_lanes<const N: usize>(&mut self, a: [Wire; N], b: Wire) -> [Wire; N] {
         let bv = self.known.get(&b);
         a.map(|a| self.mul_known(a, b, self.known.get(&a), bv))
@@ -36,6 +66,47 @@ impl ScopedProgramBuilder<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn compact_cubic_scaling_keeps_constant_folding_and_reuses_dynamic_products() {
+        for constant in [Val::ZERO, Val::ONE, Val::from_u64(19)] {
+            let build = |compact: bool| {
+                let mut b = ProgramBuilder::new(0).unwrap();
+                let a = core::array::from_fn(|_| b.input());
+                let scalar = b.constant(constant);
+                if compact {
+                    b.scale_cubic_lanes(a, scalar);
+                } else {
+                    b.scale_lanes(a, scalar);
+                }
+                b.finish(None).unwrap()
+            };
+            assert_eq!(build(false), build(true));
+        }
+        let mut b = ProgramBuilder::new(3).unwrap();
+        let a = core::array::from_fn(|_| b.input());
+        let scalar = b.input();
+        let product = b.scale_cubic_lanes(a, scalar);
+        assert_eq!(product, b.scale_cubic_lanes(a, scalar));
+        for (i, wire) in product.into_iter().enumerate() {
+            let public = b.public(i).unwrap();
+            b.assert_equal(wire, public);
+        }
+        let p = b.finish(None).unwrap();
+        assert_eq!(
+            p.operations
+                .iter()
+                .filter(|op| matches!(op, Op::CubicMul { .. }))
+                .count(),
+            1
+        );
+        for scalar in [Val::ZERO, Val::ONE, Val::NEG_ONE, Val::from_u64(23)] {
+            let a = [Val::NEG_ONE, Val::from_u64(19), -Val::from_u64(31)];
+            let public = a.map(|v| v * scalar);
+            let witness = [a[0], a[1], a[2], scalar];
+            p.evaluate(&public, &witness).unwrap();
+        }
+    }
 
     #[test]
     fn shared_operand_facts_preserve_programs_and_boolean_checks() {

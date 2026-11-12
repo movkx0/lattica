@@ -688,6 +688,12 @@ fn typed_reduction_fixture_with_terms(terms: usize) -> (RecursionTemplate, Vec<V
 fn typed_reduction_fixture_with_chains(
     lengths: &[usize],
 ) -> (RecursionTemplate, Vec<Val>, Vec<Val>) {
+    typed_reduction_fixture_with_representation(lengths, true)
+}
+fn typed_reduction_fixture_with_representation(
+    lengths: &[usize],
+    compact: bool,
+) -> (RecursionTemplate, Vec<Val>, Vec<Val>) {
     use crate::block_v2::profile::Challenge;
     use p3_field::BasedVectorSpace;
     let mut b = ProgramBuilder::new(3 * lengths.len()).unwrap();
@@ -699,7 +705,11 @@ fn typed_reduction_fixture_with_chains(
         let mut power = alpha;
         for _ in 0..terms {
             let value = b.input();
-            let term = b.ext_scale(power, value);
+            let term = if compact {
+                b.ext_scale_for_reduction(power, value)
+            } else {
+                power.map(|weight| b.mul(weight, value))
+            };
             acc = b.ext_add(acc, term);
             power = b.ext_mul(power, alpha);
         }
@@ -728,6 +738,100 @@ fn typed_reduction_fixture_with_chains(
 }
 fn typed_reduction_fixture() -> (RecursionTemplate, Vec<Val>, Vec<Val>) {
     typed_reduction_fixture_with_terms(12)
+}
+
+#[test]
+fn compact_scales_preserve_scalar_reduction_values_and_constraints() {
+    for terms in [4, 5, 8, 12, 17] {
+        let (reference, public, witness) =
+            typed_reduction_fixture_with_representation(&[terms], false);
+        let (compact, actual_public, actual_witness) =
+            typed_reduction_fixture_with_representation(&[terms], true);
+        assert_eq!(public, actual_public);
+        assert_eq!(witness, actual_witness);
+        // Two product instructions disappear per term; one shared zero
+        // constant establishes the base-field operand in the ordinary AIR.
+        assert_eq!(
+            reference.program.operations.len() - compact.program.operations.len(),
+            2 * terms - 1
+        );
+        assert_eq!(reference.typed.stats().reduction_terms, terms);
+        assert_eq!(compact.typed.stats().reduction_terms, terms);
+        assert_eq!(reference.typed.stats().removed_scalar_operations, 6 * terms);
+        assert_eq!(compact.typed.stats().removed_scalar_operations, 4 * terms);
+        let mut reduction_traces = Vec::new();
+        for template in [&reference, &compact] {
+            let source = MachineAir::from_shared_program(Arc::clone(&template.program));
+            let trace = source.trace(&public, &witness).unwrap();
+            check_constraints(&source, &trace, &public);
+            let traces = template.traces(&public, &witness).unwrap();
+            check(template, &public, &traces);
+            let index = template.airs().iter().position(|a| a.kind == 4).unwrap();
+            reduction_traces.push(traces[index].clone());
+            let mut wrong = public.clone();
+            wrong[2] += Val::ONE;
+            assert!(template.traces(&wrong, &witness).is_err());
+        }
+        assert_eq!(reduction_traces[0], reduction_traces[1]);
+    }
+}
+
+#[test]
+fn cubic_reductions_require_trusted_base_operands_and_exact_component_order() {
+    use crate::block_v2::profile::Challenge;
+    use p3_field::BasedVectorSpace;
+    for case in 0..3 {
+        let mut b = ProgramBuilder::new(3).unwrap();
+        let weights = core::array::from_fn(|_| b.input());
+        let mut acc = core::array::from_fn(|_| b.input());
+        let mut witness = [2, 3, 5, 7, 11, 13].map(Val::from_u64).to_vec();
+        let w = Challenge::from_basis_coefficients_slice(&witness[..3]).unwrap();
+        let mut sum = Challenge::from_basis_coefficients_slice(&witness[3..]).unwrap();
+        let zero = b.constant(Val::ZERO);
+        let off_axis = if case == 0 {
+            witness.push(Val::ZERO);
+            b.input() // A zero witness is not a compiler-proven base operand.
+        } else {
+            b.constant(Val::ONE)
+        };
+        for i in 0..9 {
+            let value = b.input();
+            let v = Val::from_u64(17 + i);
+            witness.push(v);
+            let (term, product) = if case == 2 {
+                let term = b.ext_scale_for_reduction(weights, value);
+                let p = w * v;
+                let c: &[Val] = p.as_basis_coefficients_slice();
+                (
+                    [term[1], term[0], term[2]],
+                    Challenge::from_basis_coefficients_slice(&[c[1], c[0], c[2]]).unwrap(),
+                )
+            } else {
+                let term = b.ext_mul(weights, [value, off_axis, zero]);
+                let operand = Challenge::from_basis_coefficients_slice(&[
+                    v,
+                    if case == 0 { Val::ZERO } else { Val::ONE },
+                    Val::ZERO,
+                ])
+                .unwrap();
+                (term, w * operand)
+            };
+            acc = b.ext_add(acc, term);
+            sum += product;
+        }
+        for (i, output) in acc.into_iter().enumerate() {
+            let public = b.public(i).unwrap();
+            b.assert_equal(output, public);
+        }
+        let template = RecursionTemplate::new(Arc::new(b.finish(None).unwrap()), [89; 32]).unwrap();
+        assert_eq!(template.typed.stats().reduction_terms, 0);
+        let public = sum.as_basis_coefficients_slice();
+        check(
+            &template,
+            public,
+            &template.traces(public, &witness).unwrap(),
+        );
+    }
 }
 #[test]
 fn packed_hashes_bind_all_lanes_and_the_inactive_tail() {
@@ -806,7 +910,7 @@ fn compact_verifier_releases_source_and_still_binds_proof_and_public_values() {
 fn typed_reductions_preserve_externally_used_accumulators_and_products() {
     use crate::block_v2::profile::Challenge;
     use p3_field::BasedVectorSpace;
-    for reuse_product in [false, true] {
+    for (reuse_product, lane) in [(false, 0), (true, 0), (true, 1), (true, 2)] {
         let mut b = ProgramBuilder::new(3).unwrap();
         let alpha = core::array::from_fn(|_| b.input());
         let mut acc = core::array::from_fn(|_| b.input());
@@ -819,12 +923,12 @@ fn typed_reductions_preserve_externally_used_accumulators_and_products() {
             let value = b.input();
             let v = Val::from_u64(7 + i);
             witness.push(v);
-            let term = b.ext_scale(power, value);
+            let term = b.ext_scale_for_reduction(power, value);
             let product = weight * v;
             if reuse_product && i == 4 {
                 let observed = b.input();
-                witness.push(product.as_basis_coefficients_slice()[0]);
-                b.assert_equal(term[0], observed);
+                witness.push(product.as_basis_coefficients_slice()[lane]);
+                b.assert_equal(term[lane], observed);
             }
             acc = b.ext_add(acc, term);
             sum += product;
@@ -859,7 +963,7 @@ fn typed_reductions_preserve_externally_used_accumulators_and_products() {
 fn typed_reduction_matches_source_and_authenticates_boundaries() {
     let (template, public, witness) = typed_reduction_fixture();
     assert_eq!(template.typed_plan().stats().reduction_terms, 12);
-    assert_eq!(template.typed_plan().stats().removed_scalar_operations, 72);
+    assert_eq!(template.typed_plan().stats().removed_scalar_operations, 48);
     let traces = template.traces(&public, &witness).unwrap();
     check(&template, &public, &traces);
     let index = template.airs().iter().position(|a| a.kind == 4).unwrap();

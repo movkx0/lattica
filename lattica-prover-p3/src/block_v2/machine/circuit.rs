@@ -42,6 +42,11 @@ impl ProgramBuilder<'_> {
     pub fn ext_scale(&mut self, a: Extension, b: Wire) -> Extension {
         self.scale_lanes(a, b)
     }
+    /// Compact source form for an opening-reduction chain. Other scales retain
+    /// scalar instructions so they do not enlarge the cubic proof table.
+    pub(crate) fn ext_scale_for_reduction(&mut self, a: Extension, b: Wire) -> Extension {
+        self.scale_cubic_lanes(a, b)
+    }
     pub fn ext_select(&mut self, bit: Wire, a: Extension, b: Extension) -> Extension {
         self.select_lanes(bit, a, b)
     }

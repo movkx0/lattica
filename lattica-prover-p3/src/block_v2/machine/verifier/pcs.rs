@@ -370,7 +370,13 @@ pub(super) fn verify_with_heights(
                         } else {
                             row_power = reusable[offset + index];
                         }
-                        let term = b.ext_scale(row_power, value);
+                        // The identity-weight term folds away. Keep at least
+                        // four remaining terms for transition-AIR lowering.
+                        let term = if row.len() >= 5 {
+                            b.ext_scale_for_reduction(row_power, value)
+                        } else {
+                            b.ext_scale(row_power, value)
+                        };
                         row_sum = b.ext_add(row_sum, term);
                         if query_index == 0 {
                             row_power = b.ext_mul(row_power, alpha);
