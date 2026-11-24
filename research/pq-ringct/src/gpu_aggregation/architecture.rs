@@ -353,7 +353,7 @@ pub(crate) fn archive_request(options: &Options, deadline: &Deadline) -> Result<
                 .map(|s| super::typed::job_limits(s.segment_count).map(|(_, weight)| weight))
                 .collect::<Result<Vec<_>>>()?;
             let mut proof_profile = if typed {
-                request::profile(&weights, &contract, options, deadline, &prepare)?
+                request::profile(&weights, &contract, &endpoints, options, deadline, &prepare)?
             } else {
                 reference::profile(
                     spans.len(),

@@ -1,0 +1,285 @@
+diff --git a/lattica-prover-p3/src/block_v2/machine/recursion.rs b/lattica-prover-p3/src/block_v2/machine/recursion.rs
+index fd475c0..4069430 100644
+--- a/lattica-prover-p3/src/block_v2/machine/recursion.rs
++++ b/lattica-prover-p3/src/block_v2/machine/recursion.rs
+@@ -58,12 +58,26 @@ impl RecursionTemplate {
+     pub const CONSTRUCTION_WORKSPACE_BYTES: usize = typed::PLANNING_BYTES + (256 << 20);
+ 
+     pub fn new(program: Arc<Program>, trusted_registry: [u8; 32]) -> Result<Self, String> {
++        // ProgramBuilder allocates eight consecutive Poseidon output wires.
++        // Check the invariant before authenticating only their base address.
++        for op in &program.operations {
++            if let Op::Poseidon { output, .. } = op {
++                if output
++                    .iter()
++                    .enumerate()
++                    .any(|(i, &wire)| output[0].checked_add(i as u32) != Some(wire))
++                {
++                    return Err("recursion Poseidon outputs must be consecutive".into());
++                }
++            }
++        }
+         let typed = TypedVerifierPlan::compile(&program)?;
+         let mut hasher = Sha3_256::new();
+         hasher.update(b"lattica-recursion-multi-table-prototype-v5");
+         hasher.update(b"typed-pcs-reduction-transition-v3");
+         hasher.update(b"authenticated-merkle-swap-poseidon-v1");
+         hasher.update(b"hash-resident-private-input-providers-v1");
++        hasher.update(b"single-hash-input-copy-and-output-base-v1");
+         hasher.update(b"direct-sbox-two-lane-hash-v1");
+         hasher.update(b"global-quotient-budget-layout-v1");
+         hasher.update(VERSION.to_le_bytes());
+diff --git a/lattica-prover-p3/src/block_v2/machine/recursion/air.rs b/lattica-prover-p3/src/block_v2/machine/recursion/air.rs
+index 50dba1a..13944cf 100644
+--- a/lattica-prover-p3/src/block_v2/machine/recursion/air.rs
++++ b/lattica-prover-p3/src/block_v2/machine/recursion/air.rs
+@@ -33,10 +33,11 @@ const REDUCTION_INITIAL_ADDRESS: usize = REDUCTION_INPUTS + 4 * REDUCTION_TERMS;
+ const REDUCTION_FINAL_ADDRESS: usize = REDUCTION_INITIAL_ADDRESS + 3;
+ const REDUCTION_REFERENCES: usize = REDUCTION_FINAL_ADDRESS + 3;
+ const HASH_WIDTH: usize = 8 + 8 * 8 + 22;
+-// Eight raw input words and one authenticated direction bit precede the
+-// permutation trace. Ordinary hashes fix the direction bit to zero. Keeping
+-// both forms in one table avoids another commitment and quotient matrix set.
+-const SWAP_HASH_WIDTH: usize = HASH_WIDTH + 9;
++// Store ordered inputs once; applying the authenticated swap again recovers
++// raw wire values in lookup expressions. Addresses and counts remain public.
++// Ordinary hashes fix the direction bit to zero.
++const SWAP_HASH_WIDTH: usize = HASH_WIDTH + 1;
++const HASH_PRE_WIDTH: usize = 28;
+ const BUS: LookupBus<'static> = LookupBus::new("lattica-recursion-v3-wire");
+ #[derive(Clone, Debug)]
+ pub(super) struct TableAir {
+@@ -88,7 +89,7 @@ impl BaseAir<Val> for VerifierAir {
+         match self.kind {
+             0 => 8 + 6 * SCALAR_LANES,
+             1 => 14 * CUBIC_LANES,
+-            2 => 35 * HASH_LANES,
++            2 => HASH_PRE_WIDTH * HASH_LANES,
+             4 => REDUCTION_REFERENCES + 3,
+             _ => self.publics.max(1) + 8,
+         }
+@@ -254,15 +255,16 @@ impl BaseAir<Val> for TableAir {
+                         let input = swap.map_or(input, |swap| &swap.input);
+                         let owners = self.template.typed.hash_input_owners(index);
+                         p[0] = Val::ONE;
++                        // The constructor checks consecutive output wires.
++                        p[9] = Val::from_u32(output[0] + 1);
+                         for j in 0..8 {
+                             p[1 + j] = Val::from_u32(input[j] + 1);
+-                            p[9 + j] = Val::from_u32(output[j] + 1);
+-                            p[17 + j] =
++                            p[10 + j] =
+                                 Val::from_u32(self.template.typed.references[output[j] as usize]);
+                             // The owner supplies all other uses; a sole-use
+                             // private value contributes zero. Counts and wire
+                             // addresses are fixed by trusted preprocessing.
+-                            p[27 + j] = if owners & (1 << j) != 0 {
++                            p[20 + j] = if owners & (1 << j) != 0 {
+                                 Val::ONE
+                                     - Val::from_u32(
+                                         self.template.typed.references[input[j] as usize],
+@@ -272,8 +274,8 @@ impl BaseAir<Val> for TableAir {
+                             };
+                         }
+                         if let Some(swap) = swap {
+-                            p[25] = Val::from_u32(swap.bit + 1);
+-                            p[26] = Val::ONE;
++                            p[18] = Val::from_u32(swap.bit + 1);
++                            p[19] = Val::ONE;
+                         }
+                     }
+                     _ => unreachable!(),
+@@ -447,19 +449,12 @@ pub(super) fn trace(air: &TableAir, values: &[Val]) -> RowMajorMatrix<Val> {
+                         unreachable!()
+                     };
+                     if let Some(swap) = swaps::find(&template.typed.swaps, index as usize) {
+-                        for j in 0..8 {
+-                            m[j] = values[swap.input[j] as usize];
+-                        }
+                         m[8] = values[swap.bit as usize];
+-                    } else {
+-                        for j in 0..8 {
+-                            m[j] = values[input[j] as usize];
+-                        }
+                     }
+                     let input = input.map(|w| values[w as usize]);
+-                    m[9..17].copy_from_slice(&input);
++                    m[..8].copy_from_slice(&input);
+                     let _ = permutation(input, |column, value| {
+-                        m[9 + column] = value;
++                        m[1 + column] = value;
+                         value
+                     });
+                 }
+@@ -571,44 +566,41 @@ impl<AB: AirBuilder<F = Val> + InteractionBuilder> Air<AB> for VerifierAir {
+             }
+             2 => {
+                 let width = SWAP_HASH_WIDTH;
+-                let pre_width = 35;
++                let pre_width = HASH_PRE_WIDTH;
+                 for lane in 0..HASH_LANES {
+                     let m = &m[lane * width..(lane + 1) * width];
+                     let p = &p[lane * pre_width..(lane + 1) * pre_width];
+                     let h: AB::Expr = p[0].into();
+                     let bit: AB::Expr = m[8].into();
+-                    let swap: AB::Expr = p[26].into();
++                    let swap: AB::Expr = p[19].into();
+                     b.assert_zero(h.clone() * bit.clone() * (bit.clone() - AB::Expr::ONE));
+                     b.assert_zero((AB::Expr::ONE - swap.clone()) * bit.clone());
+-                    for i in 0..8 {
+-                        b.assert_zero(
+-                            h.clone() * (m[9 + i] - m[i] - bit.clone() * (m[i ^ 4] - m[i])),
+-                        );
+-                    }
+-                    BUS.lookup_key(b, [p[25].into(), bit], Count::bounded(swap, 1));
+-                    let hash = &m[9..];
+-                    let output = permutation(
+-                        core::array::from_fn(|i| hash[i].into()),
+-                        |column, expected| {
+-                            let actual: AB::Expr = hash[column].into();
++                    BUS.lookup_key(b, [p[18].into(), bit.clone()], Count::bounded(swap, 1));
++                    let output =
++                        permutation(core::array::from_fn(|i| m[i].into()), |column, expected| {
++                            let actual: AB::Expr = m[1 + column].into();
+                             b.assert_zero(h.clone() * (actual.clone() - expected));
+                             actual
+-                        },
+-                    );
++                        });
+                     for &value in m {
+                         b.assert_zero((AB::Expr::ONE - h.clone()) * value);
+                     }
+                     for i in 0..8 {
++                        let raw = m[i] + bit.clone() * (m[i ^ 4] - m[i]);
+                         BUS.lookup_key(
+                             b,
+-                            [p[1 + i].into(), m[i].into()],
++                            [p[1 + i].into(), raw],
+                             // Signed count: +1 for an ordinary read, or minus
+                             // the remaining uses for a relocated private input.
+                             // Its exact magnitude is bounded by the immutable
+                             // source's reference counts, not by a proof value.
+-                            Count::bounded(p[27 + i].into(), self.hash_input_count_bound),
++                            Count::bounded(p[20 + i].into(), self.hash_input_count_bound),
++                        );
++                        BUS.table_entry(
++                            b,
++                            [p[9] + AB::Expr::from_usize(i), output[i].clone()],
++                            p[10 + i],
+                         );
+-                        BUS.table_entry(b, [p[9 + i].into(), output[i].clone()], p[17 + i]);
+                     }
+                 }
+             }
+diff --git a/lattica-prover-p3/src/block_v2/machine/recursion/tests.rs b/lattica-prover-p3/src/block_v2/machine/recursion/tests.rs
+index 78c116c..96941b4 100644
+--- a/lattica-prover-p3/src/block_v2/machine/recursion/tests.rs
++++ b/lattica-prover-p3/src/block_v2/machine/recursion/tests.rs
+@@ -31,8 +31,7 @@ fn compact_hash_quotient_fits_the_bounded_gpu_specializer() {
+         "compact hash must not silently use the interpreter: {:?}",
+         program.shape()
+     );
+-    // Enlarging the table is safe because each permutation now has 103 main
+-    // columns instead of 189. Keep a doubled-domain input prefix below 2 GiB.
++    // Keep a doubled-domain hash trace prefix below 2 GiB.
+     assert!(2 * air::HASH_TABLE_MAX_ROWS * air.width() * core::mem::size_of::<Val>() < 2 << 30);
+ }
+ 
+@@ -108,7 +107,7 @@ fn merkle_swap_lowering_matches_reference_both_directions_and_packed_tail() {
+         let traces = template.traces(&public, &witness).unwrap();
+         check(&template, &public, &traces);
+         let width = traces[index].width;
+-        // Raw words, bit, ordered inputs, round checkpoints, every active
++        // Ordered inputs, bit, round checkpoints, every active
+         // lane and the inactive tail must each remain constrained.
+         for column in (0..18)
+             .chain((0..air::HASH_LANES).map(|lane| lane * width / air::HASH_LANES))
+@@ -137,6 +136,88 @@ fn merkle_swap_lowering_preserves_external_uses_and_mismatched_selectors() {
+     }
+ }
+ 
++#[test]
++fn hash_input_routing_preserves_duplicate_and_earlier_wire_uses() {
++    let mut b = ProgramBuilder::new(9).unwrap();
++    let mut input: [_; 8] = core::array::from_fn(|_| b.input());
++    input[2] = input[0];
++    let sum = b.add(input[0], input[1]);
++    let sum_public = b.public(8).unwrap();
++    b.assert_equal(sum, sum_public);
++    let bit = b.input();
++    let selected = core::array::from_fn(|i| b.select(bit, input[i], input[i ^ 4]));
++    let output = b.poseidon(selected);
++    for (i, wire) in output.into_iter().enumerate() {
++        let public = b.public(i).unwrap();
++        b.assert_equal(wire, public);
++    }
++    let template = RecursionTemplate::new(Arc::new(b.finish(None).unwrap()), [94; 32]).unwrap();
++    assert_eq!(template.typed_plan().stats().merkle_swap_hashes, 1);
++    // The provider supplies the duplicate hash input and the earlier sum;
++    // its own consumption is excluded from the signed lookup multiplicity.
++    assert_eq!(template.typed_plan().stats().hash_input_count_bound, 2);
++    for direction in [0u64, 1] {
++        let mut witness = (1..=8).map(Val::from_u64).collect::<Vec<_>>();
++        let mut state: [_; 8] = core::array::from_fn(|i| witness[i]);
++        state[2] = state[0];
++        if direction == 1 {
++            state.rotate_left(4);
++        }
++        let mut public = default_goldilocks_poseidon2_8().permute(state).to_vec();
++        public.push(witness[0] + witness[1]);
++        witness.push(Val::from_u64(direction));
++        let source = MachineAir::from_shared_program(template.program.clone());
++        check_constraints(&source, &source.trace(&public, &witness).unwrap(), &public);
++        let traces = template.traces(&public, &witness).unwrap();
++        check(&template, &public, &traces);
++        let index = template.airs().iter().position(|a| a.kind == 2).unwrap();
++        assert_eq!(traces[index].width, 95 * air::HASH_LANES);
++        assert_eq!(
++            template.airs()[index].preprocessed_width(),
++            28 * air::HASH_LANES
++        );
++        // Flipping the bit preserves booleanity and the local permutation;
++        // exact wire bindings must still reject it in the global lookup.
++        let mut wrong = traces.clone();
++        wrong[index].values[8] = Val::ONE - wrong[index].values[8];
++        check_constraints(&template.airs()[index], &wrong[index], &[]);
++        assert!(std::panic::catch_unwind(|| check(&template, &public, &wrong)).is_err());
++    }
++    let geometry = template.geometry().unwrap();
++    assert!(geometry.degree_gate && geometry.quotient_gate);
++    eprintln!(
++        "ROUTED_HASH_GEOMETRY {}",
++        serde_json::to_string(&geometry).unwrap()
++    );
++}
++
++#[test]
++fn compact_hash_addresses_reject_nonconsecutive_internal_outputs() {
++    let (template, _, _) = swap_fixture(1, false, false);
++    for overflow in [false, true] {
++        let mut program = (*template.program).clone();
++        let output = program
++            .operations
++            .iter_mut()
++            .find_map(|op| {
++                if let Op::Poseidon { output, .. } = op {
++                    Some(output)
++                } else {
++                    None
++                }
++            })
++            .unwrap();
++        if overflow {
++            output[0] = u32::MAX;
++        } else {
++            output.swap(0, 1);
++        }
++        assert!(RecursionTemplate::new(Arc::new(program), [91; 32])
++            .unwrap_err()
++            .contains("outputs must be consecutive"));
++    }
++}
++
+ #[test]
+ fn hash_input_providers_preserve_cross_hash_and_earlier_arithmetic_uses() {
+     let mut b = ProgramBuilder::new(8).unwrap();

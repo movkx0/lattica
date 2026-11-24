@@ -1,0 +1,51 @@
+{
+  "schema": "gpu-register-stream-screen-v1",
+  "status": "rejected-insufficient-kernel-speedup",
+  "complete_proof_comparison": false,
+  "samples": [
+    {
+      "rows": "262144",
+      "width": "64",
+      "stream": "false",
+      "baseline_median_ns": "4909760",
+      "candidate_median_ns": "4872576",
+      "verified": "true"
+    },
+    {
+      "rows": "262144",
+      "width": "64",
+      "stream": "true",
+      "baseline_median_ns": "4983456",
+      "candidate_median_ns": "4932640",
+      "verified": "true"
+    },
+    {
+      "rows": "262144",
+      "width": "206",
+      "stream": "false",
+      "baseline_median_ns": "16228928",
+      "candidate_median_ns": "16100224",
+      "verified": "true"
+    },
+    {
+      "rows": "262144",
+      "width": "206",
+      "stream": "true",
+      "baseline_median_ns": "16086816",
+      "candidate_median_ns": "15938400",
+      "verified": "true"
+    }
+  ],
+  "source_sha256": {
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine.rs": "030294a7674fe609c73b29052e894dc11e245b4af14761792be4c54a14a7b379",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/tuning.rs": "af3e02aa3a94f4431379d9f30452c5d3911056448606aa548e107e1e409b4bb2",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/commitment_registers.cl": "f5239a7e3a6c7ba054152ab29ff03fb4d64edef6a9000aebacbce09b5461f1e4",
+    "lattica-prover-p3/src/block_v2/gpu_hash/engine/commitment_registers_tests.rs": "237b363393cf977fc144fe993f073597d2724b3d493aa1e7d3d5e487f701cb81"
+  },
+  "receipts": [
+    "gpu-agg-register-unit-tests-r124",
+    "gpu-agg-register-gpu-tests-r124",
+    "gpu-agg-register-device-tree-test-r124"
+  ],
+  "qualification_note": "CPU sponge oracle and paired kernel screen passed. The first wide Merkle check failed its device-storage download-count assertion under host-backed trees; repeating that test with device-backed trees passed. Both receipts are preserved. Candidate removed before complete proof benchmarks."
+}

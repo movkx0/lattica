@@ -4,6 +4,28 @@ use super::Result;
 use std::collections::BTreeMap;
 use std::sync::{Arc, Condvar, Mutex};
 
+/// Visit one parent position in every tree before advancing to the next.
+/// Moving each input once preserves child order and leaves odd tails intact.
+pub(crate) fn parent_groups<T>(
+    nodes: Vec<Vec<T>>,
+    fan_in: usize,
+) -> impl Iterator<Item = (usize, Vec<T>)> {
+    assert!(fan_in >= 2);
+    let mut remaining = nodes.into_iter().map(Vec::into_iter).collect::<Vec<_>>();
+    let mut group = 0;
+    std::iter::from_fn(move || {
+        for _ in 0..remaining.len() {
+            let index = group;
+            group = (group + 1) % remaining.len();
+            let children = remaining[index].by_ref().take(fan_in).collect::<Vec<_>>();
+            if !children.is_empty() {
+                return Some((index, children));
+            }
+        }
+        None
+    })
+}
+
 #[derive(Default, Debug, serde::Serialize)]
 pub(crate) struct Stats {
     pub workers: usize,

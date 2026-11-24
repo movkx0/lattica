@@ -736,6 +736,32 @@ pub struct ProvenBranch {
     pub cache_hit: bool,
 }
 
+impl ProvenBranch {
+    /// Already-owned proof/key storage for the shared graph input inventory.
+    /// Count spare capacities and shared verifier metadata conservatively;
+    /// this neither validates a proof nor admits its earlier construction.
+    #[cfg(feature = "gpu-aggregation-experiment")]
+    pub(crate) fn retained_bytes(&self, maximum: usize) -> Result<usize> {
+        let descriptor = match &self.key.spec.descriptor {
+            Descriptor::HashX(parts) => parts.capacity()
+                .checked_mul(core::mem::size_of::<PartKind>()),
+            _ => Some(0),
+        }.ok_or_else(|| err("branch descriptor storage overflow"))?;
+        let fixed = self.key.cap.capacity()
+            .checked_mul(core::mem::size_of::<[Val; 4]>())
+            .and_then(|n| self.proof.public.capacity().checked_mul(core::mem::size_of::<Val>())
+                .and_then(|p| n.checked_add(p)))
+            .and_then(|n| n.checked_add(self.key.verifier.cached_metadata_bytes()))
+            .and_then(|n| n.checked_add(descriptor))
+            .and_then(|n| n.checked_add(64 << 10))
+            .ok_or_else(|| err("branch retained storage overflow"))?;
+        let remaining = maximum.checked_sub(fixed).ok_or_else(|| err("branch retained limit"))?;
+        let proof = lattica_prover_p3::block_v2::machine::backend::retained_proof_capacity_bytes(
+            &self.proof.proof, remaining).map_err(err)?;
+        fixed.checked_add(proof).ok_or_else(|| err("branch retained sum overflow"))
+    }
+}
+
 mod cache;
 #[cfg(test)]
 mod tests;

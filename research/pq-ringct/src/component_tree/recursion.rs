@@ -131,6 +131,20 @@ impl ProvenNode {
         f64,
         lattica_prover_p3::block_v2::machine::recursion::GpuProofMeasurement,
     )> {
+        Self::prove_prepared_witness_gpu(node, template, None, cache, limits, source_released)
+    }
+    pub(crate) fn prove_prepared_witness_gpu(
+        node: CompiledNode,
+        template: lattica_prover_p3::block_v2::machine::recursion::RecursionTemplate,
+        ready: Option<lattica_prover_p3::block_v2::machine::recursion::PreparedRecursionWitness>,
+        cache: &mut lattica_prover_p3::block_v2::machine::recursion::GpuRecursionCache,
+        limits: lattica_prover_p3::block_v2::machine::recursion::GpuTemplateLimits,
+        source_released: impl FnOnce(),
+    ) -> Result<(
+        Self,
+        f64,
+        lattica_prover_p3::block_v2::machine::recursion::GpuProofMeasurement,
+    )> {
         require(
             template.matches_program(&node.program),
             "prepared crypto source ownership",
@@ -138,12 +152,24 @@ impl ProvenNode {
         let started = std::time::Instant::now();
         let owner = cache.prepare(template, limits).map_err(err)?;
         let setup_seconds = started.elapsed().as_secs_f64();
-        let (node, measurement) = Self::from_cached_gpu(node, owner, source_released)?;
+        let (node, measurement) =
+            Self::from_cached_gpu_prepared(node, owner, ready, source_released)?;
         Ok((node, setup_seconds, measurement))
     }
     pub(crate) fn from_cached_gpu(
         node: CompiledNode,
         owner: lattica_prover_p3::block_v2::machine::recursion::CachedGpuRecursionTemplate<'_>,
+        source_released: impl FnOnce(),
+    ) -> Result<(
+        Self,
+        lattica_prover_p3::block_v2::machine::recursion::GpuProofMeasurement,
+    )> {
+        Self::from_cached_gpu_prepared(node, owner, None, source_released)
+    }
+    fn from_cached_gpu_prepared(
+        node: CompiledNode,
+        owner: lattica_prover_p3::block_v2::machine::recursion::CachedGpuRecursionTemplate<'_>,
+        ready: Option<lattica_prover_p3::block_v2::machine::recursion::PreparedRecursionWitness>,
         source_released: impl FnOnce(),
     ) -> Result<(
         Self,
@@ -161,9 +187,14 @@ impl ProvenNode {
             witness,
         } = node;
         drop(program);
-        let (proof, measurement) = owner
-            .into_prove(&public, &witness, source_released)
-            .map_err(err)?;
+        let (proof, measurement) = match ready {
+            Some(ready) => {
+                drop(witness);
+                owner.into_prove_prepared(&public, ready, source_released)
+            }
+            None => owner.into_prove(&public, &witness, source_released),
+        }
+        .map_err(err)?;
         Ok((
             Self {
                 spec,

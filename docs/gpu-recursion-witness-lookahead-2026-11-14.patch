@@ -1,0 +1,639 @@
+diff --git a/lattica-prover-p3/src/block_v2/machine/recursion.rs b/lattica-prover-p3/src/block_v2/machine/recursion.rs
+--- a/lattica-prover-p3/src/block_v2/machine/recursion.rs
++++ b/lattica-prover-p3/src/block_v2/machine/recursion.rs
+@@ -31,7 +31,7 @@
+ #[cfg(feature = "gpu")]
+ pub use gpu::{
+     CachedGpuRecursionTemplate, GpuProofMeasurement, GpuRecursionCache, GpuRecursionCacheStats,
+-    GpuTemplateLimits, PreparedGpuRecursionTemplate,
++    GpuTemplateLimits, PreparedGpuRecursionTemplate, PreparedRecursionWitness,
+ };
+ pub use parent::{CompiledRecursionVerifier, RecursionVerifier};
+ pub use prepared::{PreparedRecursionTemplate, RecursionExecutionProof};
+diff --git a/lattica-prover-p3/src/block_v2/machine/recursion/gpu.rs b/lattica-prover-p3/src/block_v2/machine/recursion/gpu.rs
+--- a/lattica-prover-p3/src/block_v2/machine/recursion/gpu.rs
++++ b/lattica-prover-p3/src/block_v2/machine/recursion/gpu.rs
+@@ -14,6 +14,8 @@
+ use p3_lookup::{LogUpGadget, Lookups};
+ use p3_uni_stark::StarkGenericConfig;
+ use std::time::Instant;
++mod witness;
++pub use witness::PreparedRecursionWitness;
+ 
+ #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+ pub struct GpuTemplateLimits {
+@@ -30,6 +32,8 @@
+     pub public_prefix_host_bytes: usize,
+     pub public_salt_host_bytes: usize,
+     pub host_witness_seconds: f64,
++    pub host_witness_prepared: bool,
++    pub host_witness_preparation_bytes: usize,
+     pub upload_seconds: f64,
+     pub gpu_prove_seconds: f64,
+     pub cpu_verify_seconds: f64,
+@@ -131,12 +135,37 @@
+         source_released: impl FnOnce(),
+     ) -> Result<(RecursionExecutionProof, GpuProofMeasurement), String> {
+         let _phase = crate::block_v2::worker_memory::PhaseGuard::acquire("cached recursion proof")?;
+-        let started = Instant::now();
+-        let traces = self
++        let ready = self
+             .template
+-            .traces(public, witness)
+-            .map_err(|e| format!("cached recursion witness: {e:?}"))?;
+-        let seconds = started.elapsed().as_secs_f64();
++            .prepare_gpu_witness(public, witness, usize::MAX)?
++            .ok_or("cached recursion witness admission")?;
++        self.prove_witness(public, ready, false, source_released)
++    }
++    pub fn into_prove_prepared(
++        self,
++        public: &[Val],
++        witness: PreparedRecursionWitness,
++        source_released: impl FnOnce(),
++    ) -> Result<(RecursionExecutionProof, GpuProofMeasurement), String> {
++        let _phase = crate::block_v2::worker_memory::PhaseGuard::acquire("cached recursion proof")?;
++        self.prove_witness(public, witness, true, source_released)
++    }
++    fn prove_witness(
++        self,
++        public: &[Val],
++        witness: PreparedRecursionWitness,
++        prepared: bool,
++        source_released: impl FnOnce(),
++    ) -> Result<(RecursionExecutionProof, GpuProofMeasurement), String> {
++        if !witness.matches(&self.template, public) {
++            return Err("prepared recursion witness source or public mismatch".into());
++        }
++        let PreparedRecursionWitness {
++            traces,
++            seconds,
++            preparation_bytes,
++            ..
++        } = witness;
+         let Self {
+             template,
+             state,
+@@ -146,6 +175,8 @@
+         source_released();
+         let (proof, mut measurement) = state.prove_traces(public, traces, seconds)?;
+         measurement.preprocessing_reused = reused;
++        measurement.host_witness_prepared = prepared;
++        measurement.host_witness_preparation_bytes = preparation_bytes;
+         Ok((proof, measurement))
+     }
+ }
+@@ -548,6 +579,8 @@
+                 public_prefix_host_bytes: self.public_prefix_host_bytes,
+                 public_salt_host_bytes: self.public_salt_host_bytes,
+                 host_witness_seconds,
++                host_witness_prepared: false,
++                host_witness_preparation_bytes: 0,
+                 upload_seconds,
+                 gpu_prove_seconds,
+                 cpu_verify_seconds,
+diff --git a/lattica-prover-p3/src/block_v2/machine/recursion/tests.rs b/lattica-prover-p3/src/block_v2/machine/recursion/tests.rs
+--- a/lattica-prover-p3/src/block_v2/machine/recursion/tests.rs
++++ b/lattica-prover-p3/src/block_v2/machine/recursion/tests.rs
+@@ -1247,12 +1247,31 @@
+     for attempt in 0..2 {
+         let (template, public, witness) = typed_reduction_fixture();
+         let source = Arc::downgrade(&template.program);
++        let ready = if attempt > 0 {
++            std::thread::scope(|scope| {
++                scope
++                    .spawn(|| {
++                        template
++                            .prepare_gpu_witness(&public, &witness, 2 << 30)
++                            .unwrap()
++                    })
++                    .join()
++                    .unwrap()
++            })
++        } else {
++            None
++        };
+         let owner = cache.prepare(template, limits).unwrap();
+         let key = owner.verifier();
+-        let (proof, report) = owner
+-            .into_prove(&public, &witness, || assert!(source.upgrade().is_none()))
+-            .unwrap();
++        let (proof, report) = match ready {
++            Some(ready) => {
++                owner.into_prove_prepared(&public, ready, || assert!(source.upgrade().is_none()))
++            }
++            None => owner.into_prove(&public, &witness, || assert!(source.upgrade().is_none())),
++        }
++        .unwrap();
+         assert_eq!(report.preprocessing_reused, attempt > 0);
++        assert_eq!(report.host_witness_prepared, attempt > 0);
+         key.verify(&proof, &public).unwrap();
+         encoded.push(serde_json::to_vec(&proof.inner).unwrap());
+         proofs.push((key, proof, public));
+@@ -1263,6 +1282,27 @@
+     );
+     assert_eq!((cache.stats().hits, cache.stats().misses), (1, 1));
+     let (template, public, witness) = typed_reduction_fixture();
++    for wrong_identity in [false, true] {
++        let other = RecursionTemplate::new(Arc::clone(&template.program), [99; 32]).unwrap();
++        let ready = (if wrong_identity { &other } else { &template })
++            .prepare_gpu_witness(&public, &witness, 2 << 30)
++            .unwrap()
++            .unwrap();
++        let mut supplied = public.clone();
++        if !wrong_identity {
++            supplied[0] += Val::ONE;
++        }
++        let owner = cache.prepare(template.clone(), limits).unwrap();
++        assert!(owner
++            .into_prove_prepared(&supplied, ready, || panic!(
++                "mismatched witness reached GPU phase"
++            ))
++            .err()
++            .unwrap()
++            .contains("source or public mismatch"));
++    }
++    // The two rejected attempts hit only the public template cache.
++    assert_eq!((cache.stats().hits, cache.stats().misses), (3, 1));
+     let different = RecursionTemplate::new(Arc::clone(&template.program), [99; 32]).unwrap();
+     assert_ne!(different.identity(), template.identity());
+     drop(template);
+@@ -1272,7 +1312,7 @@
+     let (proof, report) = owner.into_prove(&public, &witness, || {}).unwrap();
+     assert!(!report.preprocessing_reused);
+     key.verify(&proof, &public).unwrap();
+-    assert_eq!((cache.stats().hits, cache.stats().misses), (1, 2));
++    assert_eq!((cache.stats().hits, cache.stats().misses), (3, 2));
+     cache.clear();
+     for (key, proof, public) in proofs {
+         key.verify(&proof, &public).unwrap();
+diff --git a/research/pq-ringct/src/graph_tree/tree.rs b/research/pq-ringct/src/graph_tree/tree.rs
+--- a/research/pq-ringct/src/graph_tree/tree.rs
++++ b/research/pq-ringct/src/graph_tree/tree.rs
+@@ -31,6 +31,8 @@
+ impl CompiledNode {
+     #[cfg(feature = "gpu-aggregation-experiment")]
+     pub(crate) fn shared_program(&self) -> Arc<Program> { Arc::clone(&self.program) }
++    #[cfg(feature = "gpu-aggregation-experiment")]
++    pub(crate) fn witness_values(&self) -> &[Val] { &self.witness }
+     pub fn program(&self) -> &Program {
+         &self.program
+     }
+diff --git a/research/pq-ringct/src/graph_tree/tree/recursion.rs b/research/pq-ringct/src/graph_tree/tree/recursion.rs
+--- a/research/pq-ringct/src/graph_tree/tree/recursion.rs
++++ b/research/pq-ringct/src/graph_tree/tree/recursion.rs
+@@ -40,6 +40,16 @@
+         limits: GpuTemplateLimits,
+         source_released: impl FnOnce(),
+     ) -> Result<(Self, f64, GpuProofMeasurement)> {
++        Self::prove_prepared_witness_gpu(node, template, None, cache, limits, source_released)
++    }
++    pub(crate) fn prove_prepared_witness_gpu(
++        node: CompiledNode,
++        template: RecursionTemplate,
++        ready: Option<lattica_prover_p3::block_v2::machine::recursion::PreparedRecursionWitness>,
++        cache: &mut GpuRecursionCache,
++        limits: GpuTemplateLimits,
++        source_released: impl FnOnce(),
++    ) -> Result<(Self, f64, GpuProofMeasurement)> {
+         require(
+             template.matches_program(&node.program),
+             "prepared graph source ownership",
+@@ -59,9 +69,14 @@
+             witness,
+         } = node;
+         drop(program);
+-        let (proof, measurement) = owner
+-            .into_prove(&public, &witness, source_released)
+-            .map_err(err)?;
++        let (proof, measurement) = match ready {
++            Some(ready) => {
++                drop(witness);
++                owner.into_prove_prepared(&public, ready, source_released)
++            }
++            None => owner.into_prove(&public, &witness, source_released),
++        }
++        .map_err(err)?;
+         Ok((
+             Self {
+                 spec,
+diff --git a/research/pq-ringct/src/component_tree/recursion.rs b/research/pq-ringct/src/component_tree/recursion.rs
+--- a/research/pq-ringct/src/component_tree/recursion.rs
++++ b/research/pq-ringct/src/component_tree/recursion.rs
+@@ -131,6 +131,20 @@
+         f64,
+         lattica_prover_p3::block_v2::machine::recursion::GpuProofMeasurement,
+     )> {
++        Self::prove_prepared_witness_gpu(node, template, None, cache, limits, source_released)
++    }
++    pub(crate) fn prove_prepared_witness_gpu(
++        node: CompiledNode,
++        template: lattica_prover_p3::block_v2::machine::recursion::RecursionTemplate,
++        ready: Option<lattica_prover_p3::block_v2::machine::recursion::PreparedRecursionWitness>,
++        cache: &mut lattica_prover_p3::block_v2::machine::recursion::GpuRecursionCache,
++        limits: lattica_prover_p3::block_v2::machine::recursion::GpuTemplateLimits,
++        source_released: impl FnOnce(),
++    ) -> Result<(
++        Self,
++        f64,
++        lattica_prover_p3::block_v2::machine::recursion::GpuProofMeasurement,
++    )> {
+         require(
+             template.matches_program(&node.program),
+             "prepared crypto source ownership",
+@@ -138,7 +152,8 @@
+         let started = std::time::Instant::now();
+         let owner = cache.prepare(template, limits).map_err(err)?;
+         let setup_seconds = started.elapsed().as_secs_f64();
+-        let (node, measurement) = Self::from_cached_gpu(node, owner, source_released)?;
++        let (node, measurement) =
++            Self::from_cached_gpu_prepared(node, owner, ready, source_released)?;
+         Ok((node, setup_seconds, measurement))
+     }
+     pub(crate) fn from_cached_gpu(
+@@ -149,6 +164,17 @@
+         Self,
+         lattica_prover_p3::block_v2::machine::recursion::GpuProofMeasurement,
+     )> {
++        Self::from_cached_gpu_prepared(node, owner, None, source_released)
++    }
++    fn from_cached_gpu_prepared(
++        node: CompiledNode,
++        owner: lattica_prover_p3::block_v2::machine::recursion::CachedGpuRecursionTemplate<'_>,
++        ready: Option<lattica_prover_p3::block_v2::machine::recursion::PreparedRecursionWitness>,
++        source_released: impl FnOnce(),
++    ) -> Result<(
++        Self,
++        lattica_prover_p3::block_v2::machine::recursion::GpuProofMeasurement,
++    )> {
+         let key = owner.verifier();
+         require(
+             key.matches_program(&node.program),
+@@ -161,9 +187,14 @@
+             witness,
+         } = node;
+         drop(program);
+-        let (proof, measurement) = owner
+-            .into_prove(&public, &witness, source_released)
+-            .map_err(err)?;
++        let (proof, measurement) = match ready {
++            Some(ready) => {
++                drop(witness);
++                owner.into_prove_prepared(&public, ready, source_released)
++            }
++            None => owner.into_prove(&public, &witness, source_released),
++        }
++        .map_err(err)?;
+         Ok((
+             Self {
+                 spec,
+diff --git a/research/pq-ringct/src/gpu_aggregation/typed_graph.rs b/research/pq-ringct/src/gpu_aggregation/typed_graph.rs
+--- a/research/pq-ringct/src/gpu_aggregation/typed_graph.rs
++++ b/research/pq-ringct/src/gpu_aggregation/typed_graph.rs
+@@ -6,7 +6,7 @@
+     recursion::{compile_merge, ProvenNode},
+ };
+ use lattica_prover_p3::block_v2::machine::recursion::{
+-    GpuProofMeasurement, GpuRecursionCache, RecursionTemplate,
++    GpuProofMeasurement, GpuRecursionCache, PreparedRecursionWitness, RecursionTemplate,
+ };
+ pub(super) const ROOT_BYTES: usize = 2 << 30;
+ 
+@@ -85,6 +85,7 @@
+ struct PreparedNode {
+     node: graph_tree::CompiledNode,
+     template: Option<RecursionTemplate>,
++    witness: Option<PreparedRecursionWitness>,
+     compile_seconds: f64,
+     template_seconds: f64,
+     started: Instant,
+@@ -133,11 +134,21 @@
+             } else {
+                 None
+             };
++            let template_seconds = lowering.elapsed().as_secs_f64();
++            let witness = match &template {
++                Some(template) => template.prepare_gpu_witness(
++                    node.public_values(),
++                    node.witness_values(),
++                    weights[i],
++                )?,
++                None => None,
++            };
+             Ok(PreparedNode {
+                 node,
+                 template,
++                witness,
+                 compile_seconds,
+-                template_seconds: lowering.elapsed().as_secs_f64(),
++                template_seconds,
+                 started,
+             })
+         },
+@@ -148,13 +159,15 @@
+ fn prove_prepared(
+     node: graph_tree::CompiledNode,
+     template: Option<RecursionTemplate>,
++    witness: Option<PreparedRecursionWitness>,
+     cache: &mut GpuRecursionCache,
+     release: impl FnOnce(),
+ ) -> Result<(ProvenNode, f64, GpuProofMeasurement)> {
+     match template {
+-        Some(template) => ProvenNode::prove_prepared_gpu(
++        Some(template) => ProvenNode::prove_prepared_witness_gpu(
+             node,
+             template,
++            witness,
+             cache,
+             architecture::gpu_limits(),
+             release,
+diff --git a/research/pq-ringct/src/gpu_aggregation/typed_graph/batch.rs b/research/pq-ringct/src/gpu_aggregation/typed_graph/batch.rs
+--- a/research/pq-ringct/src/gpu_aggregation/typed_graph/batch.rs
++++ b/research/pq-ringct/src/gpu_aggregation/typed_graph/batch.rs
+@@ -105,7 +105,7 @@
+             )?;
+             first_started[slot.graph].get_or_insert(job.started);
+             let (node, setup_seconds, measurement) =
+-                prove_prepared(job.node, job.template, cache, || drop(permit))?;
++                prove_prepared(job.node, job.template, job.witness, cache, || drop(permit))?;
+             node.verify(work.plan, work.context).map_err(error)?;
+             ensure(node.span() == slot.span, "typed graph compiled span")?;
+             retained += node.retained_bytes(ROOT_BYTES - retained).map_err(error)?;
+@@ -174,7 +174,7 @@
+                     .checked_sub(*retired)
+                     .ok_or("typed graph retention underflow")?;
+                 let (node, setup_seconds, measurement) =
+-                    prove_prepared(job.node, job.template, cache, || drop(permit))?;
++                    prove_prepared(job.node, job.template, job.witness, cache, || drop(permit))?;
+                 node.verify(works[graph].plan, works[graph].context)
+                     .map_err(error)?;
+                 retained += node.retained_bytes(ROOT_BYTES - retained).map_err(error)?;
+diff --git a/research/pq-ringct/src/gpu_aggregation/typed.rs b/research/pq-ringct/src/gpu_aggregation/typed.rs
+--- a/research/pq-ringct/src/gpu_aggregation/typed.rs
++++ b/research/pq-ringct/src/gpu_aggregation/typed.rs
+@@ -143,14 +143,21 @@
+                 node.shared_program(),
+                 crate::graph_proofs::compiled_source_fingerprint(),
+             )?;
+-            Ok((node, template, start.elapsed().as_secs_f64()))
+-        },
+-        |index, (node, template, template_seconds), permit| {
++            let template_seconds = start.elapsed().as_secs_f64();
++            let witness = template.prepare_gpu_witness(
++                node.public_values(),
++                node.witness_values(),
++                weights[index],
++            )?;
++            Ok((node, template, witness, template_seconds))
++        },
++        |index, (node, template, witness, template_seconds), permit| {
+             deadline.check()?;
+             let job = &jobs[index];
+-            let (node, setup, measurement) = ProvenNode::prove_prepared_gpu(
++            let (node, setup, measurement) = ProvenNode::prove_prepared_witness_gpu(
+                 node,
+                 template,
++                witness,
+                 &mut cache,
+                 architecture::gpu_limits(),
+                 || drop(permit),
+diff --git a/research/pq-ringct/src/gpu_aggregation/typed/parents.rs b/research/pq-ringct/src/gpu_aggregation/typed/parents.rs
+--- a/research/pq-ringct/src/gpu_aggregation/typed/parents.rs
++++ b/research/pq-ringct/src/gpu_aggregation/typed/parents.rs
+@@ -116,23 +116,25 @@
+                     node.shared_program(),
+                     crate::graph_proofs::compiled_source_fingerprint(),
+                 )?;
+-                Ok((
+-                    node,
+-                    template,
+-                    compile_seconds,
+-                    lowering.elapsed().as_secs_f64(),
+-                ))
++                let template_seconds = lowering.elapsed().as_secs_f64();
++                let witness = template.prepare_gpu_witness(
++                    node.public_values(),
++                    node.witness_values(),
++                    weights[index],
++                )?;
++                Ok((node, template, witness, compile_seconds, template_seconds))
+             },
+-            |index, (node, template, compile_seconds, template_seconds), permit| {
++            |index, (node, template, witness, compile_seconds, template_seconds), permit| {
+                 deadline.check()?;
+                 let job = &jobs[index];
+                 retained = retained
+                     .checked_sub(job.retired_bytes)
+                     .ok_or("typed parent retention underflow")?;
+                 let identity = template.identity();
+-                let (node, setup, measurement) = ProvenNode::prove_prepared_gpu(
++                let (node, setup, measurement) = ProvenNode::prove_prepared_witness_gpu(
+                     node,
+                     template,
++                    witness,
+                     cache,
+                     architecture::gpu_limits(),
+                     || drop(permit),
+diff --git a/research/pq-ringct/src/gpu_aggregation/architecture/request.rs b/research/pq-ringct/src/gpu_aggregation/architecture/request.rs
+--- a/research/pq-ringct/src/gpu_aggregation/architecture/request.rs
++++ b/research/pq-ringct/src/gpu_aggregation/architecture/request.rs
+@@ -60,16 +60,25 @@
+                 node.shared_program(),
+                 crate::graph_proofs::compiled_source_fingerprint(),
+             )?;
++            let template_seconds = lowering.elapsed().as_secs_f64();
++            let witness = template.prepare_gpu_witness(
++                node.public_values(),
++                node.witness_values(),
++                weights[index],
++            )?;
+             Ok((
+                 node,
+                 template,
++                witness,
+                 order_rejected,
+                 start,
+                 seconds,
+-                lowering.elapsed().as_secs_f64(),
++                template_seconds,
+             ))
+         },
+-        |index, (node, template, order_rejected, start, seconds, template_seconds), permit| {
++        |index,
++         (node, template, witness, order_rejected, start, seconds, template_seconds),
++         permit| {
+             deadline.check()?;
+             let (group, repetition) = jobs[index];
+             ensure(
+@@ -87,11 +96,15 @@
+                 root_identity = Some(id);
+                 root_geometry = Some(serde_json::to_value(template.geometry()?).map_err(error)?);
+             }
+-            let (node, setup_seconds, measurement) =
+-                ProvenNode::prove_prepared_gpu(node, template, &mut cache, gpu_limits(), || {
+-                    drop(permit)
+-                })
+-                .map_err(error)?;
++            let (node, setup_seconds, measurement) = ProvenNode::prove_prepared_witness_gpu(
++                node,
++                template,
++                witness,
++                &mut cache,
++                gpu_limits(),
++                || drop(permit),
++            )
++            .map_err(error)?;
+             retained += node
+                 .retained_bytes(RETAINED_ROOT_BYTES - retained)
+                 .map_err(error)?;
+diff --git a/lattica-prover-p3/src/block_v2/machine/recursion/gpu/witness.rs b/lattica-prover-p3/src/block_v2/machine/recursion/gpu/witness.rs
+new file mode 100644
+--- /dev/null
++++ b/lattica-prover-p3/src/block_v2/machine/recursion/gpu/witness.rs
+@@ -0,0 +1,146 @@
++//! A single private witness handed from a bounded CPU worker to the GPU owner.
++use super::*;
++
++/// Consumed by one proof attempt. Private traces never enter the public cache.
++/// Only this module constructs the payload, bound to exact source and publics.
++#[derive(Debug)]
++pub struct PreparedRecursionWitness {
++    pub(super) identity: [u8; 32],
++    pub(super) public: Vec<Val>,
++    pub(super) traces: Vec<RowMajorMatrix<Val>>,
++    pub(super) seconds: f64,
++    pub(super) preparation_bytes: usize,
++}
++
++impl PreparedRecursionWitness {
++    pub(super) fn matches(&self, template: &RecursionTemplate, public: &[Val]) -> bool {
++        self.identity == template.identity() && self.public == public
++    }
++}
++
++impl RecursionTemplate {
++    /// Conservative peak for source, original inputs, evaluated wires, and all
++    /// ready traces. The caller keeps this charged to its running/ready permit.
++    pub fn witness_preparation_bytes(&self) -> Result<usize, String> {
++        let mut bytes = self.program.construction_host_bytes();
++        let mut add = |n: usize| -> Result<(), String> {
++            bytes = bytes
++                .checked_add(n)
++                .ok_or("recursion witness storage overflow")?;
++            Ok(())
++        };
++        for rows in &self.rows {
++            add(rows
++                .len()
++                .checked_mul(4)
++                .ok_or("recursion witness indices overflow")?)?;
++        }
++        add(self.typed.backing_bytes())?;
++        add(self
++            .tables
++            .len()
++            .checked_mul(core::mem::size_of::<super::super::layout::TableSpan>())
++            .ok_or("recursion witness tables overflow")?)?;
++        // Two input capacities cover the compiler's growing witness vector;
++        // public values also have a private binding copy in the ready payload.
++        for (count, width) in [
++            (self.program.wire_count(), 8),
++            (self.program.witness_values(), 16),
++            (self.program.public_values(), 24),
++        ] {
++            add(count
++                .checked_mul(width)
++                .ok_or("recursion witness values overflow")?)?;
++        }
++        for air in self.airs() {
++            add(air
++                .height
++                .checked_mul(air.width())
++                .and_then(|n| n.checked_mul(8))
++                .ok_or("recursion witness traces overflow")?)?;
++        }
++        add(64 << 10)?;
++        Ok(bytes)
++    }
++
++    /// CPU-only preparation; no GPU context, public setup, or private proof
++    /// randomness is created here. An oversized job stays on the serial path.
++    pub fn prepare_gpu_witness(
++        &self,
++        public: &[Val],
++        witness: &[Val],
++        allowance: usize,
++    ) -> Result<Option<PreparedRecursionWitness>, String> {
++        let preparation_bytes = self.witness_preparation_bytes()?;
++        if preparation_bytes > allowance {
++            return Ok(None);
++        }
++        let started = Instant::now();
++        let traces = self
++            .traces(public, witness)
++            .map_err(|e| format!("prepared recursion witness: {e:?}"))?;
++        Ok(Some(PreparedRecursionWitness {
++            identity: self.identity(),
++            public: public.to_vec(),
++            traces,
++            seconds: started.elapsed().as_secs_f64(),
++            preparation_bytes,
++        }))
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use crate::block_v2::machine::ProgramBuilder;
++    use p3_goldilocks::default_goldilocks_poseidon2_8;
++    use p3_symmetric::Permutation;
++
++    #[test]
++    fn prepared_witness_admission_binding_and_reference_traces() {
++        let mut b = ProgramBuilder::new(8).unwrap();
++        let input = core::array::from_fn(|_| b.input());
++        let out = b.poseidon(input);
++        for (i, wire) in out.into_iter().enumerate() {
++            let public = b.public(i).unwrap();
++            b.assert_equal(wire, public);
++        }
++        let template = RecursionTemplate::new(Arc::new(b.finish(None).unwrap()), [81; 32]).unwrap();
++        let witness = core::array::from_fn::<_, 8, _>(|i| Val::from_usize(i + 1));
++        let public = default_goldilocks_poseidon2_8().permute(witness);
++        let bytes = template.witness_preparation_bytes().unwrap();
++        assert!(template
++            .prepare_gpu_witness(&public, &witness, bytes - 1)
++            .unwrap()
++            .is_none());
++        let source_refs = Arc::strong_count(&template.program);
++        let ready = std::thread::scope(|scope| {
++            scope
++                .spawn(|| {
++                    template
++                        .prepare_gpu_witness(&public, &witness, bytes)
++                        .unwrap()
++                        .unwrap()
++                })
++                .join()
++                .unwrap()
++        });
++        assert_eq!(Arc::strong_count(&template.program), source_refs);
++        assert_eq!(ready.preparation_bytes, bytes);
++        let expected = template.traces(&public, &witness).unwrap();
++        assert_eq!(ready.traces.len(), expected.len());
++        for (actual, expected) in ready.traces.iter().zip(expected) {
++            assert_eq!(actual.width, expected.width);
++            assert_eq!(actual.values, expected.values);
++        }
++        assert!(ready.matches(&template, &public));
++        let mut wrong = public;
++        wrong[0] += Val::ONE;
++        assert!(!ready.matches(&template, &wrong));
++        let other = RecursionTemplate::new(Arc::clone(&template.program), [82; 32]).unwrap();
++        assert!(!ready.matches(&other, &public));
++        assert!(template
++            .prepare_gpu_witness(&public, &witness[..7], bytes)
++            .is_err());
++    }
++}

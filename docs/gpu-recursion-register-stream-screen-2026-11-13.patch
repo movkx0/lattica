@@ -1,0 +1,335 @@
+diff --git a/lattica-prover-p3/src/block_v2/gpu_hash/engine.rs b/lattica-prover-p3/src/block_v2/gpu_hash/engine.rs
+index b21420c..4028907 100644
+--- a/lattica-prover-p3/src/block_v2/gpu_hash/engine.rs
++++ b/lattica-prover-p3/src/block_v2/gpu_hash/engine.rs
+@@ -12,6 +12,8 @@ pub mod device;
+ ))]
+ pub(crate) mod note_ocl_wrapper_census;
+ pub use device::public_hash::report::PublicHashExecution;
++#[cfg(all(test, feature = "gpu"))]
++mod commitment_registers_tests;
+ mod direct_tree;
+ pub(crate) mod fri_fold;
+ #[cfg(feature = "gpu")]
+@@ -1671,6 +1673,12 @@ impl Engine {
+                 "lde_leaf_finalize" => "lde_leaf_finalize_shuffle",
+                 _ => return Err("unknown cooperative commitment kernel".into()),
+             }
++        } else if self.nvidia_shuffle {
++            match name {
++                "leaf_hash" => "leaf_hash_registers",
++                "lde_absorb" => "lde_absorb_registers",
++                _ => name,
++            }
+         } else {
+             name
+         };
+diff --git a/lattica-prover-p3/src/block_v2/gpu_hash/engine/tuning.rs b/lattica-prover-p3/src/block_v2/gpu_hash/engine/tuning.rs
+index c66b5f6..5c623dd 100644
+--- a/lattica-prover-p3/src/block_v2/gpu_hash/engine/tuning.rs
++++ b/lattica-prover-p3/src/block_v2/gpu_hash/engine/tuning.rs
+@@ -85,8 +85,9 @@ impl Tuning {
+ }
+ 
+ pub(super) fn kernel_sources(nvidia: bool, mut emit: impl FnMut(&str)) {
+-    #[cfg(not(feature = "gpu-tuning"))]
+-    let _ = nvidia;
++    if nvidia {
++        emit(include_str!("commitment_registers.cl"));
++    }
+     #[cfg(feature = "gpu-tuning")]
+     {
+         #[cfg(feature = "gpu")]
+diff --git a/lattica-prover-p3/src/block_v2/gpu_hash/engine/commitment_registers.cl b/lattica-prover-p3/src/block_v2/gpu_hash/engine/commitment_registers.cl
+new file mode 100644
+--- /dev/null
++++ b/lattica-prover-p3/src/block_v2/gpu_hash/engine/commitment_registers.cl
+@@ -0,0 +1,53 @@
++// Keep rate-word accesses constant so the compiler can scalarize the sponge.
++// A matrix/tile boundary never finalizes the padding-free column stream.
++inline void commitment_absorb_blocks(ulong *s, __global const ulong *input,
++    uint width, uint at, __global const ulong *rci, __global const ulong *rcp,
++    __global const ulong *rcf, __global const ulong *diag) {
++    uint col = 0;
++    if (at != 0) {
++        if (at == 1 && col < width) { s[1] = input[col++]; at = 2; }
++        if (at == 2 && col < width) { s[2] = input[col++]; at = 3; }
++        if (at == 3 && col < width) {
++            s[3] = input[col++]; at = 0;
++            perm8(s, rci, rcp, rcf, diag);
++        }
++        if (at != 0) return;
++    }
++    while (width - col >= 4) {
++        s[0] = input[col];
++        s[1] = input[col + 1];
++        s[2] = input[col + 2];
++        s[3] = input[col + 3];
++        perm8(s, rci, rcp, rcf, diag);
++        col += 4;
++    }
++    if (col < width) s[0] = input[col++];
++    if (col < width) s[1] = input[col++];
++    if (col < width) s[2] = input[col];
++}
++
++__kernel void leaf_hash_registers(__global const ulong *input, __global ulong *out,
++    uint row0, uint rows, uint width, __global const ulong *rci,
++    __global const ulong *rcp, __global const ulong *rcf, __global const ulong *diag) {
++    size_t row = get_global_id(0);
++    if (row >= rows) return;
++    ulong s[8] = {0, 0, 0, 0, 0, 0, 0, 0};
++    commitment_absorb_blocks(s, input + row * (size_t)width, width, 0,
++        rci, rcp, rcf, diag);
++    if (width & 3u) perm8(s, rci, rcp, rcf, diag);
++    for (uint k = 0; k < 4; ++k) out[((size_t)row0 + row) * 4 + k] = gl_canon(s[k]);
++}
++
++__kernel void lde_absorb_registers(__global const ulong *input, __global ulong *states,
++    uint row0, uint rows, uint width, uint rate_offset,
++    __global const ulong *rci, __global const ulong *rcp,
++    __global const ulong *rcf, __global const ulong *diag) {
++    size_t row = get_global_id(0);
++    if (row >= rows) return;
++    size_t base = ((size_t)row0 + row) * 8;
++    ulong s[8];
++    for (uint k = 0; k < 8; ++k) s[k] = states[base + k];
++    commitment_absorb_blocks(s, input + row * (size_t)width, width, rate_offset,
++        rci, rcp, rcf, diag);
++    for (uint k = 0; k < 8; ++k) states[base + k] = s[k];
++}
+diff --git a/lattica-prover-p3/src/block_v2/gpu_hash/engine/commitment_registers_tests.rs b/lattica-prover-p3/src/block_v2/gpu_hash/engine/commitment_registers_tests.rs
+new file mode 100644
+--- /dev/null
++++ b/lattica-prover-p3/src/block_v2/gpu_hash/engine/commitment_registers_tests.rs
+@@ -0,0 +1,230 @@
++use super::*;
++use p3_field::PrimeField64;
++use p3_symmetric::Permutation;
++
++fn words(count: usize) -> Vec<u64> {
++    let edge = [0, 1, 0xffff_ffff_0000_0000, 0xffff_ffff_0000_0001, u64::MAX];
++    (0..count)
++        .map(|i| {
++            if i % 11 < edge.len() {
++                edge[i % 11]
++            } else {
++                (i as u64).wrapping_mul(0x9e3779b97f4a7c15)
++            }
++        })
++        .collect()
++}
++
++fn alloc(engine: &Engine, values: &[u64]) -> Allocation {
++    let allocation = allocation(
++        &engine.pq,
++        &engine.accounting,
++        engine.limits,
++        engine.max_alloc,
++        values.len(),
++        compute::flags::MEM_READ_WRITE,
++    )
++    .unwrap();
++    allocation.buffer.write(values).enq().unwrap();
++    allocation
++}
++
++fn read(value: &Allocation) -> Vec<u64> {
++    let mut words = vec![0; value.buffer.len()];
++    value.buffer.read(&mut words).enq().unwrap();
++    words
++}
++
++fn leaf(
++    engine: &mut Engine,
++    input: &Allocation,
++    output: &Allocation,
++    rows: usize,
++    width: usize,
++    optimized: bool,
++) -> u128 {
++    let mut kernel = if optimized {
++        engine.commitment_builder("leaf_hash", rows).unwrap()
++    } else {
++        engine.pq.kernel_builder("leaf_hash")
++    };
++    kernel
++        .arg(&input.buffer)
++        .arg(&output.buffer)
++        .arg(2u32)
++        .arg(rows as u32)
++        .arg(width as u32);
++    for constant in &engine.constants {
++        kernel.arg(&constant.buffer);
++    }
++    let mut event = Event::empty();
++    // SAFETY: bounded input, row-offset output, rounded launch is masked.
++    unsafe {
++        kernel
++            .global_work_size(rows.div_ceil(64) * 64)
++            .build()
++            .unwrap()
++            .cmd()
++            .enew(&mut event)
++            .enq()
++            .unwrap();
++    }
++    engine
++        .timeline
++        .record("register_commitment_test", &event)
++        .unwrap()
++}
++
++fn absorb(
++    engine: &mut Engine,
++    input: &Allocation,
++    states: &Allocation,
++    rows: usize,
++    width: usize,
++    rate: usize,
++    optimized: bool,
++) -> u128 {
++    let mut kernel = if optimized {
++        engine.commitment_builder("lde_absorb", rows).unwrap()
++    } else {
++        engine.pq.kernel_builder("lde_absorb")
++    };
++    kernel
++        .arg(&input.buffer)
++        .arg(&states.buffer)
++        .arg(2u32)
++        .arg(rows as u32)
++        .arg(width as u32)
++        .arg(rate as u32);
++    for constant in &engine.constants {
++        kernel.arg(&constant.buffer);
++    }
++    let mut event = Event::empty();
++    // SAFETY: every selected row owns eight words; input and rate are bounded.
++    unsafe {
++        kernel
++            .global_work_size(rows.div_ceil(64) * 64)
++            .build()
++            .unwrap()
++            .cmd()
++            .enew(&mut event)
++            .enq()
++            .unwrap();
++    }
++    engine
++        .timeline
++        .record("register_absorb_test", &event)
++        .unwrap()
++}
++
++#[test]
++#[ignore = "requires exclusive NVIDIA GPU; complete CPU sponge oracle and paired timings"]
++fn gpu_register_commitments_match_cpu_streams_and_wide_baseline() {
++    let _shutdown = TestShutdownGuard;
++    initialize_mode(
++        Limits {
++            managed_bytes: 2 << 30,
++            tile_bytes: 4 << 20,
++            staging_bytes: 64 << 10,
++        },
++        TransferMode::Serial,
++    )
++    .unwrap();
++    let mut slot = ENGINE.get().unwrap().lock().unwrap();
++    let engine = slot.as_mut().unwrap();
++    assert!(engine.nvidia_shuffle);
++    engine.tuning.commitment = false;
++    let permutation = p3_goldilocks::default_goldilocks_poseidon2_8();
++    for rows in [1usize, 3, 17, 65] {
++        for width in [1usize, 2, 3, 4, 5, 7, 8, 17, 64, 92, 206] {
++            let input_words = words(rows * width);
++            let input = alloc(engine, &input_words);
++            let output = alloc(engine, &vec![99; (rows + 5) * 4]);
++            leaf(engine, &input, &output, rows, width, true);
++            let actual = read(&output);
++            assert_eq!(&actual[..8], &[99; 8]);
++            assert!(actual[(rows + 2) * 4..].iter().all(|&v| v == 99));
++            for (row, values) in input_words.chunks(width).enumerate() {
++                let mut state = [Val::ZERO; 8];
++                for block in values.chunks(4) {
++                    for (i, &value) in block.iter().enumerate() {
++                        state[i] = Val::from_u64(value);
++                    }
++                    permutation.permute_mut(&mut state);
++                }
++                for i in 0..4 {
++                    assert_eq!(
++                        actual[(row + 2) * 4 + i],
++                        state[i].as_canonical_u64(),
++                        "leaf rows={rows} width={width} row={row} i={i}"
++                    );
++                }
++            }
++            // All possible incoming rate offsets, with independent initial
++            // capacity and rate words. No tile boundary may finalize a hash.
++            for rate in 0..4 {
++                let initial = words((rows + 5) * 8);
++                let state = alloc(engine, &initial);
++                absorb(engine, &input, &state, rows, width, rate, true);
++                let actual = read(&state);
++                assert_eq!(&actual[..16], &initial[..16]);
++                assert_eq!(&actual[(rows + 2) * 8..], &initial[(rows + 2) * 8..]);
++                for row in 0..rows {
++                    let mut expected: [Val; 8] =
++                        std::array::from_fn(|i| Val::from_u64(initial[(row + 2) * 8 + i]));
++                    let mut at = rate;
++                    for &value in &input_words[row * width..(row + 1) * width] {
++                        expected[at] = Val::from_u64(value);
++                        at += 1;
++                        if at == 4 {
++                            permutation.permute_mut(&mut expected);
++                            at = 0;
++                        }
++                    }
++                    for i in 0..8 {
++                        assert_eq!(
++                            Val::from_u64(actual[(row + 2) * 8 + i]),
++                            expected[i],
++                            "stream rows={rows} width={width} rate={rate} row={row} i={i}"
++                        );
++                    }
++                }
++            }
++        }
++    }
++    for (rows, width) in [(1usize << 18, 64usize), (1 << 18, 206)] {
++        let input = alloc(engine, &words(rows * width));
++        let old = alloc(engine, &vec![99; (rows + 5) * 8]);
++        let new = alloc(engine, &vec![99; (rows + 5) * 8]);
++        for stream in [false, true] {
++            let mut times = [Vec::new(), Vec::new()];
++            for repetition in 0..5 {
++                for optimized in if repetition % 2 == 0 {
++                    [false, true]
++                } else {
++                    [true, false]
++                } {
++                    let out = if optimized { &new } else { &old };
++                    let ns = if stream {
++                        absorb(engine, &input, out, rows, width, 0, optimized)
++                    } else {
++                        leaf(engine, &input, out, rows, width, optimized)
++                    };
++                    times[usize::from(optimized)].push(ns);
++                }
++            }
++            // Streaming attempts started from identical prior leaf outputs and
++            // advance their own state five times; both streams must still agree.
++            let old_words = read(&old);
++            let new_words = read(&new);
++            assert!(old_words
++                .iter()
++                .zip(&new_words)
++                .all(|(&a, &b)| Val::from_u64(a) == Val::from_u64(b)));
++            for ns in &mut times {
++                ns.sort_unstable();
++            }
++            eprintln!("GPU_REGISTER_COMMITMENT rows={rows} width={width} stream={stream} baseline_median_ns={} candidate_median_ns={} verified=true", times[0][2], times[1][2]);
++        }
++    }
++}

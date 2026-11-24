@@ -266,10 +266,19 @@ def validate(content, selected):
                     and math.isfinite(pipeline['seconds']) and 0 < pipeline['seconds'] <= seconds,
                     'invalid graph pipeline completion time')
             if pipeline['repetitions_pipelined']:
-                require(typed and groups == 1 and len(report['samples']) > 1
+                require(typed and len(report['samples']) > 1
                         and all(s['seconds'] <= pipeline['seconds'] and s.get('timing_scope') ==
                             'prepare-to-verified latency; independent samples overlap' for s in report['samples']),
                         'invalid independent graph pipeline scope')
+                if groups > 1:
+                    require(pipeline.get('schedule') == 'position-before-transaction'
+                            and pipeline.get('graphs') == len(report['samples'])
+                            and pipeline.get('retained_limit_bytes') == 2 << 30
+                            and type(pipeline.get('retained_peak_bytes')) is int
+                            and type(pipeline.get('retained_inputs_bytes')) is int
+                            and 0 <= pipeline['retained_inputs_bytes']
+                                <= pipeline['retained_peak_bytes'] <= pipeline['retained_limit_bytes'],
+                            'invalid shared graph preparation/retention receipt')
     elif selected['command'] == 'architecture-request':
         profile = report['proof_profile']
         machine = selected['values'].get('--recursion-backend') == 'machine'
@@ -301,6 +310,22 @@ def validate(content, selected):
                 require(measurement['verified'] is True and measurement['proof_json_bytes'] > 0
                         and measurement['backend_report']['stage_coverage_complete'] is True,
                         'request proof failed verification or GPU coverage')
+        pipeline = profile.get('pipeline')
+        if pipeline is not None:
+            require(not machine and isinstance(pipeline, dict)
+                    and pipeline.get('schedule') == 'position-before-request'
+                    and pipeline.get('repetitions') == len(profile['samples'])
+                    and pipeline.get('repetitions_pipelined') is (len(profile['samples']) > 1)
+                    and type(pipeline.get('seconds')) in (int, float)
+                    and math.isfinite(pipeline['seconds']) and 0 < pipeline['seconds'] <= seconds
+                    and pipeline.get('retained_limit_bytes') == 2 << 30
+                    and type(pipeline.get('retained_peak_bytes')) is int
+                    and 0 < pipeline['retained_peak_bytes'] <= pipeline['retained_limit_bytes']
+                    and all(type(s.get('seconds')) in (int, float)
+                            and math.isfinite(s['seconds']) and 0 < s['seconds'] <= pipeline['seconds']
+                            and s.get('timing_scope') == 'prepare-to-verified latency; independent samples overlap'
+                            for s in profile['samples']),
+                    'invalid shared request preparation/retention receipt')
     elif selected['command'] == 'prepare-inputs':
         require(report['scope'] == 'native-component-preparation' and report['session_closed']
                 and report['aggregation_timed'] is False, 'invalid native preparation terminal')

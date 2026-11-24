@@ -40,6 +40,16 @@ impl ProvenNode {
         limits: GpuTemplateLimits,
         source_released: impl FnOnce(),
     ) -> Result<(Self, f64, GpuProofMeasurement)> {
+        Self::prove_prepared_witness_gpu(node, template, None, cache, limits, source_released)
+    }
+    pub(crate) fn prove_prepared_witness_gpu(
+        node: CompiledNode,
+        template: RecursionTemplate,
+        ready: Option<lattica_prover_p3::block_v2::machine::recursion::PreparedRecursionWitness>,
+        cache: &mut GpuRecursionCache,
+        limits: GpuTemplateLimits,
+        source_released: impl FnOnce(),
+    ) -> Result<(Self, f64, GpuProofMeasurement)> {
         require(
             template.matches_program(&node.program),
             "prepared graph source ownership",
@@ -59,9 +69,14 @@ impl ProvenNode {
             witness,
         } = node;
         drop(program);
-        let (proof, measurement) = owner
-            .into_prove(&public, &witness, source_released)
-            .map_err(err)?;
+        let (proof, measurement) = match ready {
+            Some(ready) => {
+                drop(witness);
+                owner.into_prove_prepared(&public, ready, source_released)
+            }
+            None => owner.into_prove(&public, &witness, source_released),
+        }
+        .map_err(err)?;
         Ok((
             Self {
                 spec,

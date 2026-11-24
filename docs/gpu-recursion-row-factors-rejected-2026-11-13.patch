@@ -1,0 +1,385 @@
+diff --git a/lattica-prover-p3/src/block_v2/gpu_hash/engine/device/transform.rs b/lattica-prover-p3/src/block_v2/gpu_hash/engine/device/transform.rs
+index db47f32..b63913f 100644
+--- a/lattica-prover-p3/src/block_v2/gpu_hash/engine/device/transform.rs
++++ b/lattica-prover-p3/src/block_v2/gpu_hash/engine/device/transform.rs
+@@ -4,6 +4,10 @@ use super::*;
+ mod coefficients;
+ pub(super) use coefficients::DeviceCoefficients;
+ 
++#[cfg(all(test, feature = "gpu"))]
++#[path = "transform/row_factors_tests.rs"]
++mod row_factors_tests;
++
+ pub(crate) const KERNEL_SRC: &str = r#"
+ __kernel void device_transform_parameters(__global ulong *parameters,
+     uint rows, ulong input_shift, ulong output_shift) {
+@@ -27,6 +31,23 @@ __kernel void device_transform_scale(__global const ulong *coefficients,
+         ? gl_canon(gl_mul(gl_mul(coefficients[i], parameters[0]),
+             gl_pow(parameters[1], (ulong)row))) : 0UL;
+ }
++// These factors depend only on the public domain, never on trace values.
++// Compute each exponent once instead of repeating it in every matrix column.
++__kernel void device_transform_row_factors(__global const ulong *parameters,
++    __global ulong *factors, uint rows) {
++    size_t row = get_global_id(0);
++    if (row >= rows) return;
++    factors[row] = gl_canon(gl_mul(parameters[0], gl_pow(parameters[1], (ulong)row)));
++}
++__kernel void device_transform_scale_lookup(__global const ulong *coefficients,
++    __global ulong *output, __global const ulong *factors,
++    uint width, uint input_rows, uint output_rows) {
++    size_t i = get_global_id(0);
++    if (i >= (size_t)output_rows * width) return;
++    uint row = (uint)(i / width);
++    output[i] = row < input_rows
++        ? gl_canon(gl_mul(coefficients[i], factors[row])) : 0UL;
++}
+ "#;
+ 
+ fn geometry(
+@@ -70,6 +91,29 @@ pub(super) fn storage_plan(
+     )
+ }
+ 
++// The table is temporary and charged with both complete transform buffers.
++// Keep the original path for small transforms and for an exact-fit budget;
++// adding this optimization must not invalidate a previously admitted domain.
++fn row_factors_admitted(
++    input: MatrixSpec,
++    log_rows: u32,
++    live: usize,
++    limits: super::super::Limits,
++    max_alloc: usize,
++) -> bool {
++    let Ok((_, width, _)) = geometry(input, log_rows, 1, RowOrder::Natural) else {
++        return false;
++    };
++    width >= 2
++        && input.rows() >= 32
++        && input
++            .rows()
++            .checked_mul(8)
++            .filter(|&bytes| bytes <= (8 << 20) && bytes <= max_alloc)
++            .and_then(|bytes| live.checked_add(bytes))
++            .is_some_and(|live| storage_plan(input, log_rows, live, limits, max_alloc).is_ok())
++}
++
+ impl DeviceSession {
+     /// Interpolate this matrix on its specified coset, then evaluate it on a
+     /// larger (or equal-size) coset. Extension coefficients are independent
+@@ -120,6 +164,13 @@ impl DeviceSession {
+                 let live = engine.accounting.lock().unwrap().live;
+                 let _plan =
+                     storage_plan(input.spec, log_rows, live, engine.limits, engine.max_alloc)?;
++                let use_row_factors = row_factors_admitted(
++                    input.spec,
++                    log_rows,
++                    live,
++                    engine.limits,
++                    engine.max_alloc,
++                );
+                 let output = self.allocate(engine, spec)?;
+                 let scratch = self.allocate(engine, spec)?;
+                 let alloc = |words| {
+@@ -139,6 +190,11 @@ impl DeviceSession {
+                 };
+                 let forward = alloc(log_rows.max(1) as usize)?;
+                 let parameters = alloc(2)?;
++                let row_factors = if use_row_factors {
++                    Some(alloc(input.spec.rows())?)
++                } else {
++                    None
++                };
+                 // Pinned, immutable constants, not per-proof field calculations.
+                 let inverse_words: Vec<_> = (1..=if interpolated {
+                     0
+@@ -241,11 +297,40 @@ impl DeviceSession {
+                 } else {
+                     source
+                 };
+-                let shared = engine.nvidia_shuffle
++                if let Some(factors) = &row_factors {
++                    let mut event = compute::Event::empty();
++                    // SAFETY: the admitted table has one word per input row;
++                    // parameters and table remain owned until the queue fence.
++                    unsafe {
++                        engine
++                            .pq
++                            .kernel_builder("device_transform_row_factors")
++                            .arg(&parameters.buffer)
++                            .arg(&factors.buffer)
++                            .arg(input.spec.rows() as u32)
++                            .global_work_size(input.spec.rows())
++                            .build()
++                            .map_err(|e| e.to_string())?
++                            .cmd()
++                            .enew(&mut event)
++                            .enq()
++                            .map_err(|e| e.to_string())?;
++                    }
++                    device_ns += self.session.record_event(
++                        engine,
++                        crate::proving::Stage::Transform,
++                        "device_transform_row_factors",
++                        &event,
++                    )?;
++                }
++                let shared = row_factors.is_none()
++                    && engine.nvidia_shuffle
+                     && engine
+                         .tuning
+                         .shared_scale(input.spec.rows(), spec.rows(), width);
+-                let mut scale = engine.pq.kernel_builder(if shared {
++                let mut scale = engine.pq.kernel_builder(if row_factors.is_some() {
++                    "device_transform_scale_lookup"
++                } else if shared {
+                     "device_transform_scale_shared"
+                 } else {
+                     "device_transform_scale"
+@@ -253,7 +338,11 @@ impl DeviceSession {
+                 scale
+                     .arg(coefficients)
+                     .arg(&output.storage.buffer)
+-                    .arg(&parameters.buffer)
++                    .arg(
++                        row_factors
++                            .as_ref()
++                            .map_or(&parameters.buffer, |factors| &factors.buffer),
++                    )
+                     .arg(width as u32)
+                     .arg(input.spec.rows() as u32)
+                     .arg(spec.rows() as u32);
+@@ -445,6 +534,8 @@ mod tests {
+             (0, 3, 1, Extension::Cubic),
+             (3, 3, 7, Extension::Base),
+             (3, 8, 2, Extension::Quadratic),
++            (5, 8, 3, Extension::Base),
++            (8, 9, 7, Extension::Base),
+             (9, 12, 5, Extension::Cubic),
+         ] {
+             let width = columns * extension.degree();
+diff --git a/lattica-prover-p3/src/block_v2/gpu_hash/engine/device/transform/row_factors_tests.rs b/lattica-prover-p3/src/block_v2/gpu_hash/engine/device/transform/row_factors_tests.rs
+new file mode 100644
+--- /dev/null
++++ b/lattica-prover-p3/src/block_v2/gpu_hash/engine/device/transform/row_factors_tests.rs
+@@ -0,0 +1,220 @@
++use super::*;
++use p3_field::{Field, PrimeCharacteristicRing, PrimeField64};
++
++#[test]
++fn row_factor_table_respects_exact_memory_and_shape_limits() {
++    let limits = super::super::super::Limits {
++        managed_bytes: 1 << 20,
++        tile_bytes: 1 << 20,
++        staging_bytes: 4096,
++    };
++    let input = MatrixSpec::new(8, 3, Extension::Base, RowOrder::Natural, 11).unwrap();
++    let live = 71 + input.bytes();
++    let baseline = storage_plan(input, 10, live, limits, 1 << 20)
++        .unwrap()
++        .peak_bytes;
++    let required = baseline + input.rows() * 8;
++    assert!(row_factors_admitted(
++        input,
++        10,
++        live,
++        super::super::super::Limits {
++            managed_bytes: required,
++            ..limits
++        },
++        1 << 20
++    ));
++    assert!(!row_factors_admitted(
++        input,
++        10,
++        live,
++        super::super::super::Limits {
++            managed_bytes: required - 1,
++            ..limits
++        },
++        1 << 20
++    ));
++    assert!(storage_plan(
++        input,
++        10,
++        live,
++        super::super::super::Limits {
++            managed_bytes: baseline,
++            ..limits
++        },
++        1 << 20
++    )
++    .is_ok());
++    assert!(!row_factors_admitted(input, 7, live, limits, 1 << 20));
++    assert!(!row_factors_admitted(
++        input,
++        10,
++        usize::MAX,
++        limits,
++        usize::MAX
++    ));
++    for spec in [
++        MatrixSpec::new(8, 1, Extension::Base, RowOrder::Natural, 1).unwrap(),
++        MatrixSpec::new(4, 206, Extension::Base, RowOrder::Natural, 1).unwrap(),
++        MatrixSpec::new(21, 2, Extension::Base, RowOrder::Natural, 1).unwrap(),
++    ] {
++        assert!(!row_factors_admitted(
++            spec,
++            spec.log_rows,
++            0,
++            super::super::super::Limits {
++                managed_bytes: usize::MAX,
++                ..limits
++            },
++            usize::MAX
++        ));
++    }
++    // Extension limbs are independent columns and share the same row factor.
++    let extension = MatrixSpec::new(8, 1, Extension::Cubic, RowOrder::BitReversed, 11).unwrap();
++    assert!(row_factors_admitted(extension, 10, live, limits, 1 << 20));
++}
++
++fn scale(
++    engine: &mut Engine,
++    input: &Allocation,
++    output: &Allocation,
++    parameters: &Allocation,
++    factors: &Allocation,
++    rows: usize,
++    output_rows: usize,
++    width: usize,
++    lookup: bool,
++) -> Result<(u128, u128), String> {
++    let mut factor_ns = 0;
++    if lookup {
++        let mut event = compute::Event::empty();
++        // SAFETY: all extents include guard words and the kernel bounds rows.
++        unsafe {
++            engine
++                .pq
++                .kernel_builder("device_transform_row_factors")
++                .arg(&parameters.buffer)
++                .arg(&factors.buffer)
++                .arg(rows as u32)
++                .global_work_size(rows.div_ceil(256) * 256)
++                .build()
++                .map_err(|e| e.to_string())?
++                .cmd()
++                .enew(&mut event)
++                .enq()
++                .map_err(|e| e.to_string())?;
++        }
++        factor_ns = engine.timeline.record("row_factor_test", &event)?;
++    }
++    let mut event = compute::Event::empty();
++    unsafe {
++        engine
++            .pq
++            .kernel_builder(if lookup {
++                "device_transform_scale_lookup"
++            } else {
++                "device_transform_scale"
++            })
++            .arg(&input.buffer)
++            .arg(&output.buffer)
++            .arg(if lookup {
++                &factors.buffer
++            } else {
++                &parameters.buffer
++            })
++            .arg(width as u32)
++            .arg(rows as u32)
++            .arg(output_rows as u32)
++            .global_work_size((output_rows * width).div_ceil(256) * 256)
++            .build()
++            .map_err(|e| e.to_string())?
++            .cmd()
++            .enew(&mut event)
++            .enq()
++            .map_err(|e| e.to_string())?;
++    }
++    let apply_ns = engine.timeline.record("row_scale_test", &event)?;
++    Ok((factor_ns, apply_ns))
++}
++
++#[test]
++#[ignore = "requires exclusive OpenCL GPU; compares row factors and complete wide outputs"]
++fn gpu_row_factor_lookup_matches_reference_and_wide_legacy_scaling() {
++    use super::super::super::{initialize_mode, Limits, TestShutdownGuard, TransferMode};
++    let _shutdown = TestShutdownGuard;
++    initialize_mode(
++        Limits {
++            managed_bytes: 2 << 30,
++            tile_bytes: 4 << 20,
++            staging_bytes: 64 << 10,
++        },
++        TransferMode::Serial,
++    )
++    .unwrap();
++    let session = DeviceSession::new().unwrap();
++    session.with_engine(|engine| {
++        for (rows, output_rows, width, shift) in [
++            (17usize, 33usize, 3usize, 7u64),
++            (32, 65, 206, GOLDILOCKS_MODULUS - 3),
++            (1 << 17, 1 << 18, 206, 7),
++        ] {
++            let allocate = |words| allocation(&engine.pq, &engine.accounting, engine.limits,
++                engine.max_alloc, words, compute::flags::MEM_READ_WRITE);
++            let input = allocate(rows * width)?;
++            let reference = allocate(output_rows * width + 5)?;
++            let actual = allocate(output_rows * width + 5)?;
++            let parameters = allocate(2)?;
++            let factors = allocate(rows + 5)?;
++            let input_words = (0..rows * width)
++                .map(|i| GOLDILOCKS_MODULUS - 1 - (i as u64 * 71 % 100003)).collect::<Vec<_>>();
++            let mut reference_words = vec![99u64; output_rows * width + 5];
++            let mut actual_words = reference_words.clone();
++            let mut factor_words = vec![99u64; rows + 5];
++            let normalization = Val::from_u64(rows as u64).inverse();
++            let parameter_words = [normalization.as_canonical_u64(), shift];
++            let fence = engine.fence();
++            input.buffer.write(&input_words).enq().map_err(|e| e.to_string())?;
++            reference.buffer.write(&reference_words).enq().map_err(|e| e.to_string())?;
++            actual.buffer.write(&actual_words).enq().map_err(|e| e.to_string())?;
++            factors.buffer.write(&factor_words).enq().map_err(|e| e.to_string())?;
++            parameters.buffer.write(&parameter_words[..]).enq().map_err(|e| e.to_string())?;
++            fence.finish()?;
++            let mut old_times = Vec::new();
++            let mut new_times = Vec::new();
++            for repetition in 0..3 {
++                for lookup in if repetition % 2 == 0 { [false, true] } else { [true, false] } {
++                    let (factor, apply) = scale(engine, &input,
++                        if lookup { &actual } else { &reference }, &parameters, &factors,
++                        rows, output_rows, width, lookup)?;
++                    if lookup { new_times.push(factor + apply); } else { old_times.push(apply); }
++                }
++            }
++            reference.buffer.read(&mut reference_words).enq().map_err(|e| e.to_string())?;
++            actual.buffer.read(&mut actual_words).enq().map_err(|e| e.to_string())?;
++            factors.buffer.read(&mut factor_words).enq().map_err(|e| e.to_string())?;
++            fence.finish()?;
++            assert!(reference_words == actual_words, "scale mismatch rows={rows} width={width}");
++            assert!(actual_words[rows * width..output_rows * width].iter().all(|&x| x == 0));
++            assert_eq!(&actual_words[output_rows * width..], &[99; 5]);
++            assert_eq!(&factor_words[rows..], &[99; 5]);
++            let mut expected = normalization;
++            for (row, factor) in factor_words[..rows].iter().enumerate() {
++                assert_eq!(*factor, expected.as_canonical_u64(), "row={row}");
++                // Independent recurrence and field multiplication check every
++                // column on the irregular-domain boundary cases.
++                if rows <= 32 {
++                    for column in 0..width {
++                        let i = row * width + column;
++                        assert_eq!(actual_words[i],
++                            (Val::from_u64(input_words[i]) * expected).as_canonical_u64());
++                    }
++                }
++                expected *= Val::from_u64(shift);
++            }
++            old_times.sort_unstable();new_times.sort_unstable();
++            eprintln!("GPU_ROW_FACTOR_SCALE rows={rows} output_rows={output_rows} width={width} factor_bytes={} legacy_median_ns={} lookup_median_ns={} verified=true",
++                rows * 8, old_times[1], new_times[1]);
++        }
++        Ok(())
++    }).unwrap();
++}

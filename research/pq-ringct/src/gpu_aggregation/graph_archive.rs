@@ -93,11 +93,10 @@ pub(crate) fn run(options: &Options, deadline: &Deadline) -> Result<serde_json::
             lattica_prover_p3::block_v2::machine::recursion::GpuRecursionCache::default();
         let (samples, pipeline) = if options.typed_recursion()
             && options.parallel
-            && groups.len() == 1
             && options.repetitions > 1
         {
-            typed_graph::prove_repeated_direct(
-                groups[0],
+            typed_graph::prove_repeated(
+                &groups,
                 &case.tree,
                 &case.context,
                 options,

@@ -14,6 +14,8 @@ use p3_field::PrimeField64;
 use p3_lookup::{LogUpGadget, Lookups};
 use p3_uni_stark::StarkGenericConfig;
 use std::time::Instant;
+mod witness;
+pub use witness::PreparedRecursionWitness;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct GpuTemplateLimits {
@@ -30,6 +32,8 @@ pub struct GpuProofMeasurement {
     pub public_prefix_host_bytes: usize,
     pub public_salt_host_bytes: usize,
     pub host_witness_seconds: f64,
+    pub host_witness_prepared: bool,
+    pub host_witness_preparation_bytes: usize,
     pub upload_seconds: f64,
     pub gpu_prove_seconds: f64,
     pub cpu_verify_seconds: f64,
@@ -131,12 +135,37 @@ impl CachedGpuRecursionTemplate<'_> {
         source_released: impl FnOnce(),
     ) -> Result<(RecursionExecutionProof, GpuProofMeasurement), String> {
         let _phase = crate::block_v2::worker_memory::PhaseGuard::acquire("cached recursion proof")?;
-        let started = Instant::now();
-        let traces = self
+        let ready = self
             .template
-            .traces(public, witness)
-            .map_err(|e| format!("cached recursion witness: {e:?}"))?;
-        let seconds = started.elapsed().as_secs_f64();
+            .prepare_gpu_witness(public, witness, usize::MAX)?
+            .ok_or("cached recursion witness admission")?;
+        self.prove_witness(public, ready, false, source_released)
+    }
+    pub fn into_prove_prepared(
+        self,
+        public: &[Val],
+        witness: PreparedRecursionWitness,
+        source_released: impl FnOnce(),
+    ) -> Result<(RecursionExecutionProof, GpuProofMeasurement), String> {
+        let _phase = crate::block_v2::worker_memory::PhaseGuard::acquire("cached recursion proof")?;
+        self.prove_witness(public, witness, true, source_released)
+    }
+    fn prove_witness(
+        self,
+        public: &[Val],
+        witness: PreparedRecursionWitness,
+        prepared: bool,
+        source_released: impl FnOnce(),
+    ) -> Result<(RecursionExecutionProof, GpuProofMeasurement), String> {
+        if !witness.matches(&self.template, public) {
+            return Err("prepared recursion witness source or public mismatch".into());
+        }
+        let PreparedRecursionWitness {
+            traces,
+            seconds,
+            preparation_bytes,
+            ..
+        } = witness;
         let Self {
             template,
             state,
@@ -146,6 +175,8 @@ impl CachedGpuRecursionTemplate<'_> {
         source_released();
         let (proof, mut measurement) = state.prove_traces(public, traces, seconds)?;
         measurement.preprocessing_reused = reused;
+        measurement.host_witness_prepared = prepared;
+        measurement.host_witness_preparation_bytes = preparation_bytes;
         Ok((proof, measurement))
     }
 }
@@ -548,6 +579,8 @@ impl GpuRecursionState {
                 public_prefix_host_bytes: self.public_prefix_host_bytes,
                 public_salt_host_bytes: self.public_salt_host_bytes,
                 host_witness_seconds,
+                host_witness_prepared: false,
+                host_witness_preparation_bytes: 0,
                 upload_seconds,
                 gpu_prove_seconds,
                 cpu_verify_seconds,

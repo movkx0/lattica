@@ -60,6 +60,34 @@ class AggregationAcceptance(unittest.TestCase):
             with self.subTest(change=change), self.assertRaises(RuntimeError):
                 validate('GPU_AGGREGATION_PROFILE ' + json.dumps(bad), selected)
 
+    def test_shared_graph_pipeline_requires_ordered_counts_and_retention(self):
+        import copy
+        argv = self.argv()
+        argv[1] = 'architecture-graph'
+        selected = selection(self.args(), argv + ['--native-source', 'revalidate-archive', '--group-width', '1'])
+        row = self.report()
+        row['options']['command'] = 'architecture-graph'
+        measurement = dict(verified=True, proof_json_bytes=100, backend_report=dict(stage_coverage_complete=True))
+        sample = dict(verified=True, public_mutation_rejected=True, order_mutation_rejected=True,
+            recursive_proofs=11, reduction_fan_in=4, independent_cpu_verification=True,
+            gpu_backend_only=True, seconds=8, timing_scope='prepare-to-verified latency; independent samples overlap',
+            measurements=[dict(measurement=measurement)]*11)
+        row['report'] = dict(scope='recursion-graph-subtree-screen', verified=True, complete_aggregation=False,
+            complete_graph=False, backend='typed', native_proofs_generated=0, archive_files_rewritten=0,
+            current_cache_entries_created=0, groups=[[i,1] for i in range(4,12)],
+            session=dict(session_closed=True,completion_claimed=False), samples=[sample,copy.deepcopy(sample)],
+            pipeline=dict(seconds=11,repetitions=2,repetitions_pipelined=True,graphs=2,
+                schedule='position-before-transaction',retained_limit_bytes=2<<30,
+                retained_inputs_bytes=100,retained_peak_bytes=200))
+        validate('GPU_AGGREGATION_PROFILE '+json.dumps(row),selected)
+        for key,value in [('schedule','transaction-before-position'),('graphs',1),
+                          ('retained_limit_bytes',4<<30),('retained_peak_bytes',(2<<30)+1),
+                          ('retained_inputs_bytes',201)]:
+            bad=copy.deepcopy(row)
+            bad['report']['pipeline'][key]=value
+            with self.subTest(field=key), self.assertRaises(RuntimeError):
+                validate('GPU_AGGREGATION_PROFILE '+json.dumps(bad),selected)
+
     def test_owner_template_preparation_is_only_a_graph_profiling_control(self):
         argv = self.argv()
         argv[1] = 'architecture-graph'
@@ -348,6 +376,35 @@ class AggregationAcceptance(unittest.TestCase):
                          lambda r:r['report']['proof_profile']['samples'][0]['root']['measurement'].update(verified=False)]:
             bad=copy.deepcopy(row);mutation(bad)
             with self.assertRaises(RuntimeError):validate('GPU_AGGREGATION_PROFILE '+json.dumps(bad),selected)
+
+    def test_shared_request_pipeline_requires_completion_and_retention(self):
+        argv = self.argv(); argv[1] = 'architecture-request'
+        selected = selection(self.args(), argv + ['--request','6','--native-source','revalidate-archive'])
+        item = dict(measurement=dict(verified=True, proof_json_bytes=100,
+                    backend_report=dict(stage_coverage_complete=True)))
+        sample = dict(complete_request=True, public_mutation_rejected=True, order_mutation_rejected=True,
+            leaves=[copy.deepcopy(item),copy.deepcopy(item)], root=copy.deepcopy(item), seconds=8,
+            timing_scope='prepare-to-verified latency; independent samples overlap')
+        row = self.report(); row['options']['command'] = 'architecture-request'
+        row['report'] = dict(scope='recursion-architecture-request-screen', complete_request=True,
+            verified=True, complete_aggregation=False, native_proofs_generated=0, proofs_generated=6,
+            session=dict(session_closed=True,completion_claimed=False),
+            proof_profile=dict(complete_request=True,independent_cpu_verification=True,gpu_backend_only=True,
+                native_groups=2,samples=[sample,copy.deepcopy(sample)],
+                pipeline=dict(seconds=11,repetitions=2,repetitions_pipelined=True,
+                    schedule='position-before-request',retained_limit_bytes=2<<30,retained_peak_bytes=100)))
+        validate('GPU_AGGREGATION_PROFILE '+json.dumps(row),selected)
+        for key,value in [('seconds',13),('seconds',float('nan')),('repetitions',1),
+                          ('schedule','request-before-position'),('repetitions_pipelined',False),
+                          ('retained_limit_bytes',4<<30),('retained_peak_bytes',(2<<30)+1),
+                          ('retained_peak_bytes',True)]:
+            bad=copy.deepcopy(row);bad['report']['proof_profile']['pipeline'][key]=value
+            with self.subTest(key=key,value=value),self.assertRaises(RuntimeError):
+                validate('GPU_AGGREGATION_PROFILE '+json.dumps(bad),selected)
+        for key,value in [('timing_scope','serial latency'),('seconds',12),('seconds',float('nan'))]:
+            bad=copy.deepcopy(row);bad['report']['proof_profile']['samples'][0][key]=value
+            with self.subTest(key=key),self.assertRaises(RuntimeError):
+                validate('GPU_AGGREGATION_PROFILE '+json.dumps(bad),selected)
 
     def test_direct_request_omits_parent_and_large_batches_are_architecture_only(self):
         argv = self.argv(); argv[1] = 'architecture-request'

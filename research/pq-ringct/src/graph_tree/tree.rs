@@ -31,6 +31,8 @@ pub struct CompiledNode {
 impl CompiledNode {
     #[cfg(feature = "gpu-aggregation-experiment")]
     pub(crate) fn shared_program(&self) -> Arc<Program> { Arc::clone(&self.program) }
+    #[cfg(feature = "gpu-aggregation-experiment")]
+    pub(crate) fn witness_values(&self) -> &[Val] { &self.witness }
     pub fn program(&self) -> &Program {
         &self.program
     }

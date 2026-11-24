@@ -31,8 +31,7 @@ fn compact_hash_quotient_fits_the_bounded_gpu_specializer() {
         "compact hash must not silently use the interpreter: {:?}",
         program.shape()
     );
-    // Enlarging the table is safe because each permutation now has 103 main
-    // columns instead of 189. Keep a doubled-domain input prefix below 2 GiB.
+    // Keep a doubled-domain hash trace prefix below 2 GiB.
     assert!(2 * air::HASH_TABLE_MAX_ROWS * air.width() * core::mem::size_of::<Val>() < 2 << 30);
 }
 
@@ -108,7 +107,7 @@ fn merkle_swap_lowering_matches_reference_both_directions_and_packed_tail() {
         let traces = template.traces(&public, &witness).unwrap();
         check(&template, &public, &traces);
         let width = traces[index].width;
-        // Raw words, bit, ordered inputs, round checkpoints, every active
+        // Ordered inputs, bit, round checkpoints, every active
         // lane and the inactive tail must each remain constrained.
         for column in (0..18)
             .chain((0..air::HASH_LANES).map(|lane| lane * width / air::HASH_LANES))
@@ -134,6 +133,88 @@ fn merkle_swap_lowering_preserves_external_uses_and_mismatched_selectors() {
             &public,
             &template.traces(&public, &witness).unwrap(),
         );
+    }
+}
+
+#[test]
+fn hash_input_routing_preserves_duplicate_and_earlier_wire_uses() {
+    let mut b = ProgramBuilder::new(9).unwrap();
+    let mut input: [_; 8] = core::array::from_fn(|_| b.input());
+    input[2] = input[0];
+    let sum = b.add(input[0], input[1]);
+    let sum_public = b.public(8).unwrap();
+    b.assert_equal(sum, sum_public);
+    let bit = b.input();
+    let selected = core::array::from_fn(|i| b.select(bit, input[i], input[i ^ 4]));
+    let output = b.poseidon(selected);
+    for (i, wire) in output.into_iter().enumerate() {
+        let public = b.public(i).unwrap();
+        b.assert_equal(wire, public);
+    }
+    let template = RecursionTemplate::new(Arc::new(b.finish(None).unwrap()), [94; 32]).unwrap();
+    assert_eq!(template.typed_plan().stats().merkle_swap_hashes, 1);
+    // The provider supplies the duplicate hash input and the earlier sum;
+    // its own consumption is excluded from the signed lookup multiplicity.
+    assert_eq!(template.typed_plan().stats().hash_input_count_bound, 2);
+    for direction in [0u64, 1] {
+        let mut witness = (1..=8).map(Val::from_u64).collect::<Vec<_>>();
+        let mut state: [_; 8] = core::array::from_fn(|i| witness[i]);
+        state[2] = state[0];
+        if direction == 1 {
+            state.rotate_left(4);
+        }
+        let mut public = default_goldilocks_poseidon2_8().permute(state).to_vec();
+        public.push(witness[0] + witness[1]);
+        witness.push(Val::from_u64(direction));
+        let source = MachineAir::from_shared_program(template.program.clone());
+        check_constraints(&source, &source.trace(&public, &witness).unwrap(), &public);
+        let traces = template.traces(&public, &witness).unwrap();
+        check(&template, &public, &traces);
+        let index = template.airs().iter().position(|a| a.kind == 2).unwrap();
+        assert_eq!(traces[index].width, 95 * air::HASH_LANES);
+        assert_eq!(
+            template.airs()[index].preprocessed_width(),
+            28 * air::HASH_LANES
+        );
+        // Flipping the bit preserves booleanity and the local permutation;
+        // exact wire bindings must still reject it in the global lookup.
+        let mut wrong = traces.clone();
+        wrong[index].values[8] = Val::ONE - wrong[index].values[8];
+        check_constraints(&template.airs()[index], &wrong[index], &[]);
+        assert!(std::panic::catch_unwind(|| check(&template, &public, &wrong)).is_err());
+    }
+    let geometry = template.geometry().unwrap();
+    assert!(geometry.degree_gate && geometry.quotient_gate);
+    eprintln!(
+        "ROUTED_HASH_GEOMETRY {}",
+        serde_json::to_string(&geometry).unwrap()
+    );
+}
+
+#[test]
+fn compact_hash_addresses_reject_nonconsecutive_internal_outputs() {
+    let (template, _, _) = swap_fixture(1, false, false);
+    for overflow in [false, true] {
+        let mut program = (*template.program).clone();
+        let output = program
+            .operations
+            .iter_mut()
+            .find_map(|op| {
+                if let Op::Poseidon { output, .. } = op {
+                    Some(output)
+                } else {
+                    None
+                }
+            })
+            .unwrap();
+        if overflow {
+            output[0] = u32::MAX;
+        } else {
+            output.swap(0, 1);
+        }
+        assert!(RecursionTemplate::new(Arc::new(program), [91; 32])
+            .unwrap_err()
+            .contains("outputs must be consecutive"));
     }
 }
 
@@ -1166,12 +1247,31 @@ fn typed_public_cache_reuses_exact_templates_without_retaining_sources_or_random
     for attempt in 0..2 {
         let (template, public, witness) = typed_reduction_fixture();
         let source = Arc::downgrade(&template.program);
+        let ready = if attempt > 0 {
+            std::thread::scope(|scope| {
+                scope
+                    .spawn(|| {
+                        template
+                            .prepare_gpu_witness(&public, &witness, 2 << 30)
+                            .unwrap()
+                    })
+                    .join()
+                    .unwrap()
+            })
+        } else {
+            None
+        };
         let owner = cache.prepare(template, limits).unwrap();
         let key = owner.verifier();
-        let (proof, report) = owner
-            .into_prove(&public, &witness, || assert!(source.upgrade().is_none()))
-            .unwrap();
+        let (proof, report) = match ready {
+            Some(ready) => {
+                owner.into_prove_prepared(&public, ready, || assert!(source.upgrade().is_none()))
+            }
+            None => owner.into_prove(&public, &witness, || assert!(source.upgrade().is_none())),
+        }
+        .unwrap();
         assert_eq!(report.preprocessing_reused, attempt > 0);
+        assert_eq!(report.host_witness_prepared, attempt > 0);
         key.verify(&proof, &public).unwrap();
         encoded.push(serde_json::to_vec(&proof.inner).unwrap());
         proofs.push((key, proof, public));
@@ -1182,6 +1282,27 @@ fn typed_public_cache_reuses_exact_templates_without_retaining_sources_or_random
     );
     assert_eq!((cache.stats().hits, cache.stats().misses), (1, 1));
     let (template, public, witness) = typed_reduction_fixture();
+    for wrong_identity in [false, true] {
+        let other = RecursionTemplate::new(Arc::clone(&template.program), [99; 32]).unwrap();
+        let ready = (if wrong_identity { &other } else { &template })
+            .prepare_gpu_witness(&public, &witness, 2 << 30)
+            .unwrap()
+            .unwrap();
+        let mut supplied = public.clone();
+        if !wrong_identity {
+            supplied[0] += Val::ONE;
+        }
+        let owner = cache.prepare(template.clone(), limits).unwrap();
+        assert!(owner
+            .into_prove_prepared(&supplied, ready, || panic!(
+                "mismatched witness reached GPU phase"
+            ))
+            .err()
+            .unwrap()
+            .contains("source or public mismatch"));
+    }
+    // The two rejected attempts hit only the public template cache.
+    assert_eq!((cache.stats().hits, cache.stats().misses), (3, 1));
     let different = RecursionTemplate::new(Arc::clone(&template.program), [99; 32]).unwrap();
     assert_ne!(different.identity(), template.identity());
     drop(template);
@@ -1191,7 +1312,7 @@ fn typed_public_cache_reuses_exact_templates_without_retaining_sources_or_random
     let (proof, report) = owner.into_prove(&public, &witness, || {}).unwrap();
     assert!(!report.preprocessing_reused);
     key.verify(&proof, &public).unwrap();
-    assert_eq!((cache.stats().hits, cache.stats().misses), (1, 2));
+    assert_eq!((cache.stats().hits, cache.stats().misses), (3, 2));
     cache.clear();
     for (key, proof, public) in proofs {
         key.verify(&proof, &public).unwrap();

@@ -1,11 +1,12 @@
 //! Default AES/SHAKE recursion: independent native batches share a global CPU
 //! preparation window, then the sole GPU owner proves and reduces their roots.
 use super::*;
-use crate::component_tree::recursion::{compile_proven, ProvenNode};
+use crate::component_tree::recursion::ProvenNode;
 use lattica_prover_p3::block_v2::machine::program::ConstructionLimits;
 use std::collections::BTreeMap;
 
-const RETAINED_ROOT_BYTES: usize = 2 << 30;
+pub(crate) const RETAINED_ROOT_BYTES: usize = 2 << 30;
+pub(crate) mod parents;
 // The expanded N4 compiler can admit eight compact recursion-v5 children.
 // Standard construction retains four: its input and program caps are smaller.
 // Every parent still passes exact geometry and memory admission before proving.
@@ -142,14 +143,21 @@ pub(crate) fn prove_all(
                 node.shared_program(),
                 crate::graph_proofs::compiled_source_fingerprint(),
             )?;
-            Ok((node, template, start.elapsed().as_secs_f64()))
+            let template_seconds = start.elapsed().as_secs_f64();
+            let witness = template.prepare_gpu_witness(
+                node.public_values(),
+                node.witness_values(),
+                weights[index],
+            )?;
+            Ok((node, template, witness, template_seconds))
         },
-        |index, (node, template, template_seconds), permit| {
+        |index, (node, template, witness, template_seconds), permit| {
             deadline.check()?;
             let job = &jobs[index];
-            let (node, setup, measurement) = ProvenNode::prove_prepared_gpu(
+            let (node, setup, measurement) = ProvenNode::prove_prepared_witness_gpu(
                 node,
                 template,
+                witness,
                 &mut cache,
                 architecture::gpu_limits(),
                 || drop(permit),
@@ -171,58 +179,61 @@ pub(crate) fn prove_all(
     let mut roots = BTreeMap::new();
     let mut requests = children.into_iter().collect::<Vec<_>>();
     requests.sort_by_key(|(key, _)| (key.1, key.0));
-    for (key, mut nodes) in requests {
-        let leaves = nodes.len();
-        let mut parents = 0;
-        while nodes.len() > 1 {
-            let mut next = Vec::new();
-            let mut remaining = nodes.into_iter();
-            loop {
-                let children = remaining
-                    .by_ref()
-                    .take(reduction_fan_in())
-                    .collect::<Vec<_>>();
-                if children.is_empty() {
-                    break;
-                }
-                if children.len() == 1 {
-                    next.extend(children);
-                    continue;
-                }
-                deadline.check()?;
-                let node = compile_proven(&children.iter().collect::<Vec<_>>(), construction())
-                    .map_err(error)?;
-                for child in &children {
-                    retained -= child.retained_bytes(RETAINED_ROOT_BYTES).map_err(error)?;
-                }
-                drop(children);
-                let (node, setup, measurement) =
-                    ProvenNode::prove_gpu(node, &mut cache, architecture::gpu_limits(), || {})
-                        .map_err(error)?;
-                retained += node
-                    .retained_bytes(RETAINED_ROOT_BYTES - retained)
-                    .map_err(error)?;
-                next.push(node);
-                parents += 1;
-                measurements.push(
-                    serde_json::json!({"transaction":key.0,"request":key.1,"parent":true,
-                    "setup_seconds":setup,"measurement":measurement}),
-                );
-            }
-            nodes = next;
-        }
-        let node = nodes.pop().ok_or("empty typed request")?;
+    let keys = requests.iter().map(|(key, _)| *key).collect::<Vec<_>>();
+    let leaves = requests
+        .iter()
+        .map(|(_, nodes)| nodes.len())
+        .collect::<Vec<_>>();
+    let reduced = parents::reduce(
+        requests.into_iter().map(|(_, nodes)| nodes).collect(),
+        reduction_fan_in(),
+        options,
+        deadline,
+        &mut cache,
+        retained,
+        |index, node| {
+            let key = keys[index];
+            let contract = cases[key.0].plan.requests()[key.1]
+                .contract()
+                .map_err(error)?;
+            component_tree::recursion::require_complete(node, &contract).map_err(error)
+        },
+        |index, node| {
+            let key = keys[index];
+            let request = &cases[key.0].plan.requests()[key.1];
+            node.verify_request(
+                &request.contract().map_err(error)?,
+                &request.endpoint_context_hint(&cases[key.0].context),
+            )
+            .map_err(error)
+        },
+    )?;
+    retained = reduced.retained_bytes;
+    for (index, node) in reduced.roots.into_iter().enumerate() {
+        let key = keys[index];
         let request = &cases[key.0].plan.requests()[key.1];
-        node.verify_request(
-            &request.contract().map_err(error)?,
-            &request.endpoint_context_hint(&cases[key.0].context),
-        )
-        .map_err(error)?;
+        if leaves[index] == 1 {
+            node.verify_request(
+                &request.contract().map_err(error)?,
+                &request.endpoint_context_hint(&cases[key.0].context),
+            )
+            .map_err(error)?;
+        }
+        let parents = reduced.measurements[index].len();
+        ensure(
+            leaves[index] + parents == proof_count(leaves[index]),
+            "typed request proof count changed",
+        )?;
+        for mut row in reduced.measurements[index].iter().cloned() {
+            row["transaction"] = serde_json::json!(key.0);
+            row["request"] = serde_json::json!(key.1);
+            measurements.push(row);
+        }
         roots.insert(
             key,
             Root {
                 node,
-                leaves,
+                leaves: leaves[index],
                 parents,
             },
         );
@@ -230,7 +241,9 @@ pub(crate) fn prove_all(
     Ok((
         roots,
         serde_json::json!({"seconds":started.elapsed().as_secs_f64(), "preparation":stats,"reduction_fan_in":reduction_fan_in(),
-            "preparation_capacity_bytes":capacity,"retained_root_bytes":retained,"measurements":measurements,"public_template_cache":cache.stats(),
+            "preparation_capacity_bytes":capacity,"retained_root_bytes":retained,
+"parent_preparation":reduced.preparation,"parent_schedule":"position-before-request",
+"retained_peak_bytes":reduced.peak_retained_bytes,"measurements":measurements,"public_template_cache":cache.stats(),
         "source_retired_before_gpu":true,"independent_cpu_verification":true}),
     ))
 }

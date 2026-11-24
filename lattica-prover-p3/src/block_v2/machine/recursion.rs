@@ -31,7 +31,7 @@ pub use geometry::{ArchitectureGeometry, TableGeometry};
 #[cfg(feature = "gpu")]
 pub use gpu::{
     CachedGpuRecursionTemplate, GpuProofMeasurement, GpuRecursionCache, GpuRecursionCacheStats,
-    GpuTemplateLimits, PreparedGpuRecursionTemplate,
+    GpuTemplateLimits, PreparedGpuRecursionTemplate, PreparedRecursionWitness,
 };
 pub use parent::{CompiledRecursionVerifier, RecursionVerifier};
 pub use prepared::{PreparedRecursionTemplate, RecursionExecutionProof};
@@ -58,12 +58,26 @@ impl RecursionTemplate {
     pub const CONSTRUCTION_WORKSPACE_BYTES: usize = typed::PLANNING_BYTES + (256 << 20);
 
     pub fn new(program: Arc<Program>, trusted_registry: [u8; 32]) -> Result<Self, String> {
+        // ProgramBuilder allocates eight consecutive Poseidon output wires.
+        // Check the invariant before authenticating only their base address.
+        for op in &program.operations {
+            if let Op::Poseidon { output, .. } = op {
+                if output
+                    .iter()
+                    .enumerate()
+                    .any(|(i, &wire)| output[0].checked_add(i as u32) != Some(wire))
+                {
+                    return Err("recursion Poseidon outputs must be consecutive".into());
+                }
+            }
+        }
         let typed = TypedVerifierPlan::compile(&program)?;
         let mut hasher = Sha3_256::new();
         hasher.update(b"lattica-recursion-multi-table-prototype-v5");
         hasher.update(b"typed-pcs-reduction-transition-v3");
         hasher.update(b"authenticated-merkle-swap-poseidon-v1");
         hasher.update(b"hash-resident-private-input-providers-v1");
+        hasher.update(b"single-hash-input-copy-and-output-base-v1");
         hasher.update(b"direct-sbox-two-lane-hash-v1");
         hasher.update(b"global-quotient-budget-layout-v1");
         hasher.update(VERSION.to_le_bytes());

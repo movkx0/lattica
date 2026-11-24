@@ -1,0 +1,2108 @@
+diff --git a/lattica-prover-p3/src/block_v2/machine/recursion.rs b/lattica-prover-p3/src/block_v2/machine/recursion.rs
+index fd475c0..b6ad6a4 100644
+--- a/lattica-prover-p3/src/block_v2/machine/recursion.rs
++++ b/lattica-prover-p3/src/block_v2/machine/recursion.rs
+@@ -10,6 +10,8 @@ mod geometry;
+ #[cfg(feature = "gpu")]
+ mod gpu;
+ mod layout;
++mod lowering;
++pub use lowering::{RecursionLoweringCache, RecursionLoweringCacheStats};
+ mod parent;
+ mod prepared;
+ mod swaps;
+@@ -58,7 +60,10 @@ impl RecursionTemplate {
+     pub const CONSTRUCTION_WORKSPACE_BYTES: usize = typed::PLANNING_BYTES + (256 << 20);
+ 
+     pub fn new(program: Arc<Program>, trusted_registry: [u8; 32]) -> Result<Self, String> {
+-        let typed = TypedVerifierPlan::compile(&program)?;
++        let id = Self::program_identity(&program, trusted_registry)?;
++        Self::lower(program, id)
++    }
++    fn program_identity(program: &Program, trusted_registry: [u8; 32]) -> Result<[u8; 32], String> {
+         let mut hasher = Sha3_256::new();
+         hasher.update(b"lattica-recursion-multi-table-prototype-v5");
+         hasher.update(b"typed-pcs-reduction-transition-v3");
+@@ -88,6 +93,10 @@ impl RecursionTemplate {
+             hasher.update(v.to_le_bytes());
+             Ok(())
+         })?;
++        Ok(hasher.finalize().into())
++    }
++    fn lower(program: Arc<Program>, id: [u8; 32]) -> Result<Self, String> {
++        let typed = TypedVerifierPlan::compile(&program)?;
+         let mut counts = [0usize; 3];
+         let mut scalar_counts = [0usize; 8];
+         for (index, op) in program.operations.iter().enumerate() {
+@@ -134,7 +143,7 @@ impl RecursionTemplate {
+         let mut template = Self {
+             program,
+             rows: rows.map(Arc::from),
+-            id: hasher.finalize().into(),
++            id,
+             typed,
+             tables: Arc::from([]),
+         };
+diff --git a/lattica-prover-p3/src/block_v2/machine/recursion/tests.rs b/lattica-prover-p3/src/block_v2/machine/recursion/tests.rs
+index 78c116c..12e437b 100644
+--- a/lattica-prover-p3/src/block_v2/machine/recursion/tests.rs
++++ b/lattica-prover-p3/src/block_v2/machine/recursion/tests.rs
+@@ -740,6 +740,29 @@ fn typed_reduction_fixture() -> (RecursionTemplate, Vec<Val>, Vec<Val>) {
+     typed_reduction_fixture_with_terms(12)
+ }
+ 
++#[test]
++fn lowering_cache_preserves_fused_reduction_constraints_and_witness_binding() {
++    let (reference, public, witness) = typed_reduction_fixture_with_terms(19);
++    let cache = RecursionLoweringCache::new(1 << 20);
++    let first = cache.prepare(reference.program.clone(), [81; 32]).unwrap();
++    let source = Arc::new((*reference.program).clone());
++    let cached = cache.prepare(source.clone(), [81; 32]).unwrap();
++    assert_eq!(cached.identity(), reference.identity());
++    assert!(cached.matches_program(&source));
++    assert!(Arc::ptr_eq(&first.typed.groups, &cached.typed.groups));
++    assert_eq!(cache.stats().hits, 1);
++    let actual = cached.traces(&public, &witness).unwrap();
++    let expected = reference.traces(&public, &witness).unwrap();
++    for (a, b) in actual.iter().zip(&expected) {
++        assert_eq!(a.width, b.width);
++        assert_eq!(a.values, b.values);
++    }
++    check(&cached, &public, &actual);
++    let mut changed = witness;
++    changed[0] += Val::ONE;
++    assert!(cached.traces(&public, &changed).is_err());
++}
++
+ #[test]
+ fn compact_scales_preserve_scalar_reduction_values_and_constraints() {
+     for terms in [4, 5, 8, 12, 17] {
+diff --git a/research/pq-ringct/src/gpu_aggregation/architecture.rs b/research/pq-ringct/src/gpu_aggregation/architecture.rs
+index 55313ee..0f0beae 100644
+--- a/research/pq-ringct/src/gpu_aggregation/architecture.rs
++++ b/research/pq-ringct/src/gpu_aggregation/architecture.rs
+@@ -353,7 +353,7 @@ pub(crate) fn archive_request(options: &Options, deadline: &Deadline) -> Result<
+                 .map(|s| super::typed::job_limits(s.segment_count).map(|(_, weight)| weight))
+                 .collect::<Result<Vec<_>>>()?;
+             let mut proof_profile = if typed {
+-                request::profile(&weights, &contract, options, deadline, &prepare)?
++                request::profile(&weights, &contract, &endpoints, options, deadline, &prepare)?
+             } else {
+                 reference::profile(
+                     spans.len(),
+diff --git a/research/pq-ringct/src/gpu_aggregation/architecture/request.rs b/research/pq-ringct/src/gpu_aggregation/architecture/request.rs
+index 2198db0..c56b476 100644
+--- a/research/pq-ringct/src/gpu_aggregation/architecture/request.rs
++++ b/research/pq-ringct/src/gpu_aggregation/architecture/request.rs
+@@ -1,10 +1,12 @@
+-//! Complete bounded AES/SHAKE request screen; sources are streamed one group at a time.
++//! Complete AES/SHAKE requests use the same parent pipeline as the full workflow.
++use super::super::typed::{parents, RETAINED_ROOT_BYTES};
+ use super::*;
+-use crate::component_tree::recursion::{compile_proven, ProvenNode};
++use crate::component_tree::recursion::ProvenNode;
+ 
+ pub(super) fn profile(
+     weights: &[usize],
+     contract: &component_tree::Contract,
++    context: &component_tree::EndpointContext,
+     options: &Options,
+     deadline: &Deadline,
+     prepare: impl Fn(usize) -> Result<(component_tree::CompiledNode, bool)> + Sync,
+@@ -14,133 +16,179 @@ pub(super) fn profile(
+         (1..=8).contains(&groups),
+         "request screen requires one to eight native groups",
+     )?;
++    let repetitions = options.repetitions;
++    ensure((1..=3).contains(&repetitions), "request screen repetitions")?;
+     let direct = groups == 1;
+-    let mut samples = Vec::new();
++    let started = Instant::now();
++    let jobs = (0..groups)
++        .flat_map(|group| (0..repetitions).map(move |repetition| (group, repetition)))
++        .collect::<Vec<_>>();
++    let weights = jobs
++        .iter()
++        .map(|(group, _)| weights[*group])
++        .collect::<Vec<_>>();
++    let mut starts = vec![None; repetitions];
++    let mut completed = vec![None; repetitions];
++    let mut proven: Vec<Vec<ProvenNode>> = (0..repetitions).map(|_| Vec::new()).collect();
++    let mut leaves: Vec<Vec<serde_json::Value>> = (0..repetitions).map(|_| Vec::new()).collect();
++    let mut native_seconds = vec![0.0; repetitions];
++    let mut native_order_rejected = vec![false; repetitions];
+     let mut root_identity = None;
+     let mut root_geometry = None;
+     let mut cache = lattica_prover_p3::block_v2::machine::recursion::GpuRecursionCache::default();
+-    for repetition in 0..options.repetitions {
+-        let started = Instant::now();
+-        let mut proven = Vec::new();
+-        let mut leaves = Vec::new();
+-        let mut native_preparation_seconds = 0.0;
+-        let mut native_order_rejected = false;
+-        let policy = policy::current();
+-        let preparation_stats = super::super::weighted::run(
+-            weights,
+-            policy.program_bytes * policy.live_jobs + policy.symbolic_bytes as usize,
+-            options.preparation_workers,
+-            |index| {
+-                deadline.check()?;
+-                let preparation = Instant::now();
+-                let (node, order_rejected) = prepare(index)?;
+-                let preparation_seconds = preparation.elapsed().as_secs_f64();
+-                let started = Instant::now();
+-                let template = RecursionTemplate::new(
+-                    node.shared_program(),
+-                    crate::graph_proofs::compiled_source_fingerprint(),
+-                )?;
+-                Ok((
+-                    node,
+-                    template,
+-                    order_rejected,
+-                    preparation_seconds,
+-                    started.elapsed().as_secs_f64(),
+-                ))
+-            },
+-            |_, (node, template, order_rejected, seconds, template_seconds), permit| {
+-                native_order_rejected |= order_rejected;
+-                native_preparation_seconds += seconds;
+-                if direct {
+-                    component_tree::recursion::require_complete(&node, contract).map_err(error)?;
+-                }
+-                let setup = Instant::now();
+-                if direct {
+-                    if let Some(id) = root_identity {
+-                        ensure(
+-                            id == template.identity(),
+-                            "direct template changed between samples",
+-                        )?;
+-                    }
+-                    root_identity = Some(template.identity());
+-                    root_geometry = Some(template.geometry()?);
+-                }
+-                let owner = cache.prepare(template, gpu_limits())?;
+-                let setup_seconds = setup.elapsed().as_secs_f64();
+-                let (node, measurement) =
+-                    ProvenNode::from_cached_gpu(node, owner, || drop(permit)).map_err(error)?;
+-                if direct {
+-                    ensure(
+-                        node.rejects_altered_statement(),
+-                        "direct request accepted altered statement",
+-                    )?;
+-                }
+-                proven.push(node);
+-                leaves.push(
+-                    serde_json::json!({"template_preparation_seconds":template_seconds,
+-                        "setup_seconds":setup_seconds,"measurement":measurement}),
+-                );
+-                // Compact keys retain neither SSA programs nor public GPU trees.
+-                Ok(())
+-            },
+-        )?;
+-        let root_measurement = if direct {
+-            None
++    let mut retained = 0usize;
++    let mut peak_retained = 0usize;
++    let policy = policy::current();
++    let (lowering_cache, capacity) = super::super::weighted::lowering_cache(
++        &weights,
++        policy.program_bytes * policy.live_jobs + policy.symbolic_bytes as usize,
++    );
++    let mut preparation_stats = super::super::weighted::run(
++        &weights,
++        capacity,
++        if options.parallel {
++            options.preparation_workers
+         } else {
+-            let mut children = proven.iter().collect::<Vec<_>>();
+-            let compile = Instant::now();
+-            let root = compile_proven(&children, construction()).map_err(error)?;
+-            component_tree::recursion::require_complete(&root, contract).map_err(error)?;
+-            let compile_seconds = compile.elapsed().as_secs_f64();
+-            children.swap(0, 1);
+-            ensure(
+-                compile_proven(&children, construction()).is_err(),
+-                "request accepted reordered children",
+-            )?;
++            1
++        },
++        |index| {
+             deadline.check()?;
+-            let setup = Instant::now();
+-            let template = RecursionTemplate::new(
+-                root.shared_program(),
++            let start = Instant::now();
++            let (node, order_rejected) = prepare(jobs[index].0)?;
++            let seconds = start.elapsed().as_secs_f64();
++            if direct {
++                component_tree::recursion::require_complete(&node, contract).map_err(error)?;
++            }
++            let lowering = Instant::now();
++            let template = lowering_cache.prepare(
++                node.shared_program(),
+                 crate::graph_proofs::compiled_source_fingerprint(),
+             )?;
+-            if let Some(id) = root_identity {
++            Ok((
++                node,
++                template,
++                order_rejected,
++                start,
++                seconds,
++                lowering.elapsed().as_secs_f64(),
++            ))
++        },
++        |index, (node, template, order_rejected, start, seconds, template_seconds), permit| {
++            deadline.check()?;
++            let (group, repetition) = jobs[index];
++            ensure(
++                proven[repetition].len() == group,
++                "request native result order",
++            )?;
++            starts[repetition].get_or_insert(start);
++            native_order_rejected[repetition] |= order_rejected;
++            native_seconds[repetition] += seconds;
++            if direct {
++                let id = hex(&template.identity());
++                if let Some(expected) = &root_identity {
++                    ensure(expected == &id, "direct template changed between samples")?;
++                }
++                root_identity = Some(id);
++                root_geometry = Some(serde_json::to_value(template.geometry()?).map_err(error)?);
++            }
++            let (node, setup_seconds, measurement) =
++                ProvenNode::prove_prepared_gpu(node, template, &mut cache, gpu_limits(), || {
++                    drop(permit)
++                })
++                .map_err(error)?;
++            retained += node
++                .retained_bytes(RETAINED_ROOT_BYTES - retained)
++                .map_err(error)?;
++            peak_retained = peak_retained.max(retained);
++            if direct {
++                node.verify_request(contract, context).map_err(error)?;
+                 ensure(
+-                    id == template.identity(),
+-                    "fresh proofs changed root template",
++                    node.rejects_altered_statement(),
++                    "direct request accepted altered statement",
+                 )?;
++                completed[repetition] = Some(Instant::now());
+             }
+-            root_identity = Some(template.identity());
+-            root_geometry = Some(template.geometry()?);
+-            eprintln!(
+-                "GPU_AGGREGATION_ARCHITECTURE_REQUEST_GEOMETRY {}",
+-                serde_json::to_string(root_geometry.as_ref().unwrap()).map_err(error)?
++            proven[repetition].push(node);
++            leaves[repetition].push(
++                serde_json::json!({"template_preparation_seconds":template_seconds,
++                "setup_seconds":setup_seconds,"measurement":measurement}),
+             );
+-            let owner = cache.prepare(template, gpu_limits())?;
+-            let setup_seconds = setup.elapsed().as_secs_f64();
+-            let (root, measurement) =
+-                ProvenNode::from_cached_gpu(root, owner, || {}).map_err(error)?;
++            Ok(())
++        },
++    )?;
++    preparation_stats.lowering_cache = Some(lowering_cache.stats());
++    drop(lowering_cache);
++    // Preserve the screen's existing single parent for up to eight groups.
++    let reduced = parents::reduce(
++        proven,
++        8,
++        options,
++        deadline,
++        &mut cache,
++        retained,
++        |_, node| component_tree::recursion::require_complete(node, contract).map_err(error),
++        |_, node| node.verify_request(contract, context).map_err(error),
++    )?;
++    peak_retained = peak_retained.max(reduced.peak_retained_bytes);
++    let mut samples = Vec::new();
++    for (repetition, root) in reduced.roots.into_iter().enumerate() {
++        let root_measurement = if direct {
++            ensure(
++                reduced.measurements[repetition].is_empty(),
++                "direct request gained a parent",
++            )?;
++            None
++        } else {
+             ensure(
+-                root.rejects_altered_statement(),
+-                "request accepted altered statement",
++                reduced.measurements[repetition].len() == 1,
++                "request parent count changed",
+             )?;
+-            Some(
+-                serde_json::json!({"compile_seconds":compile_seconds,"setup_seconds":setup_seconds,"measurement":measurement}),
+-            )
++            let row = reduced.measurements[repetition][0].clone();
++            let identity = row["template_identity"]
++                .as_str()
++                .ok_or("missing parent identity")?
++                .to_owned();
++            if let Some(expected) = &root_identity {
++                ensure(expected == &identity, "fresh proofs changed root template")?;
++            }
++            root_identity = Some(identity);
++            root_geometry = Some(row["measurement"]["geometry"].clone());
++            completed[repetition] = reduced.completed[repetition];
++            Some(row)
+         };
+-        let sample = serde_json::json!({"repetition":repetition,"seconds":started.elapsed().as_secs_f64(),
+-            "native_preparation_seconds":native_preparation_seconds,"preparation":preparation_stats,"leaves":leaves,"root":root_measurement,
++        drop(root);
++        let seconds = completed[repetition]
++            .ok_or("request incomplete verification")?
++            .duration_since(starts[repetition].ok_or("request missing preparation")?)
++            .as_secs_f64();
++        let sample = serde_json::json!({"repetition":repetition,"seconds":seconds,
++            "timing_scope":"prepare-to-verified latency; independent samples overlap",
++            "native_preparation_seconds":native_seconds[repetition],"preparation":preparation_stats,
++            "shared_preparation":repetitions>1,"leaves":leaves[repetition],"root":root_measurement,
+             "direct_native_batch":direct,"public_mutation_rejected":true,
+-            "order_mutation_rejected":!direct || native_order_rejected,"complete_request":true});
++            "order_mutation_rejected":!direct || native_order_rejected[repetition],"complete_request":true});
+         eprintln!("GPU_AGGREGATION_ARCHITECTURE_REQUEST {sample}");
+         samples.push(sample);
+     }
++    let peak_jobs = reduced
++        .preparation
++        .iter()
++        .map(|s| s.peak_jobs)
++        .chain(std::iter::once(preparation_stats.peak_jobs))
++        .max()
++        .unwrap_or(0);
+     Ok(
+         serde_json::json!({"scope":"complete-crypto-request-gpu-proof","backend":"typed","complete_aggregation":false,
+         "complete_request":true,"production_qualified":false,"native_groups":groups,
+         "proofs_per_sample":groups+usize::from(!direct),"direct_native_batch":direct,
+-        "samples":samples,"root_geometry":root_geometry,"root_template_identity":root_identity.map(|id|hex(&id)),
++        "samples":samples,"root_geometry":root_geometry,"root_template_identity":root_identity,
+         "independent_cpu_verification":true,"gpu_backend_only":true,
+-        "native_preparation_included":true,"maximum_live_native_programs":samples.iter().filter_map(|s| s["preparation"]["peak_jobs"].as_u64()).max(),
+-        "public_preprocessing_retained_across_samples":true,"public_template_cache":cache.stats(),"source_retired_before_gpu":true}),
++        "native_preparation_included":true,"maximum_live_native_programs":preparation_stats.peak_jobs,
++        "maximum_live_preparation_jobs":peak_jobs,
++        "public_preprocessing_retained_across_samples":true,"public_template_cache":cache.stats(),"source_retired_before_gpu":true,
++        "pipeline":{"seconds":started.elapsed().as_secs_f64(),"repetitions":repetitions,
++            "repetitions_pipelined":repetitions>1,"parent_preparation":reduced.preparation,
++            "schedule":"position-before-request","retained_peak_bytes":peak_retained,"retained_limit_bytes":RETAINED_ROOT_BYTES,
++            "timing_scope":"all independent requests complete, including CPU preparation and verification"}}),
+     )
+ }
+diff --git a/research/pq-ringct/src/gpu_aggregation/graph.rs b/research/pq-ringct/src/gpu_aggregation/graph.rs
+index 98b7029..1a70d7c 100644
+--- a/research/pq-ringct/src/gpu_aggregation/graph.rs
++++ b/research/pq-ringct/src/gpu_aggregation/graph.rs
+@@ -17,6 +17,7 @@ enum GraphRoot {
+ }
+ type Roots = Vec<RequestRoot>;
+ type Branches = BTreeMap<(usize, u8), producer_branch::ProvenBranch>;
++mod shared;
+ fn missing<T>(value: Option<T>) -> Result<T> {
+     value.ok_or("missing native component; run prepare-inputs separately".into())
+ }
+@@ -260,6 +261,7 @@ fn branches(
+     execution: &crate::execution::ProvingContext,
+     outer: &graph_crypto::OuterProofCache,
+     deadline: &Deadline,
++    retained_allowance: Option<usize>,
+ ) -> Result<Branches> {
+     let factory =
+         producer_branch::Factory::new(&case.tree, &case.graph, &case.context).map_err(error)?;
+@@ -275,6 +277,7 @@ fn branches(
+         )
+     };
+     let mut output = Branches::new();
++    let mut remaining = retained_allowance;
+     let mut prove = |op, role, compiled: producer_branch::CompiledNode| -> Result<()> {
+         deadline.check()?;
+         execution.release_prepared()?;
+@@ -285,6 +288,9 @@ fn branches(
+         let proof = compiled
+             .prove_imported_with_context(execution, outer)
+             .map_err(error)?;
++        if let Some(bytes) = &mut remaining {
++            *bytes -= proof.retained_bytes(*bytes).map_err(error)?;
++        }
+         output.insert((op, role), proof);
+         Ok(())
+     };
+@@ -358,45 +364,10 @@ fn prove_graph(
+             .map_err(error)?;
+     let algebra = case.algebra()?;
+     execution.release_prepared()?;
+-    if options.typed_recursion() {
+-        let groups = super::typed_graph::groups(0, case.tree.leaves().len(), width)?;
+-        let mut cache =
+-            lattica_prover_p3::block_v2::machine::recursion::GpuRecursionCache::default();
+-        let (node, report) = super::typed_graph::prove(
+-            &groups,
+-            &case.tree,
+-            &case.context,
+-            options,
+-            deadline,
+-            &mut cache,
+-            |first, count| {
+-                let loaded = (first..first + count)
+-                    .map(|i| load_leaf(case, i, caches, &sources, &auxiliary, &algebra))
+-                    .collect::<Result<Vec<_>>>()?;
+-                let artifacts = loaded
+-                    .iter()
+-                    .map(|leaf| leaf.artifact(roots, branches))
+-                    .collect::<Result<Vec<_>>>()?;
+-                graph_tree::compile_group_bounded(
+-                    &case.tree,
+-                    &case.graph,
+-                    first,
+-                    &case.context,
+-                    artifacts,
+-                    construction(),
+-                )
+-                .map_err(error)
+-            },
+-        )?;
+-        node.verify_complete(&case.context).map_err(error)?;
+-        return Ok((
+-            GraphRoot::Typed(node),
+-            report["measurements"]
+-                .as_array()
+-                .ok_or("typed graph telemetry")?
+-                .clone(),
+-        ));
+-    }
++    ensure(
++        !options.typed_recursion(),
++        "typed graphs require shared scheduling",
++    )?;
+     let groups = if width == 1 {
+         (0..case.tree.leaves().len())
+             .map(|i| (i, 1))
+@@ -584,6 +555,9 @@ pub(crate) fn run(options: &Options, deadline: &Deadline) -> Result<serde_json::
+         } else {
+             (BTreeMap::new(), None)
+         };
++        let mut shared_inputs = Vec::new();
++        let mut shared_retained = shared::request_bytes(&typed_roots)?;
++        let mut shared_graphs = None;
+         for (index, case) in cases.iter().enumerate() {
+             let requests = graph_crypto::RequestProver::new_with_context(
+                 &caches.crypto,
+@@ -622,8 +596,26 @@ pub(crate) fn run(options: &Options, deadline: &Deadline) -> Result<serde_json::
+                 reports.push(serde_json::json!({"transaction":index,"family":"crypto","seconds":start.elapsed().as_secs_f64(),"native_imports":proof.report.native_cache_hits,"outer_leaves":proof.report.outer_leaves,"outer_parents":proof.report.outer_parents}));
+                 roots.push(RequestRoot::Machine(proof));
+             }
+-            let branch_roots = branches(case, &roots, &caches, &execution, &outer, deadline)?;
++            let branch_roots = branches(
++                case,
++                &roots,
++                &caches,
++                &execution,
++                &outer,
++                deadline,
++                options
++                    .typed_recursion()
++                    .then_some(super::typed_graph::ROOT_BYTES - shared_retained),
++            )?;
+             recursive_proofs += branch_roots.len();
++            if options.typed_recursion() {
++                shared_retained = shared::add_branches(shared_retained, &branch_roots)?;
++                shared_inputs.push(shared::Inputs {
++                    roots,
++                    branches: branch_roots,
++                });
++                continue;
++            }
+             let (root, rows) = prove_graph(
+                 case,
+                 &roots,
+@@ -644,6 +636,30 @@ pub(crate) fn run(options: &Options, deadline: &Deadline) -> Result<serde_json::
+             graphs.push(root);
+         }
+         deadline.check()?;
++        if options.typed_recursion() {
++            ensure(typed_roots.is_empty(), "unused typed request roots")?;
++            let (roots, graph_reports, pipeline) = shared::prove_all(
++                &cases,
++                &shared_inputs,
++                shared_retained,
++                &caches,
++                &execution,
++                options,
++                graph_width,
++                deadline,
++            )?;
++            for (index, report) in graph_reports.into_iter().enumerate() {
++                let rows = report["measurements"]
++                    .as_array()
++                    .ok_or("shared graph telemetry")?;
++                recursive_proofs += rows.len();
++                reports.push(serde_json::json!({"transaction":index,"family":"graph",
++                    "leaves":rows,"shared_preparation":true}));
++            }
++            graphs = roots;
++            shared_graphs = Some(pipeline);
++            drop(shared_inputs);
++        }
+         let plan = crate::ordered_aggregation::Plan::new(
+             cases[0].tree.label(),
+             cases[0].context.context,
+@@ -747,7 +763,7 @@ pub(crate) fn run(options: &Options, deadline: &Deadline) -> Result<serde_json::
+             serde_json::json!({"scope":"aggregation-from-native-components","complete":true,"input_sha3":input_sha3,
+ "source_sha3":hex(&crate::graph_proofs::compiled_source_fingerprint()),"selection_sha3":selection_sha3,"native_proofs_created":0,"native_components_verified":native_count,
+ "recursive_proofs":recursive_proofs,"import_and_planning_seconds":import_seconds,"stages":reports,"final":final_rows,
+-"recursion_backend":options.recursion_backend,"typed_requests":typed_report,
++"recursion_backend":options.recursion_backend,"typed_requests":typed_report,"typed_graphs":shared_graphs,
+             "final_cpu_verified":true,"artifact_round_trip":true,"public_mutation_rejected":true,"final_verification_seconds":final_verification_seconds,
+             "artifact_sha3":artifact_sha3,"proof_mutation_rejected":true,"order_mutation_rejected":true,"identity":execution.aggregation_identity_report()?}),
+         )
+diff --git a/research/pq-ringct/src/gpu_aggregation/graph_archive.rs b/research/pq-ringct/src/gpu_aggregation/graph_archive.rs
+index 5d098bb..65d430a 100644
+--- a/research/pq-ringct/src/gpu_aggregation/graph_archive.rs
++++ b/research/pq-ringct/src/gpu_aggregation/graph_archive.rs
+@@ -93,11 +93,10 @@ pub(crate) fn run(options: &Options, deadline: &Deadline) -> Result<serde_json::
+             lattica_prover_p3::block_v2::machine::recursion::GpuRecursionCache::default();
+         let (samples, pipeline) = if options.typed_recursion()
+             && options.parallel
+-            && groups.len() == 1
+             && options.repetitions > 1
+         {
+-            typed_graph::prove_repeated_direct(
+-                groups[0],
++            typed_graph::prove_repeated(
++                &groups,
+                 &case.tree,
+                 &case.context,
+                 options,
+diff --git a/research/pq-ringct/src/gpu_aggregation/typed.rs b/research/pq-ringct/src/gpu_aggregation/typed.rs
+index 5617113..d886f7a 100644
+--- a/research/pq-ringct/src/gpu_aggregation/typed.rs
++++ b/research/pq-ringct/src/gpu_aggregation/typed.rs
+@@ -1,11 +1,12 @@
+ //! Default AES/SHAKE recursion: independent native batches share a global CPU
+ //! preparation window, then the sole GPU owner proves and reduces their roots.
+ use super::*;
+-use crate::component_tree::recursion::{compile_proven, ProvenNode};
++use crate::component_tree::recursion::ProvenNode;
+ use lattica_prover_p3::block_v2::machine::program::ConstructionLimits;
+ use std::collections::BTreeMap;
+ 
+-const RETAINED_ROOT_BYTES: usize = 2 << 30;
++pub(crate) const RETAINED_ROOT_BYTES: usize = 2 << 30;
++pub(crate) mod parents;
+ // The expanded N4 compiler can admit eight compact recursion-v5 children.
+ // Standard construction retains four: its input and program caps are smaller.
+ // Every parent still passes exact geometry and memory admission before proving.
+@@ -114,10 +115,11 @@ pub(crate) fn prove_all(
+     }
+     let mut cache = lattica_prover_p3::block_v2::machine::recursion::GpuRecursionCache::default();
+     let capacity = policy.program_bytes * policy.live_jobs + policy.symbolic_bytes as usize;
++    let (lowering_cache, capacity) = weighted::lowering_cache(&weights, capacity);
+     let started = Instant::now();
+     let mut retained = 0usize;
+     let mut measurements = Vec::new();
+-    let stats = weighted::run(
++    let mut stats = weighted::run(
+         &weights,
+         capacity,
+         if options.parallel {
+@@ -138,7 +140,7 @@ pub(crate) fn prove_all(
+                     .ok_or_else(|| "missing typed native component".into())
+             })?;
+             let start = Instant::now();
+-            let template = lattica_prover_p3::block_v2::machine::recursion::RecursionTemplate::new(
++            let template = lowering_cache.prepare(
+                 node.shared_program(),
+                 crate::graph_proofs::compiled_source_fingerprint(),
+             )?;
+@@ -168,61 +170,66 @@ pub(crate) fn prove_all(
+             Ok(())
+         },
+     )?;
++    stats.lowering_cache = Some(lowering_cache.stats());
++    drop(lowering_cache);
+     let mut roots = BTreeMap::new();
+     let mut requests = children.into_iter().collect::<Vec<_>>();
+     requests.sort_by_key(|(key, _)| (key.1, key.0));
+-    for (key, mut nodes) in requests {
+-        let leaves = nodes.len();
+-        let mut parents = 0;
+-        while nodes.len() > 1 {
+-            let mut next = Vec::new();
+-            let mut remaining = nodes.into_iter();
+-            loop {
+-                let children = remaining
+-                    .by_ref()
+-                    .take(reduction_fan_in())
+-                    .collect::<Vec<_>>();
+-                if children.is_empty() {
+-                    break;
+-                }
+-                if children.len() == 1 {
+-                    next.extend(children);
+-                    continue;
+-                }
+-                deadline.check()?;
+-                let node = compile_proven(&children.iter().collect::<Vec<_>>(), construction())
+-                    .map_err(error)?;
+-                for child in &children {
+-                    retained -= child.retained_bytes(RETAINED_ROOT_BYTES).map_err(error)?;
+-                }
+-                drop(children);
+-                let (node, setup, measurement) =
+-                    ProvenNode::prove_gpu(node, &mut cache, architecture::gpu_limits(), || {})
+-                        .map_err(error)?;
+-                retained += node
+-                    .retained_bytes(RETAINED_ROOT_BYTES - retained)
+-                    .map_err(error)?;
+-                next.push(node);
+-                parents += 1;
+-                measurements.push(
+-                    serde_json::json!({"transaction":key.0,"request":key.1,"parent":true,
+-                    "setup_seconds":setup,"measurement":measurement}),
+-                );
+-            }
+-            nodes = next;
+-        }
+-        let node = nodes.pop().ok_or("empty typed request")?;
++    let keys = requests.iter().map(|(key, _)| *key).collect::<Vec<_>>();
++    let leaves = requests
++        .iter()
++        .map(|(_, nodes)| nodes.len())
++        .collect::<Vec<_>>();
++    let reduced = parents::reduce(
++        requests.into_iter().map(|(_, nodes)| nodes).collect(),
++        reduction_fan_in(),
++        options,
++        deadline,
++        &mut cache,
++        retained,
++        |index, node| {
++            let key = keys[index];
++            let contract = cases[key.0].plan.requests()[key.1]
++                .contract()
++                .map_err(error)?;
++            component_tree::recursion::require_complete(node, &contract).map_err(error)
++        },
++        |index, node| {
++            let key = keys[index];
++            let request = &cases[key.0].plan.requests()[key.1];
++            node.verify_request(
++                &request.contract().map_err(error)?,
++                &request.endpoint_context_hint(&cases[key.0].context),
++            )
++            .map_err(error)
++        },
++    )?;
++    retained = reduced.retained_bytes;
++    for (index, node) in reduced.roots.into_iter().enumerate() {
++        let key = keys[index];
+         let request = &cases[key.0].plan.requests()[key.1];
+-        node.verify_request(
+-            &request.contract().map_err(error)?,
+-            &request.endpoint_context_hint(&cases[key.0].context),
+-        )
+-        .map_err(error)?;
++        if leaves[index] == 1 {
++            node.verify_request(
++                &request.contract().map_err(error)?,
++                &request.endpoint_context_hint(&cases[key.0].context),
++            )
++            .map_err(error)?;
++        }
++        let parents = reduced.measurements[index].len();
++        ensure(
++            leaves[index] + parents == proof_count(leaves[index]),
++            "typed request proof count changed",
++        )?;
++        for mut row in reduced.measurements[index].iter().cloned() {
++            row["transaction"] = serde_json::json!(key.0);
++            row["request"] = serde_json::json!(key.1);
++            measurements.push(row);
++        }
+         roots.insert(
+             key,
+             Root {
+                 node,
+-                leaves,
++                leaves: leaves[index],
+                 parents,
+             },
+         );
+@@ -230,7 +237,9 @@ pub(crate) fn prove_all(
+     Ok((
+         roots,
+         serde_json::json!({"seconds":started.elapsed().as_secs_f64(), "preparation":stats,"reduction_fan_in":reduction_fan_in(),
+-            "preparation_capacity_bytes":capacity,"retained_root_bytes":retained,"measurements":measurements,"public_template_cache":cache.stats(),
++            "preparation_capacity_bytes":capacity,"retained_root_bytes":retained,
++"parent_preparation":reduced.preparation,"parent_schedule":"position-before-request",
++"retained_peak_bytes":reduced.peak_retained_bytes,"measurements":measurements,"public_template_cache":cache.stats(),
+         "source_retired_before_gpu":true,"independent_cpu_verification":true}),
+     ))
+ }
+diff --git a/research/pq-ringct/src/gpu_aggregation/typed_graph.rs b/research/pq-ringct/src/gpu_aggregation/typed_graph.rs
+index 7b6ba2b..67cec65 100644
+--- a/research/pq-ringct/src/gpu_aggregation/typed_graph.rs
++++ b/research/pq-ringct/src/gpu_aggregation/typed_graph.rs
+@@ -8,7 +8,10 @@ use crate::graph_tree::{
+ use lattica_prover_p3::block_v2::machine::recursion::{
+     GpuProofMeasurement, GpuRecursionCache, RecursionTemplate,
+ };
+-const ROOT_BYTES: usize = 2 << 30;
++pub(super) const ROOT_BYTES: usize = 2 << 30;
++
++mod batch;
++pub(crate) use batch::{prove_many, GraphWork};
+ 
+ #[cfg(test)]
+ mod tests {
+@@ -79,7 +82,7 @@ pub(crate) fn groups(first: usize, count: usize, maximum: usize) -> Result<Vec<(
+         .map(|i| (i, maximum.min(end - i)))
+         .collect())
+ }
+-struct PreparedNative {
++struct PreparedNode {
+     node: graph_tree::CompiledNode,
+     template: Option<RecursionTemplate>,
+     compile_seconds: f64,
+@@ -87,20 +90,20 @@ struct PreparedNative {
+     started: Instant,
+ }
+ 
+-fn prepare_native(
+-    groups: &[(usize, usize)],
++fn prepare_indexed(
++    counts: &[usize],
+     options: &Options,
+     deadline: &Deadline,
+-    prepare: impl Fn(usize, usize) -> Result<graph_tree::CompiledNode> + Sync,
+-    consume: impl FnMut(usize, PreparedNative, weighted::Permit) -> Result<()>,
++    prepare: impl Fn(usize) -> Result<graph_tree::CompiledNode> + Sync,
++    consume: impl FnMut(usize, PreparedNode, weighted::Permit) -> Result<()>,
+ ) -> Result<weighted::Stats> {
+     let policy = policy::current();
+-    let weights = groups
++    let weights = counts
+         .iter()
+-        .map(|(_, count)| {
++        .map(|count| {
+             ensure(
+                 (1..=native_group_limit(options)).contains(count),
+-                "typed graph native count",
++                "typed graph preparation count",
+             )?;
+             super::typed::preparation_weight(
+                 construction(),
+@@ -108,9 +111,13 @@ fn prepare_native(
+             )
+         })
+         .collect::<Result<Vec<_>>>()?;
+-    weighted::run(
++    let (lowering_cache, capacity) = weighted::lowering_cache(
+         &weights,
+         policy.program_bytes * policy.live_jobs + policy.symbolic_bytes as usize,
++    );
++    let mut stats = weighted::run(
++        &weights,
++        capacity,
+         if options.parallel {
+             options.preparation_workers
+         } else {
+@@ -119,18 +126,18 @@ fn prepare_native(
+         |i| {
+             deadline.check()?;
+             let started = Instant::now();
+-            let node = prepare(groups[i].0, groups[i].1)?;
++            let node = prepare(i)?;
+             let compile_seconds = started.elapsed().as_secs_f64();
+             let lowering = Instant::now();
+             let template = if options.template_preparation == "worker" {
+-                Some(RecursionTemplate::new(
++                Some(lowering_cache.prepare(
+                     node.shared_program(),
+                     crate::graph_proofs::compiled_source_fingerprint(),
+                 )?)
+             } else {
+                 None
+             };
+-            Ok(PreparedNative {
++            Ok(PreparedNode {
+                 node,
+                 template,
+                 compile_seconds,
+@@ -139,10 +146,12 @@ fn prepare_native(
+             })
+         },
+         consume,
+-    )
++    )?;
++    stats.lowering_cache = Some(lowering_cache.stats());
++    Ok(stats)
+ }
+ 
+-fn prove_native(
++fn prove_prepared(
+     node: graph_tree::CompiledNode,
+     template: Option<RecursionTemplate>,
+     cache: &mut GpuRecursionCache,
+@@ -163,8 +172,8 @@ fn prove_native(
+ 
+ /// Repeated independent proofs exercise the same preparation/GPU pipeline as
+ /// ordinary native groups. Report its makespan separately from request latency.
+-pub(crate) fn prove_repeated_direct(
+-    group: (usize, usize),
++pub(crate) fn prove_repeated(
++    groups: &[(usize, usize)],
+     plan: &graph_tree::Plan,
+     context: &graph_tree::GraphContext,
+     options: &Options,
+@@ -172,41 +181,29 @@ pub(crate) fn prove_repeated_direct(
+     cache: &mut GpuRecursionCache,
+     prepare: impl Fn(usize, usize) -> Result<graph_tree::CompiledNode> + Sync,
+ ) -> Result<(Vec<serde_json::Value>, serde_json::Value)> {
+-    let started = Instant::now();
+-    let groups = vec![group; options.repetitions];
+-    let mut samples = Vec::new();
+-    let stats = prepare_native(&groups, options, deadline, prepare, |i, job, permit| {
+-        deadline.check()?;
+-        let (root, setup_seconds, measurement) =
+-            prove_native(job.node, job.template, cache, || drop(permit)).map_err(error)?;
+-        root.verify(plan, context).map_err(error)?;
+-        ensure(root.span() == group, "independent graph coverage changed")?;
+-        ensure(
+-            root.rejects_altered_public(),
+-            "independent graph accepted altered statement",
+-        )?;
+-        let retained = root.retained_bytes(ROOT_BYTES).map_err(error)?;
+-        let sample = serde_json::json!({"repetition":i,"seconds":job.started.elapsed().as_secs_f64(),
+-            "timing_scope":"prepare-to-verified latency; independent samples overlap",
+-            "leaves":1,"reduction_fan_in":super::typed::reduction_fan_in(),"recursive_proofs":1,
+-            "measurements":[{"first":group.0,"count":group.1,"parent":false,
+-                "compile_seconds":job.compile_seconds,"template_preparation_seconds":job.template_seconds,
+-                "setup_seconds":setup_seconds,"measurement":measurement}],
+-            "retained_root_bytes":retained,"public_template_cache":cache.stats(),
+-            "verified":true,"public_mutation_rejected":true,"order_mutation_rejected":false,
+-            "independent_cpu_verification":true,"gpu_backend_only":true,
+-            "source_retired_before_gpu":true,"singleton_dry_compilations":0});
+-        eprintln!("GPU_AGGREGATION_GRAPH_ARCHITECTURE {sample}");
+-        samples.push(sample);
+-        Ok(())
++    let works = (0..options.repetitions)
++        .map(|_| GraphWork {
++            plan,
++            context,
++            groups,
++        })
++        .collect::<Vec<_>>();
++    let batch::BatchResult {
++        roots,
++        mut reports,
++        mut pipeline,
++    } = prove_many(&works, options, deadline, cache, 0, |_, first, count| {
++        prepare(first, count)
+     })?;
+-    Ok((
+-        samples,
+-        serde_json::json!({"seconds":started.elapsed().as_secs_f64(),
+-        "repetitions_pipelined":true,"repetitions":groups.len(),"preparation":stats,
+-        "template_preparation":options.template_preparation,
+-        "timing_scope":"all independent proofs complete, including CPU preparation and verification"}),
+-    ))
++    drop(roots);
++    for (repetition, sample) in reports.iter_mut().enumerate() {
++        sample["repetition"] = serde_json::json!(repetition);
++        sample["verified"] = serde_json::json!(true);
++        eprintln!("GPU_AGGREGATION_GRAPH_ARCHITECTURE {sample}");
++    }
++    pipeline["repetitions_pipelined"] = serde_json::json!(true);
++    pipeline["repetitions"] = serde_json::json!(reports.len());
++    Ok((reports, pipeline))
+ }
+ 
+ pub(crate) fn prove(
+@@ -218,91 +215,18 @@ pub(crate) fn prove(
+     cache: &mut GpuRecursionCache,
+     prepare: impl Fn(usize, usize) -> Result<graph_tree::CompiledNode> + Sync,
+ ) -> Result<(ProvenNode, serde_json::Value)> {
+-    ensure(!groups.is_empty(), "empty typed graph")?;
+-    for pair in groups.windows(2) {
+-        ensure(
+-            pair[0].0.checked_add(pair[0].1) == Some(pair[1].0),
+-            "typed graph schedule adjacency",
+-        )?;
+-    }
+-    let started = Instant::now();
+-    let mut nodes = Vec::new();
+-    let mut rows = Vec::new();
+-    let mut retained = 0usize;
+-    let prep = prepare_native(groups, options, deadline, prepare, |i, job, permit| {
+-        deadline.check()?;
+-        let (node, setup_seconds, measurement) =
+-            prove_native(job.node, job.template, cache, || drop(permit)).map_err(error)?;
+-        node.verify(plan, context).map_err(error)?;
+-        ensure(node.span() == groups[i], "typed graph compiled span")?;
+-        retained += node.retained_bytes(ROOT_BYTES - retained).map_err(error)?;
+-        rows.push(serde_json::json!({"first":groups[i].0,"count":groups[i].1,"parent":false,
+-                "compile_seconds":job.compile_seconds,"template_preparation_seconds":job.template_seconds,
+-                "setup_seconds":setup_seconds,"measurement":measurement}));
+-        nodes.push(node);
+-        Ok(())
++    let work = GraphWork {
++        plan,
++        context,
++        groups,
++    };
++    let mut result = prove_many(&[work], options, deadline, cache, 0, |_, first, count| {
++        prepare(first, count)
+     })?;
+-    let leaves = nodes.len();
+-    let mut order_rejected = false;
+-    while nodes.len() > 1 {
+-        let mut next = Vec::new();
+-        let mut iter = nodes.into_iter();
+-        loop {
+-            let children = iter
+-                .by_ref()
+-                .take(super::typed::reduction_fan_in())
+-                .collect::<Vec<_>>();
+-            if children.is_empty() {
+-                break;
+-            }
+-            if children.len() == 1 {
+-                next.extend(children);
+-                continue;
+-            }
+-            deadline.check()?;
+-            let start = Instant::now();
+-            let mut refs = children.iter().collect::<Vec<_>>();
+-            let node = compile_merge(&refs, construction()).map_err(error)?;
+-            refs.swap(0, 1);
+-            ensure(
+-                compile_merge(&refs, construction()).is_err(),
+-                "typed graph accepted reordered children",
+-            )?;
+-            order_rejected = true;
+-            for child in &children {
+-                retained -= child.retained_bytes(ROOT_BYTES).map_err(error)?;
+-            }
+-            let child_count = refs.len();
+-            drop(refs);
+-            drop(children);
+-            let compile_seconds = start.elapsed().as_secs_f64();
+-            let (node, setup_seconds, measurement) =
+-                ProvenNode::prove_gpu(node, cache, architecture::gpu_limits(), || {})
+-                    .map_err(error)?;
+-            node.verify(plan, context).map_err(error)?;
+-            retained += node.retained_bytes(ROOT_BYTES - retained).map_err(error)?;
+-            rows.push(serde_json::json!({"parent":true,"children":child_count,"compile_seconds":compile_seconds,
+-                "setup_seconds":setup_seconds,"measurement":measurement}));
+-            next.push(node);
+-        }
+-        nodes = next;
+-    }
+-    let root = nodes.pop().ok_or("missing typed graph root")?;
+-    let total = groups.iter().map(|g| g.1).sum();
+-    ensure(
+-        root.span() == (groups[0].0, total),
+-        "typed graph coverage changed",
+-    )?;
+-    ensure(
+-        root.rejects_altered_public(),
+-        "typed graph accepted altered statement",
+-    )?;
++    let mut report = result.reports.pop().ok_or("missing typed graph report")?;
++    report["seconds"] = result.pipeline["seconds"].clone();
+     Ok((
+-        root,
+-        serde_json::json!({"seconds":started.elapsed().as_secs_f64(),"leaves":leaves,"reduction_fan_in":super::typed::reduction_fan_in(),
+-        "recursive_proofs":rows.len(),"measurements":rows,"preparation":prep,
+-        "retained_root_bytes":retained,"public_template_cache":cache.stats(),"source_retired_before_gpu":true,
+-        "public_mutation_rejected":true,"order_mutation_rejected":order_rejected,
+-        "independent_cpu_verification":true,"gpu_backend_only":true,"singleton_dry_compilations":0}),
++        result.roots.pop().ok_or("missing typed graph root")?,
++        report,
+     ))
+ }
+diff --git a/research/pq-ringct/src/gpu_aggregation/weighted.rs b/research/pq-ringct/src/gpu_aggregation/weighted.rs
+index 936225e..93b1682 100644
+--- a/research/pq-ringct/src/gpu_aggregation/weighted.rs
++++ b/research/pq-ringct/src/gpu_aggregation/weighted.rs
+@@ -4,11 +4,54 @@ use super::Result;
+ use std::collections::BTreeMap;
+ use std::sync::{Arc, Condvar, Mutex};
+ 
++/// Visit one parent position in every tree before advancing to the next.
++/// Moving each input once preserves child order and leaves odd tails intact.
++pub(crate) fn parent_groups<T>(
++    nodes: Vec<Vec<T>>,
++    fan_in: usize,
++) -> impl Iterator<Item = (usize, Vec<T>)> {
++    assert!(fan_in >= 2);
++    let mut remaining = nodes.into_iter().map(Vec::into_iter).collect::<Vec<_>>();
++    let mut group = 0;
++    std::iter::from_fn(move || {
++        for _ in 0..remaining.len() {
++            let index = group;
++            group = (group + 1) % remaining.len();
++            let children = remaining[index].by_ref().take(fan_in).collect::<Vec<_>>();
++            if !children.is_empty() {
++                return Some((index, children));
++            }
++        }
++        None
++    })
++}
++
+ #[derive(Default, Debug, serde::Serialize)]
+ pub(crate) struct Stats {
+     pub workers: usize,
+     pub peak_jobs: usize,
+     pub peak_bytes: usize,
++    #[serde(skip_serializing_if = "Option::is_none")]
++    pub lowering_cache:
++        Option<lattica_prover_p3::block_v2::machine::recursion::RecursionLoweringCacheStats>,
++}
++
++/// Reserve cached public layout metadata inside the existing CPU window.
++/// Even the largest job still fits; a tight window simply disables retention.
++pub(crate) fn lowering_cache(
++    weights: &[usize],
++    capacity: usize,
++) -> (
++    lattica_prover_p3::block_v2::machine::recursion::RecursionLoweringCache,
++    usize,
++) {
++    let bytes = capacity
++        .saturating_sub(weights.iter().copied().max().unwrap_or(capacity))
++        .min(256 << 20);
++    (
++        lattica_prover_p3::block_v2::machine::recursion::RecursionLoweringCache::new(bytes),
++        capacity - bytes,
++    )
+ }
+ struct State {
+     next: usize,
+@@ -162,6 +205,21 @@ pub(crate) fn run<T: Send>(
+ #[cfg(test)]
+ mod tests {
+     use super::*;
++
++    #[test]
++    fn lowering_cache_reservation_preserves_the_largest_job_and_total_window() {
++        for (weights, capacity, expected) in [
++            (vec![8 << 30], 9 << 30, 256 << 20),
++            (vec![900], 1000, 100),
++            (vec![1000], 1000, 0),
++            (vec![], 1000, 0),
++        ] {
++            let (cache, remaining) = lowering_cache(&weights, capacity);
++            assert_eq!(cache.stats().reserved_bytes, expected);
++            assert_eq!(remaining + cache.stats().reserved_bytes, capacity);
++            assert!(weights.iter().all(|&weight| weight <= remaining));
++        }
++    }
+     #[test]
+     fn early_release_overlaps_next_preparation_and_preserves_order() {
+         let (tx, rx) = std::sync::mpsc::channel();
+diff --git a/research/pq-ringct/src/producer_branch.rs b/research/pq-ringct/src/producer_branch.rs
+index 52c1667..889830c 100644
+--- a/research/pq-ringct/src/producer_branch.rs
++++ b/research/pq-ringct/src/producer_branch.rs
+@@ -736,6 +736,32 @@ pub struct ProvenBranch {
+     pub cache_hit: bool,
+ }
+ 
++impl ProvenBranch {
++    /// Already-owned proof/key storage for the shared graph input inventory.
++    /// Count spare capacities and shared verifier metadata conservatively;
++    /// this neither validates a proof nor admits its earlier construction.
++    #[cfg(feature = "gpu-aggregation-experiment")]
++    pub(crate) fn retained_bytes(&self, maximum: usize) -> Result<usize> {
++        let descriptor = match &self.key.spec.descriptor {
++            Descriptor::HashX(parts) => parts.capacity()
++                .checked_mul(core::mem::size_of::<PartKind>()),
++            _ => Some(0),
++        }.ok_or_else(|| err("branch descriptor storage overflow"))?;
++        let fixed = self.key.cap.capacity()
++            .checked_mul(core::mem::size_of::<[Val; 4]>())
++            .and_then(|n| self.proof.public.capacity().checked_mul(core::mem::size_of::<Val>())
++                .and_then(|p| n.checked_add(p)))
++            .and_then(|n| n.checked_add(self.key.verifier.cached_metadata_bytes()))
++            .and_then(|n| n.checked_add(descriptor))
++            .and_then(|n| n.checked_add(64 << 10))
++            .ok_or_else(|| err("branch retained storage overflow"))?;
++        let remaining = maximum.checked_sub(fixed).ok_or_else(|| err("branch retained limit"))?;
++        let proof = lattica_prover_p3::block_v2::machine::backend::retained_proof_capacity_bytes(
++            &self.proof.proof, remaining).map_err(err)?;
++        fixed.checked_add(proof).ok_or_else(|| err("branch retained sum overflow"))
++    }
++}
++
+ mod cache;
+ #[cfg(test)]
+ mod tests;
+diff --git a/research/pq-ringct/tools/gpu_aggregation_profile.py b/research/pq-ringct/tools/gpu_aggregation_profile.py
+index eefd052..242346b 100644
+--- a/research/pq-ringct/tools/gpu_aggregation_profile.py
++++ b/research/pq-ringct/tools/gpu_aggregation_profile.py
+@@ -266,10 +266,19 @@ def validate(content, selected):
+                     and math.isfinite(pipeline['seconds']) and 0 < pipeline['seconds'] <= seconds,
+                     'invalid graph pipeline completion time')
+             if pipeline['repetitions_pipelined']:
+-                require(typed and groups == 1 and len(report['samples']) > 1
++                require(typed and len(report['samples']) > 1
+                         and all(s['seconds'] <= pipeline['seconds'] and s.get('timing_scope') ==
+                             'prepare-to-verified latency; independent samples overlap' for s in report['samples']),
+                         'invalid independent graph pipeline scope')
++                if groups > 1:
++                    require(pipeline.get('schedule') == 'position-before-transaction'
++                            and pipeline.get('graphs') == len(report['samples'])
++                            and pipeline.get('retained_limit_bytes') == 2 << 30
++                            and type(pipeline.get('retained_peak_bytes')) is int
++                            and type(pipeline.get('retained_inputs_bytes')) is int
++                            and 0 <= pipeline['retained_inputs_bytes']
++                                <= pipeline['retained_peak_bytes'] <= pipeline['retained_limit_bytes'],
++                            'invalid shared graph preparation/retention receipt')
+     elif selected['command'] == 'architecture-request':
+         profile = report['proof_profile']
+         machine = selected['values'].get('--recursion-backend') == 'machine'
+@@ -301,6 +310,22 @@ def validate(content, selected):
+                 require(measurement['verified'] is True and measurement['proof_json_bytes'] > 0
+                         and measurement['backend_report']['stage_coverage_complete'] is True,
+                         'request proof failed verification or GPU coverage')
++        pipeline = profile.get('pipeline')
++        if pipeline is not None:
++            require(not machine and isinstance(pipeline, dict)
++                    and pipeline.get('schedule') == 'position-before-request'
++                    and pipeline.get('repetitions') == len(profile['samples'])
++                    and pipeline.get('repetitions_pipelined') is (len(profile['samples']) > 1)
++                    and type(pipeline.get('seconds')) in (int, float)
++                    and math.isfinite(pipeline['seconds']) and 0 < pipeline['seconds'] <= seconds
++                    and pipeline.get('retained_limit_bytes') == 2 << 30
++                    and type(pipeline.get('retained_peak_bytes')) is int
++                    and 0 < pipeline['retained_peak_bytes'] <= pipeline['retained_limit_bytes']
++                    and all(type(s.get('seconds')) in (int, float)
++                            and math.isfinite(s['seconds']) and 0 < s['seconds'] <= pipeline['seconds']
++                            and s.get('timing_scope') == 'prepare-to-verified latency; independent samples overlap'
++                            for s in profile['samples']),
++                    'invalid shared request preparation/retention receipt')
+     elif selected['command'] == 'prepare-inputs':
+         require(report['scope'] == 'native-component-preparation' and report['session_closed']
+                 and report['aggregation_timed'] is False, 'invalid native preparation terminal')
+diff --git a/research/pq-ringct/tools/test_gpu_aggregation_profile.py b/research/pq-ringct/tools/test_gpu_aggregation_profile.py
+index 8d0f79a..e48b0c5 100644
+--- a/research/pq-ringct/tools/test_gpu_aggregation_profile.py
++++ b/research/pq-ringct/tools/test_gpu_aggregation_profile.py
+@@ -60,6 +60,34 @@ class AggregationAcceptance(unittest.TestCase):
+             with self.subTest(change=change), self.assertRaises(RuntimeError):
+                 validate('GPU_AGGREGATION_PROFILE ' + json.dumps(bad), selected)
+ 
++    def test_shared_graph_pipeline_requires_ordered_counts_and_retention(self):
++        import copy
++        argv = self.argv()
++        argv[1] = 'architecture-graph'
++        selected = selection(self.args(), argv + ['--native-source', 'revalidate-archive', '--group-width', '1'])
++        row = self.report()
++        row['options']['command'] = 'architecture-graph'
++        measurement = dict(verified=True, proof_json_bytes=100, backend_report=dict(stage_coverage_complete=True))
++        sample = dict(verified=True, public_mutation_rejected=True, order_mutation_rejected=True,
++            recursive_proofs=11, reduction_fan_in=4, independent_cpu_verification=True,
++            gpu_backend_only=True, seconds=8, timing_scope='prepare-to-verified latency; independent samples overlap',
++            measurements=[dict(measurement=measurement)]*11)
++        row['report'] = dict(scope='recursion-graph-subtree-screen', verified=True, complete_aggregation=False,
++            complete_graph=False, backend='typed', native_proofs_generated=0, archive_files_rewritten=0,
++            current_cache_entries_created=0, groups=[[i,1] for i in range(4,12)],
++            session=dict(session_closed=True,completion_claimed=False), samples=[sample,copy.deepcopy(sample)],
++            pipeline=dict(seconds=11,repetitions=2,repetitions_pipelined=True,graphs=2,
++                schedule='position-before-transaction',retained_limit_bytes=2<<30,
++                retained_inputs_bytes=100,retained_peak_bytes=200))
++        validate('GPU_AGGREGATION_PROFILE '+json.dumps(row),selected)
++        for key,value in [('schedule','transaction-before-position'),('graphs',1),
++                          ('retained_limit_bytes',4<<30),('retained_peak_bytes',(2<<30)+1),
++                          ('retained_inputs_bytes',201)]:
++            bad=copy.deepcopy(row)
++            bad['report']['pipeline'][key]=value
++            with self.subTest(field=key), self.assertRaises(RuntimeError):
++                validate('GPU_AGGREGATION_PROFILE '+json.dumps(bad),selected)
++
+     def test_owner_template_preparation_is_only_a_graph_profiling_control(self):
+         argv = self.argv()
+         argv[1] = 'architecture-graph'
+@@ -349,6 +377,35 @@ class AggregationAcceptance(unittest.TestCase):
+             bad=copy.deepcopy(row);mutation(bad)
+             with self.assertRaises(RuntimeError):validate('GPU_AGGREGATION_PROFILE '+json.dumps(bad),selected)
+ 
++    def test_shared_request_pipeline_requires_completion_and_retention(self):
++        argv = self.argv(); argv[1] = 'architecture-request'
++        selected = selection(self.args(), argv + ['--request','6','--native-source','revalidate-archive'])
++        item = dict(measurement=dict(verified=True, proof_json_bytes=100,
++                    backend_report=dict(stage_coverage_complete=True)))
++        sample = dict(complete_request=True, public_mutation_rejected=True, order_mutation_rejected=True,
++            leaves=[copy.deepcopy(item),copy.deepcopy(item)], root=copy.deepcopy(item), seconds=8,
++            timing_scope='prepare-to-verified latency; independent samples overlap')
++        row = self.report(); row['options']['command'] = 'architecture-request'
++        row['report'] = dict(scope='recursion-architecture-request-screen', complete_request=True,
++            verified=True, complete_aggregation=False, native_proofs_generated=0, proofs_generated=6,
++            session=dict(session_closed=True,completion_claimed=False),
++            proof_profile=dict(complete_request=True,independent_cpu_verification=True,gpu_backend_only=True,
++                native_groups=2,samples=[sample,copy.deepcopy(sample)],
++                pipeline=dict(seconds=11,repetitions=2,repetitions_pipelined=True,
++                    schedule='position-before-request',retained_limit_bytes=2<<30,retained_peak_bytes=100)))
++        validate('GPU_AGGREGATION_PROFILE '+json.dumps(row),selected)
++        for key,value in [('seconds',13),('seconds',float('nan')),('repetitions',1),
++                          ('schedule','request-before-position'),('repetitions_pipelined',False),
++                          ('retained_limit_bytes',4<<30),('retained_peak_bytes',(2<<30)+1),
++                          ('retained_peak_bytes',True)]:
++            bad=copy.deepcopy(row);bad['report']['proof_profile']['pipeline'][key]=value
++            with self.subTest(key=key,value=value),self.assertRaises(RuntimeError):
++                validate('GPU_AGGREGATION_PROFILE '+json.dumps(bad),selected)
++        for key,value in [('timing_scope','serial latency'),('seconds',12),('seconds',float('nan'))]:
++            bad=copy.deepcopy(row);bad['report']['proof_profile']['samples'][0][key]=value
++            with self.subTest(key=key),self.assertRaises(RuntimeError):
++                validate('GPU_AGGREGATION_PROFILE '+json.dumps(bad),selected)
++
+     def test_direct_request_omits_parent_and_large_batches_are_architecture_only(self):
+         argv = self.argv(); argv[1] = 'architecture-request'
+         argv += ['--request', '6', '--native-source', 'revalidate-archive', '--group-width', '16']
+diff --git a/lattica-prover-p3/src/block_v2/machine/recursion/lowering.rs b/lattica-prover-p3/src/block_v2/machine/recursion/lowering.rs
+new file mode 100644
+--- /dev/null
++++ b/lattica-prover-p3/src/block_v2/machine/recursion/lowering.rs
+@@ -0,0 +1,216 @@
++//! Bounded reuse of immutable lowering metadata, without retaining programs.
++use super::*;
++use std::sync::Mutex;
++
++#[derive(Clone, Copy, Debug, Default, serde::Serialize)]
++pub struct RecursionLoweringCacheStats {
++    pub hits: usize,
++    pub misses: usize,
++    pub oversized: usize,
++    pub retained_bytes: usize,
++    pub peak_bytes: usize,
++    pub reserved_bytes: usize,
++}
++
++struct Plan {
++    id: [u8; 32],
++    rows: [Arc<[u32]>; 3],
++    typed: TypedVerifierPlan,
++    tables: Arc<[layout::TableSpan]>,
++}
++
++impl Plan {
++    fn bytes(template: &RecursionTemplate) -> usize {
++        core::mem::size_of::<Self>()
++            // Ten Arc slice headers, in addition to their payloads.
++            + 20 * core::mem::size_of::<usize>()
++            + template.rows.iter().map(|rows| rows.len() * 4).sum::<usize>()
++            + template.typed.backing_bytes()
++            + core::mem::size_of_val(template.tables.as_ref())
++    }
++
++    fn bind(&self, program: Arc<Program>) -> RecursionTemplate {
++        RecursionTemplate {
++            program,
++            rows: self.rows.clone(),
++            id: self.id,
++            typed: self.typed.clone(),
++            tables: self.tables.clone(),
++        }
++    }
++}
++
++struct State {
++    entry: Option<Plan>,
++    stats: RecursionLoweringCacheStats,
++}
++
++/// One exact public layout, shared by a bounded CPU preparation window.
++/// The caller reserves `limit_bytes` outside the construction job allowance.
++/// Neither source programs, witness values, nor proof randomness are retained.
++pub struct RecursionLoweringCache {
++    state: Mutex<State>,
++}
++
++impl RecursionLoweringCache {
++    pub fn new(limit_bytes: usize) -> Self {
++        Self {
++            state: Mutex::new(State {
++                entry: None,
++                stats: RecursionLoweringCacheStats {
++                    reserved_bytes: limit_bytes,
++                    ..Default::default()
++                },
++            }),
++        }
++    }
++
++    pub fn stats(&self) -> RecursionLoweringCacheStats {
++        self.state.lock().unwrap().stats
++    }
++
++    pub fn prepare(
++        &self,
++        program: Arc<Program>,
++        trusted_registry: [u8; 32],
++    ) -> Result<RecursionTemplate, String> {
++        // This is the same full identity that authenticates GPU preprocessing:
++        // exact instructions, registry, backend version, and security profile.
++        let id = RecursionTemplate::program_identity(&program, trusted_registry)?;
++        {
++            let mut state = self.state.lock().map_err(|_| "lowering cache poisoned")?;
++            if let Some(plan) = state.entry.as_ref().filter(|plan| plan.id == id) {
++                let template = plan.bind(program);
++                state.stats.hits += 1;
++                return Ok(template);
++            }
++            state.stats.misses += 1;
++        }
++        // Independent misses lower concurrently; no compiler runs under the
++        // mutex. A racing replacement is harmless: every hit checks its ID.
++        let template = RecursionTemplate::lower(program, id)?;
++        let bytes = Plan::bytes(&template);
++        let mut state = self.state.lock().map_err(|_| "lowering cache poisoned")?;
++        state.entry = None;
++        state.stats.retained_bytes = 0;
++        if bytes <= state.stats.reserved_bytes {
++            state.entry = Some(Plan {
++                id,
++                rows: template.rows.clone(),
++                typed: template.typed.clone(),
++                tables: template.tables.clone(),
++            });
++            state.stats.retained_bytes = bytes;
++            state.stats.peak_bytes = state.stats.peak_bytes.max(bytes);
++        } else {
++            state.stats.oversized += 1;
++        }
++        Ok(template)
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use crate::block_v2::machine::ProgramBuilder;
++
++    fn program(constant: u64) -> Arc<Program> {
++        let mut b = ProgramBuilder::new(1).unwrap();
++        let input = b.input();
++        let c = b.constant(Val::from_u64(constant));
++        let sum = b.add(input, c);
++        let public = b.public(0).unwrap();
++        b.assert_equal(sum, public);
++        Arc::new(b.finish(None).unwrap())
++    }
++
++    #[test]
++    fn lowering_cache_binds_exact_program_registry_and_fresh_source() {
++        let cache = RecursionLoweringCache::new(1 << 20);
++        let original = program(7);
++        let weak = Arc::downgrade(&original);
++        let first = cache.prepare(original.clone(), [42; 32]).unwrap();
++        let other = program(7);
++        let second = cache.prepare(other.clone(), [42; 32]).unwrap();
++        assert_eq!(first.identity(), second.identity());
++        assert!(Arc::ptr_eq(&first.rows[0], &second.rows[0]));
++        assert!(Arc::ptr_eq(
++            &first.typed.references,
++            &second.typed.references
++        ));
++        assert!(second.matches_program(&other));
++        assert!(!second.matches_program(&original));
++        let reference = RecursionTemplate::new(other, [42; 32]).unwrap();
++        for (input, public) in [(3, 10), (11, 18)] {
++            let w = [Val::from_u64(input)];
++            let p = [Val::from_u64(public)];
++            let actual = second.traces(&p, &w).unwrap();
++            let expected = reference.traces(&p, &w).unwrap();
++            assert_eq!(actual.len(), expected.len());
++            for (a, b) in actual.iter().zip(&expected) {
++                assert_eq!(a.width, b.width);
++                assert_eq!(a.values, b.values);
++            }
++        }
++        assert!(second
++            .traces(&[Val::from_u64(10)], &[Val::from_u64(4)])
++            .is_err());
++        drop(first);
++        drop(original);
++        assert!(weak.upgrade().is_none(), "cache retained a source program");
++        assert_eq!(cache.stats().hits, 1);
++        let changed_registry = cache.prepare(program(7), [43; 32]).unwrap();
++        assert_ne!(changed_registry.identity(), second.identity());
++        let changed_op = cache.prepare(program(8), [43; 32]).unwrap();
++        assert_ne!(changed_op.identity(), changed_registry.identity());
++        assert_eq!(cache.stats().hits, 1);
++        assert_eq!(cache.stats().misses, 3);
++    }
++
++    #[test]
++    fn lowering_cache_admits_exact_bytes_and_skips_oversized_metadata() {
++        let source = program(9);
++        let reference = RecursionTemplate::new(source.clone(), [3; 32]).unwrap();
++        let bytes = Plan::bytes(&reference);
++        for (limit, hits) in [(0, 0), (bytes - 1, 0), (bytes, 1)] {
++            let cache = RecursionLoweringCache::new(limit);
++            for _ in 0..2 {
++                assert_eq!(
++                    cache.prepare(source.clone(), [3; 32]).unwrap().identity(),
++                    reference.identity()
++                );
++            }
++            let stats = cache.stats();
++            assert_eq!(stats.hits, hits);
++            assert!(stats.retained_bytes <= limit);
++            assert!(stats.peak_bytes <= limit);
++            assert_eq!(stats.oversized, if hits == 0 { 2 } else { 0 });
++        }
++    }
++
++    #[test]
++    fn lowering_cache_parallel_replacement_keeps_each_program_bound() {
++        let cache = RecursionLoweringCache::new(1 << 20);
++        std::thread::scope(|scope| {
++            for i in 0..8 {
++                let cache = &cache;
++                scope.spawn(move || {
++                    for offset in 0..4 {
++                        let value = i + offset;
++                        let source = program(value);
++                        let template = cache.prepare(source.clone(), [1; 32]).unwrap();
++                        assert!(template.matches_program(&source));
++                        assert_eq!(
++                            template.identity(),
++                            RecursionTemplate::new(source, [1; 32]).unwrap().identity()
++                        );
++                        template
++                            .traces(&[Val::from_u64(value + 3)], &[Val::from_u64(3)])
++                            .unwrap();
++                    }
++                });
++            }
++        });
++        assert!(cache.stats().peak_bytes <= cache.stats().reserved_bytes);
++    }
++}
+diff --git a/research/pq-ringct/src/gpu_aggregation/graph/shared.rs b/research/pq-ringct/src/gpu_aggregation/graph/shared.rs
+new file mode 100644
+--- /dev/null
++++ b/research/pq-ringct/src/gpu_aggregation/graph/shared.rs
+@@ -0,0 +1,113 @@
++//! All transactions share one graph preparation window and exact GPU cache.
++use super::super::typed_graph::{self, GraphWork};
++use super::*;
++
++pub(super) struct Inputs {
++    pub roots: Roots,
++    pub branches: Branches,
++}
++
++pub(super) fn request_bytes(
++    roots: &BTreeMap<(usize, usize), super::super::typed::Root>,
++) -> Result<usize> {
++    roots.values().try_fold(0usize, |total, root| {
++        let bytes = root
++            .node
++            .retained_bytes(typed_graph::ROOT_BYTES - total)
++            .map_err(error)?;
++        Ok(total + bytes)
++    })
++}
++
++pub(super) fn add_branches(mut total: usize, branches: &Branches) -> Result<usize> {
++    for branch in branches.values() {
++        total += branch
++            .retained_bytes(typed_graph::ROOT_BYTES - total)
++            .map_err(error)?;
++    }
++    Ok(total)
++}
++
++pub(super) fn prove_all(
++    cases: &[Arc<inputs::Case>],
++    inputs: &[Inputs],
++    retained_inputs: usize,
++    caches: &bundle::Caches,
++    execution: &crate::execution::ProvingContext,
++    options: &Options,
++    width: usize,
++    deadline: &Deadline,
++) -> Result<(Vec<GraphRoot>, Vec<serde_json::Value>, serde_json::Value)> {
++    ensure(cases.len() == inputs.len(), "shared graph input count")?;
++    let groups = cases
++        .iter()
++        .map(|case| typed_graph::groups(0, case.tree.leaves().len(), width))
++        .collect::<Result<Vec<_>>>()?;
++    let works = cases
++        .iter()
++        .zip(&groups)
++        .map(|(case, groups)| GraphWork {
++            plan: &case.tree,
++            context: &case.context,
++            groups,
++        })
++        .collect::<Vec<_>>();
++    execution.release_prepared()?;
++    let mut cache = lattica_prover_p3::block_v2::machine::recursion::GpuRecursionCache::default();
++    let result = typed_graph::prove_many(
++        &works,
++        options,
++        deadline,
++        &mut cache,
++        retained_inputs,
++        |transaction, first, count| {
++            let case = &cases[transaction];
++            let input = &inputs[transaction];
++            // Factory/decoder backing is local to this already-admitted CPU
++            // job. It is gone before template lowering and never cached.
++            let sources = graph_sources::SourceFactory::new(
++                &case.tree,
++                &case.graph,
++                &case.context,
++                &case.statement,
++                &case.private_proof,
++                24 << 30,
++            )
++            .map_err(error)?;
++            let auxiliary = graph_auxiliary::AuxiliaryFactory::new(
++                &case.tree,
++                &case.graph,
++                &case.context,
++                24 << 30,
++            )
++            .map_err(error)?;
++            let algebra = case.algebra()?;
++            let loaded = (first..first + count)
++                .map(|i| load_leaf(case, i, caches, &sources, &auxiliary, &algebra))
++                .collect::<Result<Vec<_>>>()?;
++            let artifacts = loaded
++                .iter()
++                .map(|leaf| leaf.artifact(&input.roots, &input.branches))
++                .collect::<Result<Vec<_>>>()?;
++            graph_tree::compile_group_bounded(
++                &case.tree,
++                &case.graph,
++                first,
++                &case.context,
++                artifacts,
++                construction(),
++            )
++            .map_err(error)
++        },
++    )?;
++    let roots = result
++        .roots
++        .into_iter()
++        .zip(cases)
++        .map(|(root, case)| {
++            root.verify_complete(&case.context).map_err(error)?;
++            Ok(GraphRoot::Typed(root))
++        })
++        .collect::<Result<Vec<_>>>()?;
++    Ok((roots, result.reports, result.pipeline))
++}
+diff --git a/research/pq-ringct/src/gpu_aggregation/typed/parents.rs b/research/pq-ringct/src/gpu_aggregation/typed/parents.rs
+new file mode 100644
+--- /dev/null
++++ b/research/pq-ringct/src/gpu_aggregation/typed/parents.rs
+@@ -0,0 +1,185 @@
++//! One bounded CPU preparation window and GPU owner for all crypto parents.
++//! Positions are interleaved across requests; exact template identities still
++//! decide cache reuse, and every parent contains its own fresh child proofs.
++use super::*;
++use crate::component_tree::recursion::compile_proven;
++use lattica_prover_p3::block_v2::machine::recursion::GpuRecursionCache;
++use std::sync::Mutex;
++
++pub(crate) struct Reduced {
++    pub roots: Vec<ProvenNode>,
++    pub measurements: Vec<Vec<serde_json::Value>>,
++    pub preparation: Vec<weighted::Stats>,
++    pub completed: Vec<Option<Instant>>,
++    pub retained_bytes: usize,
++    pub peak_retained_bytes: usize,
++}
++
++struct Job {
++    request: usize,
++    count: usize,
++    retired_bytes: usize,
++    root: bool,
++    children: Mutex<Option<Vec<ProvenNode>>>,
++}
++
++pub(crate) fn reduce(
++    mut nodes: Vec<Vec<ProvenNode>>,
++    fan_in: usize,
++    options: &Options,
++    deadline: &Deadline,
++    cache: &mut GpuRecursionCache,
++    mut retained: usize,
++    check_complete: impl Fn(usize, &component_tree::CompiledNode) -> Result<()> + Sync,
++    verify_complete: impl Fn(usize, &ProvenNode) -> Result<()>,
++) -> Result<Reduced> {
++    ensure(matches!(fan_in, 4 | 8), "typed parent fan-in")?;
++    ensure(
++        nodes.iter().all(|n| !n.is_empty()),
++        "empty typed parent request",
++    )?;
++    ensure(
++        retained <= RETAINED_ROOT_BYTES,
++        "typed parent input retention",
++    )?;
++    let mut measurements: Vec<Vec<serde_json::Value>> =
++        (0..nodes.len()).map(|_| Vec::new()).collect();
++    let mut completed = vec![None; nodes.len()];
++    let mut preparation = Vec::new();
++    let mut peak_retained = retained;
++    let policy = policy::current();
++    while nodes.iter().any(|n| n.len() > 1) {
++        let lengths = nodes.iter().map(Vec::len).collect::<Vec<_>>();
++        let mut next: Vec<Vec<ProvenNode>> = (0..nodes.len()).map(|_| Vec::new()).collect();
++        let mut tails = Vec::new();
++        let mut jobs = Vec::new();
++        let mut weights = Vec::new();
++        for (request, children) in weighted::parent_groups(nodes, fan_in) {
++            if children.len() == 1 {
++                tails.push((request, children));
++                continue;
++            }
++            let retired_bytes = children.iter().try_fold(0usize, |total, child| {
++                Ok::<_, String>(
++                    total
++                        + child
++                            .retained_bytes(RETAINED_ROOT_BYTES - total)
++                            .map_err(error)?,
++                )
++            })?;
++            let count = children.len();
++            weights.push(preparation_weight(
++                construction(),
++                policy.program_bytes + (512 << 20) + (count + 1) * (128 << 20),
++            )?);
++            jobs.push(Job {
++                request,
++                count,
++                retired_bytes,
++                root: lengths[request] <= fan_in,
++                children: Mutex::new(Some(children)),
++            });
++        }
++        let (lowering_cache, capacity) = weighted::lowering_cache(
++            &weights,
++            policy.program_bytes * policy.live_jobs + policy.symbolic_bytes as usize,
++        );
++        let mut stats = weighted::run(
++            &weights,
++            capacity,
++            if options.parallel {
++                options.preparation_workers
++            } else {
++                1
++            },
++            |index| {
++                deadline.check()?;
++                let job = &jobs[index];
++                let children = job
++                    .children
++                    .lock()
++                    .map_err(error)?
++                    .take()
++                    .ok_or("typed parent consumed twice")?;
++                let compile = Instant::now();
++                let mut refs = children.iter().collect::<Vec<_>>();
++                let node = compile_proven(&refs, construction()).map_err(error)?;
++                refs.swap(0, 1);
++                ensure(
++                    compile_proven(&refs, construction()).is_err(),
++                    "typed parent accepted reordered children",
++                )?;
++                if job.root {
++                    check_complete(job.request, &node)?;
++                }
++                drop(refs);
++                drop(children);
++                let compile_seconds = compile.elapsed().as_secs_f64();
++                let lowering = Instant::now();
++                let template = lowering_cache.prepare(
++                    node.shared_program(),
++                    crate::graph_proofs::compiled_source_fingerprint(),
++                )?;
++                Ok((
++                    node,
++                    template,
++                    compile_seconds,
++                    lowering.elapsed().as_secs_f64(),
++                ))
++            },
++            |index, (node, template, compile_seconds, template_seconds), permit| {
++                deadline.check()?;
++                let job = &jobs[index];
++                retained = retained
++                    .checked_sub(job.retired_bytes)
++                    .ok_or("typed parent retention underflow")?;
++                let identity = template.identity();
++                let (node, setup, measurement) = ProvenNode::prove_prepared_gpu(
++                    node,
++                    template,
++                    cache,
++                    architecture::gpu_limits(),
++                    || drop(permit),
++                )
++                .map_err(error)?;
++                ensure(
++                    node.rejects_altered_statement(),
++                    "typed parent accepted altered statement",
++                )?;
++                retained += node
++                    .retained_bytes(RETAINED_ROOT_BYTES - retained)
++                    .map_err(error)?;
++                peak_retained = peak_retained.max(retained);
++                measurements[job.request].push(serde_json::json!({"parent":true,"children":job.count,
++                    "compile_seconds":compile_seconds,"template_preparation_seconds":template_seconds,
++                    "template_identity":hex(&identity),"setup_seconds":setup,"measurement":measurement,
++                    "order_mutation_rejected":true,"public_mutation_rejected":true}));
++                if job.root {
++                    verify_complete(job.request, &node)?;
++                    completed[job.request] = Some(Instant::now());
++                }
++                next[job.request].push(node);
++                Ok(())
++            },
++        )?;
++        for (request, children) in tails {
++            next[request].extend(children);
++        }
++        stats.lowering_cache = Some(lowering_cache.stats());
++        drop(lowering_cache);
++        preparation.push(stats);
++        nodes = next;
++    }
++    let roots = nodes
++        .into_iter()
++        .map(|mut n| n.pop().ok_or("missing typed request root".into()))
++        .collect::<Result<Vec<_>>>()?;
++    Ok(Reduced {
++        roots,
++        measurements,
++        preparation,
++        completed,
++        retained_bytes: retained,
++        peak_retained_bytes: peak_retained,
++    })
++}
+diff --git a/research/pq-ringct/src/gpu_aggregation/typed_graph/batch.rs b/research/pq-ringct/src/gpu_aggregation/typed_graph/batch.rs
+new file mode 100644
+--- /dev/null
++++ b/research/pq-ringct/src/gpu_aggregation/typed_graph/batch.rs
+@@ -0,0 +1,305 @@
++//! Keep matching graph positions adjacent across independent transactions.
++//! Sharing is only a scheduling hint: the GPU cache still compares the exact
++//! trusted template identity, and every proof is checked against its own graph.
++use super::super::weighted::parent_groups;
++use super::*;
++use std::sync::Mutex;
++
++pub(crate) struct GraphWork<'a> {
++    pub plan: &'a graph_tree::Plan,
++    pub context: &'a graph_tree::GraphContext,
++    pub groups: &'a [(usize, usize)],
++}
++
++pub(crate) struct BatchResult {
++    pub roots: Vec<ProvenNode>,
++    pub reports: Vec<serde_json::Value>,
++    pub pipeline: serde_json::Value,
++}
++
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++struct Slot {
++    graph: usize,
++    group: usize,
++    span: (usize, usize),
++}
++
++fn schedule(groups: &[&[(usize, usize)]]) -> Result<Vec<Slot>> {
++    ensure((1..=4).contains(&groups.len()), "typed graph batch count")?;
++    let mut slots = Vec::new();
++    for (graph, groups) in groups.iter().enumerate() {
++        ensure(!groups.is_empty(), "empty typed graph")?;
++        for pair in groups.windows(2) {
++            ensure(
++                pair[0].0.checked_add(pair[0].1) == Some(pair[1].0),
++                "typed graph schedule adjacency",
++            )?;
++        }
++        for (group, &span) in groups.iter().enumerate() {
++            ensure(
++                span.1 != 0 && span.0.checked_add(span.1).is_some(),
++                "typed graph schedule span",
++            )?;
++            ensure(slots.len() < 65536, "typed graph schedule size")?;
++            slots.push(Slot { graph, group, span });
++        }
++    }
++    slots.sort_by_key(|s| (s.group, s.span, s.graph));
++    Ok(slots)
++}
++
++fn check_root(root: &ProvenNode, work: &GraphWork<'_>) -> Result<()> {
++    root.verify(work.plan, work.context).map_err(error)?;
++    let first = work.groups[0].0;
++    let last = work.groups.last().unwrap();
++    let end = last
++        .0
++        .checked_add(last.1)
++        .ok_or("typed graph coverage overflow")?;
++    ensure(
++        root.span() == (first, end - first),
++        "typed graph coverage changed",
++    )?;
++    ensure(
++        root.rejects_altered_public(),
++        "typed graph accepted altered statement",
++    )
++}
++
++pub(crate) fn prove_many(
++    works: &[GraphWork<'_>],
++    options: &Options,
++    deadline: &Deadline,
++    cache: &mut GpuRecursionCache,
++    retained_inputs: usize,
++    prepare: impl Fn(usize, usize, usize) -> Result<graph_tree::CompiledNode> + Sync,
++) -> Result<BatchResult> {
++    ensure(retained_inputs <= ROOT_BYTES, "typed graph input retention")?;
++    let spans = works.iter().map(|w| w.groups).collect::<Vec<_>>();
++    let slots = schedule(&spans)?;
++    let counts = slots.iter().map(|s| s.span.1).collect::<Vec<_>>();
++    let started = Instant::now();
++    let mut nodes: Vec<Vec<ProvenNode>> = (0..works.len()).map(|_| Vec::new()).collect();
++    let mut rows: Vec<Vec<serde_json::Value>> = (0..works.len()).map(|_| Vec::new()).collect();
++    let mut first_started = vec![None; works.len()];
++    let mut completed = vec![None; works.len()];
++    let mut cache_at_completion = vec![cache.stats(); works.len()];
++    let mut order_rejected = vec![false; works.len()];
++    let mut retained = retained_inputs;
++    let mut peak_retained = retained;
++    let prep = prepare_indexed(
++        &counts,
++        options,
++        deadline,
++        |index| {
++            let slot = slots[index];
++            prepare(slot.graph, slot.span.0, slot.span.1)
++        },
++        |index, job, permit| {
++            deadline.check()?;
++            let slot = slots[index];
++            let work = &works[slot.graph];
++            ensure(
++                nodes[slot.graph].len() == slot.group,
++                "typed graph result order",
++            )?;
++            first_started[slot.graph].get_or_insert(job.started);
++            let (node, setup_seconds, measurement) =
++                prove_prepared(job.node, job.template, cache, || drop(permit))?;
++            node.verify(work.plan, work.context).map_err(error)?;
++            ensure(node.span() == slot.span, "typed graph compiled span")?;
++            retained += node.retained_bytes(ROOT_BYTES - retained).map_err(error)?;
++            peak_retained = peak_retained.max(retained);
++            rows[slot.graph].push(serde_json::json!({"first":slot.span.0,"count":slot.span.1,"parent":false,
++                "compile_seconds":job.compile_seconds,"template_preparation_seconds":job.template_seconds,
++                "setup_seconds":setup_seconds,"measurement":measurement}));
++            if work.groups.len() == 1 {
++                check_root(&node, work)?;
++                completed[slot.graph] = Some(Instant::now());
++                cache_at_completion[slot.graph] = cache.stats();
++            }
++            nodes[slot.graph].push(node);
++            Ok(())
++        },
++    )?;
++
++    // Prepare the next parent while the preceding parent is on the GPU.
++    // A single ownership slot moves each child's proof into its admitted job;
++    // all children are gone before template lowering or GPU preparation.
++    let mut parent_preparation = Vec::new();
++    while nodes.iter().any(|n| n.len() > 1) {
++        let lengths = nodes.iter().map(Vec::len).collect::<Vec<_>>();
++        let mut next: Vec<Vec<ProvenNode>> = (0..works.len()).map(|_| Vec::new()).collect();
++        let mut jobs = Vec::new();
++        let mut counts = Vec::new();
++        let mut tails = Vec::new();
++        for (graph, children) in parent_groups(nodes, super::super::typed::reduction_fan_in()) {
++            if children.len() == 1 {
++                tails.push((graph, children));
++                continue;
++            }
++            let bytes = children.iter().try_fold(0usize, |bytes, child| {
++                Ok::<_, String>(bytes + child.retained_bytes(ROOT_BYTES - bytes).map_err(error)?)
++            })?;
++            counts.push(children.len());
++            jobs.push((graph, bytes, Mutex::new(Some(children))));
++        }
++        let stats = prepare_indexed(
++            &counts,
++            options,
++            deadline,
++            |index| {
++                let children = jobs[index]
++                    .2
++                    .lock()
++                    .map_err(error)?
++                    .take()
++                    .ok_or("typed graph parent consumed twice")?;
++                let mut refs = children.iter().collect::<Vec<_>>();
++                let node = compile_merge(&refs, construction()).map_err(error)?;
++                refs.swap(0, 1);
++                ensure(
++                    compile_merge(&refs, construction()).is_err(),
++                    "typed graph accepted reordered children",
++                )?;
++                drop(refs);
++                drop(children);
++                Ok(node)
++            },
++            |index, job, permit| {
++                deadline.check()?;
++                let (graph, retired, _) = &jobs[index];
++                let graph = *graph;
++                retained = retained
++                    .checked_sub(*retired)
++                    .ok_or("typed graph retention underflow")?;
++                let (node, setup_seconds, measurement) =
++                    prove_prepared(job.node, job.template, cache, || drop(permit))?;
++                node.verify(works[graph].plan, works[graph].context)
++                    .map_err(error)?;
++                retained += node.retained_bytes(ROOT_BYTES - retained).map_err(error)?;
++                peak_retained = peak_retained.max(retained);
++                order_rejected[graph] = true;
++                rows[graph].push(serde_json::json!({"parent":true,"children":counts[index],
++                    "compile_seconds":job.compile_seconds,"template_preparation_seconds":job.template_seconds,
++                    "setup_seconds":setup_seconds,"measurement":measurement}));
++                if lengths[graph] <= super::super::typed::reduction_fan_in() {
++                    check_root(&node, &works[graph])?;
++                    completed[graph] = Some(Instant::now());
++                    cache_at_completion[graph] = cache.stats();
++                }
++                next[graph].push(node);
++                Ok(())
++            },
++        )?;
++        // Unmerged odd tails follow every parent of their own graph.
++        for (graph, children) in tails {
++            next[graph].extend(children);
++        }
++        parent_preparation.push(stats);
++        nodes = next;
++    }
++    let mut roots = Vec::new();
++    let mut reports = Vec::new();
++    let prep = serde_json::to_value(prep).map_err(error)?;
++    for (graph, mut nodes) in nodes.into_iter().enumerate() {
++        ensure(nodes.len() == 1, "typed graph final root count")?;
++        let root = nodes.pop().unwrap();
++        let seconds = completed[graph]
++            .ok_or("typed graph incomplete verification")?
++            .duration_since(first_started[graph].ok_or("typed graph missing preparation")?)
++            .as_secs_f64();
++        ensure(
++            rows[graph].len() == super::super::typed::proof_count(works[graph].groups.len()),
++            "typed graph proof count changed",
++        )?;
++        reports.push(serde_json::json!({"seconds":seconds,"leaves":works[graph].groups.len(),
++            "timing_scope":"prepare-to-verified latency; independent samples overlap",
++            "reduction_fan_in":super::super::typed::reduction_fan_in(),"recursive_proofs":rows[graph].len(),
++            "measurements":rows[graph],"preparation":prep,"shared_preparation":works.len()>1,
++            "retained_root_bytes":root.retained_bytes(ROOT_BYTES).map_err(error)?,
++            "public_template_cache":cache_at_completion[graph],"source_retired_before_gpu":true,
++            "public_mutation_rejected":true,"order_mutation_rejected":order_rejected[graph],
++            "independent_cpu_verification":true,"gpu_backend_only":true,"singleton_dry_compilations":0}));
++        roots.push(root);
++    }
++    Ok(BatchResult {
++        roots,
++        reports,
++        pipeline: serde_json::json!({
++            "seconds":started.elapsed().as_secs_f64(),"graphs":works.len(),"preparation":prep,
++            "parent_preparation":parent_preparation,
++        "template_preparation":options.template_preparation,"public_template_cache":cache.stats(),
++        "retained_inputs_bytes":retained_inputs,"retained_peak_bytes":peak_retained,
++        "retained_limit_bytes":ROOT_BYTES,"schedule":"position-before-transaction",
++        "timing_scope":"all independent graphs complete, including CPU preparation and verification"}),
++    })
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    #[test]
++    fn graph_positions_share_a_window_without_changing_each_graph_order() {
++        let a = [(0, 16), (16, 16), (32, 3)];
++        let b = [(0, 16), (16, 5)];
++        let c = [(4, 8)];
++        let schedules: [&[(usize, usize)]; 3] = [&a, &b, &c];
++        let slots = schedule(&schedules).unwrap();
++        assert_eq!(
++            slots.iter().map(|s| s.graph).collect::<Vec<_>>(),
++            [0, 1, 2, 1, 0, 0]
++        );
++        for (graph, expected) in schedules.iter().enumerate() {
++            assert_eq!(
++                slots
++                    .iter()
++                    .filter(|s| s.graph == graph)
++                    .map(|s| s.span)
++                    .collect::<Vec<_>>(),
++                *expected
++            );
++        }
++    }
++    #[test]
++    fn parent_positions_preserve_uneven_graphs_and_odd_tails() {
++        for fan_in in [4, 8] {
++            let nodes = vec![(0..17).collect::<Vec<_>>(), (100..103).collect(), vec![200]];
++            let expected = nodes.clone();
++            let groups = parent_groups(nodes, fan_in).collect::<Vec<_>>();
++            assert_eq!(
++                groups
++                    .iter()
++                    .take(3)
++                    .map(|(graph, _)| *graph)
++                    .collect::<Vec<_>>(),
++                [0, 1, 2]
++            );
++            for (graph, expected) in expected.iter().enumerate() {
++                let actual = groups
++                    .iter()
++                    .filter(|(i, _)| *i == graph)
++                    .flat_map(|(_, children)| children.iter().copied())
++                    .collect::<Vec<_>>();
++                assert_eq!(&actual, expected);
++                assert!(groups
++                    .iter()
++                    .filter(|(i, _)| *i == graph)
++                    .all(|(_, children)| !children.is_empty() && children.len() <= fan_in));
++            }
++        }
++        assert_eq!(parent_groups::<usize>(vec![], 4).count(), 0);
++    }
++    #[test]
++    fn shared_graph_schedule_rejects_gaps_overlap_empty_and_overflow() {
++        assert!(schedule(&[]).is_err());
++        assert!(schedule(&[&[]]).is_err());
++        assert!(schedule(&[&[(0, 0)]]).is_err());
++        assert!(schedule(&[&[(0, 2), (3, 2)]]).is_err());
++        assert!(schedule(&[&[(0, 2), (1, 2)]]).is_err());
++        assert!(schedule(&[&[(usize::MAX, 1)]]).is_err());
++        let singleton: &[(usize, usize)] = &[(0, 1)];
++        assert!(schedule(&[singleton; 5]).is_err());
++        assert_eq!(schedule(&[singleton; 4]).unwrap().len(), 4);
++    }
++}

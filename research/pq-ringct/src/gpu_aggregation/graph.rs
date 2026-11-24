@@ -17,6 +17,7 @@ enum GraphRoot {
 }
 type Roots = Vec<RequestRoot>;
 type Branches = BTreeMap<(usize, u8), producer_branch::ProvenBranch>;
+mod shared;
 fn missing<T>(value: Option<T>) -> Result<T> {
     value.ok_or("missing native component; run prepare-inputs separately".into())
 }
@@ -260,6 +261,7 @@ fn branches(
     execution: &crate::execution::ProvingContext,
     outer: &graph_crypto::OuterProofCache,
     deadline: &Deadline,
+    retained_allowance: Option<usize>,
 ) -> Result<Branches> {
     let factory =
         producer_branch::Factory::new(&case.tree, &case.graph, &case.context).map_err(error)?;
@@ -275,6 +277,7 @@ fn branches(
         )
     };
     let mut output = Branches::new();
+    let mut remaining = retained_allowance;
     let mut prove = |op, role, compiled: producer_branch::CompiledNode| -> Result<()> {
         deadline.check()?;
         execution.release_prepared()?;
@@ -285,6 +288,9 @@ fn branches(
         let proof = compiled
             .prove_imported_with_context(execution, outer)
             .map_err(error)?;
+        if let Some(bytes) = &mut remaining {
+            *bytes -= proof.retained_bytes(*bytes).map_err(error)?;
+        }
         output.insert((op, role), proof);
         Ok(())
     };
@@ -358,45 +364,10 @@ fn prove_graph(
             .map_err(error)?;
     let algebra = case.algebra()?;
     execution.release_prepared()?;
-    if options.typed_recursion() {
-        let groups = super::typed_graph::groups(0, case.tree.leaves().len(), width)?;
-        let mut cache =
-            lattica_prover_p3::block_v2::machine::recursion::GpuRecursionCache::default();
-        let (node, report) = super::typed_graph::prove(
-            &groups,
-            &case.tree,
-            &case.context,
-            options,
-            deadline,
-            &mut cache,
-            |first, count| {
-                let loaded = (first..first + count)
-                    .map(|i| load_leaf(case, i, caches, &sources, &auxiliary, &algebra))
-                    .collect::<Result<Vec<_>>>()?;
-                let artifacts = loaded
-                    .iter()
-                    .map(|leaf| leaf.artifact(roots, branches))
-                    .collect::<Result<Vec<_>>>()?;
-                graph_tree::compile_group_bounded(
-                    &case.tree,
-                    &case.graph,
-                    first,
-                    &case.context,
-                    artifacts,
-                    construction(),
-                )
-                .map_err(error)
-            },
-        )?;
-        node.verify_complete(&case.context).map_err(error)?;
-        return Ok((
-            GraphRoot::Typed(node),
-            report["measurements"]
-                .as_array()
-                .ok_or("typed graph telemetry")?
-                .clone(),
-        ));
-    }
+    ensure(
+        !options.typed_recursion(),
+        "typed graphs require shared scheduling",
+    )?;
     let groups = if width == 1 {
         (0..case.tree.leaves().len())
             .map(|i| (i, 1))
@@ -584,6 +555,9 @@ pub(crate) fn run(options: &Options, deadline: &Deadline) -> Result<serde_json::
         } else {
             (BTreeMap::new(), None)
         };
+        let mut shared_inputs = Vec::new();
+        let mut shared_retained = shared::request_bytes(&typed_roots)?;
+        let mut shared_graphs = None;
         for (index, case) in cases.iter().enumerate() {
             let requests = graph_crypto::RequestProver::new_with_context(
                 &caches.crypto,
@@ -622,8 +596,26 @@ pub(crate) fn run(options: &Options, deadline: &Deadline) -> Result<serde_json::
                 reports.push(serde_json::json!({"transaction":index,"family":"crypto","seconds":start.elapsed().as_secs_f64(),"native_imports":proof.report.native_cache_hits,"outer_leaves":proof.report.outer_leaves,"outer_parents":proof.report.outer_parents}));
                 roots.push(RequestRoot::Machine(proof));
             }
-            let branch_roots = branches(case, &roots, &caches, &execution, &outer, deadline)?;
+            let branch_roots = branches(
+                case,
+                &roots,
+                &caches,
+                &execution,
+                &outer,
+                deadline,
+                options
+                    .typed_recursion()
+                    .then_some(super::typed_graph::ROOT_BYTES - shared_retained),
+            )?;
             recursive_proofs += branch_roots.len();
+            if options.typed_recursion() {
+                shared_retained = shared::add_branches(shared_retained, &branch_roots)?;
+                shared_inputs.push(shared::Inputs {
+                    roots,
+                    branches: branch_roots,
+                });
+                continue;
+            }
             let (root, rows) = prove_graph(
                 case,
                 &roots,
@@ -644,6 +636,30 @@ pub(crate) fn run(options: &Options, deadline: &Deadline) -> Result<serde_json::
             graphs.push(root);
         }
         deadline.check()?;
+        if options.typed_recursion() {
+            ensure(typed_roots.is_empty(), "unused typed request roots")?;
+            let (roots, graph_reports, pipeline) = shared::prove_all(
+                &cases,
+                &shared_inputs,
+                shared_retained,
+                &caches,
+                &execution,
+                options,
+                graph_width,
+                deadline,
+            )?;
+            for (index, report) in graph_reports.into_iter().enumerate() {
+                let rows = report["measurements"]
+                    .as_array()
+                    .ok_or("shared graph telemetry")?;
+                recursive_proofs += rows.len();
+                reports.push(serde_json::json!({"transaction":index,"family":"graph",
+                    "leaves":rows,"shared_preparation":true}));
+            }
+            graphs = roots;
+            shared_graphs = Some(pipeline);
+            drop(shared_inputs);
+        }
         let plan = crate::ordered_aggregation::Plan::new(
             cases[0].tree.label(),
             cases[0].context.context,
@@ -747,7 +763,7 @@ pub(crate) fn run(options: &Options, deadline: &Deadline) -> Result<serde_json::
             serde_json::json!({"scope":"aggregation-from-native-components","complete":true,"input_sha3":input_sha3,
 "source_sha3":hex(&crate::graph_proofs::compiled_source_fingerprint()),"selection_sha3":selection_sha3,"native_proofs_created":0,"native_components_verified":native_count,
 "recursive_proofs":recursive_proofs,"import_and_planning_seconds":import_seconds,"stages":reports,"final":final_rows,
-"recursion_backend":options.recursion_backend,"typed_requests":typed_report,
+"recursion_backend":options.recursion_backend,"typed_requests":typed_report,"typed_graphs":shared_graphs,
             "final_cpu_verified":true,"artifact_round_trip":true,"public_mutation_rejected":true,"final_verification_seconds":final_verification_seconds,
             "artifact_sha3":artifact_sha3,"proof_mutation_rejected":true,"order_mutation_rejected":true,"identity":execution.aggregation_identity_report()?}),
         )

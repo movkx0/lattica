@@ -1,0 +1,9 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Rejected query-scoped interning candidate</title>
+<style>body{font:17px/1.55 system-ui;max-width:1000px;margin:40px auto;padding:0 24px;color:#18212b}li{margin:.65em 0}</style>
+<h1>Query-scoped interning: rejected parent regression</h1>
+<p>November 12, 2026 · Historical candidate · Not enabled</p>
+<p>The candidate was removed after its recursive parent exceeded the existing eight-table/64-quotient-matrix layout limit. Eight leaf proofs had verified successfully, but the earlier four focused checks did not cover this large parent. No completion-time improvement is claimed.</p>
+<p>The candidate recycled optional compiler expression caches between PCS queries. Its synthetic memory test established lower cache retention, but that was insufficient to qualify the change for recursive aggregation.</p>
+<p>All four candidate source changes were restored to the committed <code>188dabb</code> compact-reduction implementation. That source subsequently completed both eight-leaf subtrees in the r116 baseline. The <a href="gpu-recursion-shared-graphs-2026-11-12.html">shared graph and parent preparation pass</a> uses that committed compiler.</p>
+<p><a href="gpu-recursion-query-scopes-2026-11-12.json">Historical source hashes, build/test receipts and failed parent validation</a>. Historical focused-test results apply only to the rejected candidate. No fresh complete N3/N4 workflow or security audit was performed.</p>
+</html>

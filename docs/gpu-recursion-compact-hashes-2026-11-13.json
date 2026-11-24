@@ -1,0 +1,1241 @@
+{
+  "schema": "lattica-recursion-compact-hash-trace-v1",
+  "date": "2026-11-13",
+  "status": "accepted-default-with-modest-measured-gains",
+  "scope": "Archived N4 graph and SHAKE subtrees; fresh recursive GPU proofs, independently CPU verified. No new full transaction-generation or aggregation run.",
+  "base_commit": "188dabb",
+  "implementation": {
+    "main_columns_per_hash": {
+      "before": 103,
+      "after": 95
+    },
+    "preprocessed_columns_per_hash": {
+      "before": 35,
+      "after": 28
+    },
+    "hash_lanes": 2,
+    "lookup_columns_per_table_row": {
+      "before": 18,
+      "after": 27
+    },
+    "description": "Store permutation inputs once; apply the authenticated involutive swap in the wire lookup. Store a checked consecutive output base address instead of eight addresses.",
+    "default": true,
+    "template_domain": "single-hash-input-copy-and-output-base-v1"
+  },
+  "comparisons": {
+    "graphs": {
+      "baseline": "gpu-agg-compact-hash-baseline-graphs-r126",
+      "candidate": "gpu-agg-compact-hash-graphs-r125",
+      "baseline_seconds": 70.14499716,
+      "candidate_seconds": 67.55741752,
+      "pipeline_reduction_percent": 3.6889011971841135,
+      "root_gpu_reduction_percent": 6.349396304273114,
+      "root_committed_lde_fields_before": 11187548672,
+      "root_committed_lde_fields_after": 10835227136,
+      "root_committed_lde_fields_reduction_percent": 3.1492290789472466,
+      "changed_sources": [
+        "lattica-prover-p3/src/block_v2/machine/recursion/air.rs",
+        "lattica-prover-p3/src/block_v2/machine/recursion/tests.rs",
+        "lattica-prover-p3/src/block_v2/machine/recursion.rs"
+      ]
+    },
+    "shake": {
+      "baseline": "gpu-agg-shared-crypto-candidate-r120",
+      "candidate": "gpu-agg-compact-hash-shake-r125",
+      "baseline_seconds": 55.274533452,
+      "candidate_seconds": 53.82048831,
+      "pipeline_reduction_percent": 2.6305878153864093,
+      "root_gpu_reduction_percent": 3.109774079255445,
+      "root_committed_lde_fields_before": 8432681984,
+      "root_committed_lde_fields_after": 8212481024,
+      "root_committed_lde_fields_reduction_percent": 2.611280259563975,
+      "changed_sources": [
+        "lattica-prover-p3/src/block_v2/machine/recursion/air.rs",
+        "lattica-prover-p3/src/block_v2/machine/recursion/tests.rs",
+        "lattica-prover-p3/src/block_v2/machine/recursion.rs"
+      ]
+    }
+  },
+  "profiles": [
+    {
+      "label": "gpu-agg-compact-hash-baseline-graphs-r126",
+      "receipt": ".tools/pq-opencl-opt/runs/gpu-agg-compact-hash-baseline-graphs-r126.json",
+      "receipt_sha256": "f6ca09722dc522256baca35a43393e05eac71d79808dd3509bd859ca6b9dc2a4",
+      "raw_log": ".tools/pq-opencl-opt/runs/gpu-agg-compact-hash-baseline-graphs-r126.log",
+      "raw_log_sha256": "a6f3f68e99916d7a6e2cf3a829e0e668386d881ab4b7dda638d5fad3f3ea2784",
+      "status": "passed",
+      "wall_seconds": 75.77350112400018,
+      "tests": [],
+      "options": {
+        "bundle": "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-r42",
+        "command": "architecture-graph",
+        "compiler_policy": "typed-batch",
+        "family": "graph",
+        "first_leaf": 4,
+        "gpu_managed_mib": "auto",
+        "group_width": 1,
+        "identity": "cpu",
+        "input": "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-r42/inputs.json",
+        "leaves": 8,
+        "max_components": 18446744073709551615,
+        "memory_qualification": null,
+        "native_source": "revalidate-archive",
+        "ntt_profile": "smalltile",
+        "output": "",
+        "parallel": true,
+        "poseidon_profile": "baseline",
+        "preparation_workers": 16,
+        "profile": "grouped-v5",
+        "query_gather": "batch",
+        "recursion_backend": "typed",
+        "repetitions": 2,
+        "request": null,
+        "seconds": 90,
+        "selection": null,
+        "template_preparation": "worker",
+        "transactions": 4,
+        "workload": 0
+      },
+      "input_sha3": "55ac26cf63b7660ed1e62367466bccb71355affbd4befd9831e2cdf83e8eeda6",
+      "archive_source_sha3": "44078dcedec6e35a52ff5d4225fc82a2b5b274a8c40376696ee3b843b7d69b37",
+      "pipeline_seconds": 70.14499716,
+      "proof_count": 18,
+      "cpu_verified_proofs": 18,
+      "mutation_and_cpu_checks": [
+        {},
+        {},
+        {
+          "independent_cpu_verification": true,
+          "order_mutation_rejected": true,
+          "public_mutation_rejected": true
+        },
+        {
+          "independent_cpu_verification": true,
+          "order_mutation_rejected": true,
+          "public_mutation_rejected": true
+        }
+      ],
+      "public_template_cache": {
+        "hits": 9,
+        "misses": 9
+      },
+      "root_gpu_seconds": [
+        12.413255808,
+        11.849491297
+      ],
+      "root_geometry": {
+        "committed_lde_fields": 11187548672,
+        "degree_gate": true,
+        "lde_payload_bytes": 89500389376,
+        "quotient_gate": true,
+        "tables": [
+          {
+            "active_rows": 131072,
+            "committed_lde_fields": 1698693120,
+            "constraint_degree": 4,
+            "constraints": 310,
+            "first_row": 0,
+            "height": 131072,
+            "main_width": 92,
+            "permutation_width": 96,
+            "preprocessed_width": 146,
+            "quotient_chunks": 8,
+            "table": "arithmetic"
+          },
+          {
+            "active_rows": 5315,
+            "committed_lde_fields": 106168320,
+            "constraint_degree": 4,
+            "constraints": 310,
+            "first_row": 131072,
+            "height": 8192,
+            "main_width": 92,
+            "permutation_width": 96,
+            "preprocessed_width": 146,
+            "quotient_chunks": 8,
+            "table": "arithmetic"
+          },
+          {
+            "active_rows": 55624,
+            "committed_lde_fields": 624951296,
+            "constraint_degree": 4,
+            "constraints": 108,
+            "first_row": 0,
+            "height": 65536,
+            "main_width": 63,
+            "permutation_width": 66,
+            "preprocessed_width": 98,
+            "quotient_chunks": 8,
+            "table": "cubic-extension"
+          },
+          {
+            "active_rows": 484749,
+            "committed_lde_fields": 7063207936,
+            "constraint_degree": 8,
+            "constraints": 406,
+            "first_row": 0,
+            "height": 524288,
+            "main_width": 206,
+            "permutation_width": 18,
+            "preprocessed_width": 70,
+            "quotient_chunks": 16,
+            "table": "poseidon2"
+          },
+          {
+            "active_rows": 1,
+            "committed_lde_fields": 29184,
+            "constraint_degree": 2,
+            "constraints": 13,
+            "first_row": 0,
+            "height": 8,
+            "main_width": 1,
+            "permutation_width": 6,
+            "preprocessed_width": 36,
+            "quotient_chunks": 8,
+            "table": "public-bindings"
+          },
+          {
+            "active_rows": 248832,
+            "committed_lde_fields": 1694498816,
+            "constraint_degree": 4,
+            "constraints": 60,
+            "first_row": 0,
+            "height": 262144,
+            "main_width": 38,
+            "permutation_width": 42,
+            "preprocessed_width": 51,
+            "quotient_chunks": 8,
+            "table": "typed-opening-reductions"
+          }
+        ],
+        "template_identity": [
+          20,
+          93,
+          193,
+          182,
+          223,
+          40,
+          63,
+          142,
+          58,
+          125,
+          48,
+          188,
+          140,
+          56,
+          131,
+          115,
+          139,
+          100,
+          122,
+          159,
+          231,
+          85,
+          19,
+          124,
+          131,
+          157,
+          68,
+          29,
+          176,
+          54,
+          17,
+          124
+        ],
+        "typed": {
+          "hash_input_count_bound": 128,
+          "merkle_swap_hashes": 290816,
+          "reduction_chains": 89088,
+          "reduction_terms": 1722368,
+          "relocated_hash_inputs": 3082056,
+          "removed_merkle_selections": 2326528,
+          "removed_scalar_operations": 12298056
+        }
+      },
+      "root_gpu_mean_seconds": 12.131373552500001
+    },
+    {
+      "label": "gpu-agg-compact-hash-graphs-r125",
+      "receipt": ".tools/pq-opencl-opt/runs/gpu-agg-compact-hash-graphs-r125.json",
+      "receipt_sha256": "7489f922fd0db0543289e14f67f52aa86c3690e2f490dc5736912da0c7e5b3e7",
+      "raw_log": ".tools/pq-opencl-opt/runs/gpu-agg-compact-hash-graphs-r125.log",
+      "raw_log_sha256": "9673aa803d1b44dfe86d8f51620305f753e67ea5897ece9952ed659d3221aed1",
+      "status": "passed",
+      "wall_seconds": 71.72463186806999,
+      "tests": [],
+      "options": {
+        "bundle": "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-r42",
+        "command": "architecture-graph",
+        "compiler_policy": "typed-batch",
+        "family": "graph",
+        "first_leaf": 4,
+        "gpu_managed_mib": "auto",
+        "group_width": 1,
+        "identity": "cpu",
+        "input": "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-r42/inputs.json",
+        "leaves": 8,
+        "max_components": 18446744073709551615,
+        "memory_qualification": null,
+        "native_source": "revalidate-archive",
+        "ntt_profile": "smalltile",
+        "output": "",
+        "parallel": true,
+        "poseidon_profile": "baseline",
+        "preparation_workers": 16,
+        "profile": "grouped-v5",
+        "query_gather": "batch",
+        "recursion_backend": "typed",
+        "repetitions": 2,
+        "request": null,
+        "seconds": 120,
+        "selection": null,
+        "template_preparation": "worker",
+        "transactions": 4,
+        "workload": 0
+      },
+      "input_sha3": "55ac26cf63b7660ed1e62367466bccb71355affbd4befd9831e2cdf83e8eeda6",
+      "archive_source_sha3": "44078dcedec6e35a52ff5d4225fc82a2b5b274a8c40376696ee3b843b7d69b37",
+      "pipeline_seconds": 67.55741752,
+      "proof_count": 18,
+      "cpu_verified_proofs": 18,
+      "mutation_and_cpu_checks": [
+        {},
+        {},
+        {
+          "independent_cpu_verification": true,
+          "order_mutation_rejected": true,
+          "public_mutation_rejected": true
+        },
+        {
+          "independent_cpu_verification": true,
+          "order_mutation_rejected": true,
+          "public_mutation_rejected": true
+        }
+      ],
+      "public_template_cache": {
+        "hits": 9,
+        "misses": 9
+      },
+      "root_gpu_seconds": [
+        11.447949671,
+        11.274259466
+      ],
+      "root_geometry": {
+        "committed_lde_fields": 10835227136,
+        "degree_gate": true,
+        "lde_payload_bytes": 86681817088,
+        "quotient_gate": true,
+        "tables": [
+          {
+            "active_rows": 131072,
+            "committed_lde_fields": 1698693120,
+            "constraint_degree": 4,
+            "constraints": 310,
+            "first_row": 0,
+            "height": 131072,
+            "main_width": 92,
+            "permutation_width": 96,
+            "preprocessed_width": 146,
+            "quotient_chunks": 8,
+            "table": "arithmetic"
+          },
+          {
+            "active_rows": 5204,
+            "committed_lde_fields": 106168320,
+            "constraint_degree": 4,
+            "constraints": 310,
+            "first_row": 131072,
+            "height": 8192,
+            "main_width": 92,
+            "permutation_width": 96,
+            "preprocessed_width": 146,
+            "quotient_chunks": 8,
+            "table": "arithmetic"
+          },
+          {
+            "active_rows": 55439,
+            "committed_lde_fields": 624951296,
+            "constraint_degree": 4,
+            "constraints": 108,
+            "first_row": 0,
+            "height": 65536,
+            "main_width": 63,
+            "permutation_width": 66,
+            "preprocessed_width": 98,
+            "quotient_chunks": 8,
+            "table": "cubic-extension"
+          },
+          {
+            "active_rows": 478533,
+            "committed_lde_fields": 6710886400,
+            "constraint_degree": 8,
+            "constraints": 377,
+            "first_row": 0,
+            "height": 524288,
+            "main_width": 190,
+            "permutation_width": 27,
+            "preprocessed_width": 56,
+            "quotient_chunks": 16,
+            "table": "poseidon2"
+          },
+          {
+            "active_rows": 1,
+            "committed_lde_fields": 29184,
+            "constraint_degree": 2,
+            "constraints": 13,
+            "first_row": 0,
+            "height": 8,
+            "main_width": 1,
+            "permutation_width": 6,
+            "preprocessed_width": 36,
+            "quotient_chunks": 8,
+            "table": "public-bindings"
+          },
+          {
+            "active_rows": 242688,
+            "committed_lde_fields": 1694498816,
+            "constraint_degree": 4,
+            "constraints": 60,
+            "first_row": 0,
+            "height": 262144,
+            "main_width": 38,
+            "permutation_width": 42,
+            "preprocessed_width": 51,
+            "quotient_chunks": 8,
+            "table": "typed-opening-reductions"
+          }
+        ],
+        "template_identity": [
+          28,
+          239,
+          242,
+          177,
+          80,
+          16,
+          199,
+          93,
+          79,
+          88,
+          152,
+          76,
+          155,
+          198,
+          115,
+          144,
+          182,
+          26,
+          205,
+          202,
+          242,
+          27,
+          165,
+          133,
+          156,
+          26,
+          226,
+          56,
+          233,
+          191,
+          253,
+          25
+        ],
+        "typed": {
+          "hash_input_count_bound": 128,
+          "merkle_swap_hashes": 290816,
+          "reduction_chains": 89088,
+          "reduction_terms": 1679360,
+          "relocated_hash_inputs": 3038472,
+          "removed_merkle_selections": 2326528,
+          "removed_scalar_operations": 12082440
+        }
+      },
+      "root_gpu_mean_seconds": 11.3611045685
+    },
+    {
+      "label": "gpu-agg-shared-crypto-candidate-r120",
+      "receipt": ".tools/pq-opencl-opt/runs/gpu-agg-shared-crypto-candidate-r120.json",
+      "receipt_sha256": "8a03aba5f02a4ed401dbf8f500c3fbc41bf36d8b526091048f75d8b8169445c9",
+      "raw_log": ".tools/pq-opencl-opt/runs/gpu-agg-shared-crypto-candidate-r120.log",
+      "raw_log_sha256": "53b85fca2efcf1f4d88d0933e2969f8ac40b4405cb93dd43e653421d5aaa43b9",
+      "status": "passed",
+      "wall_seconds": 61.438150313915685,
+      "tests": [],
+      "options": {
+        "bundle": "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-r40",
+        "command": "architecture-request",
+        "compiler_policy": "typed-batch",
+        "family": "shake",
+        "first_leaf": 0,
+        "gpu_managed_mib": "auto",
+        "group_width": 2,
+        "identity": "cpu",
+        "input": "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-r40/inputs.json",
+        "leaves": 8,
+        "max_components": 18446744073709551615,
+        "memory_qualification": null,
+        "native_source": "revalidate-archive",
+        "ntt_profile": "smalltile",
+        "output": "",
+        "parallel": true,
+        "poseidon_profile": "baseline",
+        "preparation_workers": 16,
+        "profile": "grouped-v5",
+        "query_gather": "batch",
+        "recursion_backend": "typed",
+        "repetitions": 2,
+        "request": 6,
+        "seconds": 90,
+        "selection": null,
+        "template_preparation": "worker",
+        "transactions": 4,
+        "workload": 0
+      },
+      "input_sha3": "55ac26cf63b7660ed1e62367466bccb71355affbd4befd9831e2cdf83e8eeda6",
+      "archive_source_sha3": "dc88fcf211fd5cb71d24845f5238a7b049727629863e3903afe79c23e7ba1ba8",
+      "pipeline_seconds": 55.274533452,
+      "proof_count": 12,
+      "cpu_verified_proofs": 12,
+      "mutation_and_cpu_checks": [
+        {},
+        {
+          "independent_cpu_verification": true
+        },
+        {
+          "order_mutation_rejected": true,
+          "public_mutation_rejected": true
+        },
+        {
+          "order_mutation_rejected": true,
+          "public_mutation_rejected": true
+        }
+      ],
+      "public_template_cache": {
+        "hits": 6,
+        "misses": 6
+      },
+      "root_gpu_seconds": [
+        8.762132975,
+        8.604512165
+      ],
+      "root_geometry": {
+        "committed_lde_fields": 8432681984,
+        "degree_gate": true,
+        "lde_payload_bytes": 67461455872,
+        "quotient_gate": true,
+        "tables": [
+          {
+            "active_rows": 88446,
+            "committed_lde_fields": 1698693120,
+            "constraint_degree": 4,
+            "constraints": 310,
+            "first_row": 0,
+            "height": 131072,
+            "main_width": 92,
+            "permutation_width": 96,
+            "preprocessed_width": 146,
+            "quotient_chunks": 8,
+            "table": "arithmetic"
+          },
+          {
+            "active_rows": 35534,
+            "committed_lde_fields": 624951296,
+            "constraint_degree": 4,
+            "constraints": 108,
+            "first_row": 0,
+            "height": 65536,
+            "main_width": 63,
+            "permutation_width": 66,
+            "preprocessed_width": 98,
+            "quotient_chunks": 8,
+            "table": "cubic-extension"
+          },
+          {
+            "active_rows": 262144,
+            "committed_lde_fields": 3531603968,
+            "constraint_degree": 8,
+            "constraints": 406,
+            "first_row": 0,
+            "height": 262144,
+            "main_width": 206,
+            "permutation_width": 18,
+            "preprocessed_width": 70,
+            "quotient_chunks": 16,
+            "table": "poseidon2"
+          },
+          {
+            "active_rows": 58054,
+            "committed_lde_fields": 882900992,
+            "constraint_degree": 8,
+            "constraints": 406,
+            "first_row": 262144,
+            "height": 65536,
+            "main_width": 206,
+            "permutation_width": 18,
+            "preprocessed_width": 70,
+            "quotient_chunks": 16,
+            "table": "poseidon2"
+          },
+          {
+            "active_rows": 1,
+            "committed_lde_fields": 33792,
+            "constraint_degree": 2,
+            "constraints": 13,
+            "first_row": 0,
+            "height": 8,
+            "main_width": 1,
+            "permutation_width": 6,
+            "preprocessed_width": 54,
+            "quotient_chunks": 8,
+            "table": "public-bindings"
+          },
+          {
+            "active_rows": 162944,
+            "committed_lde_fields": 1694498816,
+            "constraint_degree": 4,
+            "constraints": 60,
+            "first_row": 0,
+            "height": 262144,
+            "main_width": 38,
+            "permutation_width": 42,
+            "preprocessed_width": 51,
+            "quotient_chunks": 8,
+            "table": "typed-opening-reductions"
+          }
+        ],
+        "template_identity": [
+          178,
+          3,
+          127,
+          152,
+          235,
+          233,
+          248,
+          16,
+          20,
+          152,
+          107,
+          202,
+          253,
+          36,
+          254,
+          42,
+          127,
+          43,
+          92,
+          86,
+          119,
+          52,
+          160,
+          49,
+          198,
+          220,
+          222,
+          198,
+          25,
+          138,
+          25,
+          99
+        ],
+        "typed": {
+          "hash_input_count_bound": 128,
+          "merkle_swap_hashes": 197760,
+          "reduction_chains": 56704,
+          "reduction_terms": 1133568,
+          "relocated_hash_inputs": 2044475,
+          "removed_merkle_selections": 1582080,
+          "removed_scalar_operations": 8160827
+        }
+      },
+      "root_gpu_mean_seconds": 8.68332257
+    },
+    {
+      "label": "gpu-agg-compact-hash-shake-r125",
+      "receipt": ".tools/pq-opencl-opt/runs/gpu-agg-compact-hash-shake-r125.json",
+      "receipt_sha256": "087f244527a580b4fcd2e907559260a3a8967c5abe70a378f33f17f75db19448",
+      "raw_log": ".tools/pq-opencl-opt/runs/gpu-agg-compact-hash-shake-r125.log",
+      "raw_log_sha256": "63a758a16058ddb12b8ed3bdfd615ccd4cd1c92dcf49e3ab99e45f9acbc1f6f1",
+      "status": "passed",
+      "wall_seconds": 59.445222391048446,
+      "tests": [],
+      "options": {
+        "bundle": "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-r40",
+        "command": "architecture-request",
+        "compiler_policy": "typed-batch",
+        "family": "shake",
+        "first_leaf": 0,
+        "gpu_managed_mib": "auto",
+        "group_width": 2,
+        "identity": "cpu",
+        "input": "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-r40/inputs.json",
+        "leaves": 8,
+        "max_components": 18446744073709551615,
+        "memory_qualification": null,
+        "native_source": "revalidate-archive",
+        "ntt_profile": "smalltile",
+        "output": "",
+        "parallel": true,
+        "poseidon_profile": "baseline",
+        "preparation_workers": 16,
+        "profile": "grouped-v5",
+        "query_gather": "batch",
+        "recursion_backend": "typed",
+        "repetitions": 2,
+        "request": 6,
+        "seconds": 90,
+        "selection": null,
+        "template_preparation": "worker",
+        "transactions": 4,
+        "workload": 0
+      },
+      "input_sha3": "55ac26cf63b7660ed1e62367466bccb71355affbd4befd9831e2cdf83e8eeda6",
+      "archive_source_sha3": "dc88fcf211fd5cb71d24845f5238a7b049727629863e3903afe79c23e7ba1ba8",
+      "pipeline_seconds": 53.82048831,
+      "proof_count": 12,
+      "cpu_verified_proofs": 12,
+      "mutation_and_cpu_checks": [
+        {},
+        {
+          "independent_cpu_verification": true
+        },
+        {
+          "order_mutation_rejected": true,
+          "public_mutation_rejected": true
+        },
+        {
+          "order_mutation_rejected": true,
+          "public_mutation_rejected": true
+        }
+      ],
+      "public_template_cache": {
+        "hits": 6,
+        "misses": 6
+      },
+      "root_gpu_seconds": [
+        8.52114352,
+        8.305438191
+      ],
+      "root_geometry": {
+        "committed_lde_fields": 8212481024,
+        "degree_gate": true,
+        "lde_payload_bytes": 65699848192,
+        "quotient_gate": true,
+        "tables": [
+          {
+            "active_rows": 88390,
+            "committed_lde_fields": 1698693120,
+            "constraint_degree": 4,
+            "constraints": 310,
+            "first_row": 0,
+            "height": 131072,
+            "main_width": 92,
+            "permutation_width": 96,
+            "preprocessed_width": 146,
+            "quotient_chunks": 8,
+            "table": "arithmetic"
+          },
+          {
+            "active_rows": 35440,
+            "committed_lde_fields": 624951296,
+            "constraint_degree": 4,
+            "constraints": 108,
+            "first_row": 0,
+            "height": 65536,
+            "main_width": 63,
+            "permutation_width": 66,
+            "preprocessed_width": 98,
+            "quotient_chunks": 8,
+            "table": "cubic-extension"
+          },
+          {
+            "active_rows": 262144,
+            "committed_lde_fields": 3355443200,
+            "constraint_degree": 8,
+            "constraints": 377,
+            "first_row": 0,
+            "height": 262144,
+            "main_width": 190,
+            "permutation_width": 27,
+            "preprocessed_width": 56,
+            "quotient_chunks": 16,
+            "table": "poseidon2"
+          },
+          {
+            "active_rows": 54946,
+            "committed_lde_fields": 838860800,
+            "constraint_degree": 8,
+            "constraints": 377,
+            "first_row": 262144,
+            "height": 65536,
+            "main_width": 190,
+            "permutation_width": 27,
+            "preprocessed_width": 56,
+            "quotient_chunks": 16,
+            "table": "poseidon2"
+          },
+          {
+            "active_rows": 1,
+            "committed_lde_fields": 33792,
+            "constraint_degree": 2,
+            "constraints": 13,
+            "first_row": 0,
+            "height": 8,
+            "main_width": 1,
+            "permutation_width": 6,
+            "preprocessed_width": 54,
+            "quotient_chunks": 8,
+            "table": "public-bindings"
+          },
+          {
+            "active_rows": 159872,
+            "committed_lde_fields": 1694498816,
+            "constraint_degree": 4,
+            "constraints": 60,
+            "first_row": 0,
+            "height": 262144,
+            "main_width": 38,
+            "permutation_width": 42,
+            "preprocessed_width": 51,
+            "quotient_chunks": 8,
+            "table": "typed-opening-reductions"
+          }
+        ],
+        "template_identity": [
+          58,
+          129,
+          253,
+          161,
+          120,
+          92,
+          93,
+          25,
+          65,
+          2,
+          25,
+          177,
+          4,
+          212,
+          181,
+          108,
+          138,
+          244,
+          222,
+          144,
+          117,
+          157,
+          248,
+          31,
+          198,
+          117,
+          70,
+          221,
+          139,
+          234,
+          29,
+          173
+        ],
+        "typed": {
+          "hash_input_count_bound": 128,
+          "merkle_swap_hashes": 197760,
+          "reduction_chains": 56704,
+          "reduction_terms": 1112064,
+          "relocated_hash_inputs": 2022683,
+          "removed_merkle_selections": 1582080,
+          "removed_scalar_operations": 8053019
+        }
+      },
+      "root_gpu_mean_seconds": 8.413290855500001
+    },
+    {
+      "label": "gpu-agg-compact-hash-graph12-r125",
+      "receipt": ".tools/pq-opencl-opt/runs/gpu-agg-compact-hash-graph12-r125.json",
+      "receipt_sha256": "902f1f9ed1f384d0c66186dc59aaf07f8016e93c3f4145f4910a25f200babf4b",
+      "raw_log": ".tools/pq-opencl-opt/runs/gpu-agg-compact-hash-graph12-r125.log",
+      "raw_log_sha256": "6df1e43516fafefb6bf80f377de48d6e00d6c3b3212fb0e467d7dc876608eda9",
+      "status": "passed",
+      "wall_seconds": 47.2236428798642,
+      "tests": [],
+      "options": {
+        "bundle": "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-native-group12-r96",
+        "command": "architecture-graph",
+        "compiler_policy": "typed-batch",
+        "family": "graph",
+        "first_leaf": 4,
+        "gpu_managed_mib": "auto",
+        "group_width": 16,
+        "identity": "cpu",
+        "input": "/home/access/code/lattica/.tools/gpu-recursive-aggregation/.tools/gpu-aggregation/bundles/n4-native-group12-r96/inputs.json",
+        "leaves": 12,
+        "max_components": 18446744073709551615,
+        "memory_qualification": null,
+        "native_source": "revalidate-archive",
+        "ntt_profile": "smalltile",
+        "output": "",
+        "parallel": true,
+        "poseidon_profile": "baseline",
+        "preparation_workers": 16,
+        "profile": "grouped-v5",
+        "query_gather": "batch",
+        "recursion_backend": "typed",
+        "repetitions": 3,
+        "request": null,
+        "seconds": 75,
+        "selection": null,
+        "template_preparation": "worker",
+        "transactions": 4,
+        "workload": 0
+      },
+      "input_sha3": "6861bd1272eeacec13f820f7c098c81076b56752ca55fed2393e21fbd31d200e",
+      "archive_source_sha3": "f54b37adc41e224648001261b442fb1cb148019bbf4158f5e2b670b2084d5348",
+      "pipeline_seconds": 42.97025211,
+      "proof_count": 3,
+      "cpu_verified_proofs": 3,
+      "mutation_and_cpu_checks": [
+        {},
+        {},
+        {
+          "independent_cpu_verification": true,
+          "order_mutation_rejected": false,
+          "public_mutation_rejected": true
+        },
+        {
+          "independent_cpu_verification": true,
+          "order_mutation_rejected": false,
+          "public_mutation_rejected": true
+        },
+        {
+          "independent_cpu_verification": true,
+          "order_mutation_rejected": false,
+          "public_mutation_rejected": true
+        }
+      ],
+      "public_template_cache": {
+        "hits": 2,
+        "misses": 1
+      },
+      "root_gpu_seconds": [
+        9.264153256,
+        9.335357514,
+        8.97283462
+      ],
+      "root_geometry": {
+        "committed_lde_fields": 9051337216,
+        "degree_gate": true,
+        "lde_payload_bytes": 72410697728,
+        "quotient_gate": true,
+        "tables": [
+          {
+            "active_rows": 124900,
+            "committed_lde_fields": 1698693120,
+            "constraint_degree": 4,
+            "constraints": 310,
+            "first_row": 0,
+            "height": 131072,
+            "main_width": 92,
+            "permutation_width": 96,
+            "preprocessed_width": 146,
+            "quotient_chunks": 8,
+            "table": "arithmetic"
+          },
+          {
+            "active_rows": 34398,
+            "committed_lde_fields": 624951296,
+            "constraint_degree": 4,
+            "constraints": 108,
+            "first_row": 0,
+            "height": 65536,
+            "main_width": 63,
+            "permutation_width": 66,
+            "preprocessed_width": 98,
+            "quotient_chunks": 8,
+            "table": "cubic-extension"
+          },
+          {
+            "active_rows": 262144,
+            "committed_lde_fields": 3355443200,
+            "constraint_degree": 8,
+            "constraints": 377,
+            "first_row": 0,
+            "height": 262144,
+            "main_width": 190,
+            "permutation_width": 27,
+            "preprocessed_width": 56,
+            "quotient_chunks": 16,
+            "table": "poseidon2"
+          },
+          {
+            "active_rows": 129069,
+            "committed_lde_fields": 1677721600,
+            "constraint_degree": 8,
+            "constraints": 377,
+            "first_row": 262144,
+            "height": 131072,
+            "main_width": 190,
+            "permutation_width": 27,
+            "preprocessed_width": 56,
+            "quotient_chunks": 16,
+            "table": "poseidon2"
+          },
+          {
+            "active_rows": 1,
+            "committed_lde_fields": 29184,
+            "constraint_degree": 2,
+            "constraints": 13,
+            "first_row": 0,
+            "height": 8,
+            "main_width": 1,
+            "permutation_width": 6,
+            "preprocessed_width": 36,
+            "quotient_chunks": 8,
+            "table": "public-bindings"
+          },
+          {
+            "active_rows": 190632,
+            "committed_lde_fields": 1694498816,
+            "constraint_degree": 4,
+            "constraints": 60,
+            "first_row": 0,
+            "height": 262144,
+            "main_width": 38,
+            "permutation_width": 42,
+            "preprocessed_width": 51,
+            "quotient_chunks": 8,
+            "table": "typed-opening-reductions"
+          }
+        ],
+        "template_identity": [
+          153,
+          67,
+          221,
+          79,
+          79,
+          83,
+          127,
+          188,
+          234,
+          252,
+          237,
+          210,
+          170,
+          75,
+          63,
+          253,
+          64,
+          96,
+          181,
+          80,
+          167,
+          0,
+          235,
+          31,
+          110,
+          224,
+          217,
+          114,
+          240,
+          41,
+          164,
+          26
+        ],
+        "typed": {
+          "hash_input_count_bound": 128,
+          "merkle_swap_hashes": 278016,
+          "reduction_chains": 27720,
+          "reduction_terms": 1440504,
+          "relocated_hash_inputs": 2344004,
+          "removed_merkle_selections": 2224128,
+          "removed_scalar_operations": 10332692
+        }
+      },
+      "root_gpu_mean_seconds": 9.190781796666666
+    }
+  ],
+  "larger_group_interpretation": "Three twelve-leaf proofs passed in a 42.97-second pipeline. No current-code baseline was run for this group; the older r111 reference also differs in compiler source and table geometry. No speedup is attributed to this change for the larger group.",
+  "validation": [
+    {
+      "label": "gpu-agg-core-build-r125",
+      "receipt": ".tools/pq-opencl-opt/runs/gpu-agg-core-build-r125.json",
+      "receipt_sha256": "5c3a010b067b89ab4297b94d3eefeffb3cb5f03f2e0e59514ccdee5326aa1eab",
+      "raw_log": ".tools/pq-opencl-opt/runs/gpu-agg-core-build-r125.log",
+      "raw_log_sha256": "eb73021ec042c31426ed188b93ab5817e6d255620e75a243c09ec3f769b29cf9",
+      "status": "passed",
+      "wall_seconds": 172.873261830071,
+      "tests": []
+    },
+    {
+      "label": "gpu-agg-runner-build-r125",
+      "receipt": ".tools/pq-opencl-opt/runs/gpu-agg-runner-build-r125.json",
+      "receipt_sha256": "acbaa878ea0c4efb353ec47cfae00960cef35076d6e817dd906018325cbf4166",
+      "raw_log": ".tools/pq-opencl-opt/runs/gpu-agg-runner-build-r125.log",
+      "raw_log_sha256": "35ae81bdf325f9a79f0d484eb404503fb9ba31c784a40dbb5380f23c78bae605",
+      "status": "passed",
+      "wall_seconds": 164.80917111597955,
+      "tests": []
+    },
+    {
+      "label": "gpu-agg-compact-hash-gpu-tests-r125",
+      "receipt": ".tools/pq-opencl-opt/runs/gpu-agg-compact-hash-gpu-tests-r125.json",
+      "receipt_sha256": "e185b6692cde1c43e17be225df73de523aad24479433414deee49e27b15faaba",
+      "raw_log": ".tools/pq-opencl-opt/runs/gpu-agg-compact-hash-gpu-tests-r125.log",
+      "raw_log_sha256": "ee17eba2edca66a9654266dce373fde165c5c35a27795a5de276bbb13f777118",
+      "status": "passed",
+      "wall_seconds": 34.38507715403102,
+      "tests": [
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 2108 filtered out; finished in 32.85s"
+      ]
+    },
+    {
+      "label": "gpu-agg-core-build-r126",
+      "receipt": ".tools/pq-opencl-opt/runs/gpu-agg-core-build-r126.json",
+      "receipt_sha256": "5625d6eae67433a9c06f3e6513d7cbf31362a7575701dd4767ff206b72011f39",
+      "raw_log": ".tools/pq-opencl-opt/runs/gpu-agg-core-build-r126.log",
+      "raw_log_sha256": "3940b8d31a5527283aad59f27801c2f22b36831970a814e18156855ad17c0863",
+      "status": "passed",
+      "wall_seconds": 170.8569855419919,
+      "tests": []
+    },
+    {
+      "label": "gpu-agg-runner-build-r126",
+      "receipt": ".tools/pq-opencl-opt/runs/gpu-agg-runner-build-r126.json",
+      "receipt_sha256": "59873815b561931b725f2aa44ce6edc9b660cf7b1519b44801d032b6ae3a58f6",
+      "raw_log": ".tools/pq-opencl-opt/runs/gpu-agg-runner-build-r126.log",
+      "raw_log_sha256": "35ae81bdf325f9a79f0d484eb404503fb9ba31c784a40dbb5380f23c78bae605",
+      "status": "passed",
+      "wall_seconds": 166.82411026884802,
+      "tests": []
+    },
+    {
+      "label": "gpu-agg-compact-hash-unit-tests-r126",
+      "receipt": ".tools/pq-opencl-opt/runs/gpu-agg-compact-hash-unit-tests-r126.json",
+      "receipt_sha256": "fbac4f80214c23e33e4783938ef468fa9c5f225470ea4eb87787c4aabefaa943",
+      "raw_log": ".tools/pq-opencl-opt/runs/gpu-agg-compact-hash-unit-tests-r126.log",
+      "raw_log_sha256": "bea6b84b7181141b48f3eea13cdf07f597016c137752c0159da3ba0e2a5c4e31",
+      "status": "passed",
+      "wall_seconds": 4.265217415988445,
+      "tests": [
+        "test result: ok. 24 passed; 0 failed; 4 ignored; 0 measured; 2082 filtered out; finished in 3.51s"
+      ]
+    },
+    {
+      "label": "gpu-agg-compact-hash-cpu-check-r126",
+      "receipt": ".tools/pq-opencl-opt/runs/gpu-agg-compact-hash-cpu-check-r126.json",
+      "receipt_sha256": "08af65ef99a95956567ddbc88f540f39a417318343d9e27576437d46814f6df8",
+      "raw_log": ".tools/pq-opencl-opt/runs/gpu-agg-compact-hash-cpu-check-r126.log",
+      "raw_log_sha256": "aeb0affac3df21249ce7c1a8728f8917bf708b4c028aa7f11a8bda4efd05033e",
+      "status": "passed",
+      "wall_seconds": 10.285515600815415,
+      "tests": []
+    }
+  ],
+  "initial_failed_validation": {
+    "receipt": {
+      "label": "gpu-agg-compact-hash-unit-tests-r125",
+      "receipt": ".tools/pq-opencl-opt/runs/gpu-agg-compact-hash-unit-tests-r125.json",
+      "receipt_sha256": "1a7e5834f78d0abf027cf2bb5e83204bdb920801053333825338daae372ef85c",
+      "raw_log": ".tools/pq-opencl-opt/runs/gpu-agg-compact-hash-unit-tests-r125.log",
+      "raw_log_sha256": "0bdd981547aab0f6fe65fd753964a4de5920928a0c86219911994a0e4660353d",
+      "status": "failed_or_incomplete",
+      "wall_seconds": 4.266959920991212,
+      "tests": [
+        "test result: FAILED. 23 passed; 1 failed; 4 ignored; 0 measured; 2082 filtered out; finished in 3.44s"
+      ]
+    },
+    "cause": "The new duplicate-input test expected at least three net provider uses. The correct bound is two: the duplicate hash read and the earlier sum; the provider own use is excluded.",
+    "resolution": "Corrected only the test assertion and comment, rebuilt, and reran the full recursion test filter. Production source is byte-identical between r125 and r126."
+  },
+  "security": [
+    "Hash rounds, security parameters, transcript challenges, randomness, FRI parameters, and fan-in are unchanged. Independent CPU verification remains required.",
+    "Wire addresses and signed multiplicities remain fixed by trusted preprocessing.",
+    "Direction-bit booleanity, ordinary-hash zero-bit constraints, inactive-lane constraints, and global wire lookups remain enforced.",
+    "Nonconsecutive and overflowing internal output addresses fail closed before base-address compression.",
+    "The template identity domain changes to invalidate earlier public-template cache entries.",
+    "CPU reference, tamper, and GPU checks provide correctness evidence, not a formal security audit."
+  ],
+  "limitations": [
+    "The measured workflow gains are modest; this is not evidence of a major end-to-end speedup.",
+    "Two subtree repetitions are insufficient for a broad statistical performance claim.",
+    "The SHAKE baseline is the earlier r120 run, with matching inputs, options, cache counts, and all production sources except these changes.",
+    "No complete fresh N4 workflow, CUDA runtime, or Apple runtime qualification was performed.",
+    "Committed LDE field counts describe total logical proof work, not peak resident GPU memory.",
+    "The twelve-leaf group is one recursive proof per sample, with no inter-group parent; its order-mutation flag is false because that check is not applied. Public mutation rejection and independent CPU verification passed."
+  ],
+  "rejected_candidate": {
+    "report": "gpu-recursion-register-stream-screen-2026-11-13.json",
+    "reason": "Fixed-block commitment absorption improved primitive timings by about one percent; it was restored before this candidate and is not enabled."
+  },
+  "final_changed_source_sha256": {
+    "lattica-prover-p3/src/block_v2/machine/recursion.rs": "210b1fecf3dccc6cbb2fad6f96d9d8acca4ef725f8184881f5f553c899573d70",
+    "lattica-prover-p3/src/block_v2/machine/recursion/air.rs": "8e4356b84db52671bd22f419676d4bc0a8d2cb9ae19b483a1eeded0c19a78b77",
+    "lattica-prover-p3/src/block_v2/machine/recursion/tests.rs": "2605bff83148810e57dc73bf4f54ea0d2ed29cc0b37a0574b5e423f1493c42dd"
+  },
+  "candidate_patch": "gpu-recursion-compact-hashes-2026-11-13.patch",
+  "candidate_patch_sha256": "7a788bc6c7e2ba0f3200932d067edd3cf73c89be249b987b404033e2b66f880c",
+  "preexisting_source_patch": "gpu-recursion-source-r120-2026-11-13.patch",
+  "validation_budget": {
+    "ledger": ".tools/gpu-aggregation/test-budget.json",
+    "sha256": "7c85da094b1c64b79439cfba3ae02759a45ed34ea4b21f76748b4c5ce22d50e8",
+    "limit_seconds": 20160,
+    "remaining_seconds": 52.69291008543223,
+    "pass_attempts": [
+      {
+        "label": "gpu-agg-register-unit-tests-r124",
+        "status": "passed",
+        "timeout_seconds": 15,
+        "wall_seconds": 2.5679643659386784
+      },
+      {
+        "label": "gpu-agg-register-gpu-tests-r124",
+        "status": "failed",
+        "timeout_seconds": 90,
+        "wall_seconds": 38.73049443913624
+      },
+      {
+        "label": "gpu-agg-register-device-tree-test-r124",
+        "status": "passed",
+        "timeout_seconds": 30,
+        "wall_seconds": 2.619095218833536
+      },
+      {
+        "label": "gpu-agg-compact-hash-unit-tests-r125",
+        "status": "failed",
+        "timeout_seconds": 45,
+        "wall_seconds": 4.573215787066147
+      },
+      {
+        "label": "gpu-agg-compact-hash-gpu-tests-r125",
+        "status": "passed",
+        "timeout_seconds": 90,
+        "wall_seconds": 34.691260209074244
+      },
+      {
+        "label": "gpu-agg-compact-hash-graphs-r125",
+        "status": "passed",
+        "timeout_seconds": 120,
+        "wall_seconds": 72.2706510599237
+      },
+      {
+        "label": "gpu-agg-compact-hash-shake-r125",
+        "status": "passed",
+        "timeout_seconds": 90,
+        "wall_seconds": 60.03790381993167
+      },
+      {
+        "label": "gpu-agg-compact-hash-graph12-r125",
+        "status": "passed",
+        "timeout_seconds": 75,
+        "wall_seconds": 47.81037611979991
+      },
+      {
+        "label": "gpu-agg-compact-hash-baseline-graphs-r126",
+        "status": "passed",
+        "timeout_seconds": 90,
+        "wall_seconds": 76.38309459900483
+      },
+      {
+        "label": "gpu-agg-compact-hash-unit-tests-r126",
+        "status": "passed",
+        "timeout_seconds": 27,
+        "wall_seconds": 4.5753125899937
+      }
+    ]
+  }
+}
